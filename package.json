@@ -9,7 +9,8 @@
 		"fmt": "oxfmt -c ./configs/oxfmt.ts",
 		"fmt:check": "oxfmt -c ./configs/oxfmt.ts --check",
 		"lint": "oxlint -c ./configs/oxlint.ts",
-		"lint:fix": "oxlint -c ./configs/oxlint.ts --fix"
+		"lint:fix": "oxlint -c ./configs/oxlint.ts --fix",
+		"publish": "./scripts/publish.sh"
 	},
 	"devDependencies": {
 		"oxfmt": "^0.68.0",
