@@ -1,0 +1,43 @@
+{
+	"name": "@spacefn/server",
+	"version": "0.1.0",
+	"bin": {
+		"space": "./bin/space.js"
+	},
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./vite": {
+			"import": "./dist/vite/index.js",
+			"types": "./dist/vite/index.d.ts"
+		}
+	},
+	"scripts": {
+		"build": "tsup",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"dev": "node bin/space.js dev",
+		"build:app": "node bin/space.js build"
+	},
+	"dependencies": {
+		"@spacefn/vite-plugin": "workspace:*",
+		"h3": "^1.15.0",
+		"miniflare": "^3.0.0",
+		"pathe": "^2.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"tsup": "^8.0.0",
+		"typescript": "^5.5.0",
+		"vite": "^6.0.0",
+		"vitest": "^3.0.0"
+	},
+	"peerDependencies": {
+		"vite": ">=5.0.0"
+	}
+}
