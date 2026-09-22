@@ -1,5 +1,5 @@
 {
-	"name": "@space/datastar",
+	"name": "@spacefn/datastar",
 	"version": "0.1.0",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -20,7 +20,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@space/html": "workspace:*"
+		"@spacefn/html": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",

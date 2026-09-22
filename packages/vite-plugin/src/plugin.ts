@@ -58,7 +58,7 @@ export function space(options: SpaceOptions = {}): Plugin {
 	let server: ViteDevServer | null = null;
 
 	return {
-		name: "@space/vite-plugin",
+		name: "@spacefn/vite-plugin",
 
 		// --- Build: run all generators once ------------------------------------
 		async buildStart() {

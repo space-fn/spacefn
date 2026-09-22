@@ -1,7 +1,7 @@
 // --- DataStar Client Attributes -----------------------------------------------
 // Typed DataStar attribute generation for h() elements
 // https://data-star.dev/
-import type { AttrValue } from "@space/html";
+import type { AttrValue } from "@spacefn/html";
 
 import type { DataOnModifier, GetOptions, PostOptions } from "./types.js";
 
