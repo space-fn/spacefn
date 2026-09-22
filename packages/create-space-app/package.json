@@ -1,0 +1,23 @@
+{
+	"name": "create-space-app",
+	"version": "0.1.0",
+	"bin": {
+		"create-space-app": "./bin/create-space-app.js"
+	},
+	"type": "module",
+	"scripts": {
+		"build": "tsup && cp -r src/templates dist/templates",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@clack/prompts": "^0.9.0",
+		"citty": "^0.1.0",
+		"pathe": "^2.0.0",
+		"picocolors": "^1.1.0"
+	},
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"tsup": "^8.0.0",
+		"typescript": "^5.5.0"
+	}
+}
