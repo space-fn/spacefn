@@ -7,7 +7,7 @@ on:
 
 permissions:
   id-token: write # Required for npm OIDC trusted publishing
-  contents: read
+  contents: write # Required for creating git tags
 
 jobs:
   release:
@@ -34,22 +34,34 @@ jobs:
 
       - run: pnpm fmt:check && pnpm lint
 
-      - name: Publish changed packages
+      - name: Publish and tag
         run: |
+          tags=""
           for dir in packages/*/; do
             if [ -f "$dir/package.json" ]; then
-              cd "$dir"
-              name=$(node -p "require('./package.json').name")
-              version=$(node -p "require('./package.json').version")
+              name=$(node -p "require('./package.json').name" --prefix "$dir")
+              version=$(node -p "require('./package.json').version" --prefix "$dir")
 
               # Check if this version already exists on npm
               if npm view "$name@$version" version 2>/dev/null; then
                 echo "⏭️  $name@$version already published, skipping"
               else
                 echo "📦 Publishing $name@$version"
-                npm publish --provenance --access public
-              fi
+                (cd "$dir" && npm publish --provenance --access public)
 
-              cd -
+                # Collect tag
+                tag="${name}@${version}"
+                echo "🏷️  Tagging $tag"
+                tags="$tags $tag"
+              fi
             fi
           done
+
+          # Push all tags at once
+          if [ -n "$tags" ]; then
+            for tag in $tags; do
+              git tag "$tag"
+            done
+            echo "🚀 Pushing tags:$tags"
+            git push origin --tags
+          fi
