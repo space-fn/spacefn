@@ -62,7 +62,7 @@ function install(targetDir: string, pm: PackageManager, deps: string[], devDeps:
 
 const main = defineCommand({
 	meta: {
-		name: "create-space-app",
+		name: "create-spacefn",
 		description: "Scaffold a new Space project",
 		version: "0.1.0",
 	},

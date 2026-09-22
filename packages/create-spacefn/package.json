@@ -1,8 +1,8 @@
 {
-	"name": "create-space-app",
+	"name": "create-spacefn",
 	"version": "0.1.0",
 	"bin": {
-		"create-space-app": "./bin/create-space-app.js"
+		"create-spacefn": "./bin/create-space-app.js"
 	},
 	"type": "module",
 	"scripts": {

@@ -173,7 +173,7 @@ importers:
         specifier: ^1.83.0
         version: 1.83.0
 
-  packages/create-space-app:
+  packages/create-spacefn:
     dependencies:
       '@clack/prompts':
         specifier: ^0.9.0
