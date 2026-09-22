@@ -12,6 +12,10 @@
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
 		},
+		"./test": {
+			"import": "./dist/test.js",
+			"types": "./dist/test.d.ts"
+		},
 		"./vite": {
 			"import": "./dist/vite/index.js",
 			"types": "./dist/vite/index.d.ts"
