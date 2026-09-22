@@ -131,16 +131,5 @@ export function space(options: SpaceOptions = {}): Plugin {
 				}
 			});
 		},
-
-		// --- Resolve aliases for generated files -------------------------------
-		config() {
-			return {
-				resolve: {
-					alias: {
-						".space": resolve(resolved.root, ".space"),
-					},
-				},
-			};
-		},
 	};
 }

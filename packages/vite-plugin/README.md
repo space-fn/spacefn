@@ -129,3 +129,29 @@ Output files go to `.space/` by default. Add `.space` to `.gitignore`:
 ```
 .space/
 ```
+
+## Path Aliasing
+
+The plugin does NOT inject aliases. Use tsconfig paths instead:
+
+```json
+// tsconfig.json
+{
+	"compilerOptions": {
+		"paths": {
+			"#space/*": [".space/*"]
+		}
+	}
+}
+```
+
+```ts
+// vite.config.ts
+import { defineConfig } from "vite";
+
+export default defineConfig({
+	resolve: {
+		tsconfigPaths: true,
+	},
+});
+```
