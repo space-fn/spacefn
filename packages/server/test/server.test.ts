@@ -127,3 +127,168 @@ describe("createServer", () => {
 		expect(response.status).toBe(500);
 	});
 });
+
+// --- Pages -------------------------------------------------------------------
+
+describe("pages", () => {
+	it("GET page with loader returns rendered HTML", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/",
+					loader: async () => ({ msg: "Hello" }),
+					page: (data: unknown) => `<h1>${(data as { msg: string }).msg}</h1>`,
+				},
+			],
+		});
+
+		const response = await handler(new Request("http://localhost/"));
+		expect(response.status).toBe(200);
+		expect(response.headers.get("Content-Type")).toBe("text/html");
+		expect(await response.text()).toBe("<h1>Hello</h1>");
+	});
+
+	it("GET page without loader renders page with undefined data", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/",
+					page: () => "<p>Static</p>",
+				},
+			],
+		});
+
+		const response = await handler(new Request("http://localhost/"));
+		expect(await response.text()).toBe("<p>Static</p>");
+	});
+
+	it("POST action returns JSON response", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/signup",
+					actions: {
+						signup: {
+							resolver: async (payload) => {
+								return { success: true, email: (payload as { email: string }).email };
+							},
+						},
+					},
+					page: () => "<form></form>",
+				},
+			],
+		});
+
+		const response = await handler(
+			new Request("http://localhost/signup?_action=signup", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: "test@example.com" }),
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ success: true, email: "test@example.com" });
+	});
+
+	it("POST unknown action returns 400", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/",
+					actions: {
+						signup: { resolver: async () => ({ ok: true }) },
+					},
+				},
+			],
+		});
+
+		const response = await handler(
+			new Request("http://localhost/?_action=unknown", { method: "POST" }),
+		);
+		expect(response.status).toBe(400);
+	});
+
+	it("POST without _action param returns 400", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/",
+					actions: {
+						signup: { resolver: async () => ({ ok: true }) },
+					},
+				},
+			],
+		});
+
+		const response = await handler(new Request("http://localhost/", { method: "POST" }));
+		expect(response.status).toBe(400);
+	});
+
+	it("POST action with input validation rejects invalid data", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/signup",
+					actions: {
+						signup: {
+							input: {
+								safeParse: (data: unknown) => {
+									const d = data as Record<string, unknown>;
+									if (typeof d?.email === "string" && d.email.includes("@")) {
+										return { success: true, data: d };
+									}
+									return { success: false, data: { issues: ["Invalid email"] } };
+								},
+							},
+							resolver: async (payload) => ({ email: (payload as { email: string }).email }),
+						},
+					},
+				},
+			],
+		});
+
+		const response = await handler(
+			new Request("http://localhost/signup?_action=signup", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email: "not-an-email" }),
+			}),
+		);
+		expect(response.status).toBe(400);
+	});
+
+	it("POST action with form data parsing", async () => {
+		const handler = createServer({
+			routes: [],
+			pages: [
+				{
+					pattern: "/login",
+					actions: {
+						login: {
+							resolver: async (payload) => {
+								const data = payload as Record<string, string>;
+								return { user: data.username };
+							},
+						},
+					},
+				},
+			],
+		});
+
+		const formData = new URLSearchParams({ username: "admin", password: "secret" });
+		const response = await handler(
+			new Request("http://localhost/login?_action=login", {
+				method: "POST",
+				body: formData,
+			}),
+		);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ user: "admin" });
+	});
+});
