@@ -2,8 +2,8 @@
 
 // --- Space CLI ----------------------------------------------------------------
 // Usage:
-//   space dev    — Start development server
-//   space build  — Build for production
+//   spacefn dev    — Start development server
+//   spacefn build  — Build for production
 
 import { resolve } from "node:path";
 
@@ -55,7 +55,7 @@ switch (command) {
 		});
 		break;
 	default:
-		console.error(`[space] Unknown command: ${command}`);
-		console.error("Usage: space <dev|build>");
+		console.error(`[spacefn] Unknown command: ${command}`);
+		console.error("Usage: spacefn <dev|build>");
 		process.exit(1);
 }

@@ -109,8 +109,8 @@ Scans `src/routes/` and `src/middlewares/`. Generates route definitions in `.spa
 ## CLI
 
 ```bash
-space dev     # Start Vite dev server
-space build   # Build for production
+spacefn dev     # Start Vite dev server
+spacefn build   # Build for production
 ```
 
 ## Documentation

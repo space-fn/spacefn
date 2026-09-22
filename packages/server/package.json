@@ -2,7 +2,7 @@
 	"name": "@spacefn/server",
 	"version": "0.1.0",
 	"bin": {
-		"space": "./bin/space.js"
+		"spacefn": "./bin/spacefn.js"
 	},
 	"type": "module",
 	"main": "./dist/index.js",
@@ -21,8 +21,8 @@
 		"build": "tsup",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
-		"dev": "node bin/space.js dev",
-		"build:app": "node bin/space.js build"
+		"dev": "node bin/spacefn.js dev",
+		"build:app": "node bin/spacefn.js build"
 	},
 	"dependencies": {
 		"@spacefn/vite-plugin": "workspace:*",
