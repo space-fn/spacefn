@@ -1,0 +1,26 @@
+{
+	"name": "space",
+	"description": "",
+	"keywords": [],
+	"license": "Apache-2.0",
+	"author": "wai-lin",
+	"type": "module",
+	"scripts": {
+		"fmt": "oxfmt -c ./configs/oxfmt.ts",
+		"fmt:check": "oxfmt -c ./configs/oxfmt.ts --check",
+		"lint": "oxlint -c ./configs/oxlint.ts",
+		"lint:fix": "oxlint -c ./configs/oxlint.ts --fix"
+	},
+	"devDependencies": {
+		"oxfmt": "^0.68.0",
+		"oxlint": "^1.83.0"
+	},
+	"devEngines": {
+		"packageManager": {
+			"name": "pnpm",
+			"version": "12.4.2",
+			"onFail": "download"
+		}
+	},
+	"packageManager": "pnpm@12.4.2"
+}
