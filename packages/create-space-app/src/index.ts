@@ -37,11 +37,15 @@ async function writeTemplate(
 	const srcDir = join(TEMPLATE_DIR, template);
 	await cp(srcDir, targetDir, { recursive: true });
 
-	// Set project name in package.json
-	const pkgPath = join(targetDir, "package.json");
-	const pkg = JSON.parse(await readFile(pkgPath, "utf-8"));
-	pkg.name = projectName;
-	await writeFile(pkgPath, JSON.stringify(pkg, null, "\t") + "\n");
+	// Replace {{app_name}} placeholder in template files
+	const files = ["package.json", "wrangler.toml"];
+	for (const file of files) {
+		const filePath = join(targetDir, file);
+		if (existsSync(filePath)) {
+			const content = await readFile(filePath, "utf-8");
+			await writeFile(filePath, content.replaceAll("{{app_name}}", projectName));
+		}
+	}
 }
 
 function install(targetDir: string, pm: PackageManager, deps: string[], devDeps: string[]): void {
@@ -98,7 +102,7 @@ const main = defineCommand({
 				value: m.value,
 				label: m.label,
 			})),
-			initialValue: "pnpm",
+			initialValue: "npm",
 		});
 		if (p.isCancel(pm)) {
 			p.cancel("Cancelled");
@@ -151,7 +155,7 @@ const main = defineCommand({
 				targetDir,
 				pm as PackageManager,
 				["@spacefn/html", "@spacefn/server", "@spacefn/datastar"],
-				["wrangler"],
+				["wrangler", "oxlint", "oxfmt", "vite", "vitest"],
 			);
 			s2.stop("Dependencies installed");
 		}

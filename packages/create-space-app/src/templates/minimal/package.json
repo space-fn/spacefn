@@ -1,13 +1,13 @@
 {
-	"name": "space-app",
+	"name": "{{app_name}}",
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
-		"build": "vite build",
-		"preview": "vite preview"
-	},
-	"devDependencies": {
-		"vite": "^6.0.0"
+		"dev": "spacefn dev",
+		"build": "spacefn build",
+		"fmt": "oxfmt -c configs/oxfmt.ts",
+		"fmt:check": "oxfmt -c configs/oxfmt.ts --check",
+		"lint": "oxlint -c configs/oxlint.ts",
+		"lint:fix": "oxlint -c configs/oxlint.ts --fix"
 	}
 }
