@@ -6,7 +6,7 @@
 	},
 	"type": "module",
 	"scripts": {
-		"build": "tsup && cp -r src/templates dist/templates",
+		"build": "rm -rf dist && tsup && cp -r src/templates dist/templates",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
