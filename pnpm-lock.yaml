@@ -188,6 +188,25 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.3)
 
+  packages/datastar:
+    dependencies:
+      '@space/html':
+        specifier: workspace:*
+        version: link:../html
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.3
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.3)
+
   packages/html:
     devDependencies:
       '@types/node':
