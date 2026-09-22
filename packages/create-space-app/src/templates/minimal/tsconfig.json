@@ -5,7 +5,10 @@
 		"moduleResolution": "bundler",
 		"strict": true,
 		"esModuleInterop": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"paths": {
+			"#space/*": [".space/*"]
+		}
 	},
 	"include": ["src"]
 }
