@@ -5,9 +5,14 @@
 	"scripts": {
 		"dev": "spacefn dev",
 		"build": "spacefn build",
+		"test": "vitest run",
 		"fmt": "oxfmt -c configs/oxfmt.ts",
 		"fmt:check": "oxfmt -c configs/oxfmt.ts --check",
 		"lint": "oxlint -c configs/oxlint.ts",
 		"lint:fix": "oxlint -c configs/oxlint.ts --fix"
+	},
+	"devDependencies": {
+		"@spacefn/server": "latest",
+		"vitest": "^3.0.0"
 	}
 }
