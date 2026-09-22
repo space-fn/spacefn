@@ -2,18 +2,31 @@
 
 Server-side HTML generation. Build HTML elements as TypeScript functions. Type-safe attributes with a11y enforcement.
 
-## Core API
+## Install
+
+```bash
+pnpm add @spacefn/html
+```
+
+## Quick Start
 
 ```ts
-import { h, render, raw, defineComponent, renderComponent } from "@spacefn/html";
+import { h, render } from "@spacefn/html";
+
+const page = h.div({ class: "container" }, h.h1({}, "Hello"), h.p({}, "World"));
+
+console.log(render(page));
+// <div class="container"><h1>Hello</h1><p>World</p></div>
 ```
+
+## API
 
 ### `h.<tag>(attrs, ...children)`
 
-Create an HTML element. Attributes are typed per element.
+Create an HTML element. Attributes are typed per element. Pass `null` for no attributes.
 
 ```ts
-h.div({ class: "container" }, "Hello");
+h.div({ class: "box" }, "text");
 h.a({ href: "/about" }, "About");
 h.img({ src: "/logo.png", alt: "Logo" }); // a11y: alt required
 h.button(null, "Click");
@@ -41,10 +54,12 @@ h.div(null, raw("<strong>Safe</strong>"));
 Define a reusable component with typed props and optional slots. Returns a function that produces `HtmlElement`.
 
 ```ts
+import { defineComponent, h } from "@spacefn/html";
+
 type CardProps = { title: string };
 
 const card = defineComponent<CardProps>((props) => {
-	return h.div({ class: "card" }, h.h2({}, props.title), h.p({}, "Content"));
+	return h.div({ class: "card" }, h.h2({}, props.title));
 });
 
 // Usage
@@ -53,7 +68,7 @@ card({ title: "My Card" });
 
 ### Slots
 
-Slots are named children passed as the second argument. The component receives them as `HtmlElement` values.
+Slots are named children passed as the second argument.
 
 ```ts
 type CardProps = { title: string };
@@ -62,7 +77,6 @@ type CardSlots = { default: HtmlElement; footer: HtmlElement };
 const card = defineComponent<CardProps, CardSlots>((props, slots) => {
 	return h.div(
 		{ class: "card" },
-		h.div({ class: "header" }, h.h2({}, props.title)),
 		h.div({ class: "body" }, slots.default),
 		h.div({ class: "footer" }, slots.footer),
 	);
@@ -72,13 +86,13 @@ const card = defineComponent<CardProps, CardSlots>((props, slots) => {
 card(
 	{ title: "Post Card" },
 	{
-		default: h.p({}, "Card content is here"),
-		footer: h.div({}, h.button({}, "Like")),
+		default: h.p({}, "Card content"),
+		footer: h.button({}, "Like"),
 	},
 );
 ```
 
-Slots are optional. If a slot is not provided, it defaults to an empty object.
+Slots are optional. Unprovided slots default to empty.
 
 ### `renderComponent(element)`
 
@@ -88,41 +102,38 @@ Render a component's output to an HTML string. Convenience wrapper for `render()
 const html = renderComponent(card({ title: "My Card" }));
 ```
 
-## Types
+## Attributes
+
+Each HTML element has typed attributes. TypeScript enforces required attributes (like `alt` on `<img>`) at compile time.
 
 ```ts
-type HtmlChild = string | number | boolean | null | undefined | HtmlElement;
+// Type error: alt is required
+h.img({ src: "/logo.png" });
 
-interface HtmlElement {
-	tag: string;
-	attrs: Record<string, AttrValue>;
-	children: HtmlChild[];
-}
-
-type AttrValue = string | number | boolean | null | undefined;
+// OK
+h.img({ src: "/logo.png", alt: "Logo" });
 ```
 
-## Full Example
+## Children
+
+Children can be strings, numbers, booleans, null, undefined, or other elements.
 
 ```ts
-import { h, render, defineComponent, renderComponent } from "@spacefn/html";
-
-type PageProps = { title: string; content: string };
-type PageSlots = { sidebar: HtmlElement };
-
-const page = defineComponent<PageProps, PageSlots>((props, slots) => {
-	return h.html(
-		{},
-		h.head({}, h.title({}, props.title)),
-		h.body(
-			{},
-			h.main({}, h.h1({}, props.title), h.p({}, props.content)),
-			h.aside({}, slots.sidebar),
-		),
-	);
-});
-
-const html = renderComponent(
-	page({ title: "Hello", content: "World" }, { sidebar: h.nav({}, h.a({ href: "/" }, "Home")) }),
+h.div(
+	{ class: "wrapper" },
+	"Text content",
+	42,
+	true, // renders nothing
+	null, // renders nothing
+	h.span({}, "nested"),
 );
+```
+
+## Void Elements
+
+Self-closing tags (`<br>`, `<img>`, `<input>`, etc.) render without closing tags.
+
+```ts
+render(h.br()); // "<br>"
+render(h.input({ type: "text" })); // "<input type="text">"
 ```
