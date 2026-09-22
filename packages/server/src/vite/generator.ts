@@ -1,10 +1,10 @@
-// --- Route & Middleware Scanner ------------------------------------------------
-// Scans src/routes/ and src/middlewares/ for convention-based file naming
+// --- Route, Middleware & Page Scanner ------------------------------------------
+// Scans src/routes/, src/middlewares/ and src/pages/ for convention-based files
 
 import { readdir } from "node:fs/promises";
 import { join, relative, basename } from "node:path";
 
-import type { ScannedRoute, ScannedMiddleware } from "./types.js";
+import type { ScannedRoute, ScannedMiddleware, ScannedPage } from "./types.js";
 
 // --- Route Scanner ------------------------------------------------------------
 
@@ -131,4 +131,52 @@ export async function scanMiddlewares(root: string): Promise<ScannedMiddleware[]
 
 	// Sort by order
 	return middlewares.sort((a, b) => a.order - b.order);
+}
+
+// --- Page Scanner -------------------------------------------------------------
+
+/**
+ * Scan src/pages/ for *.page.ts and *.server.ts files.
+ * Matches pairs by base name (e.g., index.page.ts + index.server.ts).
+ *
+ * File naming convention (same as routes):
+ *   index.page.ts + index.server.ts   → /
+ *   books/index.page.ts               → /books
+ *   books/[slug].page.ts              → /books/:slug
+ */
+export async function scanPages(root: string): Promise<ScannedPage[]> {
+	const pagesDir = join(root, "src", "pages");
+	const files = await scanDir(pagesDir);
+
+	// Group files by base path (without .page.ts / .server.ts suffix)
+	const pageFiles = new Map<string, string>(); // basePath → absolute path
+	const serverFiles = new Map<string, string>();
+
+	for (const file of files) {
+		const rel = relative(pagesDir, file);
+		if (rel.endsWith(".page.ts")) {
+			const basePath = rel.replace(/\.page\.ts$/, "");
+			pageFiles.set(basePath, file);
+		} else if (rel.endsWith(".server.ts")) {
+			const basePath = rel.replace(/\.server\.ts$/, "");
+			serverFiles.set(basePath, file);
+		}
+	}
+
+	// Merge all unique base paths
+	const allPaths = new Set([...pageFiles.keys(), ...serverFiles.keys()]);
+
+	const pages: ScannedPage[] = [];
+	for (const basePath of allPaths) {
+		pages.push({
+			path: basePath,
+			pattern: fileToPattern(basePath),
+			pageFile: pageFiles.get(basePath) ?? null,
+			serverFile: serverFiles.get(basePath) ?? null,
+			hasLoader: false, // Will be determined during code generation
+			hasActions: false,
+		});
+	}
+
+	return pages;
 }

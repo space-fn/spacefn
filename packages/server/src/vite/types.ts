@@ -24,6 +24,22 @@ export interface ScannedMiddleware {
 	name: string;
 }
 
+/** Scanned page: matched *.page.ts + *.server.ts pair */
+export interface ScannedPage {
+	/** Relative path from src/pages/ (without extension) */
+	path: string;
+	/** URL pattern (e.g., "/books/:slug") */
+	pattern: string;
+	/** Absolute path to *.page.ts file (null if no page file) */
+	pageFile: string | null;
+	/** Absolute path to *.server.ts file (null if no server file) */
+	serverFile: string | null;
+	/** Has a loader export */
+	hasLoader: boolean;
+	/** Has an actions export */
+	hasActions: boolean;
+}
+
 /** Vite plugin options */
 export interface SpacePluginOptions {
 	/** Working directory (default: process.cwd()) */
