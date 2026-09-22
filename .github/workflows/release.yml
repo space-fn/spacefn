@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - release
+
+permissions:
+  id-token: write # Required for npm OIDC trusted publishing
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -r build
+
+      - run: pnpm -r test
+
+      - run: pnpm fmt:check && pnpm lint
+
+      - name: Publish changed packages
+        run: |
+          for dir in packages/*/; do
+            if [ -f "$dir/package.json" ]; then
+              cd "$dir"
+              name=$(node -p "require('./package.json').name")
+              version=$(node -p "require('./package.json').version")
+
+              # Check if this version already exists on npm
+              if npm view "$name@$version" version 2>/dev/null; then
+                echo "⏭️  $name@$version already published, skipping"
+              else
+                echo "📦 Publishing $name@$version"
+                npm publish --provenance --access public
+              fi
+
+              cd -
+            fi
+          done
