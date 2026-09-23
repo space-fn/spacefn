@@ -6,7 +6,7 @@ import { relative } from "node:path";
 
 import { space as baseSpace } from "@spacefn/vite-plugin";
 import type { Generator } from "@spacefn/vite-plugin";
-import type { Plugin } from "vite";
+import type { Plugin, ViteDevServer } from "vite";
 
 import { scanRoutes, scanMiddlewares, scanPages } from "./generator.js";
 import type { SpacePluginOptions, ScannedRoute, ScannedMiddleware, ScannedPage } from "./types.js";
@@ -97,9 +97,31 @@ function generateMiddlewaresCode(middlewares: ScannedMiddleware[]): string {
 	return lines.join("\n");
 }
 
+// --- Pattern matching ---------------------------------------------------------
+
+/** Match a URL pathname against a pattern like "/books/:slug" */
+function matchPattern(pattern: string, pathname: string): boolean {
+	const patternParts = pattern.split("/");
+	const pathnameParts = pathname.split("/");
+
+	if (patternParts.length !== pathnameParts.length) return false;
+
+	for (let i = 0; i < patternParts.length; i++) {
+		const pp = patternParts[i];
+		// Dynamic segment matches anything
+		if (pp.startsWith(":")) continue;
+		// Catch-all matches anything
+		if (pp.startsWith("*")) return true;
+		// Exact match
+		if (pp !== pathnameParts[i]) return false;
+	}
+
+	return true;
+}
+
 // --- Plugin Factory -----------------------------------------------------------
 
-export function space(options: SpacePluginOptions = {}): Plugin {
+export function space(options: SpacePluginOptions = {}): Plugin[] {
 	const root = options.root ?? process.cwd();
 
 	// Create route generator: watch src/routes/ → generate .space/routes.ts
@@ -135,11 +157,68 @@ export function space(options: SpacePluginOptions = {}): Plugin {
 		},
 	};
 
+	// Dev server middleware: intercepts requests and serves pages/routes
+	const devMiddleware: Plugin = {
+		name: "@spacefn/server:dev",
+		configureServer(server: ViteDevServer) {
+			// Use ssrLoadModule to resolve #src/* and #space/* aliases
+			server.middlewares.use(async (req, res, next) => {
+				try {
+					const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+
+					// Try pages first
+					const pagesMod = await server.ssrLoadModule("#space/pages");
+					if (pagesMod?.pages) {
+						for (const page of pagesMod.pages) {
+							if (matchPattern(page.pattern, url.pathname)) {
+								const data = page.loader ? await page.loader(new Request(url.toString(), { method: req.method })) : undefined;
+								const html = page.page ? await page.page(data) : "";
+								const body = String(html);
+								res.setHeader("Content-Type", "text/html");
+								res.end(body);
+								return;
+							}
+						}
+					}
+
+					// Try routes
+					const routesMod = await server.ssrLoadModule("#space/routes");
+					if (routesMod?.routes) {
+						for (const route of routesMod.routes) {
+							if (matchPattern(route.pattern, url.pathname) && (route.method === "*" || route.method === req.method)) {
+								const mod = await route.handler();
+								const handler = mod.default ?? mod;
+								const response = await handler(new Request(url.toString(), { method: req.method, headers: req.headers as Record<string, string> }));
+								if (response instanceof Response) {
+									res.statusCode = response.status;
+									for (const [key, value] of response.headers) {
+										res.setHeader(key, value);
+									}
+									const body = await response.text();
+									res.end(body);
+									return;
+								}
+								res.end(String(response));
+								return;
+							}
+						}
+					}
+
+					next();
+				} catch (err) {
+					next(err);
+				}
+			});
+		},
+	};
+
 	// Delegate to @spacefn/vite-plugin for Vite lifecycle + file writing
-	return baseSpace({
+	const generator = baseSpace({
 		root,
 		generators: [routeGenerator, middlewareGenerator, pagesGenerator],
 	});
+
+	return [generator, devMiddleware];
 }
 
 export type { SpacePluginOptions, ScannedRoute, ScannedMiddleware } from "./types.js";

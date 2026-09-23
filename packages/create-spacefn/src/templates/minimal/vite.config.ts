@@ -5,5 +5,5 @@ export default defineConfig({
 	resolve: {
 		tsconfigPaths: true,
 	},
-	plugins: [space()],
+	plugins: [...space()],
 });
