@@ -233,6 +233,10 @@ importers:
         version: 3.2.7(@types/node@22.20.3)
 
   packages/db:
+    dependencies:
+      '@spacefn/vite-plugin':
+        specifier: workspace:*
+        version: link:../vite-plugin
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -246,6 +250,9 @@ importers:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.3(@types/node@22.20.3)
       vitest:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.3)

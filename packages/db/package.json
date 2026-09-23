@@ -8,6 +8,10 @@
 		".": {
 			"import": "./dist/index.js",
 			"types": "./dist/index.d.ts"
+		},
+		"./vite": {
+			"import": "./dist/vite/index.js",
+			"types": "./dist/vite/index.d.ts"
 		}
 	},
 	"scripts": {
@@ -15,14 +19,24 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
+	"dependencies": {
+		"@spacefn/vite-plugin": "workspace:*"
+	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",
 		"kysely": "^0.27.0",
 		"tsup": "^8.0.0",
 		"typescript": "^5.5.0",
+		"vite": "^6.0.0",
 		"vitest": "^3.0.0"
 	},
 	"peerDependencies": {
-		"kysely": ">=0.27.0"
+		"kysely": ">=0.27.0",
+		"vite": ">=5.0.0"
+	},
+	"peerDependenciesMeta": {
+		"vite": {
+			"optional": true
+		}
 	}
 }
