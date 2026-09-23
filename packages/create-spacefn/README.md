@@ -5,7 +5,7 @@ Scaffold a new SpaceFn project.
 ## Usage
 
 ```bash
-npx create-space-app my-project
+npm create spacefn
 ```
 
 ## What It Does
