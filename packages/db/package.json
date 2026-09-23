@@ -1,6 +1,6 @@
 {
 	"name": "@spacefn/db",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -20,7 +20,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@spacefn/vite-plugin": "workspace:*"
+		"@spacefn/vite-plugin": "^0.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",
