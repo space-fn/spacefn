@@ -7,8 +7,15 @@
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"paths": {
-			"#space/*": [".space/*"]
+			"#space/*": [
+				".space/*"
+			],
+			"#*": [
+				"./*"
+			]
 		}
 	},
-	"include": ["src"]
+	"include": [
+		"src"
+	]
 }

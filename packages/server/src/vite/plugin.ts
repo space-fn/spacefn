@@ -21,11 +21,11 @@ function generatePagesCode(pages: ScannedPage[]): string {
 		const p = pages[i];
 		if (p.serverFile) {
 			const rel = relative(process.cwd(), p.serverFile).replace(/\.ts$/, "");
-			lines.push(`import * as Server_${i} from "${rel}";`);
+			lines.push(`import * as Server_${i} from "#${rel}";`);
 		}
 		if (p.pageFile) {
 			const rel = relative(process.cwd(), p.pageFile).replace(/\.ts$/, "");
-			lines.push(`import Page_${i} from "${rel}";`);
+			lines.push(`import Page_${i} from "#${rel}";`);
 		}
 	}
 
@@ -53,7 +53,7 @@ function generateRoutesCode(routes: ScannedRoute[]): string {
 
 	for (let i = 0; i < routes.length; i++) {
 		const r = routes[i];
-		const rel = `../src/routes/${r.path}`;
+		const rel = `#src/routes/${r.path}`;
 		lines.push(`import * as Route_${i} from "${rel}";`);
 	}
 
@@ -78,7 +78,7 @@ function generateMiddlewaresCode(middlewares: ScannedMiddleware[]): string {
 
 	for (let i = 0; i < middlewares.length; i++) {
 		const mw = middlewares[i];
-		const rel = `../src/middlewares/${mw.path}`;
+		const rel = `#src/middlewares/${mw.path}`;
 		lines.push(`import * as Middleware_${i} from "${rel}";`);
 	}
 
