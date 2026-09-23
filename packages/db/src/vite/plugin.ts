@@ -7,7 +7,7 @@ import type { Generator } from "@spacefn/vite-plugin";
 import type { Plugin } from "vite";
 
 import type { TableDefinition } from "../types.js";
-import { generateTypesCode } from "./generator.js";
+import { generateTypesCode, generateMigrationIndex } from "./generator.js";
 import { scanDatabases } from "./scanner.js";
 
 /** Plugin options */
@@ -40,12 +40,29 @@ function createDbGenerator(dbName: string, schemaFile: string): Generator {
 	};
 }
 
+/** Create a migration index generator for a database */
+function createMigrationGenerator(dbName: string): Generator {
+	return {
+		watch: `src/db/${dbName}/migrations/*.ts`,
+		output: `src/db/${dbName}/migrations/index.ts`,
+		generate(files: string[]) {
+			// Filter out index.ts itself
+			const migrations = files.filter((f) => !f.endsWith("/index.ts") && !f.endsWith("/index.js"));
+			if (migrations.length === 0) return "";
+			return generateMigrationIndex(migrations);
+		},
+	};
+}
+
 /** Plugin factory — uses @spacefn/vite-plugin */
 export async function db(options: DbPluginOptions = {}): Promise<Plugin> {
 	const root = options.root ?? process.cwd();
 	const databases = await scanDatabases(root);
 
-	const generators = databases.map((d) => createDbGenerator(d.name, d.schemaFile));
+	const generators = databases.flatMap((d) => [
+		createDbGenerator(d.name, d.schemaFile),
+		createMigrationGenerator(d.name),
+	]);
 
 	if (databases.length > 0) {
 		console.log(

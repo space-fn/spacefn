@@ -131,3 +131,50 @@ describe("column helpers", () => {
 		expect(Object.keys(table.columns)).toHaveLength(16);
 	});
 });
+
+// --- Migration index generator ------------------------------------------------
+
+describe("generateMigrationIndex", () => {
+	it("generates index from migration files", async () => {
+		const { generateMigrationIndex } = await import("../src/vite/generator.js");
+		const result = generateMigrationIndex([
+			"/src/db/main/migrations/001_create_users.ts",
+			"/src/db/main/migrations/002_create_posts.ts",
+		]);
+
+		expect(result).toContain('import { migration as migration000 } from "./001_create_users.js"');
+		expect(result).toContain('import { migration as migration001 } from "./002_create_posts.js"');
+		expect(result).toContain("export const migrations: MigrationDefinition[] = [");
+		expect(result).toContain("migration000,");
+		expect(result).toContain("migration001,");
+	});
+
+	it("filters out index.ts", async () => {
+		const { generateMigrationIndex } = await import("../src/vite/generator.js");
+		const result = generateMigrationIndex([
+			"/src/db/main/migrations/index.ts",
+			"/src/db/main/migrations/001_create_users.ts",
+		]);
+
+		expect(result).not.toContain("index.js");
+		expect(result).toContain("001_create_users.js");
+	});
+
+	it("sorts migrations by name", async () => {
+		const { generateMigrationIndex } = await import("../src/vite/generator.js");
+		const result = generateMigrationIndex([
+			"/src/db/main/migrations/002_create_posts.ts",
+			"/src/db/main/migrations/001_create_users.ts",
+		]);
+
+		const usersIdx = result.indexOf("001_create_users");
+		const postsIdx = result.indexOf("002_create_posts");
+		expect(usersIdx).toBeLessThan(postsIdx);
+	});
+
+	it("returns empty string for no migrations", async () => {
+		const { generateMigrationIndex } = await import("../src/vite/generator.js");
+		const result = generateMigrationIndex([]);
+		expect(result).toBe("");
+	});
+});
