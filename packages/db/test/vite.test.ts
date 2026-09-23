@@ -253,3 +253,137 @@ describe("generateAlterColumnType", () => {
 		expect(sql).toContain('ALTER TABLE "users" ALTER COLUMN "name" TYPE varchar(255)');
 	});
 });
+
+// --- Dialect-specific SQL Generation -----------------------------------------
+
+describe("SQLite dialect", () => {
+	it("generates CREATE TABLE with INTEGER PRIMARY KEY AUTOINCREMENT", () => {
+		const sql = generateCreateTable(
+			"users",
+			{
+				id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+				name: { name: "name", dataType: "text", nullable: false, primaryKey: false, unique: false },
+			},
+			"sqlite",
+		);
+
+		expect(sql).toContain('"id" integer primary key autoincrement');
+		expect(sql).toContain('"name" text NOT NULL');
+	});
+
+	it("uses TEXT for varchar", () => {
+		const sql = generateCreateTable(
+			"users",
+			{
+				email: {
+					name: "email",
+					dataType: "varchar",
+					typeArgs: [255],
+					nullable: false,
+					primaryKey: false,
+					unique: false,
+				},
+			},
+			"sqlite",
+		);
+
+		expect(sql).toContain('"email" text(255) NOT NULL');
+	});
+
+	it("uses integer for boolean", () => {
+		const sql = generateCreateTable(
+			"users",
+			{
+				active: {
+					name: "active",
+					dataType: "boolean",
+					nullable: false,
+					primaryKey: false,
+					unique: false,
+				},
+			},
+			"sqlite",
+		);
+
+		expect(sql).toContain('"active" integer NOT NULL');
+	});
+
+	it("generates comment for unsupported ALTER COLUMN TYPE", () => {
+		const sql = generateAlterColumnType(
+			"users",
+			{
+				name: "name",
+				dataType: "varchar",
+				typeArgs: [255],
+				nullable: false,
+				primaryKey: false,
+				unique: false,
+			},
+			"sqlite",
+		);
+
+		expect(sql).toContain("-- SQLite: ALTER COLUMN TYPE not supported");
+	});
+});
+
+describe("MySQL dialect", () => {
+	it("generates CREATE TABLE with AUTO_INCREMENT for serial", () => {
+		const sql = generateCreateTable(
+			"users",
+			{
+				id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+			},
+			"mysql",
+		);
+
+		expect(sql).toContain("`id` int AUTO_INCREMENT PRIMARY KEY");
+	});
+
+	it("uses backticks for identifiers", () => {
+		const sql = generateCreateTable(
+			"users",
+			{
+				name: { name: "name", dataType: "text", nullable: false, primaryKey: false, unique: false },
+			},
+			"mysql",
+		);
+
+		expect(sql).toContain("`name`");
+	});
+
+	it("uses tinyint for boolean", () => {
+		const sql = generateCreateTable(
+			"users",
+			{
+				active: {
+					name: "active",
+					dataType: "boolean",
+					nullable: false,
+					primaryKey: false,
+					unique: false,
+				},
+			},
+			"mysql",
+		);
+
+		expect(sql).toContain("`active` tinyint NOT NULL");
+	});
+
+	it("uses MODIFY COLUMN for type change", () => {
+		const sql = generateAlterColumnType(
+			"users",
+			{
+				name: "name",
+				dataType: "varchar",
+				typeArgs: [255],
+				nullable: false,
+				primaryKey: false,
+				unique: false,
+			},
+			"mysql",
+		);
+
+		expect(sql).toContain("MODIFY COLUMN");
+		expect(sql).toContain("`name` varchar(255)");
+	});
+});

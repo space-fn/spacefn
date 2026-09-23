@@ -3,3 +3,4 @@
 
 export { db } from "./plugin.js";
 export type { DbPluginOptions } from "./plugin.js";
+export type { Dialect } from "./sql.js";

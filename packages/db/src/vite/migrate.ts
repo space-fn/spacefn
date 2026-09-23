@@ -14,6 +14,7 @@ import {
 	generateAlterColumnType,
 	generateAlterColumnNullability,
 	generateAlterColumnDefault,
+	type Dialect,
 } from "./sql.js";
 
 // --- Snapshot Management ------------------------------------------------------
@@ -99,30 +100,30 @@ function generateMigrationFile(name: string, upSql: string[], downSql: string[])
 }
 
 /** Generate SQL statements from schema changes */
-function changesToSql(changes: SchemaChange[]): { up: string[]; down: string[] } {
+function changesToSql(changes: SchemaChange[], dialect: Dialect): { up: string[]; down: string[] } {
 	const up: string[] = [];
 	const down: string[] = [];
 
 	for (const change of changes) {
 		switch (change.type) {
 			case "table_added":
-				up.push(generateCreateTable(change.table, change.definition.columns));
-				down.push(generateDropTable(change.table));
+				up.push(generateCreateTable(change.table, change.definition.columns, dialect));
+				down.push(generateDropTable(change.table, dialect));
 				break;
 
 			case "table_dropped":
 				// We can't reverse a DROP without knowing the schema
 				// The user should have the snapshot if they need to rollback
-				up.push(generateDropTable(change.table));
+				up.push(generateDropTable(change.table, dialect));
 				break;
 
 			case "column_added":
-				up.push(generateAddColumn(change.table, change.column));
-				down.push(generateDropColumn(change.table, change.column.name));
+				up.push(generateAddColumn(change.table, change.column, dialect));
+				down.push(generateDropColumn(change.table, change.column.name, dialect));
 				break;
 
 			case "column_dropped":
-				up.push(generateDropColumn(change.table, change.column));
+				up.push(generateDropColumn(change.table, change.column, dialect));
 				// Can't reverse DROP without knowing the full column definition
 				break;
 
@@ -134,20 +135,20 @@ function changesToSql(changes: SchemaChange[]): { up: string[]; down: string[] }
 					before.dataType !== after.dataType ||
 					JSON.stringify(before.typeArgs) !== JSON.stringify(after.typeArgs)
 				) {
-					up.push(generateAlterColumnType(change.table, after));
-					down.push(generateAlterColumnType(change.table, before));
+					up.push(generateAlterColumnType(change.table, after, dialect));
+					down.push(generateAlterColumnType(change.table, before, dialect));
 				}
 
 				// Nullability changed
 				if (before.nullable !== after.nullable) {
-					up.push(generateAlterColumnNullability(change.table, after));
-					down.push(generateAlterColumnNullability(change.table, before));
+					up.push(generateAlterColumnNullability(change.table, after, dialect));
+					down.push(generateAlterColumnNullability(change.table, before, dialect));
 				}
 
 				// Default changed
 				if (before.default !== after.default) {
-					up.push(generateAlterColumnDefault(change.table, after));
-					down.push(generateAlterColumnDefault(change.table, before));
+					up.push(generateAlterColumnDefault(change.table, after, dialect));
+					down.push(generateAlterColumnDefault(change.table, before, dialect));
 				}
 				break;
 			}
@@ -164,6 +165,7 @@ export async function processMigration(
 	root: string,
 	dbName: string,
 	currentSchema: DatabaseSchema,
+	dialect: Dialect = "postgres",
 ): Promise<{ generated: string | null }> {
 	const previous = await loadSnapshot(root, dbName);
 	const changes = diffSchemas(previous, currentSchema);
@@ -173,7 +175,7 @@ export async function processMigration(
 	}
 
 	// Generate SQL
-	const { up, down } = changesToSql(changes);
+	const { up, down } = changesToSql(changes, dialect);
 	if (up.length === 0) return { generated: null };
 
 	// Generate migration file

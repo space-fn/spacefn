@@ -10,15 +10,23 @@ import type { TableDefinition, DatabaseSchema } from "../types.js";
 import { generateTypesCode, generateMigrationIndex } from "./generator.js";
 import { processMigration } from "./migrate.js";
 import { scanDatabases } from "./scanner.js";
+import type { Dialect } from "./sql.js";
 
 /** Plugin options */
 export interface DbPluginOptions {
 	/** Working directory (default: process.cwd()) */
 	root?: string;
+	/** SQL dialect (default: "postgres") */
+	dialect?: Dialect;
 }
 
 /** Create a generator for a database schema + migration */
-function createDbGenerator(root: string, dbName: string, schemaFile: string): Generator {
+function createDbGenerator(
+	root: string,
+	dbName: string,
+	schemaFile: string,
+	dialect: Dialect,
+): Generator {
 	return {
 		watch: `src/db/${dbName}/schema.ts`,
 		output: `src/db/${dbName}/types.ts`,
@@ -40,7 +48,7 @@ function createDbGenerator(root: string, dbName: string, schemaFile: string): Ge
 
 			// Generate migration if schema changed
 			if (Object.keys(schema).length > 0) {
-				const result = await processMigration(root, dbName, schema);
+				const result = await processMigration(root, dbName, schema, dialect);
 				if (result.generated) {
 					console.log(`[db] Generated migration: ${result.generated}`);
 				}
@@ -69,10 +77,11 @@ function createMigrationGenerator(dbName: string): Generator {
 /** Plugin factory — uses @spacefn/vite-plugin */
 export async function db(options: DbPluginOptions = {}): Promise<Plugin> {
 	const root = options.root ?? process.cwd();
+	const dialect = options.dialect ?? "postgres";
 	const databases = await scanDatabases(root);
 
 	const generators = databases.flatMap((d) => [
-		createDbGenerator(root, d.name, d.schemaFile),
+		createDbGenerator(root, d.name, d.schemaFile, dialect),
 		createMigrationGenerator(d.name),
 	]);
 
