@@ -15,13 +15,5 @@
 	"devDependencies": {
 		"oxfmt": "^0.68.0",
 		"oxlint": "^1.83.0"
-	},
-	"devEngines": {
-		"packageManager": {
-			"name": "pnpm",
-			"version": "12.4.2",
-			"onFail": "download"
-		}
-	},
-	"packageManager": "pnpm@12.4.2"
+	}
 }
