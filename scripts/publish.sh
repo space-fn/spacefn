@@ -6,8 +6,8 @@ set -e
 
 for dir in packages/*/; do
   if [ -f "$dir/package.json" ]; then
-    name=$(node -p "require('./package.json').name" --prefix "$dir")
-    version=$(node -p "require('./package.json').version" --prefix "$dir")
+    name=$(cd "$dir" && node -p "require('./package.json').name")
+    version=$(cd "$dir" && node -p "require('./package.json').version")
 
     # Check if this version already exists on npm
     if npm view "$name@$version" version 2>/dev/null; then
