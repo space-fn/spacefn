@@ -35,7 +35,7 @@ function createDbGenerator(dbName: string, schemaFile: string): Generator {
 			}
 
 			if (Object.keys(tables).length === 0) return "";
-			return generateTypesCode(dbName, tables);
+			return generateTypesCode(tables);
 		},
 	};
 }
