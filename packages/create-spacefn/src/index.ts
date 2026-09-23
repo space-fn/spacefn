@@ -154,7 +154,7 @@ const main = defineCommand({
 			install(
 				targetDir,
 				pm as PackageManager,
-				["@spacefn/html", "@spacefn/server", "@spacefn/datastar"],
+				["@spacefn/html", "@spacefn/server", "@spacefn/datastar", "@spacefn/css", "@spacefn/db"],
 				["wrangler", "oxlint", "oxfmt", "vite", "vitest"],
 			);
 			s2.stop("Dependencies installed");
