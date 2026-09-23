@@ -4,7 +4,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, relative } from "node:path";
 
-import { glob } from "fast-glob";
+import fg from "fast-glob";
 
 import type { Generator, ResolvedOptions } from "./types.js";
 
@@ -13,7 +13,7 @@ import type { Generator, ResolvedOptions } from "./types.js";
 /** Resolve glob patterns to absolute file paths */
 export async function resolveGlobs(root: string, patterns: string | string[]): Promise<string[]> {
 	const globs = Array.isArray(patterns) ? patterns : [patterns];
-	return glob(globs, {
+	return fg(globs, {
 		cwd: root,
 		absolute: true,
 		onlyFiles: true,
