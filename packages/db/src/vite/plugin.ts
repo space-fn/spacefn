@@ -6,8 +6,9 @@ import { space as baseSpace } from "@spacefn/vite-plugin";
 import type { Generator } from "@spacefn/vite-plugin";
 import type { Plugin } from "vite";
 
-import type { TableDefinition } from "../types.js";
+import type { TableDefinition, DatabaseSchema } from "../types.js";
 import { generateTypesCode, generateMigrationIndex } from "./generator.js";
+import { processMigration } from "./migrate.js";
 import { scanDatabases } from "./scanner.js";
 
 /** Plugin options */
@@ -16,8 +17,8 @@ export interface DbPluginOptions {
 	root?: string;
 }
 
-/** Create a generator for a database schema */
-function createDbGenerator(dbName: string, schemaFile: string): Generator {
+/** Create a generator for a database schema + migration */
+function createDbGenerator(root: string, dbName: string, schemaFile: string): Generator {
 	return {
 		watch: `src/db/${dbName}/schema.ts`,
 		output: `src/db/${dbName}/types.ts`,
@@ -26,11 +27,22 @@ function createDbGenerator(dbName: string, schemaFile: string): Generator {
 			// Justified: module path is runtime-selected based on which db folder we're scanning
 			const schemaModule = await import(/* @vite-ignore */ `file://${schemaFile}`);
 			const tables: Record<string, TableDefinition> = {};
+			const schema: DatabaseSchema = {};
 
 			// Extract table definitions from exports
 			for (const [key, value] of Object.entries(schemaModule)) {
 				if (typeof value === "object" && value !== null && "name" in value && "columns" in value) {
-					tables[key] = value as TableDefinition;
+					const table = value as TableDefinition;
+					tables[key] = table;
+					schema[key] = table;
+				}
+			}
+
+			// Generate migration if schema changed
+			if (Object.keys(schema).length > 0) {
+				const result = await processMigration(root, dbName, schema);
+				if (result.generated) {
+					console.log(`[db] Generated migration: ${result.generated}`);
 				}
 			}
 
@@ -60,7 +72,7 @@ export async function db(options: DbPluginOptions = {}): Promise<Plugin> {
 	const databases = await scanDatabases(root);
 
 	const generators = databases.flatMap((d) => [
-		createDbGenerator(d.name, d.schemaFile),
+		createDbGenerator(root, d.name, d.schemaFile),
 		createMigrationGenerator(d.name),
 	]);
 
