@@ -5,7 +5,7 @@ Server-side HTML generation. Build HTML elements as TypeScript functions. Type-s
 ## Core API
 
 ```ts
-import { h, render, raw, defineComponent, renderComponent } from "@spacefn/html";
+import { h, renderElement, raw, defineComponent, renderComponent } from "@spacefn/html";
 ```
 
 ### `h.<tag>(attrs, ...children)`
@@ -19,12 +19,12 @@ h.img({ src: "/logo.png", alt: "Logo" }); // a11y: alt required
 h.button(null, "Click");
 ```
 
-### `render(element)`
+### `renderElement(element)`
 
 Render an `HtmlElement` to an HTML string.
 
 ```ts
-const html = render(h.h1({}, "Hello"));
+const html = renderElement(h.h1({}, "Hello"));
 // "<h1>Hello</h1>"
 ```
 
@@ -82,7 +82,7 @@ Slots are optional. If a slot is not provided, it defaults to an empty object.
 
 ### `renderComponent(element)`
 
-Render a component's output to an HTML string. Convenience wrapper for `render()`.
+Render a component's output to an HTML string. Convenience wrapper for `renderElement()`.
 
 ```ts
 const html = renderComponent(card({ title: "My Card" }));
@@ -105,7 +105,7 @@ type AttrValue = string | number | boolean | null | undefined;
 ## Full Example
 
 ```ts
-import { h, render, defineComponent, renderComponent } from "@spacefn/html";
+import { h, renderElement, defineComponent, renderComponent } from "@spacefn/html";
 
 type PageProps = { title: string; content: string };
 type PageSlots = { sidebar: HtmlElement };

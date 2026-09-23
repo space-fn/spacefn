@@ -11,11 +11,11 @@ pnpm add @spacefn/html
 ## Quick Start
 
 ```ts
-import { h, render } from "@spacefn/html";
+import { h, renderElement } from "@spacefn/html";
 
 const page = h.div({ class: "container" }, h.h1({}, "Hello"), h.p({}, "World"));
 
-console.log(render(page));
+console.log(renderElement(page));
 // <div class="container"><h1>Hello</h1><p>World</p></div>
 ```
 
@@ -32,12 +32,12 @@ h.img({ src: "/logo.png", alt: "Logo" }); // a11y: alt required
 h.button(null, "Click");
 ```
 
-### `render(element)`
+### `renderElement(element)`
 
 Render an `HtmlElement` to an HTML string.
 
 ```ts
-const html = render(h.h1({}, "Hello"));
+const html = renderElement(h.h1({}, "Hello"));
 // "<h1>Hello</h1>"
 ```
 
@@ -96,7 +96,7 @@ Slots are optional. Unprovided slots default to empty.
 
 ### `renderComponent(element)`
 
-Render a component's output to an HTML string. Convenience wrapper for `render()`.
+Render a component's output to an HTML string. Convenience wrapper for `renderElement()`.
 
 ```ts
 const html = renderComponent(card({ title: "My Card" }));
@@ -134,6 +134,6 @@ h.div(
 Self-closing tags (`<br>`, `<img>`, `<input>`, etc.) render without closing tags.
 
 ```ts
-render(h.br()); // "<br>"
-render(h.input({ type: "text" })); // "<input type="text">"
+renderElement(h.br()); // "<br>"
+renderElement(h.input({ type: "text" })); // "<input type="text">"
 ```

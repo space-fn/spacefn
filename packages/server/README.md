@@ -76,6 +76,75 @@ interface Route {
 }
 ```
 
+## Pages
+
+Pages combine data loading, form actions, and rendering in a single file.
+
+### `defineLoader(fn)`
+
+Define a page loader. Returns data for the page component.
+
+```ts
+// src/pages/index.server.ts
+import { defineLoader } from "@spacefn/server";
+
+export const loader = defineLoader(async (req) => {
+	return { title: "Hello", count: 0 };
+});
+```
+
+### `defineActions(config)`
+
+Define form actions. Dispatched via `?_action=<name>` query parameter.
+
+```ts
+// src/pages/index.server.ts
+import { defineActions } from "@spacefn/server";
+import { z } from "zod";
+
+export const actions = defineActions({
+	increment: {
+		input: z.object({ amount: z.number().min(1) }),
+		resolver: async (payload) => {
+			// Handle form submission
+			return { success: true, newCount: payload.amount };
+		},
+	},
+	reset: {
+		resolver: async () => {
+			return { success: true, count: 0 };
+		},
+	},
+});
+```
+
+### Action Config
+
+```ts
+interface ActionConfig {
+	type?: "form" | "multipart-form"; // encoding (default: "form")
+	method?: "post"; // HTTP method (default: "post")
+	input?: {
+		// Zod-compatible validation
+		parse?: (data: unknown) => T;
+		safeParse?: (data: unknown) => { success: boolean; data: T };
+	};
+	resolver: (payload: T) => Response | object; // handler
+}
+```
+
+### Page Routes
+
+Pages are auto-scanned by the Vite plugin and added to `ServerOptions.pages`:
+
+```ts
+createServer({
+  routes: [...],
+  pages: [...],  // Auto-generated from src/pages/*.server.ts
+  middlewares: [...]
+})
+```
+
 ### `Middleware`
 
 ```ts

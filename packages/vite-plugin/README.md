@@ -61,13 +61,13 @@ interface Generator {
 
 **Build time**: Runs all generators once. Writes output files.
 
-**Development**: Watches generator source globs. On change:
+**Development**: Watches generator source globs (`.ts` and `.tsx` files only). On change:
 
 1. Regenerates affected outputs
 2. Invalidates Vite SSR modules
 3. Sends full-reload to client
 
-**Config**: Adds `.space` resolve alias for generated files.
+**Note**: The watcher only triggers on `.ts` and `.tsx` file changes. Generators watching other file types (e.g., `.css`, `.json`) will only run at build time.
 
 ## Examples
 

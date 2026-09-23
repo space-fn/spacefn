@@ -128,7 +128,7 @@ sse.toResponse()                     // Get Response object
 
 ```ts
 sse.patchElements(html, {
-  merge?: "morph" | "replace" | "append" | "prepend"
+  merge?: "morph" | "replace" | "inner" | "outer"
   select?: string
   settleDuration?: number
   useViewTransition?: boolean

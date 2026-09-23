@@ -101,15 +101,87 @@ const output = getCSS({
 // :root { --colors-primary-500: #3b82f6; }
 ```
 
-### `transitionAll()`, `transitionColors()`, etc.
+### `transition()`
 
-Generate CSS transition values.
+Generate a custom CSS transition value.
 
 ```ts
-import { transitionAll, transitionColors } from "@spacefn/css";
+import { transition } from "@spacefn/css";
+
+transition("opacity", "150ms"); // "opacity 150ms ease"
+```
+
+### `transitionAll()`, `transitionColors()`, etc.
+
+Pre-built transition helpers.
+
+```ts
+import {
+	transitionAll,
+	transitionColors,
+	transitionTransform,
+	transitionOpacity,
+} from "@spacefn/css";
 
 transitionAll("150ms"); // "all 150ms ease"
 transitionColors("200ms"); // "color 200ms ease, background-color 200ms ease, border-color 200ms ease"
+transitionTransform("150ms"); // "transform 150ms ease"
+transitionOpacity("100ms"); // "opacity 100ms ease"
+```
+
+### Easing constants
+
+```ts
+import {
+	easeLinear,
+	easeIn,
+	easeOut,
+	easeInOut,
+	easeStandard,
+	easeDecelerate,
+	easeAccelerate,
+} from "@spacefn/css";
+
+easeLinear; // "linear"
+easeIn; // "cubic-bezier(0.4, 0, 1, 1)"
+easeOut; // "cubic-bezier(0, 0, 0.2, 1)"
+easeInOut; // "cubic-bezier(0.4, 0, 0.2, 1)"
+easeStandard; // "cubic-bezier(0.4, 0, 0.2, 1)"
+easeDecelerate; // "cubic-bezier(0, 0, 0.2, 1)"
+easeAccelerate; // "cubic-bezier(0.4, 0, 1, 1)"
+```
+
+### `animation()`, `animationInfinite()`
+
+Generate CSS animation values.
+
+```ts
+import { animation, animationInfinite } from "@spacefn/css";
+
+animation("fade-in", "300ms"); // "fade-in 300ms ease"
+animationInfinite("spin", "1s"); // "spin 1s ease infinite"
+```
+
+### `duration`
+
+Predefined duration tokens.
+
+```ts
+import { duration } from "@spacefn/css";
+
+duration.fast; // "150ms"
+duration.normal; // "300ms"
+duration.slow; // "500ms"
+```
+
+### `drainStyles()`
+
+Reset the internal style registry. Useful for testing or server-side rendering where you need a clean state between requests.
+
+```ts
+import { drainStyles } from "@spacefn/css";
+
+drainStyles(); // clears all registered styles
 ```
 
 ## Usage with @spacefn/html
