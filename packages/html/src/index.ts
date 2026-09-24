@@ -449,4 +449,4 @@ export const h = {
 	raw,
 };
 
-export { defineComponent, renderComponent };
+export { defineComponent, renderComponent, renderComponent as render };
