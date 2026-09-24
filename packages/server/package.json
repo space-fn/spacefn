@@ -29,7 +29,7 @@
 		"build:app": "node bin/spacefn.js build"
 	},
 	"dependencies": {
-		"@spacefn/vite-plugin": "workspace:*",
+		"@spacefn/vite-plugin": "^0.1.0",
 		"h3": "^1.15.0",
 		"miniflare": "^3.0.0",
 		"pathe": "^2.0.0"
