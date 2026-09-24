@@ -1,7 +1,7 @@
 // --- Route, Middleware & Page Scanner ------------------------------------------
 // Scans src/routes/, src/middlewares/ and src/pages/ for convention-based files
 
-import { readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join, relative, basename } from "node:path";
 
 import type { ScannedRoute, ScannedMiddleware, ScannedPage } from "./types.js";
@@ -19,32 +19,32 @@ import type { ScannedRoute, ScannedMiddleware, ScannedPage } from "./types.js";
  *   categories/[id].ts → /categories/:id
  */
 function fileToPattern(filePath: string): string {
- const parts = filePath
-  .replace(/\.get\.ts$/, "")
-  .replace(/\.post\.ts$/, "")
-  .replace(/\.put\.ts$/, "")
-  .replace(/\.delete\.ts$/, "")
-  .replace(/\.patch\.ts$/, "")
-  .replace(/\.ts$/, "")
-  .split("/")
-  .filter(Boolean);
+	const parts = filePath
+		.replace(/\.get\.ts$/, "")
+		.replace(/\.post\.ts$/, "")
+		.replace(/\.put\.ts$/, "")
+		.replace(/\.delete\.ts$/, "")
+		.replace(/\.patch\.ts$/, "")
+		.replace(/\.ts$/, "")
+		.split("/")
+		.filter(Boolean);
 
- const mapped = parts
-  .map((part) => {
-   // Dynamic segment: [slug] → :slug
-   if (part.startsWith("[") && part.endsWith("]")) {
-    return `:${part.slice(1, -1)}`;
-   }
-   // Catch-all: [...slug] → *slug
-   if (part.startsWith("[...") && part.endsWith("]")) {
-    return `*${part.slice(4, -1)}`;
-   }
-   return part;
-  })
-  .filter((part) => part !== "index");
+	const mapped = parts
+		.map((part) => {
+			// Catch-all: [...slug] → *slug
+			if (part.startsWith("[...") && part.endsWith("]")) {
+				return `*${part.slice(4, -1)}`;
+			}
+			// Dynamic segment: [slug] → :slug
+			if (part.startsWith("[") && part.endsWith("]")) {
+				return `:${part.slice(1, -1)}`;
+			}
+			return part;
+		})
+		.filter((part) => part !== "index");
 
- if (mapped.length === 0) return "/";
- return "/" + mapped.join("/");
+	if (mapped.length === 0) return "/";
+	return "/" + mapped.join("/");
 }
 
 /**
@@ -54,47 +54,47 @@ function fileToPattern(filePath: string): string {
  *   index.post.ts → "POST"
  */
 function fileToMethod(filePath: string): string {
- const name = basename(filePath);
- const match = name.match(/\.(get|post|put|delete|patch)\.ts$/);
- if (!match) return "*";
- return match[1].toUpperCase();
+	const name = basename(filePath);
+	const match = name.match(/\.(get|post|put|delete|patch)\.ts$/);
+	if (!match) return "*";
+	return match[1].toUpperCase();
 }
 
 /** Recursively scan a directory for .ts files */
 async function scanDir(dir: string): Promise<string[]> {
- const entries: string[] = [];
+	const entries: string[] = [];
 
- try {
-  const items = await readdir(dir, { withFileTypes: true });
-  for (const item of items) {
-   const fullPath = join(dir, item.name);
-   if (item.isDirectory()) {
-    entries.push(...(await scanDir(fullPath)));
-   } else if (item.name.endsWith(".ts") && !item.name.endsWith(".d.ts")) {
-    entries.push(fullPath);
-   }
-  }
- } catch {
-  // Directory doesn't exist
- }
+	try {
+		const items = await readdir(dir, { withFileTypes: true });
+		for (const item of items) {
+			const fullPath = join(dir, item.name);
+			if (item.isDirectory()) {
+				entries.push(...(await scanDir(fullPath)));
+			} else if (item.name.endsWith(".ts") && !item.name.endsWith(".d.ts")) {
+				entries.push(fullPath);
+			}
+		}
+	} catch {
+		// Directory doesn't exist
+	}
 
- return entries;
+	return entries;
 }
 
 /** Scan src/routes/ for route files */
 export async function scanRoutes(root: string): Promise<ScannedRoute[]> {
- const routesDir = join(root, "src", "routes");
- const files = await scanDir(routesDir);
+	const routesDir = join(root, "src", "routes");
+	const files = await scanDir(routesDir);
 
- return files.map((file) => {
-  const rel = relative(routesDir, file).replace(/\.ts$/, "");
-  return {
-   path: rel,
-   file,
-   pattern: fileToPattern(rel),
-   method: fileToMethod(file),
-  };
- });
+	return files.map((file) => {
+		const sourcePath = relative(routesDir, file);
+		return {
+			path: sourcePath.replace(/\.ts$/, ""),
+			file,
+			pattern: fileToPattern(sourcePath),
+			method: fileToMethod(file),
+		};
+	});
 }
 
 // --- Middleware Scanner -------------------------------------------------------
@@ -105,31 +105,31 @@ export async function scanRoutes(root: string): Promise<ScannedRoute[]> {
  *   cors.ts → Infinity (no prefix = last)
  */
 function fileToOrder(filePath: string): number {
- const name = basename(filePath);
- const match = name.match(/^(\d+)\./);
- if (!match) return Infinity;
- return Number.parseInt(match[1], 10);
+	const name = basename(filePath);
+	const match = name.match(/^(\d+)\./);
+	if (!match) return Infinity;
+	return Number.parseInt(match[1], 10);
 }
 
 /** Scan src/middlewares/ for middleware files */
 export async function scanMiddlewares(root: string): Promise<ScannedMiddleware[]> {
- const mwDir = join(root, "src", "middlewares");
- const files = await scanDir(mwDir);
+	const mwDir = join(root, "src", "middlewares");
+	const files = await scanDir(mwDir);
 
- const middlewares = files.map((file) => {
-  const name = basename(file)
-   .replace(/\.\d+\./, ".")
-   .replace(/\.ts$/, "");
-  return {
-   path: relative(mwDir, file),
-   file,
-   order: fileToOrder(file),
-   name,
-  };
- });
+	const middlewares = files.map((file) => {
+		const name = basename(file)
+			.replace(/\.\d+\./, ".")
+			.replace(/\.ts$/, "");
+		return {
+			path: relative(mwDir, file),
+			file,
+			order: fileToOrder(file),
+			name,
+		};
+	});
 
- // Sort by order
- return middlewares.sort((a, b) => a.order - b.order);
+	// Sort by order
+	return middlewares.sort((a, b) => a.order - b.order);
 }
 
 // --- Page Scanner -------------------------------------------------------------
@@ -144,38 +144,40 @@ export async function scanMiddlewares(root: string): Promise<ScannedMiddleware[]
  *   books/[slug].page.ts              → /books/:slug
  */
 export async function scanPages(root: string): Promise<ScannedPage[]> {
- const pagesDir = join(root, "src", "pages");
- const files = await scanDir(pagesDir);
+	const pagesDir = join(root, "src", "pages");
+	const files = await scanDir(pagesDir);
 
- // Group files by base path (without .page.ts / .server.ts suffix)
- const pageFiles = new Map<string, string>(); // basePath → absolute path
- const serverFiles = new Map<string, string>();
+	// Group files by base path (without .page.ts / .server.ts suffix)
+	const pageFiles = new Map<string, string>(); // basePath → absolute path
+	const serverFiles = new Map<string, string>();
 
- for (const file of files) {
-  const rel = relative(pagesDir, file);
-  if (rel.endsWith(".page.ts")) {
-   const basePath = rel.replace(/\.page\.ts$/, "");
-   pageFiles.set(basePath, file);
-  } else if (rel.endsWith(".server.ts")) {
-   const basePath = rel.replace(/\.server\.ts$/, "");
-   serverFiles.set(basePath, file);
-  }
- }
+	for (const file of files) {
+		const rel = relative(pagesDir, file);
+		if (rel.endsWith(".page.ts")) {
+			const basePath = rel.replace(/\.page\.ts$/, "");
+			pageFiles.set(basePath, file);
+		} else if (rel.endsWith(".server.ts")) {
+			const basePath = rel.replace(/\.server\.ts$/, "");
+			serverFiles.set(basePath, file);
+		}
+	}
 
- // Merge all unique base paths
- const allPaths = new Set([...pageFiles.keys(), ...serverFiles.keys()]);
+	// Merge all unique base paths
+	const allPaths = new Set([...pageFiles.keys(), ...serverFiles.keys()]);
 
- const pages: ScannedPage[] = [];
- for (const basePath of allPaths) {
-  pages.push({
-   path: basePath,
-   pattern: fileToPattern(basePath),
-   pageFile: pageFiles.get(basePath) ?? null,
-   serverFile: serverFiles.get(basePath) ?? null,
-   hasLoader: false, // Will be determined during code generation
-   hasActions: false,
-  });
- }
+	const pages: ScannedPage[] = [];
+	for (const basePath of allPaths) {
+		const serverFile = serverFiles.get(basePath) ?? null;
+		const source = serverFile ? await readFile(serverFile, "utf8") : "";
+		pages.push({
+			path: basePath,
+			pattern: fileToPattern(basePath),
+			pageFile: pageFiles.get(basePath) ?? null,
+			serverFile,
+			hasLoader: /\bexport\s+(?:async\s+)?(?:function|const|let|var)\s+loader\b/.test(source),
+			hasActions: /\bexport\s+(?:const|let|var)\s+actions\b/.test(source),
+		});
+	}
 
- return pages;
+	return pages;
 }

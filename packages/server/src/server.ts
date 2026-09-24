@@ -122,27 +122,32 @@ export function createServer(options: ServerOptions) {
 		},
 	});
 
-	// --- Register middlewares (use for every request) -------------------------
-	for (const mw of middlewares) {
-		app.use(
-			eventHandler(async (event) => {
-				const request = toWebRequest(event);
-				const next = async () => {
-					return new Response("", { status: 200 });
-				};
-				const response = await mw.handler(request, next);
-				if (response && response.status !== 200) {
-					return response;
-				}
-			}),
-		);
-	}
-
 	// --- Mount router ---------------------------------------------------------
 	app.use(router.handler as ReturnType<typeof eventHandler>);
 
-	// --- Return Web API handler for Cloudflare Workers ------------------------
-	return toWebHandler(app);
+	// --- Compose middlewares around the router -------------------------------
+	const handler = toWebHandler(app);
+	return async (request: Request): Promise<Response> => {
+		let index = -1;
+
+		const dispatch = async (position: number): Promise<Response> => {
+			if (position <= index) {
+				throw new Error("Middleware called next() multiple times");
+			}
+			index = position;
+
+			const middleware = middlewares[position];
+			if (!middleware) return handler(request);
+
+			return middleware.handler(request, () => dispatch(position + 1));
+		};
+
+		try {
+			return await dispatch(0);
+		} catch (error) {
+			return onError(error, request);
+		}
+	};
 }
 
 export type {

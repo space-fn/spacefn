@@ -104,8 +104,9 @@ describe("createServer", () => {
 			],
 		});
 
-		await handler(new Request("http://localhost/"));
-		expect(order).toContain("middleware");
+		const response = await handler(new Request("http://localhost/"));
+		expect(response.status).toBe(200);
+		expect(order).toEqual(["middleware", "handler"]);
 	});
 
 	it("catches errors from handlers", async () => {
