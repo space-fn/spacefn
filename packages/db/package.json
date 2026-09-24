@@ -20,7 +20,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@spacefn/vite-plugin": "^0.1.0"
+		"@spacefn/vite-plugin": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",

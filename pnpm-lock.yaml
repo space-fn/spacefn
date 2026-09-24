@@ -235,8 +235,8 @@ importers:
   packages/db:
     dependencies:
       '@spacefn/vite-plugin':
-        specifier: ^0.1.0
-        version: 0.1.0(vite@6.4.3(@types/node@22.20.3))
+        specifier: workspace:*
+        version: link:../vite-plugin
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
@@ -275,8 +275,8 @@ importers:
   packages/server:
     dependencies:
       '@spacefn/vite-plugin':
-        specifier: ^0.1.0
-        version: 0.1.0(vite@6.4.3(@types/node@22.20.3))
+        specifier: workspace:*
+        version: link:../vite-plugin
       h3:
         specifier: ^1.15.0
         version: 1.15.11
@@ -1292,11 +1292,6 @@ packages:
 
   '@spacefn/html@0.1.0':
     resolution: {integrity: sha512-uao2Zjh9O5mJik8EynbyFUMh9HAJYmXICLlsQKjb8W4hxktZEzTBic52oHjUch6r5GxjgjaFILFib08DLyczvQ==}
-
-  '@spacefn/vite-plugin@0.1.0':
-    resolution: {integrity: sha512-N7dhxb7dxCzQcF9L3AmcsNNY6/8vrSIenRhTNqDJfsiRAvnRngsrAzQfYdTOzk0f3/x/rq1VxXLAaEGzlfFtUw==}
-    peerDependencies:
-      vite: '>=5.0.0'
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -2463,12 +2458,6 @@ snapshots:
     optional: true
 
   '@spacefn/html@0.1.0': {}
-
-  '@spacefn/vite-plugin@0.1.0(vite@6.4.3(@types/node@22.20.3))':
-    dependencies:
-      fast-glob: 3.3.3
-      pathe: 2.0.3
-      vite: 6.4.3(@types/node@22.20.3)
 
   '@types/chai@5.2.3':
     dependencies:
