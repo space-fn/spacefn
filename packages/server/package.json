@@ -1,6 +1,6 @@
 {
 	"name": "@spacefn/server",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"bin": {
 		"spacefn": "./bin/spacefn.js"
 	},
