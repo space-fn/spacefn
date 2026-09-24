@@ -5,55 +5,23 @@ Scaffold a new SpaceFn project.
 ## Usage
 
 ```bash
-npm create spacefn
+npm create spacefn@latest
+# or: pnpm create spacefn@latest
 ```
 
-## What It Does
-
-Interactive CLI that:
-
-1. Prompts for project name
-2. Selects package manager (npm, pnpm, yarn, bun)
-3. Chooses a template
-4. Copies the template with project name substitution
-5. Optionally installs dependencies
+The interactive CLI asks for the project directory, package manager (`npm`, `pnpm`, `yarn`, or `bun`), and template. It copies the selected template, substitutes the project name, and optionally installs dependencies.
 
 ## Templates
 
-| Template  | Description                                            |
-| --------- | ------------------------------------------------------ |
-| `minimal` | Basic setup with routes, pages, and Cloudflare Workers |
+| Template  | Contents                                                                                                                      |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `minimal` | Vite server, file-based routes/pages/middleware, HTML, DataStar, TypeScript, formatting/linting, and Cloudflare configuration |
 
-## What's Included
-
-The minimal template sets up:
-
-- `@spacefn/server` — Meta framework
-- `@spacefn/html` — Server-side HTML
-- `@spacefn/datastar` — Client-side reactivity
-- Vite + Cloudflare Workers
-- TypeScript + oxlint + oxfmt
-
-## After Scaffolding
+## After scaffolding
 
 ```bash
 cd my-project
 pnpm dev
 ```
 
-Open `http://localhost:5173` to see your app.
-
-## Project Structure
-
-```
-my-project/
-  src/
-    routes/
-      index.ts        # Home page
-    middlewares/       # (empty, add your own)
-    pages/            # (empty, add your own)
-    main.ts           # Entry point
-  vite.config.ts
-  wrangler.toml
-  package.json
-```
+Open `http://localhost:5173`. Generated route/page/middleware modules live in `.space/` and should not be edited. See the [getting started guide](../../docs/getting-started.md).

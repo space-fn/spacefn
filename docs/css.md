@@ -1,152 +1,80 @@
 # @spacefn/css
 
-Server-side CSS generation. Design tokens as TypeScript objects. Class-based styling with variants.
+Functional server-rendered CSS with deterministic class names, nested selectors, design tokens, variants, and transition helpers.
 
-## Core API
+## Install
 
-```ts
-import { tokens, css, getCSS } from "@spacefn/css";
+```bash
+pnpm add @spacefn/css
 ```
 
-### `tokens(map)`
-
-Create design tokens. Returns a proxy that generates CSS variable references.
+## Tokens
 
 ```ts
-const tkn = tokens({
+import { sx } from "@spacefn/css";
+
+export const tokens = sx.tokens((t) => ({
 	colors: {
-		primary: { 500: "#3b82f6" },
+		gray: { 50: "#f8fafc", 900: "#0f172a" },
+		primary: t.colors.blue[600],
 	},
-	spacing: {
-		md: "1rem",
+	spacing: { sm: "0.5rem", md: "1rem" },
+}));
+```
+
+Token leaves become `var(--token-path)` references in generated CSS. `sx.hex()` and `sx.rgba()` create token placeholders for later values.
+
+## Styles
+
+```ts
+import { sx } from "@spacefn/css";
+
+export const card = sx.css.id("card").style(() => ({
+	base: {
+		background: "white",
+		padding: "var(--spacing-md)",
+		":hover": { boxShadow: "0 2px 8px #0002" },
 	},
+}));
+```
+
+The `base` key is emitted as the class returned by `card.base`. Other keys become additional generated classes. Nested selectors use `&` to reference the generated class.
+
+## Variants and CSS output
+
+```ts
+import { getCSS } from "@spacefn/css";
+
+export const button = sx.css
+	.id("button")
+	.variants({ size: { sm: {}, lg: {} }, tone: { primary: {}, danger: {} } })
+	.defaults({ size: "sm", tone: "primary" })
+	.style((variant) => ({
+		base: { borderRadius: "0.375rem" },
+		label: { fontWeight: variant.tone === "danger" ? "700" : "500" },
+	}));
+
+export const stylesheet = getCSS({
+	tokens,
+	styles: [button],
 });
-
-tkn.colors.primary[500]; // "var(--colors-primary-500)"
-tkn.spacing.md; // "var(--spacing-md)"
-tkn.ref("colors.primary.500"); // "var(--colors-primary-500)" (manual path)
-tkn.toCSS(); // ":root { --colors-primary-500: #3b82f6; --spacing-md: 1rem; }"
 ```
 
-### `css(id, base)`
+Use `button.base` for the default class and the style object's variant helpers for explicit combinations. `getCSS` returns the complete stylesheet and resets the global style registry after draining it.
 
-Create a style definition. Returns a class map.
-
-```ts
-const cardSx = css("card", {
-	base: { padding: "1rem", backgroundColor: "#fff" },
-});
-
-cardSx.base; // "card_base"
-```
-
-### `.variants(config).defaults(config)`
-
-Add variant classes. Variants override base styles.
-
-```ts
-const btnSx = css("button", {
-	base: { padding: "0.5rem" },
-})
-	.variants({
-		color: {
-			primary: { backgroundColor: "#3b82f6" },
-			danger: { backgroundColor: "#ef4444" },
-		},
-		size: {
-			sm: { fontSize: "0.75rem" },
-			lg: { fontSize: "1.25rem" },
-		},
-	})
-	.defaults({ color: "primary", size: "sm" });
-
-btnSx.base; // "button_base"
-btnSx({ color: "danger" }).base; // "button_base button_color_danger"
-btnSx({ size: "lg" }).base; // "button_base button_size_lg"
-```
-
-### `getCSS(input)`
-
-Combine tokens and styles into a CSS string.
-
-```ts
-const output = getCSS({ tokens: [tkn] });
-// ":root { --colors-primary-500: #3b82f6; --spacing-md: 1rem; }"
-```
-
-## Transition Helpers
-
-```ts
-import {
-	transitionAll,
-	transitionColors,
-	transitionTransform,
-	transitionOpacity,
-	easeLinear,
-	easeIn,
-	easeOut,
-	easeInOut,
-	duration,
-	animation,
-} from "@spacefn/css";
-
-transitionAll("150ms"); // "all 150ms ease"
-transitionColors("200ms"); // "color 200ms ease, background-color 200ms ease, ..."
-duration.normal; // "150ms"
-easeInOut; // "cubic-bezier(0.4, 0, 0.2, 1)"
-```
-
-## Usage with @spacefn/html
+## HTML integration
 
 ```ts
 import { h } from "@spacefn/html";
-import { cardSx } from "./styles";
+import { button, stylesheet } from "./styles";
 
-h.div({ class: cardSx.base }, "Card content");
-h.div({ class: cardSx({ color: "danger" }).base }, "Danger card");
-```
-
-## Full Example
-
-```ts
-import { h } from "@spacefn/html";
-import { tokens, css, getCSS } from "@spacefn/css";
-
-// 1. Define tokens
-const tkn = tokens({
-	colors: {
-		gray: { 50: "#f9fafb", 100: "#f3f4f6" },
-		primary: { 500: "#3b82f6" },
-	},
-	spacing: { sm: "0.5rem", md: "1rem", lg: "1.5rem" },
-});
-
-// 2. Define styles
-const cardSx = css("card", {
-	base: { padding: tkn.spacing.md, backgroundColor: "#fff" },
-})
-	.variants({
-		color: {
-			default: { borderColor: tkn.colors.gray[100] },
-			primary: { borderColor: tkn.colors.primary[500] },
-		},
-	})
-	.defaults({ color: "default" });
-
-// 3. Generate CSS
-const cssOutput = getCSS({ tokens: [tkn] });
-
-// 4. Use in HTML
-const page = h.html(
+h.html(
 	{},
-	h.head({}, h.style({}, cssOutput)),
-	h.body(
-		{},
-		h.div(
-			{ class: cardSx({ color: "primary" }).base },
-			h.h2({}, "Card Title"),
-			h.p({}, "Card content"),
-		),
-	),
+	h.head({}, h.style({}, stylesheet)),
+	h.body({}, h.button({ class: button.base }, "Save")),
 );
 ```
+
+## Transitions
+
+`transition` and `transitionAll` generate transition declarations from explicit property/duration/easing options. `drainStyles()` is available when an application needs to consume the registered style rules incrementally.

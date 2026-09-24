@@ -1,69 +1,76 @@
-# Space
+# SpaceFn
 
-Server-side rendering framework for Cloudflare Workers. HTML, CSS, and reactivity as TypeScript functions. No client-side framework. No build-time hydration. Just server-rendered pages with DataStar for interactivity.
+SpaceFn is a TypeScript server-rendering toolkit for Cloudflare Workers and Web API runtimes. It provides functional HTML, server-generated CSS, DataStar attributes/SSE helpers, convention-based Vite code generation, routing, middleware, and database schema generation.
+
+The packages are independent. Use `@spacefn/html` or `@spacefn/css` without adopting the server framework.
 
 ## Packages
 
-| Package                                          | Description                                |
-| ------------------------------------------------ | ------------------------------------------ |
-| [`@spacefn/html`](./packages/html)               | Server-side HTML generation                |
-| [`@spacefn/css`](./packages/css)                 | Server-side CSS with tokens and variants   |
-| [`@spacefn/datastar`](./packages/datastar)       | DataStar client attributes and server SSE  |
-| [`@spacefn/vite-plugin`](./packages/vite-plugin) | File-based code generation for Vite        |
-| [`@spacefn/server`](./packages/server)           | Meta framework with routing and middleware |
+| Package                                          | Purpose                                                              |
+| ------------------------------------------------ | -------------------------------------------------------------------- |
+| [`@spacefn/html`](./packages/html)               | Typed server-side HTML elements, escaping, components, and rendering |
+| [`@spacefn/css`](./packages/css)                 | Design tokens, class generation, variants, and transition helpers    |
+| [`@spacefn/datastar`](./packages/datastar)       | Typed DataStar attributes, HTTP expressions, and server-side SSE     |
+| [`@spacefn/vite-plugin`](./packages/vite-plugin) | Generic Vite file scanning and code generation                       |
+| [`@spacefn/server`](./packages/server)           | File-based routes/pages/middleware and Web API server handler        |
+| [`@spacefn/db`](./packages/db)                   | Schema definitions, SQL diffs, migrations, and generated types       |
+| [`create-spacefn`](./packages/create-spacefn)    | Project scaffolding CLI                                              |
 
-## Quick Start
+## Create an application
 
 ```bash
-# Clone and install
-git clone <repo-url> && cd space
+npm create spacefn@latest
+# or: pnpm create spacefn@latest
+```
+
+Choose a package manager and the `minimal` template. Then:
+
+```bash
+cd my-project
+pnpm dev       # or npm run dev
+curl http://localhost:5173/
+pnpm build     # or npm run build
+```
+
+The template contains `src/main.ts`, file-based routes, optional page loaders/components, a Vite config, and Cloudflare configuration. Generated files are written to `.space/` and should not be committed.
+
+## Local repository development
+
+```bash
 pnpm install
-
-# Run tests
 pnpm -r test
-
-# Build all packages
 pnpm -r build
+pnpm fmt:check
+pnpm lint
+pnpm --filter playground dev
 ```
 
-## Project Structure
+The `playground/` workspace is a local copy of the minimal template. It uses workspace packages so package changes can be smoke-tested without publishing.
 
-```
-space/
-  packages/
-    html/           @spacefn/html
-    css/            @spacefn/css
-    datastar/       @spacefn/datastar
-    vite-plugin/    @spacefn/vite-plugin
-    server/         @spacefn/server
-  configs/
-    oxfmt.ts        Formatter config
-    oxlint.ts       Linter config
-  docs/
-    framework.md    Framework design spec
-    getting-started.md
+## Project conventions
+
+```text
+src/
+  main.ts                 # createServer entry point
+  routes/                 # request handlers
+  pages/                  # *.server.ts loaders/actions + *.page.ts components
+  middlewares/            # ordered request middleware
+.space/                   # generated route/page/middleware modules
 ```
 
-## Development
+Route file names become URL patterns. Numeric middleware prefixes determine order. See the [getting started guide](./docs/getting-started.md), [framework overview](./docs/framework.md), and package documentation for details.
+
+## Development commands
 
 ```bash
-# Format
-pnpm fmt
-
-# Lint
-pnpm lint
-
-# Typecheck a package
-cd packages/<name> && pnpm typecheck
+pnpm fmt              # format repository files
+pnpm fmt:check        # verify formatting
+pnpm lint             # lint repository files
+pnpm -r test          # run package and playground tests
+pnpm -r build         # build packages (exclude playground if needed)
 ```
 
-## Tech Stack
-
-- **Runtime**: [Cloudflare Workers](https://developers.cloudflare.com/workers/)
-- **Server**: [h3](https://h3.dev/)
-- **Reactivity**: [DataStar](https://data-star.dev/)
-- **Build**: [Vite](https://vite.dev/) + [tsup](https://tsup.egoist.dev/)
-- **Tooling**: [oxlint](https://oxc-project.github.io/oxc/oxc_linter/) + [oxfmt](https://oxc-project.github.io/oxc/oxc_formatter/)
+`pnpm -r test` requires at least one test file in every selected workspace. The playground has a smoke test and is included in the workspace.
 
 ## License
 

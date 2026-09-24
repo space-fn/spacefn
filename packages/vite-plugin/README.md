@@ -1,6 +1,6 @@
 # @spacefn/vite-plugin
 
-File-based code generation for Vite. Watch files, generate output, invalidate on change. Generic — no framework assumptions.
+Generic file-based code generation for Vite. It runs generators at build time, watches TypeScript inputs during development, writes only changed output, invalidates SSR modules, and requests a full reload.
 
 ## Install
 
@@ -8,150 +8,46 @@ File-based code generation for Vite. Watch files, generate output, invalidate on
 pnpm add -D @spacefn/vite-plugin vite
 ```
 
-## Quick Start
+## Quick start
 
 ```ts
-// vite.config.ts
+import { defineConfig } from "vite";
 import { space } from "@spacefn/vite-plugin";
 
-export default {
+export default defineConfig({
 	plugins: [
-		space({
+		...space({
 			generators: [
 				{
 					watch: "src/**/*.ts",
-					output: ".space/routes.ts",
+					output: ".space/files.ts",
 					generate(files) {
-						return `export const routes = ${JSON.stringify(files)}`;
+						return `export const files = ${JSON.stringify(files)};`;
 					},
 				},
 			],
 		}),
 	],
-};
+});
 ```
+
+`space()` returns an array containing the generator plugin and its dev-server watcher middleware. Spread it into `plugins` rather than nesting that array.
 
 ## API
 
-### `space(options)`
-
-Vite plugin that runs code generators.
-
-```ts
-space({
-  root?: string,       // Working directory (default: cwd)
-  generators?: Generator[]
-})
-```
-
-### `Generator`
-
 ```ts
 interface Generator {
-	/** Glob pattern(s) to watch */
 	watch: string | string[];
-	/** Output file path (relative to root) */
 	output: string;
-	/** Generate content from matched files */
 	generate(files: string[]): string | Promise<string>;
 }
-```
 
-## What It Does
-
-**Build time**: Runs all generators once. Writes output files.
-
-**Development**: Watches generator source globs (`.ts` and `.tsx` files only). On change:
-
-1. Regenerates affected outputs
-2. Invalidates Vite SSR modules
-3. Sends full-reload to client
-
-**Note**: The watcher only triggers on `.ts` and `.tsx` file changes. Generators watching other file types (e.g., `.css`, `.json`) will only run at build time.
-
-## Examples
-
-### Route Generation
-
-```ts
-{
-  watch: "pages/**/*.page.ts",
-  output: ".space/routes.ts",
-  generate(files) {
-    const imports = files.map((f, i) =>
-      `import Page_${i} from "${f}"`
-    ).join("\n")
-
-    const routes = files.map((f, i) => {
-      const pattern = f.replace(/\.page\.ts$/, "").replace(/\[(\w+)\]/g, ":$1")
-      return `{ pattern: "${pattern}", component: Page_${i} }`
-    }).join(",\n")
-
-    return `${imports}\n\nexport const routes = [\n${routes}\n]`
-  },
+interface SpaceOptions {
+	root?: string;
+	generators?: Generator[];
 }
 ```
 
-### Type Generation
+Generators run once during build. During development, changed `.ts`/`.tsx` inputs regenerate affected outputs, invalidate Vite SSR modules, and trigger a full reload. Non-TypeScript inputs are build-time only with the current watcher.
 
-```ts
-{
-  watch: "src/**/*.server.ts",
-  output: ".space/types.ts",
-  generate(files) {
-    return files.map(f =>
-      `export type { loader } from "${f}"`
-    ).join("\n")
-  },
-}
-```
-
-### Multiple Globs
-
-```ts
-{
-  watch: ["src/**/*.page.ts", "src/**/*.server.ts"],
-  output: ".space/routes.ts",
-  generate(files) {
-    return `export const files = ${JSON.stringify(files.length)}`
-  },
-}
-```
-
-## Deduplication
-
-The plugin skips writing if output content is unchanged. No unnecessary rebuilds.
-
-## Generated Files
-
-Output files go to `.space/` by default. Add `.space` to `.gitignore`:
-
-```
-.space/
-```
-
-## Path Aliasing
-
-The plugin does NOT inject aliases. Use tsconfig paths instead:
-
-```json
-// tsconfig.json
-{
-	"compilerOptions": {
-		"paths": {
-			"#space/*": [".space/*"]
-		}
-	}
-}
-```
-
-```ts
-// vite.config.ts
-import { defineConfig } from "vite";
-
-export default defineConfig({
-	resolve: {
-		tsconfigPaths: true,
-	},
-});
-```
+Outputs are relative to the configured root. Add `.space/` to `.gitignore` when using generated files. The plugin does not inject path aliases; configure aliases in Vite/TypeScript yourself.

@@ -1,128 +1,79 @@
 # @spacefn/html
 
-Server-side HTML generation. Build HTML elements as TypeScript functions. Type-safe attributes with a11y enforcement.
+Functional, escaped, server-side HTML rendering with typed attributes and component helpers.
 
-## Core API
+## Install
 
-```ts
-import { h, renderElement, raw, defineComponent, renderComponent } from "@spacefn/html";
+```bash
+pnpm add @spacefn/html
 ```
 
-### `h.<tag>(attrs, ...children)`
+## Elements
 
-Create an HTML element. Attributes are typed per element.
+Every tag accepts an attribute object (or `null`) followed by children. Children may be strings, numbers, booleans, `null`, `undefined`, or HTML elements. `null`, `undefined`, and booleans render nothing.
 
 ```ts
-h.div({ class: "container" }, "Hello");
-h.a({ href: "/about" }, "About");
-h.img({ src: "/logo.png", alt: "Logo" }); // a11y: alt required
-h.button(null, "Click");
+import { h, render } from "@spacefn/html";
+
+const element = h.div(
+	{ class: "card", id: "welcome" },
+	h.h1({}, "Welcome"),
+	h.p({}, "Rendered on the server."),
+);
+
+const html = render(element);
 ```
 
-### `renderElement(element)`
-
-Render an `HtmlElement` to an HTML string.
+Text and attribute values are escaped. Void elements (`img`, `input`, `meta`, `link`, `br`, and others) never receive a closing tag.
 
 ```ts
-const html = renderElement(h.h1({}, "Hello"));
-// "<h1>Hello</h1>"
+h.img({ src: "/logo.svg", alt: "SpaceFn" });
+// <img src="/logo.svg" alt="SpaceFn">
 ```
 
-### `raw(htmlString)`
+`render` is the short name for `renderElement`.
 
-Insert raw HTML. Bypasses escaping. Use only for trusted content.
-
-```ts
-h.div(null, raw("<strong>Safe</strong>"));
-```
-
-### `defineComponent(fn)`
-
-Define a reusable component with typed props and optional slots. Returns a function that produces `HtmlElement`.
+`defineComponent` creates a function from props and optional slots. `renderComponent` renders the resulting element:
 
 ```ts
-type CardProps = { title: string };
+import { defineComponent, h, renderComponent, type HtmlElement } from "@spacefn/html";
 
-const card = defineComponent<CardProps>((props) => {
-	return h.div({ class: "card" }, h.h2({}, props.title), h.p({}, "Content"));
-});
-
-// Usage
-card({ title: "My Card" });
-```
-
-### Slots
-
-Slots are named children passed as the second argument. The component receives them as `HtmlElement` values.
-
-```ts
 type CardProps = { title: string };
 type CardSlots = { default: HtmlElement; footer: HtmlElement };
 
-const card = defineComponent<CardProps, CardSlots>((props, slots) => {
-	return h.div(
-		{ class: "card" },
-		h.div({ class: "header" }, h.h2({}, props.title)),
-		h.div({ class: "body" }, slots.default),
-		h.div({ class: "footer" }, slots.footer),
-	);
-});
-
-// Usage
-card(
-	{ title: "Post Card" },
-	{
-		default: h.p({}, "Card content is here"),
-		footer: h.div({}, h.button({}, "Like")),
-	},
+const Card = defineComponent<CardProps, CardSlots>((props, slots) =>
+	h.article({ class: "card" }, h.h2({}, props.title), slots.default, slots.footer),
 );
-```
-
-Slots are optional. If a slot is not provided, it defaults to an empty object.
-
-### `renderComponent(element)`
-
-Render a component's output to an HTML string. Convenience wrapper for `renderElement()`.
-
-```ts
-const html = renderComponent(card({ title: "My Card" }));
-```
-
-## Types
-
-```ts
-type HtmlChild = string | number | boolean | null | undefined | HtmlElement;
-
-interface HtmlElement {
-	tag: string;
-	attrs: Record<string, AttrValue>;
-	children: HtmlChild[];
-}
-
-type AttrValue = string | number | boolean | null | undefined;
-```
-
-## Full Example
-
-```ts
-import { h, renderElement, defineComponent, renderComponent } from "@spacefn/html";
-
-type PageProps = { title: string; content: string };
-type PageSlots = { sidebar: HtmlElement };
-
-const page = defineComponent<PageProps, PageSlots>((props, slots) => {
-	return h.html(
-		{},
-		h.head({}, h.title({}, props.title)),
-		h.body(
-			{},
-			h.main({}, h.h1({}, props.title), h.p({}, props.content)),
-			h.aside({}, slots.sidebar),
-		),
-	);
-});
 
 const html = renderComponent(
-	page({ title: "Hello", content: "World" }, { sidebar: h.nav({}, h.a({ href: "/" }, "Home")) }),
+	Card({ title: "Post Card" }, { default: h.p({}, "Content"), footer: h.small({}, "Footer") }),
 );
 ```
+
+A component can also be a plain function when slots are unnecessary:
+
+```ts
+const Heading = (title: string) => h.h1({}, title);
+```
+
+## Raw HTML
+
+`raw` bypasses escaping. Only use it for trusted, already-sanitized markup:
+
+```ts
+import { h, raw, render } from "@spacefn/html";
+render(h.div({}, raw("<strong>trusted</strong>")));
+```
+
+## Attributes
+
+Known tags use per-element TypeScript attribute types. Global attributes (`class`, `id`, `style`, `hidden`, ARIA/data attributes, and event names) are available across tags. `img` and `a` include accessibility-oriented required attributes in their typed helpers.
+
+```ts
+import { anchorHref, h, imgAlt } from "@spacefn/html";
+
+h.a(anchorHref("/docs"), "Docs");
+h.img({ src: "/decorative.svg", ...imgAlt("") });
+```
+
+Attributes with `false`, `null`, or `undefined` are omitted. `true` renders a boolean attribute without a value.

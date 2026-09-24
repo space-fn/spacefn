@@ -1,121 +1,100 @@
-# Getting Started
+# Getting started
 
-Build a Cloudflare Workers app with Space. This guide covers setup, first route, and deployment.
+## Requirements
 
-## Prerequisites
+- Node.js 20 or newer
+- npm, pnpm, yarn, or bun
+- A Cloudflare Workers-compatible Web API runtime for deployment
 
-- [Node.js](https://nodejs.org/) 22+
-- [pnpm](https://pnpm.io/) 12+
-
-## 1. Create a Project
+## Create a project
 
 ```bash
-git clone <repo-url> && cd space
-pnpm install
+npm create spacefn@latest
+# pnpm create spacefn@latest and yarn create spacefn@latest are also supported
 ```
 
-## 2. Project Structure
+The CLI asks for a project directory and package manager, writes the minimal template, and installs dependencies. Start it with the generated scripts:
 
-```
-space/
-  src/
-    routes/
-      index.ts          # GET /
-      api/
-        users.ts        # GET /api/users
-    middlewares/
-      1.logger.ts       # Runs first (logging)
-      2.cors.ts         # Runs second (CORS headers)
-    main.ts             # Entry point
-  wrangler.toml         # Cloudflare config
+```bash
+cd my-project
+pnpm dev
 ```
 
-## 3. Write a Route
+`spacefn dev` starts Vite. It scans the project, writes `.space/` modules, and serves the generated server handler. `.space/` is generated output; never edit it manually.
+
+## First route
 
 Create `src/routes/index.ts`:
 
 ```ts
 import { h, render } from "@spacefn/html";
 
-export default function () {
+export default function GET() {
 	return new Response(
-		render(
-			h.html(
-				{},
-				h.head({}, h.title({}, "Home")),
-				h.body({}, h.h1({}, "Hello from Space"), h.p({}, "This page is server-rendered.")),
-			),
-		),
-		{ headers: { "Content-Type": "text/html" } },
+		render(h.html({}, h.head({}, h.title({}, "Home")), h.body({}, h.h1({}, "Hello from SpaceFn")))),
+		{ headers: { "content-type": "text/html; charset=utf-8" } },
 	);
 }
 ```
 
-## 4. Add Interactivity
+The file maps to `/`. `src/routes/books/[id].ts` maps to `/books/:id`; the handler receives the Web `Request`. Route patterns match the path but do not inject named parameters into the handler. See [framework](./framework.md) for the complete handler contract.
 
-Add DataStar for client-side reactivity:
+## First page
+
+Pages split server data/actions from the HTML component:
+
+```text
+src/pages/about.server.ts
+src/pages/about.page.ts
+```
 
 ```ts
-import { h, render } from "@spacefn/html";
-import { ds } from "@spacefn/datastar";
-
-export default function () {
-	return new Response(
-		render(
-			h.html(
-				{},
-				h.head({}, h.title({}, "Counter")),
-				h.body(
-					{},
-					h.div(
-						ds.dataSignals({ count: 0 }),
-						h.button(ds.dataOn("click", "$count++"), "Count: ", h.span(ds.dataText("$count"), "0")),
-					),
-				),
-			),
-		),
-		{ headers: { "Content-Type": "text/html" } },
-	);
+// src/pages/about.server.ts
+export async function loader() {
+	return { title: "About" };
 }
 ```
 
-## 5. Add a Server Endpoint
-
-Create `src/routes/api/counter.post.ts`:
-
 ```ts
-import { readSignals } from "@spacefn/datastar/server";
-import { datastarSSE } from "@spacefn/datastar/server";
+// src/pages/about.page.ts
+import { h, type HtmlElement } from "@spacefn/html";
 
-export default async function (request: Request) {
-	const signals = await readSignals<{ count: number }>(request);
-	const sse = datastarSSE();
-	sse.patchSignals({ count: signals.count + 1 });
-	return sse.toResponse();
+export default function About(data: { title: string }): HtmlElement {
+	return h.html({}, h.body({}, h.h1({}, data.title)));
 }
 ```
 
-## 6. Start Development
+The page is available at `/about`. A `.server.ts` file is optional; a `.page.ts` file is optional. A page without a component can still expose loader/action data.
 
-```bash
-pnpm dev
+## First middleware
+
+Create `src/middlewares/01-logging.ts`:
+
+```ts
+import type { MiddlewareHandler } from "@spacefn/server";
+
+const logging: MiddlewareHandler = async (request, next) => {
+	const started = Date.now();
+	const response = await next();
+	console.log(request.method, new URL(request.url).pathname, Date.now() - started);
+	return response;
+};
+
+export default logging;
 ```
 
-Vite starts a dev server. Route and middleware files are scanned automatically. Changes trigger regeneration and hot reload.
+Numeric prefixes sort middleware. Middleware can return a response without calling `next()` to short-circuit a request.
 
-## 7. Deploy
+## Production build
 
 ```bash
 pnpm build
-pnpm deploy
 ```
 
-Wrangler uploads the built output to Cloudflare Workers.
+The command invokes Vite with the SpaceFn plugin and generates the production bundle. Select the resulting module in your Cloudflare Workers deployment configuration. The generated app uses Web `Request`/`Response` APIs and does not require Node request globals.
 
-## Next Steps
+## Troubleshooting
 
-- [Routes](../packages/server/docs/routes.md) — File naming conventions
-- [Middlewares](../packages/server/docs/middlewares.md) — Request preprocessing
-- [@spacefn/html](../packages/html/README.md) — HTML generation
-- [@spacefn/css](../packages/css/README.md) — Design tokens and styles
-- [@spacefn/datastar](../packages/datastar/README.md) — Client reactivity + server SSE
+- Delete `.space/` and rerun `pnpm dev` if generated output is stale.
+- Check that route/page files export the expected default handler/component.
+- Check the terminal for Vite and generator errors before debugging the request handler.
