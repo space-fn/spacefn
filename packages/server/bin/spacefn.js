@@ -18,7 +18,7 @@ async function dev() {
 
 	const server = await createServer({
 		root,
-		plugins: [space({ root })],
+		plugins: space({ root }),
 	});
 
 	await server.listen();
@@ -32,9 +32,9 @@ async function build() {
 
 	await build({
 		root,
-		plugins: [space({ root })],
-		server: {
-			type: "module",
+		plugins: space({ root }),
+		build: {
+			ssr: resolve(root, "src/main.ts"),
 		},
 	});
 
