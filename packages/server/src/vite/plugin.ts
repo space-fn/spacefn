@@ -42,7 +42,7 @@ function generatePagesCode(pages: ScannedPage[]): string {
 		lines.push(`\t\tloader: ${hasServer ? `Server_${i}.loader` : "undefined"},`);
 		lines.push(`\t\tactions: ${hasServer ? `Server_${i}.actions` : "undefined"},`);
 		if (hasPage) {
-			lines.push(`\t\tpage: (data) => renderComponent(Page_${i}.default(data)),`);
+			lines.push(`\t\tpage: (data) => renderComponent(Page_${i}(data)),`);
 		} else {
 			lines.push(`\t\tpage: undefined,`);
 		}
