@@ -1,24 +1,24 @@
 {
 	"name": "playground",
 	"version": "0.0.1",
-	"type": "module",
 	"private": true,
+	"type": "module",
 	"scripts": {
 		"dev": "spacefn dev",
 		"space:build": "spacefn build",
-		"test": "vitest run"
+		"test": "vitest run --passWithNoTests"
 	},
 	"dependencies": {
-		"@spacefn/html": "workspace:*",
-		"@spacefn/server": "workspace:*",
 		"@spacefn/css": "workspace:*",
-		"@spacefn/datastar": "workspace:*"
+		"@spacefn/datastar": "workspace:*",
+		"@spacefn/html": "workspace:*",
+		"@spacefn/server": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^22.0.0",
 		"typescript": "^5.5.0",
 		"vite": "^6.0.0",
-		"vitest": "^3.0.0",
-		"vite-tsconfig-paths": "^5.0.0"
+		"vite-tsconfig-paths": "^5.0.0",
+		"vitest": "^3.0.0"
 	}
 }

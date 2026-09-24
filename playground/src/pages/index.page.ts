@@ -1,7 +1,8 @@
 import { defineComponent, h } from "@spacefn/html";
 import type { LoaderReturnType } from "@spacefn/server";
-import type { loader } from "./index.server";
+
 import { cardSx, btnSx, cssOutput } from "../styles";
+import type { loader } from "./index.server";
 
 type Props = LoaderReturnType<typeof loader>;
 

@@ -1,6 +1,6 @@
 import { h, render } from "@spacefn/html";
 
-export default function() {
+export default function () {
 	return new Response(
 		render(
 			h.html(
