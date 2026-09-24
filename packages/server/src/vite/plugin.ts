@@ -157,17 +157,31 @@ export function space(options: SpacePluginOptions = {}): Plugin[] {
 		},
 	};
 
+	// Resolve aliases for ssrLoadModule
+	const aliasPlugin: Plugin = {
+		name: "@spacefn/server:alias",
+		config() {
+			return {
+				resolve: {
+					alias: {
+						"#space/": `${root}/.space/`,
+						"#src/": `${root}/src/`,
+					},
+				},
+			};
+		},
+	};
+
 	// Dev server middleware: intercepts requests and serves pages/routes
 	const devMiddleware: Plugin = {
 		name: "@spacefn/server:dev",
 		configureServer(server: ViteDevServer) {
-			// Use ssrLoadModule to resolve #src/* and #space/* aliases
 			server.middlewares.use(async (req, res, next) => {
 				try {
 					const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 
 					// Try pages first
-					const pagesMod = await server.ssrLoadModule("#space/pages");
+					const pagesMod = await server.ssrLoadModule("#space/pages.ts");
 					if (pagesMod?.pages) {
 						for (const page of pagesMod.pages) {
 							if (matchPattern(page.pattern, url.pathname)) {
@@ -182,7 +196,7 @@ export function space(options: SpacePluginOptions = {}): Plugin[] {
 					}
 
 					// Try routes
-					const routesMod = await server.ssrLoadModule("#space/routes");
+					const routesMod = await server.ssrLoadModule("#space/routes.ts");
 					if (routesMod?.routes) {
 						for (const route of routesMod.routes) {
 							if (matchPattern(route.pattern, url.pathname) && (route.method === "*" || route.method === req.method)) {
@@ -218,7 +232,7 @@ export function space(options: SpacePluginOptions = {}): Plugin[] {
 		generators: [routeGenerator, middlewareGenerator, pagesGenerator],
 	});
 
-	return [generator, devMiddleware];
+	return [generator, aliasPlugin, devMiddleware];
 }
 
 export type { SpacePluginOptions, ScannedRoute, ScannedMiddleware } from "./types.js";
