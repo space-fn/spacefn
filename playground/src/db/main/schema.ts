@@ -1,36 +1,22 @@
-import { defineTable, column } from "@spacefn/db";
+import { defineTable, column } from "@spacefn/db"
 
-// --- Users ---
-export const users = defineTable("users", {
+// --- Categories ---
+export const categories = defineTable("categories", {
 	id: column.id(),
-	email: column.string().unique(),
-	name: column.string(),
-	password: column.text(),
-	role: column.enum("admin", "user").default("user"),
+	name: column.string().unique(),
+	color: column.string(7).default("'#6b7280'"),
+	createdAt: column.timestamps().create,
+})
+
+// --- Todos ---
+export const todos = defineTable("todos", {
+	id: column.id(),
+	title: column.string(),
+	description: column.text().nullable(),
+	completed: column.boolean().default("false"),
+	categoryId: column.integer().references("categories", "id").nullable(),
+	priority: column.enum("low", "medium", "high").default("'medium'"),
+	dueDate: column.timestamp().nullable(),
 	createdAt: column.timestamps().create,
 	updatedAt: column.timestamps().update,
-});
-
-// --- URLs ---
-export const urls = defineTable("urls", {
-	id: column.id(),
-	slug: column.string(8).unique(),
-	destination: column.text(),
-	title: column.string().nullable(),
-	userId: column.integer().references("users", "id"),
-	isActive: column.boolean().default("true"),
-	expiresAt: column.timestamp().nullable(),
-	createdAt: column.timestamps().create,
-	updatedAt: column.timestamps().update,
-});
-
-// --- Clicks ---
-export const clicks = defineTable("clicks", {
-	id: column.id(),
-	urlId: column.integer().references("urls", "id"),
-	ip: column.string().nullable(),
-	userAgent: column.text().nullable(),
-	referer: column.text().nullable(),
-	country: column.string(2).nullable(),
-	createdAt: column.timestamp().default("now()"),
-});
+})
