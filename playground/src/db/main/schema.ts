@@ -1,4 +1,4 @@
-import { defineTable, column } from "@spacefn/db"
+import { defineTable, column } from "@spacefn/db";
 
 // --- Categories ---
 export const categories = defineTable("categories", {
@@ -6,7 +6,7 @@ export const categories = defineTable("categories", {
 	name: column.string().unique(),
 	color: column.string(7).default("'#6b7280'"),
 	createdAt: column.timestamps().create,
-})
+});
 
 // --- Todos ---
 export const todos = defineTable("todos", {
@@ -19,4 +19,4 @@ export const todos = defineTable("todos", {
 	dueDate: column.timestamp().nullable(),
 	createdAt: column.timestamps().create,
 	updatedAt: column.timestamps().update,
-})
+});
