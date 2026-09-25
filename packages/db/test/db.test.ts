@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { defineTable, column, defineMigration } from "../src/index.js";
+import { defineTable, column } from "../src/index.js";
 import type { InferDatabaseType } from "../src/index.js";
 
 // --- defineTable -------------------------------------------------------------
@@ -8,22 +8,22 @@ import type { InferDatabaseType } from "../src/index.js";
 describe("defineTable", () => {
 	it("creates a table definition", () => {
 		const users = defineTable("users", {
-			id: column.serial("id").primaryKey(),
-			name: column.text("name").notNull(),
-			email: column.text("email").unique().notNull(),
+			id: column.id(),
+			name: column.string(),
+			email: column.string().unique(),
 		});
 
 		expect(users.name).toBe("users");
 		expect(users.columns.id.dataType).toBe("serial");
-		expect(users.columns.id.primaryKey).toBe(true);
-		expect(users.columns.name.dataType).toBe("text");
+		expect(users.columns.id.default).toBe("auto");
+		expect(users.columns.name.dataType).toBe("varchar");
 		expect(users.columns.name.nullable).toBe(false);
 		expect(users.columns.email.unique).toBe(true);
 	});
 
 	it("supports nullable columns", () => {
 		const users = defineTable("users", {
-			bio: column.text("bio").nullable(),
+			bio: column.text().nullable(),
 		});
 
 		expect(users.columns.bio.nullable).toBe(true);
@@ -31,54 +31,121 @@ describe("defineTable", () => {
 
 	it("supports default values", () => {
 		const posts = defineTable("posts", {
-			createdAt: column.timestamp("created_at").default("now()"),
+			role: column.enum("admin", "user").default("user"),
 		});
 
-		expect(posts.columns.createdAt.default).toBe("now()");
+		expect(posts.columns.role.default).toBe("user");
+		expect(posts.columns.role.enumValues).toEqual(["admin", "user"]);
 	});
 
 	it("supports varchar with length", () => {
 		const users = defineTable("users", {
-			name: column.varchar("name", 255),
+			slug: column.string(8),
 		});
 
-		expect(users.columns.name.typeArgs).toEqual([255]);
-	});
-
-	it("supports decimal with precision and scale", () => {
-		const prices = defineTable("prices", {
-			amount: column.decimal("amount", 10, 2),
-		});
-
-		expect(prices.columns.amount.typeArgs).toEqual([10, 2]);
+		expect(users.columns.slug.length).toBe(8);
 	});
 
 	it("supports foreign key references", () => {
 		const posts = defineTable("posts", {
-			userId: column.integer("user_id").references("users", "id"),
+			userId: column.integer().references("users", "id"),
 		});
 
-		expect(posts.columns.userId.references).toEqual({ table: "users", column: "id" });
+		expect(posts.columns.userId.references).toEqual(["users", "id"]);
+	});
+
+	it("supports timestamps helper", () => {
+		const users = defineTable("users", {
+			createdAt: column.timestamps().create,
+			updatedAt: column.timestamps().update,
+		});
+
+		expect(users.columns.createdAt.dataType).toBe("timestamp");
+		expect(users.columns.createdAt.default).toBe("auto");
+		expect(users.columns.updatedAt.dataType).toBe("timestamp");
+		expect(users.columns.updatedAt.default).toBe("auto");
+	});
+
+	it("serializes to JSON", () => {
+		const users = defineTable("users", {
+			id: column.id(),
+			name: column.string().nullable(),
+		});
+
+		const json = JSON.parse(JSON.stringify(users));
+		expect(json.name).toBe("users");
+		expect(json.columns.id.dataType).toBe("serial");
+		expect(json.columns.name.nullable).toBe(true);
 	});
 });
 
-// --- defineMigration ---------------------------------------------------------
+// --- column helpers ----------------------------------------------------------
 
-describe("defineMigration", () => {
-	it("creates a migration definition", () => {
-		const migration = defineMigration({
-			name: "001_create_users",
-			up: async (sql) => {
-				await sql.exec("CREATE TABLE users (id SERIAL PRIMARY KEY)");
-			},
-			down: async (sql) => {
-				await sql.exec("DROP TABLE users");
-			},
-		});
+describe("column helpers", () => {
+	it("id() creates serial with auto default", () => {
+		const col = column.id();
+		const json = col.toJSON();
+		expect(json.dataType).toBe("serial");
+		expect(json.default).toBe("auto");
+	});
 
-		expect(migration.name).toBe("001_create_users");
-		expect(typeof migration.up).toBe("function");
-		expect(typeof migration.down).toBe("function");
+	it("string() creates varchar(255) by default", () => {
+		const col = column.string();
+		const json = col.toJSON();
+		expect(json.dataType).toBe("varchar");
+		expect(json.length).toBeUndefined();
+	});
+
+	it("string(n) creates varchar(n)", () => {
+		const col = column.string(100);
+		const json = col.toJSON();
+		expect(json.length).toBe(100);
+	});
+
+	it("text() creates text", () => {
+		const col = column.text();
+		expect(col.toJSON().dataType).toBe("text");
+	});
+
+	it("integer() creates integer", () => {
+		const col = column.integer();
+		expect(col.toJSON().dataType).toBe("integer");
+	});
+
+	it("boolean() creates boolean", () => {
+		const col = column.boolean();
+		expect(col.toJSON().dataType).toBe("boolean");
+	});
+
+	it("timestamp() creates timestamp", () => {
+		const col = column.timestamp();
+		expect(col.toJSON().dataType).toBe("timestamp");
+	});
+
+	it("json() creates json", () => {
+		const col = column.json();
+		expect(col.toJSON().dataType).toBe("json");
+	});
+
+	it("enum() creates enum with values", () => {
+		const col = column.enum("a", "b", "c");
+		const json = col.toJSON();
+		expect(json.dataType).toBe("enum");
+		expect(json.enumValues).toEqual(["a", "b", "c"]);
+	});
+
+	it("modifiers chain correctly", () => {
+		const col = column.string().nullable().unique().default("'hello'");
+		const json = col.toJSON();
+		expect(json.nullable).toBe(true);
+		expect(json.unique).toBe(true);
+		expect(json.default).toBe("'hello'");
+	});
+
+	it("references() stores foreign key", () => {
+		const col = column.integer().references("users", "id");
+		const json = col.toJSON();
+		expect(json.references).toEqual(["users", "id"]);
 	});
 });
 
@@ -88,93 +155,23 @@ describe("InferDatabaseType", () => {
 	it("infers types from schema", () => {
 		const schema = {
 			users: defineTable("users", {
-				id: column.serial("id").primaryKey(),
-				name: column.text("name").notNull(),
-				email: column.text("email").unique().notNull(),
-				bio: column.text("bio").nullable(),
-				createdAt: column.timestamp("created_at").default("now()"),
+				id: column.id(),
+				email: column.string(),
+				name: column.string().nullable(),
+				active: column.boolean(),
 			}),
 		};
 
-		// Type-level test: InferDatabaseType should produce correct types
-		type _DB = InferDatabaseType<typeof schema>;
-
-		// Runtime verification that schema is valid
-		expect(schema.users.name).toBe("users");
-		expect(Object.keys(schema.users.columns)).toHaveLength(5);
-	});
-});
-
-// --- column helpers ----------------------------------------------------------
-
-describe("column helpers", () => {
-	it("creates all column types", () => {
-		const table = defineTable("test", {
-			a: column.serial("a"),
-			b: column.integer("b"),
-			c: column.bigint("c"),
-			d: column.text("d"),
-			e: column.varchar("e", 100),
-			f: column.boolean("f"),
-			g: column.timestamp("g"),
-			h: column.date("h"),
-			i: column.time("i"),
-			j: column.decimal("j", 8, 2),
-			k: column.real("k"),
-			l: column.double("l"),
-			m: column.json("m"),
-			n: column.jsonb("n"),
-			o: column.uuid("o"),
-			p: column.blob("p"),
-		});
-
-		expect(Object.keys(table.columns)).toHaveLength(16);
-	});
-});
-
-// --- Migration index generator ------------------------------------------------
-
-describe("generateMigrationIndex", () => {
-	it("generates index from migration files", async () => {
-		const { generateMigrationIndex } = await import("../src/vite/generator.js");
-		const result = generateMigrationIndex([
-			"/src/db/main/migrations/001_create_users.ts",
-			"/src/db/main/migrations/002_create_posts.ts",
-		]);
-
-		expect(result).toContain('import { migration as migration000 } from "./001_create_users.js"');
-		expect(result).toContain('import { migration as migration001 } from "./002_create_posts.js"');
-		expect(result).toContain("export const migrations: MigrationDefinition[] = [");
-		expect(result).toContain("migration000,");
-		expect(result).toContain("migration001,");
-	});
-
-	it("filters out index.ts", async () => {
-		const { generateMigrationIndex } = await import("../src/vite/generator.js");
-		const result = generateMigrationIndex([
-			"/src/db/main/migrations/index.ts",
-			"/src/db/main/migrations/001_create_users.ts",
-		]);
-
-		expect(result).not.toContain("index.js");
-		expect(result).toContain("001_create_users.js");
-	});
-
-	it("sorts migrations by name", async () => {
-		const { generateMigrationIndex } = await import("../src/vite/generator.js");
-		const result = generateMigrationIndex([
-			"/src/db/main/migrations/002_create_posts.ts",
-			"/src/db/main/migrations/001_create_users.ts",
-		]);
-
-		const usersIdx = result.indexOf("001_create_users");
-		const postsIdx = result.indexOf("002_create_posts");
-		expect(usersIdx).toBeLessThan(postsIdx);
-	});
-
-	it("returns empty string for no migrations", async () => {
-		const { generateMigrationIndex } = await import("../src/vite/generator.js");
-		const result = generateMigrationIndex([]);
-		expect(result).toBe("");
+		type DB = InferDatabaseType<typeof schema>;
+		// Type test: DB.users should have the right shape
+		const _test: DB = {
+			users: {
+				id: 1,
+				email: "test@example.com",
+				name: null,
+				active: true,
+			},
+		};
+		expect(_test.users.id).toBe(1);
 	});
 });

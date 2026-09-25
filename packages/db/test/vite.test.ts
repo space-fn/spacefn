@@ -1,13 +1,17 @@
 import { describe, it, expect } from "vitest";
 
+import { defineTable, column } from "../src/index.js";
 import type { DatabaseSchema } from "../src/types.js";
 import { diffSchemas } from "../src/vite/differ.js";
+import { generateTypesCode, generateMigrationIndex } from "../src/vite/generator.js";
 import {
 	generateCreateTable,
 	generateAddColumn,
 	generateDropColumn,
 	generateDropTable,
 	generateAlterColumnType,
+	generateAlterColumnNullability,
+	generateAlterColumnDefault,
 } from "../src/vite/sql.js";
 
 // --- Schema Differ -----------------------------------------------------------
@@ -19,7 +23,7 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
 				},
 			},
 		};
@@ -34,7 +38,7 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
 				},
 			},
 		};
@@ -50,7 +54,7 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
 				},
 			},
 		};
@@ -58,14 +62,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
-					email: {
-						name: "email",
-						dataType: "text",
-						nullable: false,
-						primaryKey: false,
-						unique: true,
-					},
+					id: { dataType: "serial", nullable: false, unique: false },
+					email: { dataType: "varchar", nullable: false, unique: false },
 				},
 			},
 		};
@@ -80,14 +78,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
-					email: {
-						name: "email",
-						dataType: "text",
-						nullable: false,
-						primaryKey: false,
-						unique: true,
-					},
+					id: { dataType: "serial", nullable: false, unique: false },
+					email: { dataType: "varchar", nullable: false, unique: false },
 				},
 			},
 		};
@@ -95,7 +87,7 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
 				},
 			},
 		};
@@ -110,13 +102,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					name: {
-						name: "name",
-						dataType: "text",
-						nullable: false,
-						primaryKey: false,
-						unique: false,
-					},
+					id: { dataType: "serial", nullable: false, unique: false },
+					name: { dataType: "varchar", nullable: false, unique: false },
 				},
 			},
 		};
@@ -124,14 +111,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					name: {
-						name: "name",
-						dataType: "varchar",
-						typeArgs: [255],
-						nullable: false,
-						primaryKey: false,
-						unique: false,
-					},
+					id: { dataType: "serial", nullable: false, unique: false },
+					name: { dataType: "text", nullable: false, unique: false },
 				},
 			},
 		};
@@ -146,7 +127,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					bio: { name: "bio", dataType: "text", nullable: false, primaryKey: false, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
+					bio: { dataType: "text", nullable: false, unique: false },
 				},
 			},
 		};
@@ -154,7 +136,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					bio: { name: "bio", dataType: "text", nullable: true, primaryKey: false, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
+					bio: { dataType: "text", nullable: true, unique: false },
 				},
 			},
 		};
@@ -169,7 +152,8 @@ describe("diffSchemas", () => {
 			users: {
 				name: "users",
 				columns: {
-					id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
+					id: { dataType: "serial", nullable: false, unique: false },
+					name: { dataType: "varchar", nullable: false, unique: false },
 				},
 			},
 		};
@@ -179,211 +163,217 @@ describe("diffSchemas", () => {
 	});
 });
 
-// --- SQL Generation ----------------------------------------------------------
+// --- SQL Generation (PostgreSQL) ---------------------------------------------
 
 describe("generateCreateTable", () => {
-	it("generates CREATE TABLE with serial primary key", () => {
-		const sql = generateCreateTable("users", {
-			id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
-			name: { name: "name", dataType: "text", nullable: false, primaryKey: false, unique: false },
+	it("generates CREATE TABLE for postgres", () => {
+		const table = defineTable("users", {
+			id: column.id(),
+			name: column.string(),
+			email: column.string().unique(),
 		});
 
+		const sql = generateCreateTable(table, "postgres");
 		expect(sql).toContain('CREATE TABLE "users"');
-		expect(sql).toContain('"id" serial');
-		expect(sql).toContain('"name" text NOT NULL');
+		expect(sql).toContain('"id" SERIAL');
+		expect(sql).toContain('"name" VARCHAR(255) NOT NULL');
+		expect(sql).toContain('"email" VARCHAR(255) NOT NULL UNIQUE');
 	});
 
-	it("generates CREATE TABLE with constraints", () => {
-		const sql = generateCreateTable("users", {
-			email: {
-				name: "email",
-				dataType: "text",
-				nullable: false,
-				primaryKey: false,
-				unique: true,
-				default: "''",
-			},
+	it("includes FOREIGN KEY constraints", () => {
+		const table = defineTable("posts", {
+			id: column.id(),
+			userId: column.integer().references("users", "id"),
 		});
 
-		expect(sql).toContain("UNIQUE");
-		expect(sql).toContain("DEFAULT ''");
+		const sql = generateCreateTable(table, "postgres");
+		expect(sql).toContain('FOREIGN KEY ("userId") REFERENCES "users"("id")');
+	});
+
+	it("includes CHECK constraints for enums", () => {
+		const table = defineTable("users", {
+			role: column.enum("admin", "user"),
+		});
+
+		const sql = generateCreateTable(table, "postgres");
+		expect(sql).toContain("CHECK");
+		expect(sql).toContain("'admin'");
+		expect(sql).toContain("'user'");
+	});
+
+	it("handles nullable columns", () => {
+		const table = defineTable("users", {
+			bio: column.text().nullable(),
+		});
+
+		const sql = generateCreateTable(table, "postgres");
+		expect(sql).toContain('"bio" TEXT');
+		expect(sql).not.toContain('"bio" TEXT NOT NULL');
 	});
 });
 
 describe("generateAddColumn", () => {
 	it("generates ALTER TABLE ADD COLUMN", () => {
-		const sql = generateAddColumn("users", {
-			name: "email",
-			dataType: "text",
-			nullable: false,
-			primaryKey: false,
-			unique: false,
-		});
-
-		expect(sql).toContain('ALTER TABLE "users" ADD COLUMN');
-		expect(sql).toContain('"email" text NOT NULL');
+		const col = column.string();
+		const sql = generateAddColumn("users", "email", col.toJSON(), "postgres");
+		expect(sql).toBe('ALTER TABLE "users" ADD COLUMN "email" VARCHAR(255) NOT NULL');
 	});
 });
 
 describe("generateDropColumn", () => {
 	it("generates ALTER TABLE DROP COLUMN", () => {
-		const sql = generateDropColumn("users", "email");
-		expect(sql).toBe('ALTER TABLE "users" DROP COLUMN "email";');
+		const sql = generateDropColumn("users", "email", "postgres");
+		expect(sql).toBe('ALTER TABLE "users" DROP COLUMN "email"');
 	});
 });
 
 describe("generateDropTable", () => {
 	it("generates DROP TABLE", () => {
-		const sql = generateDropTable("users");
-		expect(sql).toBe('DROP TABLE "users";');
+		const sql = generateDropTable("users", "postgres");
+		expect(sql).toBe('DROP TABLE "users"');
 	});
 });
 
 describe("generateAlterColumnType", () => {
 	it("generates ALTER COLUMN TYPE", () => {
-		const sql = generateAlterColumnType("users", {
-			name: "name",
-			dataType: "varchar",
-			typeArgs: [255],
-			nullable: false,
-			primaryKey: false,
-			unique: false,
-		});
+		const col = column.text();
+		const sql = generateAlterColumnType("users", "name", col.toJSON(), "postgres");
+		expect(sql).toBe('ALTER TABLE "users" ALTER COLUMN "name" TYPE TEXT');
+	});
+});
 
-		expect(sql).toContain('ALTER TABLE "users" ALTER COLUMN "name" TYPE varchar(255)');
+describe("generateAlterColumnNullability", () => {
+	it("generates SET NOT NULL", () => {
+		const col = column.string();
+		const sql = generateAlterColumnNullability("users", "name", col.toJSON(), "postgres");
+		expect(sql).toBe('ALTER TABLE "users" ALTER COLUMN "name" SET NOT NULL');
+	});
+
+	it("generates DROP NOT NULL", () => {
+		const col = column.string().nullable();
+		const sql = generateAlterColumnNullability("users", "name", col.toJSON(), "postgres");
+		expect(sql).toBe('ALTER TABLE "users" ALTER COLUMN "name" DROP NOT NULL');
+	});
+});
+
+describe("generateAlterColumnDefault", () => {
+	it("generates SET DEFAULT", () => {
+		const col = column.string().default("'hello'");
+		const sql = generateAlterColumnDefault("users", "name", col.toJSON(), "postgres");
+		expect(sql).toBe('ALTER TABLE "users" ALTER COLUMN "name" SET DEFAULT \'hello\'');
+	});
+
+	it("generates DROP DEFAULT", () => {
+		const col = column.string();
+		const sql = generateAlterColumnDefault("users", "name", col.toJSON(), "postgres");
+		expect(sql).toBe('ALTER TABLE "users" ALTER COLUMN "name" DROP DEFAULT');
 	});
 });
 
 // --- Dialect-specific SQL Generation -----------------------------------------
 
-describe("SQLite dialect", () => {
-	it("generates CREATE TABLE with INTEGER PRIMARY KEY AUTOINCREMENT", () => {
-		const sql = generateCreateTable(
-			"users",
-			{
-				id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
-				name: { name: "name", dataType: "text", nullable: false, primaryKey: false, unique: false },
-			},
-			"sqlite",
-		);
+describe("MySQL dialect", () => {
+	it("uses backtick quoting", () => {
+		const table = defineTable("users", {
+			id: column.id(),
+			name: column.string(),
+		});
 
-		expect(sql).toContain('"id" integer primary key autoincrement');
-		expect(sql).toContain('"name" text NOT NULL');
+		const sql = generateCreateTable(table, "mysql");
+		expect(sql).toContain("`users`");
+		expect(sql).toContain("`id`");
+		expect(sql).toContain("AUTO_INCREMENT");
 	});
 
-	it("uses TEXT for varchar", () => {
-		const sql = generateCreateTable(
-			"users",
-			{
-				email: {
-					name: "email",
-					dataType: "varchar",
-					typeArgs: [255],
-					nullable: false,
-					primaryKey: false,
-					unique: false,
-				},
-			},
-			"sqlite",
-		);
+	it("uses DATETIME for timestamps", () => {
+		const table = defineTable("events", {
+			createdAt: column.timestamps().create,
+		});
 
-		expect(sql).toContain('"email" text(255) NOT NULL');
-	});
-
-	it("uses integer for boolean", () => {
-		const sql = generateCreateTable(
-			"users",
-			{
-				active: {
-					name: "active",
-					dataType: "boolean",
-					nullable: false,
-					primaryKey: false,
-					unique: false,
-				},
-			},
-			"sqlite",
-		);
-
-		expect(sql).toContain('"active" integer NOT NULL');
-	});
-
-	it("generates comment for unsupported ALTER COLUMN TYPE", () => {
-		const sql = generateAlterColumnType(
-			"users",
-			{
-				name: "name",
-				dataType: "varchar",
-				typeArgs: [255],
-				nullable: false,
-				primaryKey: false,
-				unique: false,
-			},
-			"sqlite",
-		);
-
-		expect(sql).toContain("-- SQLite: ALTER COLUMN TYPE not supported");
+		const sql = generateCreateTable(table, "mysql");
+		expect(sql).toContain("DATETIME");
 	});
 });
 
-describe("MySQL dialect", () => {
-	it("generates CREATE TABLE with AUTO_INCREMENT for serial", () => {
-		const sql = generateCreateTable(
-			"users",
-			{
-				id: { name: "id", dataType: "serial", nullable: false, primaryKey: true, unique: false },
-			},
-			"mysql",
-		);
+describe("SQLite dialect", () => {
+	it("uses double-quote quoting", () => {
+		const table = defineTable("users", {
+			id: column.id(),
+			name: column.string(),
+		});
 
-		expect(sql).toContain("`id` int AUTO_INCREMENT PRIMARY KEY");
+		const sql = generateCreateTable(table, "sqlite");
+		expect(sql).toContain('"users"');
 	});
 
-	it("uses backticks for identifiers", () => {
-		const sql = generateCreateTable(
-			"users",
-			{
-				name: { name: "name", dataType: "text", nullable: false, primaryKey: false, unique: false },
-			},
-			"mysql",
-		);
+	it("uses INTEGER for booleans", () => {
+		const table = defineTable("flags", {
+			active: column.boolean(),
+		});
 
-		expect(sql).toContain("`name`");
+		const sql = generateCreateTable(table, "sqlite");
+		expect(sql).toContain("INTEGER");
+	});
+});
+
+// --- Types Code Generation ---------------------------------------------------
+
+describe("generateTypesCode", () => {
+	it("generates TypeScript types from schema", () => {
+		const tables = {
+			users: defineTable("users", {
+				id: column.id(),
+				email: column.string(),
+				name: column.string().nullable(),
+			}),
+		};
+
+		const code = generateTypesCode(tables);
+		expect(code).toContain("export type UsersRow = {");
+		expect(code).toContain("id: Generated<number>");
+		expect(code).toContain("email: string");
+		expect(code).toContain("name: string | null");
+		expect(code).toContain("export interface Database {");
+		expect(code).toContain("users: UsersRow");
 	});
 
-	it("uses tinyint for boolean", () => {
-		const sql = generateCreateTable(
-			"users",
-			{
-				active: {
-					name: "active",
-					dataType: "boolean",
-					nullable: false,
-					primaryKey: false,
-					unique: false,
-				},
-			},
-			"mysql",
-		);
+	it("handles enum types", () => {
+		const tables = {
+			users: defineTable("users", {
+				role: column.enum("admin", "user"),
+			}),
+		};
 
-		expect(sql).toContain("`active` tinyint NOT NULL");
+		const code = generateTypesCode(tables);
+		expect(code).toContain('"admin" | "user"');
 	});
 
-	it("uses MODIFY COLUMN for type change", () => {
-		const sql = generateAlterColumnType(
-			"users",
-			{
-				name: "name",
-				dataType: "varchar",
-				typeArgs: [255],
-				nullable: false,
-				primaryKey: false,
-				unique: false,
-			},
-			"mysql",
-		);
+	it("handles timestamps", () => {
+		const tables = {
+			users: defineTable("users", {
+				createdAt: column.timestamps().create,
+			}),
+		};
 
-		expect(sql).toContain("MODIFY COLUMN");
-		expect(sql).toContain("`name` varchar(255)");
+		const code = generateTypesCode(tables);
+		expect(code).toContain("createdAt: Generated<TimestampColumnType>");
+	});
+});
+
+// --- Migration Index Generation ----------------------------------------------
+
+describe("generateMigrationIndex", () => {
+	it("generates barrel file from migration files", () => {
+		const files = [
+			"/path/to/migrations/20240315120000_initial.ts",
+			"/path/to/migrations/20240316140000_add_clicks.ts",
+		];
+
+		const code = generateMigrationIndex(files, "postgres");
+		expect(code).toContain("import * as m_20240315120000_initial from");
+		expect(code).toContain("import * as m_20240316140000_add_clicks from");
+		expect(code).toContain('"20240315120000_initial": m_20240315120000_initial');
+		expect(code).toContain('"20240316140000_add_clicks": m_20240316140000_add_clicks');
+		expect(code).toContain("export function createMigrator(db: any)");
 	});
 });
