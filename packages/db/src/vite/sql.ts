@@ -1,20 +1,20 @@
-// --- SQL Generation ----------------------------------------------------------
-// Maps ColumnDefinition to SQL DDL statements with dialect support
+// --- SQL DDL Generation -------------------------------------------------------
+// Maps ColumnDefinition to SQL DDL statements
 // Supports: postgres, mysql, sqlite
 
-import type { ColumnDataType, ColumnDefinition } from "../types.js";
+import type { ColumnDefinition, TableDefinition } from "../types.js";
 
 /** Supported SQL dialects */
 export type Dialect = "postgres" | "mysql" | "sqlite";
 
 // --- Identifier Quoting ------------------------------------------------------
 
-/** Quote identifier based on dialect */
 function q(name: string, dialect: Dialect): string {
 	switch (dialect) {
+		case "postgres":
+			return `"${name}"`;
 		case "mysql":
 			return `\`${name}\``;
-		case "postgres":
 		case "sqlite":
 			return `"${name}"`;
 	}
@@ -22,201 +22,151 @@ function q(name: string, dialect: Dialect): string {
 
 // --- Type Mapping (per dialect) ----------------------------------------------
 
-/** Map ColumnDataType to SQL type string */
 function sqlType(col: ColumnDefinition, dialect: Dialect): string {
-	const base = sqlTypeBase(col.dataType, dialect);
-
-	if (col.typeArgs && col.typeArgs.length > 0) {
-		return `${base}(${col.typeArgs.join(", ")})`;
+	if (col.dataType === "enum") {
+		// ENUM → VARCHAR with CHECK constraint (handled separately)
+		return dialect === "mysql" ? "VARCHAR(255)" : "VARCHAR(255)";
 	}
-
-	return base;
+	if (col.dataType === "varchar" && col.length) {
+		return `VARCHAR(${col.length})`;
+	}
+	return sqlTypeBase(col.dataType, dialect);
 }
 
-/** Base SQL type for each ColumnDataType per dialect */
-function sqlTypeBase(dataType: ColumnDataType, dialect: Dialect): string {
-	switch (dialect) {
-		case "sqlite":
-			return sqliteType(dataType);
-		case "mysql":
-			return mysqlType(dataType);
-		case "postgres":
-			return postgresType(dataType);
-	}
-}
-
-function postgresType(dataType: ColumnDataType): string {
+function sqlTypeBase(dataType: ColumnDefinition["dataType"], dialect: Dialect): string {
 	switch (dataType) {
 		case "serial":
-			return "serial";
+			return dialect === "mysql" ? "INTEGER NOT NULL AUTO_INCREMENT" : "SERIAL";
 		case "integer":
-			return "integer";
-		case "bigint":
-			return "bigint";
+			return "INTEGER";
 		case "text":
-			return "text";
+			return "TEXT";
 		case "varchar":
-			return "varchar";
+			return "VARCHAR(255)";
 		case "boolean":
-			return "boolean";
+			return dialect === "sqlite" ? "INTEGER" : "BOOLEAN";
 		case "timestamp":
-			return "timestamp";
-		case "date":
-			return "date";
-		case "time":
-			return "time";
-		case "decimal":
-			return "decimal";
-		case "real":
-			return "real";
-		case "double":
-			return "double precision";
+			return dialect === "mysql" ? "DATETIME" : "TIMESTAMP";
 		case "json":
-			return "json";
-		case "jsonb":
-			return "jsonb";
-		case "uuid":
-			return "uuid";
-		case "blob":
-			return "bytea";
+			return dialect === "postgres" ? "JSONB" : "JSON";
+		default:
+			return "TEXT";
 	}
 }
 
-function mysqlType(dataType: ColumnDataType): string {
-	switch (dataType) {
-		case "serial":
-			return "int";
-		case "integer":
-			return "int";
-		case "bigint":
-			return "bigint";
-		case "text":
-			return "text";
-		case "varchar":
-			return "varchar";
-		case "boolean":
-			return "tinyint";
-		case "timestamp":
-			return "timestamp";
-		case "date":
-			return "date";
-		case "time":
-			return "time";
-		case "decimal":
-			return "decimal";
-		case "real":
-			return "float";
-		case "double":
-			return "double";
-		case "json":
-			return "json";
-		case "jsonb":
-			return "json";
-		case "uuid":
-			return "char";
-		case "blob":
-			return "blob";
-	}
-}
+// --- Default Value -----------------------------------------------------------
 
-function sqliteType(dataType: ColumnDataType): string {
-	switch (dataType) {
-		case "serial":
-		case "integer":
-		case "bigint":
-			return "integer";
-		case "text":
-		case "varchar":
-			return "text";
-		case "boolean":
-			return "integer";
-		case "timestamp":
-		case "date":
-		case "time":
-			return "text";
-		case "decimal":
-		case "real":
-		case "double":
-			return "real";
-		case "json":
-		case "jsonb":
-			return "text";
-		case "uuid":
-			return "text";
-		case "blob":
-			return "blob";
+function defaultValue(col: ColumnDefinition, dialect: Dialect): string {
+	if (col.default === undefined) return "";
+	if (col.default === "auto") {
+		if (col.dataType === "serial") return "";
+		if (col.dataType === "timestamp") {
+			return dialect === "mysql" ? " DEFAULT CURRENT_TIMESTAMP" : " DEFAULT NOW()";
+		}
+		return "";
 	}
+	// SQL expression (e.g., "now()", "'user'", "TRUE")
+	if (
+		col.default.startsWith("'") ||
+		col.default === "TRUE" ||
+		col.default === "FALSE" ||
+		col.default === "NULL"
+	) {
+		return ` DEFAULT ${col.default}`;
+	}
+	// Check if it looks like a function call
+	if (col.default.endsWith("()")) {
+		return ` DEFAULT ${col.default}`;
+	}
+	// Otherwise wrap in quotes as a string literal
+	return ` DEFAULT '${col.default}'`;
 }
 
 // --- DDL Generation ----------------------------------------------------------
 
 /** Generate CREATE TABLE statement */
-export function generateCreateTable(
-	tableName: string,
-	columns: Record<string, ColumnDefinition>,
-	dialect: Dialect = "postgres",
-): string {
+export function generateCreateTable(table: TableDefinition, dialect: Dialect = "postgres"): string {
 	const lines: string[] = [];
 
-	for (const col of Object.values(columns)) {
-		const parts: string[] = [];
+	for (const [colName, col] of Object.entries(table.columns)) {
+		const parts: string[] = [q(colName, dialect)];
 
+		// SERIAL is special — type includes AUTO_INCREMENT on MySQL
 		if (col.dataType === "serial" && dialect === "mysql") {
-			// MySQL: serial → INT AUTO_INCREMENT PRIMARY KEY
-			parts.push(q(col.name, dialect), "int", "AUTO_INCREMENT", "PRIMARY KEY");
-		} else if (col.dataType === "serial" && dialect === "sqlite") {
-			// SQLite: serial → INTEGER PRIMARY KEY AUTOINCREMENT
-			parts.push(q(col.name, dialect), "integer", "primary key", "autoincrement");
+			parts.push("INTEGER NOT NULL AUTO_INCREMENT");
 		} else if (col.dataType === "serial") {
-			// PostgreSQL: serial (implicit auto-increment)
-			parts.push(q(col.name, dialect), "serial");
+			parts.push("SERIAL");
 		} else {
-			parts.push(q(col.name, dialect), sqlType(col, dialect));
-
-			if (col.primaryKey) {
-				parts.push("PRIMARY KEY");
-			}
-			if (!col.nullable && !col.primaryKey) {
-				parts.push("NOT NULL");
-			}
-			if (col.unique && !col.primaryKey) {
-				parts.push("UNIQUE");
-			}
-			if (col.default && !col.primaryKey) {
-				parts.push(`DEFAULT ${col.default}`);
-			}
-			if (col.references) {
-				parts.push(
-					`REFERENCES ${q(col.references.table, dialect)}(${q(col.references.column, dialect)})`,
-				);
-			}
+			parts.push(sqlType(col, dialect));
 		}
 
-		lines.push(`\t${parts.join(" ")}`);
+		// NOT NULL (serial is always NOT NULL)
+		if (!col.nullable && col.dataType !== "serial") {
+			parts.push("NOT NULL");
+		}
+
+		// UNIQUE
+		if (col.unique) {
+			parts.push("UNIQUE");
+		}
+
+		// DEFAULT
+		const def = defaultValue(col, dialect);
+		if (def) parts.push(def.trim());
+
+		// PRIMARY KEY
+		if (col.dataType === "serial") {
+			parts.push("PRIMARY KEY");
+		}
+
+		lines.push(`  ${parts.join(" ")}`);
 	}
 
-	return `CREATE TABLE ${q(tableName, dialect)} (\n${lines.join(",\n")}\n);`;
+	// Foreign keys as table constraints
+	const fks: string[] = [];
+	for (const [colName, col] of Object.entries(table.columns)) {
+		if (col.references) {
+			const [refTable, refColumn] = col.references;
+			fks.push(
+				`  FOREIGN KEY (${q(colName, dialect)}) REFERENCES ${q(refTable, dialect)}(${q(refColumn, dialect)})`,
+			);
+		}
+	}
+
+	// Enum CHECK constraints
+	for (const [colName, col] of Object.entries(table.columns)) {
+		if (col.dataType === "enum" && col.enumValues) {
+			const check = col.enumValues.map((v) => `'${v}'`).join(", ");
+			fks.push(`  CHECK (${q(colName, dialect)} IN (${check}))`);
+		}
+	}
+
+	const allLines = [...lines, ...fks];
+	return `CREATE TABLE ${q(table.name, dialect)} (\n${allLines.join(",\n")}\n)`;
 }
 
 /** Generate ALTER TABLE ADD COLUMN statement */
 export function generateAddColumn(
 	tableName: string,
+	colName: string,
 	col: ColumnDefinition,
 	dialect: Dialect = "postgres",
 ): string {
-	const parts: string[] = [q(col.name, dialect), sqlType(col, dialect)];
+	const parts: string[] = [q(colName, dialect)];
 
-	if (!col.nullable) {
-		parts.push("NOT NULL");
-	}
-	if (col.unique) {
-		parts.push("UNIQUE");
-	}
-	if (col.default) {
-		parts.push(`DEFAULT ${col.default}`);
+	if (col.dataType === "serial") {
+		parts.push(dialect === "mysql" ? "INTEGER NOT NULL AUTO_INCREMENT" : "SERIAL");
+	} else {
+		parts.push(sqlType(col, dialect));
 	}
 
-	return `ALTER TABLE ${q(tableName, dialect)} ADD COLUMN ${parts.join(" ")};`;
+	if (!col.nullable) parts.push("NOT NULL");
+	if (col.unique) parts.push("UNIQUE");
+
+	const def = defaultValue(col, dialect);
+	if (def) parts.push(def.trim());
+
+	return `ALTER TABLE ${q(tableName, dialect)} ADD COLUMN ${parts.join(" ")}`;
 }
 
 /** Generate ALTER TABLE DROP COLUMN statement */
@@ -225,81 +175,55 @@ export function generateDropColumn(
 	columnName: string,
 	dialect: Dialect = "postgres",
 ): string {
-	return `ALTER TABLE ${q(tableName, dialect)} DROP COLUMN ${q(columnName, dialect)};`;
+	return `ALTER TABLE ${q(tableName, dialect)} DROP COLUMN ${q(columnName, dialect)}`;
 }
 
 /** Generate DROP TABLE statement */
 export function generateDropTable(tableName: string, dialect: Dialect = "postgres"): string {
-	return `DROP TABLE ${q(tableName, dialect)};`;
-}
-
-/** Generate ALTER COLUMN type statement */
-export function generateAlterColumnType(
-	tableName: string,
-	col: ColumnDefinition,
-	dialect: Dialect = "postgres",
-): string {
-	if (dialect === "mysql") {
-		return `ALTER TABLE ${q(tableName, dialect)} MODIFY COLUMN ${q(col.name, dialect)} ${sqlType(col, dialect)};`;
-	}
-	if (dialect === "sqlite") {
-		// SQLite doesn't support ALTER COLUMN TYPE — would need recreate table
-		return `-- SQLite: ALTER COLUMN TYPE not supported, recreate table instead`;
-	}
-	return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} TYPE ${sqlType(col, dialect)};`;
+	return `DROP TABLE ${q(tableName, dialect)}`;
 }
 
 /** Generate ALTER COLUMN SET/DROP NOT NULL */
 export function generateAlterColumnNullability(
 	tableName: string,
+	colName: string,
 	col: ColumnDefinition,
 	dialect: Dialect = "postgres",
 ): string {
-	if (dialect === "mysql") {
-		// MySQL uses MODIFY COLUMN
-		const nullStr = col.nullable ? "NULL" : "NOT NULL";
-		return `ALTER TABLE ${q(tableName, dialect)} MODIFY COLUMN ${q(col.name, dialect)} ${sqlType(col, dialect)} ${nullStr};`;
-	}
 	if (dialect === "sqlite") {
-		// SQLite doesn't support ALTER COLUMN NOT NULL
-		return `-- SQLite: ALTER COLUMN NOT NULL not supported, recreate table instead`;
+		// SQLite doesn't support ALTER COLUMN — would need table rebuild
+		// For now, return a comment
+		return `-- SQLite: Cannot alter nullability of ${colName} on ${tableName}`;
 	}
-	if (col.nullable) {
-		return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} DROP NOT NULL;`;
-	}
-	return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} SET NOT NULL;`;
+	const action = col.nullable ? "DROP NOT NULL" : "SET NOT NULL";
+	return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(colName, dialect)} ${action}`;
 }
 
 /** Generate ALTER COLUMN SET/DROP DEFAULT */
 export function generateAlterColumnDefault(
 	tableName: string,
+	colName: string,
 	col: ColumnDefinition,
 	dialect: Dialect = "postgres",
 ): string {
-	if (dialect === "mysql") {
-		if (col.default) {
-			return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} SET DEFAULT ${col.default};`;
-		}
-		return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} DROP DEFAULT;`;
+	if (dialect === "sqlite") {
+		return `-- SQLite: Cannot alter default of ${colName} on ${tableName}`;
 	}
-	if (col.default) {
-		return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} SET DEFAULT ${col.default};`;
+	if (col.default === undefined) {
+		return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(colName, dialect)} DROP DEFAULT`;
 	}
-	return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(col.name, dialect)} DROP DEFAULT;`;
+	return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(colName, dialect)} SET DEFAULT ${col.default}`;
 }
 
-/** Generate ALTER COLUMN SET/DROP UNIQUE (via CREATE/DROP INDEX) */
-export function generateAlterColumnUnique(
+/** Generate ALTER COLUMN TYPE */
+export function generateAlterColumnType(
 	tableName: string,
+	colName: string,
 	col: ColumnDefinition,
 	dialect: Dialect = "postgres",
 ): string {
-	const indexName = `${tableName}_${col.name}_key`;
-	if (col.unique) {
-		return `CREATE UNIQUE INDEX ${q(indexName, dialect)} ON ${q(tableName, dialect)}(${q(col.name, dialect)});`;
+	if (dialect === "sqlite") {
+		return `-- SQLite: Cannot alter type of ${colName} on ${tableName}`;
 	}
-	if (dialect === "mysql") {
-		return `DROP INDEX ${q(indexName, dialect)} ON ${q(tableName, dialect)};`;
-	}
-	return `DROP INDEX ${q(indexName, dialect)};`;
+	return `ALTER TABLE ${q(tableName, dialect)} ALTER COLUMN ${q(colName, dialect)} TYPE ${sqlType(col, dialect)}`;
 }

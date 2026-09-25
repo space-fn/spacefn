@@ -1,7 +1,7 @@
 // --- Schema Differ ------------------------------------------------------------
 // Compares two schema snapshots and produces a list of changes
 
-import type { DatabaseSchema, TableDefinition, ColumnDefinition } from "../types.js";
+import type { ColumnDefinition, DatabaseSchema, TableDefinition } from "../types.js";
 
 // --- Change Types ------------------------------------------------------------
 
@@ -19,7 +19,8 @@ export interface TableDropped {
 export interface ColumnAdded {
 	type: "column_added";
 	table: string;
-	column: ColumnDefinition;
+	column: string;
+	definition: ColumnDefinition;
 }
 
 export interface ColumnDropped {
@@ -44,37 +45,26 @@ export type SchemaChange = TableAdded | TableDropped | ColumnAdded | ColumnDropp
 export function diffSchemas(before: DatabaseSchema, after: DatabaseSchema): SchemaChange[] {
 	const changes: SchemaChange[] = [];
 
-	const beforeKeys = new Set(Object.keys(before));
-	const afterKeys = new Set(Object.keys(after));
-
-	// New tables
-	for (const tableName of afterKeys) {
-		if (!beforeKeys.has(tableName)) {
-			changes.push({
-				type: "table_added",
-				table: tableName,
-				definition: after[tableName],
-			});
+	// Tables added
+	for (const [name, definition] of Object.entries(after)) {
+		if (!(name in before)) {
+			changes.push({ type: "table_added", table: name, definition });
 		}
 	}
 
-	// Dropped tables
-	for (const tableName of beforeKeys) {
-		if (!afterKeys.has(tableName)) {
-			changes.push({
-				type: "table_dropped",
-				table: tableName,
-			});
+	// Tables dropped
+	for (const name of Object.keys(before)) {
+		if (!(name in after)) {
+			changes.push({ type: "table_dropped", table: name });
 		}
 	}
 
-	// Changed tables (columns added/dropped/modified)
-	for (const tableName of beforeKeys) {
-		if (!afterKeys.has(tableName)) continue;
+	// Columns in existing tables
+	for (const tableName of Object.keys(before)) {
+		if (!(tableName in after)) continue;
 
-		const beforeTable = before[tableName];
-		const afterTable = after[tableName];
-		changes.push(...diffColumns(tableName, beforeTable, afterTable));
+		const changes_ = diffColumns(tableName, before[tableName], after[tableName]);
+		changes.push(...changes_);
 	}
 
 	return changes;
@@ -87,23 +77,22 @@ function diffColumns(
 	after: TableDefinition,
 ): SchemaChange[] {
 	const changes: SchemaChange[] = [];
-	const beforeCols = new Set(Object.keys(before.columns));
-	const afterCols = new Set(Object.keys(after.columns));
 
-	// New columns
-	for (const colName of afterCols) {
-		if (!beforeCols.has(colName)) {
+	// Columns added
+	for (const [colName, definition] of Object.entries(after.columns)) {
+		if (!(colName in before.columns)) {
 			changes.push({
 				type: "column_added",
 				table: tableName,
-				column: after.columns[colName],
+				column: colName,
+				definition,
 			});
 		}
 	}
 
-	// Dropped columns
-	for (const colName of beforeCols) {
-		if (!afterCols.has(colName)) {
+	// Columns dropped
+	for (const colName of Object.keys(before.columns)) {
+		if (!(colName in after.columns)) {
 			changes.push({
 				type: "column_dropped",
 				table: tableName,
@@ -112,20 +101,19 @@ function diffColumns(
 		}
 	}
 
-	// Modified columns
-	for (const colName of beforeCols) {
-		if (!afterCols.has(colName)) continue;
+	// Columns changed
+	for (const colName of Object.keys(before.columns)) {
+		if (!(colName in after.columns)) continue;
 
-		const beforeCol = before.columns[colName];
-		const afterCol = after.columns[colName];
-
-		if (!columnsEqual(beforeCol, afterCol)) {
+		const b = before.columns[colName];
+		const a = after.columns[colName];
+		if (!columnsEqual(b, a)) {
 			changes.push({
 				type: "column_changed",
 				table: tableName,
 				column: colName,
-				before: beforeCol,
-				after: afterCol,
+				before: b,
+				after: a,
 			});
 		}
 	}
@@ -136,15 +124,27 @@ function diffColumns(
 /** Check if two column definitions are equal */
 function columnsEqual(a: ColumnDefinition, b: ColumnDefinition): boolean {
 	return (
-		a.name === b.name &&
 		a.dataType === b.dataType &&
 		a.nullable === b.nullable &&
-		a.primaryKey === b.primaryKey &&
 		a.unique === b.unique &&
 		a.default === b.default &&
-		JSON.stringify(a.typeArgs) === JSON.stringify(b.typeArgs) &&
-		JSON.stringify(a.references) === JSON.stringify(b.references)
+		a.length === b.length &&
+		arraysEqual(a.enumValues, b.enumValues) &&
+		referencesEqual(a.references, b.references)
 	);
+}
+
+function arraysEqual(a?: string[], b?: string[]): boolean {
+	if (!a && !b) return true;
+	if (!a || !b) return false;
+	if (a.length !== b.length) return false;
+	return a.every((v, i) => v === b[i]);
+}
+
+function referencesEqual(a?: [string, string], b?: [string, string]): boolean {
+	if (!a && !b) return true;
+	if (!a || !b) return false;
+	return a[0] === b[0] && a[1] === b[1];
 }
 
 /** Check if there are any changes */
