@@ -2,16 +2,15 @@
 // Convention-based database layer for Kysely
 
 export { defineTable } from "./table.js";
-export { createMigrator, defineMigration } from "./migrator.js";
-export { column } from "./column.js";
-export { ColumnBuilder } from "./column.js";
+export { column, ColumnBuilder } from "./column.js";
+export { createMigrator, createMigrationProvider } from "./migrator.js";
 export type {
+	ColumnDataType,
 	ColumnDefinition,
 	TableDefinition,
 	DatabaseSchema,
-	ColumnDataType,
 	InferColumnType,
 	InferRowType,
+	InferInsertType,
 	InferDatabaseType,
 } from "./types.js";
-export type { MigrationDefinition, MigratorConfig } from "./migrator.js";

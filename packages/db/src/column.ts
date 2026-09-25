@@ -1,55 +1,54 @@
 // --- Column Builder -----------------------------------------------------------
 // Fluent API for defining table columns
+// Name comes from the object key, not a string argument.
 
-import type { ColumnDefinition, ColumnDataType } from "./types.js";
+import type { ColumnDataType, ColumnDefinition } from "./types.js";
 
-/** Create a column definition */
-function createColumn(name: string, dataType: ColumnDataType, typeArgs?: unknown[]): ColumnBuilder {
-	return new ColumnBuilder(name, dataType, typeArgs);
-}
-
-/** Column builder with fluent API */
+/** Column builder with fluent modifier chain */
 export class ColumnBuilder {
-	/** @internal */ _name: string;
 	/** @internal */ _dataType: ColumnDataType;
-	/** @internal */ _typeArgs?: unknown[];
+	/** @internal */ _length?: number;
 	/** @internal */ _nullable = false;
-	/** @internal */ _primaryKey = false;
 	/** @internal */ _unique = false;
 	/** @internal */ _default?: string;
-	/** @internal */ _references?: { table: string; column: string };
+	/** @internal */ _references?: [table: string, column: string];
+	/** @internal */ _enumValues?: string[];
 
-	constructor(name: string, dataType: ColumnDataType, typeArgs?: unknown[]) {
-		this._name = name;
+	constructor(
+		dataType: ColumnDataType,
+		options?: {
+			length?: number;
+			nullable?: boolean;
+			unique?: boolean;
+			default?: string;
+			references?: [table: string, column: string];
+			enumValues?: string[];
+		},
+	) {
 		this._dataType = dataType;
-		this._typeArgs = typeArgs;
+		if (options) {
+			if (options.length !== undefined) this._length = options.length;
+			if (options.nullable) this._nullable = options.nullable;
+			if (options.unique) this._unique = options.unique;
+			if (options.default !== undefined) this._default = options.default;
+			if (options.references) this._references = options.references;
+			if (options.enumValues) this._enumValues = options.enumValues;
+		}
 	}
 
-	/** Mark column as NOT NULL */
-	notNull(): this {
-		this._nullable = false;
-		return this;
-	}
-
-	/** Mark column as nullable */
+	/** Allow NULL values (default is NOT NULL) */
 	nullable(): this {
 		this._nullable = true;
 		return this;
 	}
 
-	/** Mark column as primary key */
-	primaryKey(): this {
-		this._primaryKey = true;
-		return this;
-	}
-
-	/** Add unique constraint */
+	/** Add UNIQUE constraint */
 	unique(): this {
 		this._unique = true;
 		return this;
 	}
 
-	/** Set default value (SQL expression) */
+	/** Set default value. String values are treated as SQL expressions. */
 	default(value: string): this {
 		this._default = value;
 		return this;
@@ -57,123 +56,94 @@ export class ColumnBuilder {
 
 	/** Add foreign key reference */
 	references(table: string, column: string): this {
-		this._references = { table, column };
+		this._references = [table, column];
 		return this;
 	}
 
-	/** Build the column definition */
+	/** Serialize to a plain object (for snapshots) */
 	toJSON(): ColumnDefinition {
-		return {
-			name: this._name,
+		const def: ColumnDefinition = {
 			dataType: this._dataType,
-			typeArgs: this._typeArgs,
 			nullable: this._nullable,
-			primaryKey: this._primaryKey,
 			unique: this._unique,
-			default: this._default,
-			references: this._references,
 		};
+		if (this._length !== undefined) def.length = this._length;
+		if (this._default !== undefined) def.default = this._default;
+		if (this._references) def.references = this._references;
+		if (this._enumValues) def.enumValues = this._enumValues;
+		return def;
 	}
 }
 
 // --- Column Type Creators ----------------------------------------------------
 
-/** Serial (auto-incrementing integer, primary key) */
-export function serial(name: string): ColumnBuilder {
-	return createColumn(name, "serial");
+/** Auto-incrementing integer, primary key convention */
+export function id(): ColumnBuilder {
+	return new ColumnBuilder("serial", { default: "auto" });
+}
+
+/** VARCHAR(255) by default, or VARCHAR(n) with length */
+export function string(length?: number): ColumnBuilder {
+	return new ColumnBuilder("varchar", { length });
+}
+
+/** Unlimited text */
+export function text(): ColumnBuilder {
+	return new ColumnBuilder("text");
 }
 
 /** Integer */
-export function integer(name: string): ColumnBuilder {
-	return createColumn(name, "integer");
-}
-
-/** BigInt */
-export function bigint(name: string): ColumnBuilder {
-	return createColumn(name, "bigint");
-}
-
-/** Text */
-export function text(name: string): ColumnBuilder {
-	return createColumn(name, "text");
-}
-
-/** VARCHAR with length */
-export function varchar(name: string, length: number): ColumnBuilder {
-	return createColumn(name, "varchar", [length]);
+export function integer(): ColumnBuilder {
+	return new ColumnBuilder("integer");
 }
 
 /** Boolean */
-export function boolean(name: string): ColumnBuilder {
-	return createColumn(name, "boolean");
+export function boolean(): ColumnBuilder {
+	return new ColumnBuilder("boolean");
 }
 
-/** Timestamp */
-export function timestamp(name: string): ColumnBuilder {
-	return createColumn(name, "timestamp");
+/** Timestamp without timezone */
+export function timestamp(): ColumnBuilder {
+	return new ColumnBuilder("timestamp");
 }
 
-/** Date */
-export function date(name: string): ColumnBuilder {
-	return createColumn(name, "date");
+/** JSON (JSONB on PostgreSQL) */
+export function json(): ColumnBuilder {
+	return new ColumnBuilder("json");
 }
 
-/** Time */
-export function time(name: string): ColumnBuilder {
-	return createColumn(name, "time");
+/** Enum — varchar with CHECK constraint */
+export function enumColumn(...values: string[]): ColumnBuilder {
+	return new ColumnBuilder("enum", { enumValues: values });
 }
 
-/** Decimal with precision and scale */
-export function decimal(name: string, precision: number, scale: number): ColumnBuilder {
-	return createColumn(name, "decimal", [precision, scale]);
+/**
+ * Timestamps helper. Returns `{ create, update }` for use as column values.
+ *
+ * @example
+ * ```ts
+ * export const users = defineTable("users", {
+ *   createdAt: column.timestamps().create,
+ *   updatedAt: column.timestamps().update,
+ * })
+ * ```
+ */
+export function timestamps(): { create: ColumnBuilder; update: ColumnBuilder } {
+	return {
+		create: new ColumnBuilder("timestamp", { default: "auto" }),
+		update: new ColumnBuilder("timestamp", { default: "auto" }),
+	};
 }
 
-/** Real (single precision) */
-export function real(name: string): ColumnBuilder {
-	return createColumn(name, "real");
-}
-
-/** Double precision */
-export function double(name: string): ColumnBuilder {
-	return createColumn(name, "double");
-}
-
-/** JSON */
-export function json(name: string): ColumnBuilder {
-	return createColumn(name, "json");
-}
-
-/** JSONB (binary JSON, PostgreSQL) */
-export function jsonb(name: string): ColumnBuilder {
-	return createColumn(name, "jsonb");
-}
-
-/** UUID */
-export function uuid(name: string): ColumnBuilder {
-	return createColumn(name, "uuid");
-}
-
-/** Blob (binary data) */
-export function blob(name: string): ColumnBuilder {
-	return createColumn(name, "blob");
-}
-
-/** Column namespace for `column.xxx()` syntax */
+/** Column namespace — use as `column.string()`, `column.id()`, etc. */
 export const column = {
-	serial,
-	integer,
-	bigint,
+	id,
+	string,
 	text,
-	varchar,
+	integer,
 	boolean,
 	timestamp,
-	date,
-	time,
-	decimal,
-	real,
-	double,
 	json,
-	jsonb,
-	uuid,
-	blob,
+	enum: enumColumn,
+	timestamps,
 };

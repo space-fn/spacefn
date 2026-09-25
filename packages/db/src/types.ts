@@ -5,80 +5,75 @@
 export type ColumnDataType =
 	| "serial"
 	| "integer"
-	| "bigint"
 	| "text"
 	| "varchar"
 	| "boolean"
 	| "timestamp"
-	| "date"
-	| "time"
-	| "decimal"
-	| "real"
-	| "double"
 	| "json"
-	| "jsonb"
-	| "uuid"
-	| "blob";
+	| "enum";
 
-/** Column definition */
+/** Column definition — serializable snapshot of a column */
 export interface ColumnDefinition {
-	/** Column name */
-	name: string;
 	/** Column data type */
 	dataType: ColumnDataType;
-	/** Type arguments (e.g., varchar length, decimal precision) */
-	typeArgs?: unknown[];
+	/** VARCHAR length (only for varchar) */
+	length?: number;
 	/** Whether column is nullable */
 	nullable: boolean;
-	/** Whether column is a primary key */
-	primaryKey: boolean;
 	/** Whether column has unique constraint */
 	unique: boolean;
-	/** Default value expression */
+	/** Default value (string literal or SQL expression) */
 	default?: string;
 	/** Foreign key reference */
-	references?: { table: string; column: string };
+	references?: [table: string, column: string];
+	/** Enum values (only for enum type) */
+	enumValues?: string[];
 }
 
 /** Table definition */
 export interface TableDefinition {
 	/** Table name */
 	name: string;
-	/** Column definitions */
+	/** Column definitions keyed by property name */
 	columns: Record<string, ColumnDefinition>;
 }
 
 /** Database schema (map of table definitions) */
 export type DatabaseSchema = Record<string, TableDefinition>;
 
-/** Infer TypeScript type from column definition */
-export type InferColumnType<T extends ColumnDefinition> = T["dataType"] extends
-	| "serial"
-	| "integer"
-	| "bigint"
+// --- Type Inference ----------------------------------------------------------
+
+/** Map a ColumnDefinition to its TypeScript row type */
+export type InferColumnType<T extends ColumnDefinition> = T["dataType"] extends "serial" | "integer"
 	? number
 	: T["dataType"] extends "boolean"
 		? boolean
-		: T["dataType"] extends "timestamp" | "date" | "time"
+		: T["dataType"] extends "timestamp"
 			? Date
-			: T["dataType"] extends "json" | "jsonb"
-				? unknown
-				: T["dataType"] extends "blob"
-					? Buffer
-					: string;
+			: T["dataType"] extends "enum"
+				? T["enumValues"] extends readonly (infer V)[]
+					? V extends string
+						? V
+						: string
+					: string
+				: string;
 
-/** Infer row type from table definition */
+/** Infer row type (SELECT result) from a table definition */
 export type InferRowType<T extends TableDefinition> = {
-	[K in keyof T["columns"]]: T["columns"][K]["primaryKey"] extends true
-		? InferColumnType<T["columns"][K]> // serial is always Generated
-		: T["columns"][K]["nullable"] extends true
-			? InferColumnType<T["columns"][K]> | null
-			: T["columns"][K]["default"] extends string
-				? InferColumnType<T["columns"][K]> | undefined
-				: InferColumnType<T["columns"][K]>;
+	[K in keyof T["columns"]]: InferColumnType<T["columns"][K]>;
 };
 
-/** Infer database type from schema */
+/** Infer insert type from a table definition.
+ *  Columns with defaults or auto-generation are optional. */
+export type InferInsertType<T extends TableDefinition> = {
+	[K in keyof T["columns"]]: T["columns"][K]["default"] extends string
+		? InferColumnType<T["columns"][K]> | undefined
+		: T["columns"][K]["nullable"] extends true
+			? InferColumnType<T["columns"][K]> | null | undefined
+			: InferColumnType<T["columns"][K]>;
+};
+
+/** Infer full database type from a schema */
 export type InferDatabaseType<T extends DatabaseSchema> = {
 	[K in keyof T]: InferRowType<T[K]>;
 };
