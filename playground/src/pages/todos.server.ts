@@ -1,27 +1,28 @@
-import { defineLoader } from "@spacefn/server"
-import { getDb } from "../db/main/client"
+import { defineLoader } from "@spacefn/server";
+
+import { getDb } from "../db/main/client";
 
 export interface TodoItem {
-	id: number
-	title: string
-	description: string | null
-	completed: boolean
-	priority: "low" | "medium" | "high"
-	dueDate: string | null
-	categoryId: number | null
-	categoryName: string | null
-	categoryColor: string | null
-	createdAt: string
+	id: number;
+	title: string;
+	description: string | null;
+	completed: boolean;
+	priority: "low" | "medium" | "high";
+	dueDate: string | null;
+	categoryId: number | null;
+	categoryName: string | null;
+	categoryColor: string | null;
+	createdAt: string;
 }
 
 export interface Category {
-	id: number
-	name: string
-	color: string
+	id: number;
+	name: string;
+	color: string;
 }
 
 export const loader = defineLoader(async () => {
-	const db = getDb()
+	const db = getDb();
 
 	const todos = await db
 		.selectFrom("todos")
@@ -39,13 +40,13 @@ export const loader = defineLoader(async () => {
 			"todos.createdAt",
 		])
 		.orderBy("todos.createdAt", "desc")
-		.execute()
+		.execute();
 
 	const categories = await db
 		.selectFrom("categories")
 		.select(["id", "name", "color"])
 		.orderBy("name")
-		.execute()
+		.execute();
 
-	return { todos: todos as TodoItem[], categories: categories as Category[] }
-})
+	return { todos: todos as TodoItem[], categories: categories as Category[] };
+});

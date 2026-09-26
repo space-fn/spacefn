@@ -1,12 +1,12 @@
-import { defineComponent, h } from "@spacefn/html"
-import type { LoaderReturnType } from "@spacefn/server"
-import { ds } from "@spacefn/datastar"
+import { ds } from "@spacefn/datastar";
+import { defineComponent, h } from "@spacefn/html";
+import type { LoaderReturnType } from "@spacefn/server";
 
-import { cssOutput, layoutSx, headerSx, cardSx, formSx, btnSx, filterSx } from "../styles"
-import { renderTodoList } from "../todo-list"
-import type { loader } from "./todos.server"
+import { cssOutput, layoutSx, headerSx, cardSx, formSx, btnSx, filterSx } from "../styles";
+import { renderTodoList } from "../todo-list";
+import type { loader } from "./todos.server";
 
-type Props = LoaderReturnType<typeof loader>
+type Props = LoaderReturnType<typeof loader>;
 
 export default defineComponent<Props>((props) => {
 	return h.html(
@@ -56,9 +56,7 @@ export default defineComponent<Props>((props) => {
 								...ds.bind("categoryId"),
 							},
 							h.option({ value: "" }, "No category"),
-							...props.categories.map((cat) =>
-								h.option({ value: String(cat.id) }, cat.name),
-							),
+							...props.categories.map((cat) => h.option({ value: String(cat.id) }, cat.name)),
 						),
 						h.select(
 							{
@@ -128,5 +126,5 @@ export default defineComponent<Props>((props) => {
 				),
 			),
 		),
-	)
-})
+	);
+});

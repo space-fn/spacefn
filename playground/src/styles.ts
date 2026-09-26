@@ -1,4 +1,4 @@
-import { tokens, css, getCSS } from "@spacefn/css"
+import { tokens, css, getCSS } from "@spacefn/css";
 
 // --- Tokens ------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ export const tkn = tokens({
 		sm: "0 1px 2px rgba(0,0,0,0.05)",
 		md: "0 4px 6px -1px rgba(0,0,0,0.1)",
 	},
-})
+});
 
 // --- Layout ------------------------------------------------------------------
 
@@ -41,12 +41,11 @@ export const layoutSx = css("layout", {
 		maxWidth: "48rem",
 		margin: "0 auto",
 		padding: tkn.spacing.xl,
-		fontFamily:
-			'-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+		fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
 		color: tkn.colors.gray[800],
 		lineHeight: "1.6",
 	},
-})
+});
 
 // --- Header ------------------------------------------------------------------
 
@@ -64,7 +63,7 @@ export const headerSx = css("header", {
 		fontSize: tkn.font.sm,
 		color: tkn.colors.gray[500],
 	},
-})
+});
 
 // --- Card --------------------------------------------------------------------
 
@@ -75,7 +74,7 @@ export const cardSx = css("card", {
 		boxShadow: tkn.shadow.md,
 		padding: tkn.spacing.lg,
 	},
-})
+});
 
 // --- Form --------------------------------------------------------------------
 
@@ -103,7 +102,7 @@ export const formSx = css("form", {
 		color: tkn.colors.gray[700],
 		outline: "none",
 	},
-})
+});
 
 // --- Button ------------------------------------------------------------------
 
@@ -139,7 +138,7 @@ export const btnSx = css("btn", {
 			md: { padding: `${tkn.spacing.sm} ${tkn.spacing.md}` },
 		},
 	})
-	.defaults({ color: "primary", size: "md" })
+	.defaults({ color: "primary", size: "md" });
 
 // --- Todo Item ---------------------------------------------------------------
 
@@ -184,7 +183,7 @@ export const todoItemSx = css("todo-item", {
 		opacity: "0.6",
 		flexShrink: "0",
 	},
-})
+});
 
 // --- Badge -------------------------------------------------------------------
 
@@ -222,7 +221,7 @@ export const badgeSx = css("badge", {
 			},
 		},
 	})
-	.defaults({ color: "gray" })
+	.defaults({ color: "gray" });
 
 // --- Filters -----------------------------------------------------------------
 
@@ -247,7 +246,7 @@ export const filterSx = css("filter", {
 		color: tkn.colors.white,
 		borderColor: tkn.colors.primary[500],
 	},
-})
+});
 
 // --- Empty State ------------------------------------------------------------
 
@@ -269,7 +268,7 @@ export const emptySx = css("empty", {
 		fontSize: tkn.font.sm,
 		marginTop: tkn.spacing.xs,
 	},
-})
+});
 
 // --- Category Badge Colors ---------------------------------------------------
 
@@ -279,8 +278,8 @@ export const categoryColors: Record<string, string> = {
 	"#22c55e": "success",
 	"#f59e0b": "warning",
 	"#6b7280": "gray",
-}
+};
 
 // --- Generate CSS Output -----------------------------------------------------
 
-export const cssOutput = getCSS({ tokens: [tkn] })
+export const cssOutput = getCSS({ tokens: [tkn] });

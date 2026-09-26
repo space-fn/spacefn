@@ -2,5 +2,5 @@ export default function () {
 	return new Response(null, {
 		status: 302,
 		headers: { Location: "/todos" },
-	})
+	});
 }

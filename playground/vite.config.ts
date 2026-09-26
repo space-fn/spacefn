@@ -1,7 +1,10 @@
+import { db } from "@spacefn/db/vite";
 import { space } from "@spacefn/server/vite";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-	plugins: [...space(), tsconfigPaths()],
+	resolve: {
+		tsconfigPaths: true,
+	},
+	plugins: [...space(), await db({ dialect: "sqlite" })],
 });

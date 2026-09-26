@@ -1,32 +1,25 @@
 // --- Todo List Component -----------------------------------------------------
 // Shared renderer for the todo list — used by page and API routes
 
-import { h } from "@spacefn/html"
-import type { HtmlElement } from "@spacefn/html"
+import { h } from "@spacefn/html";
+import type { HtmlElement } from "@spacefn/html";
 
-import {
-	todoItemSx,
-	badgeSx,
-	btnSx,
-	categoryColors,
-} from "./styles"
-import type { TodoItem } from "./pages/todos.server"
+import type { TodoItem } from "./pages/todos.server";
+import { todoItemSx, badgeSx, btnSx, categoryColors } from "./styles";
 
 const priorityBadge: Record<string, string> = {
 	low: "gray",
 	medium: "warning",
 	high: "danger",
-}
+};
 
 /** Render a single todo item */
 function todoItem(todo: TodoItem): HtmlElement {
 	const titleClass = todo.completed
 		? `${todoItemSx.title} ${todoItemSx.titleCompleted}`
-		: todoItemSx.title
+		: todoItemSx.title;
 
-	const badgeColor = todo.categoryColor
-		? (categoryColors[todo.categoryColor] ?? "gray")
-		: "gray"
+	const badgeColor = todo.categoryColor ? (categoryColors[todo.categoryColor] ?? "gray") : "gray";
 
 	return h.div(
 		{ class: todoItemSx.base, "data-todo-id": String(todo.id) },
@@ -45,9 +38,7 @@ function todoItem(todo: TodoItem): HtmlElement {
 			h.div(
 				{},
 				h.p({ class: titleClass }, todo.title),
-				todo.description
-					? h.p({ class: todoItemSx.description }, todo.description)
-					: null,
+				todo.description ? h.p({ class: todoItemSx.description }, todo.description) : null,
 			),
 			h.div(
 				{ style: "display:flex;gap:0.25rem;flex-wrap:wrap;margin-top:0.25rem" },
@@ -58,10 +49,7 @@ function todoItem(todo: TodoItem): HtmlElement {
 					todo.priority,
 				),
 				todo.categoryName
-					? h.span(
-							{ class: badgeSx({ color: badgeColor }).base },
-							todo.categoryName,
-						)
+					? h.span({ class: badgeSx({ color: badgeColor }).base }, todo.categoryName)
 					: null,
 			),
 		),
@@ -86,7 +74,7 @@ function todoItem(todo: TodoItem): HtmlElement {
 				"✕",
 			),
 		),
-	)
+	);
 }
 
 /** Render the full todo list */
@@ -96,17 +84,18 @@ export function renderTodoList(todos: TodoItem[]): HtmlElement {
 			{ class: "todo-list" },
 			h.div(
 				{},
-				h.div({ style: "text-align:center;padding:3rem 0;color:#d1d5db" },
+				h.div(
+					{ style: "text-align:center;padding:3rem 0;color:#d1d5db" },
 					h.div({ style: "font-size:3rem;margin-bottom:1rem" }, "📝"),
 					h.p({ style: "font-size:1.25rem;font-weight:500" }, "No todos yet"),
-					h.p({ style: "font-size:0.875rem;margin-top:0.25rem" }, "Create one above to get started"),
+					h.p(
+						{ style: "font-size:0.875rem;margin-top:0.25rem" },
+						"Create one above to get started",
+					),
 				),
 			),
-		)
+		);
 	}
 
-	return h.div(
-		{ class: "todo-list" },
-		...todos.map((todo) => todoItem(todo)),
-	)
+	return h.div({ class: "todo-list" }, ...todos.map((todo) => todoItem(todo)));
 }
