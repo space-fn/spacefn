@@ -71,6 +71,12 @@ function defaultValue(col: ColumnDefinition, dialect: Dialect): string {
 		}
 		return "";
 	}
+	// Boolean defaults: SQLite stores booleans as integers
+	if (dialect === "sqlite") {
+		if (col.default === "true" || col.default === "TRUE") return " DEFAULT 1";
+		if (col.default === "false" || col.default === "FALSE") return " DEFAULT 0";
+	}
+
 	// SQL expression (e.g., "now()", "'user'", "TRUE")
 	if (
 		col.default.startsWith("'") ||
