@@ -36,7 +36,9 @@ function sqlType(col: ColumnDefinition, dialect: Dialect): string {
 function sqlTypeBase(dataType: ColumnDefinition["dataType"], dialect: Dialect): string {
 	switch (dataType) {
 		case "serial":
-			return dialect === "mysql" ? "INTEGER NOT NULL AUTO_INCREMENT" : "SERIAL";
+			if (dialect === "mysql") return "INTEGER NOT NULL AUTO_INCREMENT";
+			if (dialect === "sqlite") return "INTEGER PRIMARY KEY AUTOINCREMENT";
+			return "SERIAL";
 		case "integer":
 			return "INTEGER";
 		case "text":
@@ -46,7 +48,9 @@ function sqlTypeBase(dataType: ColumnDefinition["dataType"], dialect: Dialect): 
 		case "boolean":
 			return dialect === "sqlite" ? "INTEGER" : "BOOLEAN";
 		case "timestamp":
-			return dialect === "mysql" ? "DATETIME" : "TIMESTAMP";
+			if (dialect === "mysql") return "DATETIME";
+			if (dialect === "sqlite") return "TEXT";
+			return "TIMESTAMP";
 		case "json":
 			return dialect === "postgres" ? "JSONB" : "JSON";
 		default:
@@ -61,7 +65,9 @@ function defaultValue(col: ColumnDefinition, dialect: Dialect): string {
 	if (col.default === "auto") {
 		if (col.dataType === "serial") return "";
 		if (col.dataType === "timestamp") {
-			return dialect === "mysql" ? " DEFAULT CURRENT_TIMESTAMP" : " DEFAULT NOW()";
+			if (dialect === "mysql") return " DEFAULT CURRENT_TIMESTAMP";
+			if (dialect === "sqlite") return " DEFAULT CURRENT_TIMESTAMP";
+			return " DEFAULT NOW()";
 		}
 		return "";
 	}
@@ -91,14 +97,8 @@ export function generateCreateTable(table: TableDefinition, dialect: Dialect = "
 	for (const [colName, col] of Object.entries(table.columns)) {
 		const parts: string[] = [q(colName, dialect)];
 
-		// SERIAL is special — type includes AUTO_INCREMENT on MySQL
-		if (col.dataType === "serial" && dialect === "mysql") {
-			parts.push("INTEGER NOT NULL AUTO_INCREMENT");
-		} else if (col.dataType === "serial") {
-			parts.push("SERIAL");
-		} else {
-			parts.push(sqlType(col, dialect));
-		}
+		// SERIAL is special — type includes AUTO_INCREMENT on MySQL, AUTOINCREMENT on SQLite
+		parts.push(sqlType(col, dialect));
 
 		// NOT NULL (serial is always NOT NULL)
 		if (!col.nullable && col.dataType !== "serial") {
@@ -114,8 +114,8 @@ export function generateCreateTable(table: TableDefinition, dialect: Dialect = "
 		const def = defaultValue(col, dialect);
 		if (def) parts.push(def.trim());
 
-		// PRIMARY KEY
-		if (col.dataType === "serial") {
+		// PRIMARY KEY (sqlite AUTOINCREMENT already includes it)
+		if (col.dataType === "serial" && dialect !== "sqlite") {
 			parts.push("PRIMARY KEY");
 		}
 
