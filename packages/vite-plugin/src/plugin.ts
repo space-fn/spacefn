@@ -119,17 +119,16 @@ export function space(options: SpaceOptions = {}): Plugin {
 				server.ws.send({ type: "full-reload" });
 			}, 100);
 
-			server.watcher.on("change", (file) => {
-				// Skip non-source files
-				if (!file.endsWith(".ts") && !file.endsWith(".tsx")) return;
-				// Skip generated output files
-				if (file.includes(".space/")) return;
-
+			// Watch for file add, change, and unlink
+			const onFileEvent = (file: string) => {
 				const matching = findGenerators(resolved.generators, file);
 				if (matching.length > 0) {
 					regenerate();
 				}
-			});
+			};
+			server.watcher.on("add", onFileEvent);
+			server.watcher.on("change", onFileEvent);
+			server.watcher.on("unlink", onFileEvent);
 		},
 	};
 }
