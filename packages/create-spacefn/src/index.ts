@@ -51,6 +51,8 @@ function install(targetDir: string, pm: PackageManager): void {
     "@biomejs/biome",
     "@cloudflare/vite-plugin",
     "@cloudflare/workers-types",
+    "@types/node",
+    "typescript",
     "vite",
     "vitest",
     "wrangler",
