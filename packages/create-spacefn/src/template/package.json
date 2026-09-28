@@ -8,6 +8,8 @@
     "test": "space test",
     "fmt": "space fmt",
     "lint": "space lint",
-    "check": "space check"
+    "check": "space check",
+    "deploy": "space build && wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   }
 }

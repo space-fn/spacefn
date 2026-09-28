@@ -28,7 +28,7 @@ async function writeTemplate(targetDir: string, projectName: string): Promise<vo
   await cp(TEMPLATE_DIR, targetDir, { recursive: true });
 
   // Replace {{app_name}} placeholder in template files
-  const files = ["package.json", "wrangler.toml"];
+  const files = ["package.json", "wrangler.jsonc"];
   for (const file of files) {
     const filePath = join(targetDir, file);
     if (existsSync(filePath)) {
