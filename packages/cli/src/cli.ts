@@ -13,6 +13,7 @@ const main = defineCommand({
     fmt: () => import("./commands/fmt.js").then((m) => m.default),
     lint: () => import("./commands/lint.js").then((m) => m.default),
     check: () => import("./commands/check.js").then((m) => m.default),
+    test: () => import("./commands/test.js").then((m) => m.default),
     run: () => import("./commands/run.js").then((m) => m.default),
     "db:generate": () => import("./commands/db/generate.js").then((m) => m.default),
     "db:migrate": () => import("./commands/db/migrate.js").then((m) => m.default),

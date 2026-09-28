@@ -22,11 +22,11 @@ function listScripts() {
 export default defineCommand({
   meta: { name: "run", description: "Run a custom script from scripts/" },
   args: {
-    name: { type: "string", description: "Script name to run" },
+    name: { type: "positional", description: "Script name" },
     list: { type: "boolean", description: "List available scripts", alias: "l" },
   },
   async run({ args }) {
-    if (args.list || !args.name) {
+    if (args.list || !args.name || args.name === "--list" || args.name === "-l") {
       listScripts();
       return;
     }
@@ -37,6 +37,14 @@ export default defineCommand({
     try {
       const script = await import(scriptPath);
 
+      // If script exports a citty command (via defineCmd), run it
+      if (script.default && typeof script.default === "object" && script.default.meta) {
+        const { runMain } = await import("citty");
+        await runMain(script.default);
+        return;
+      }
+
+      // Otherwise, call default() or run()
       if (typeof script.default === "function") {
         await script.default();
       } else if (typeof script.run === "function") {

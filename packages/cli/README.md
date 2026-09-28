@@ -5,11 +5,12 @@ Unified CLI for SpaceFn projects. One command to rule them all.
 ```bash
 npx space dev          # Start dev server
 npx space build        # Build for production
+npx space test         # Run tests with Vitest
 npx space fmt          # Format code with Biome
 npx space lint         # Lint code with Biome
 npx space check        # Run all checks (fmt + lint + typecheck)
-npx space run --name=<name>  # Run custom script from scripts/
-npx space run --list         # List available scripts
+npx space run <name>   # Run custom script from scripts/
+npx space run --list   # List available scripts
 npx space db:generate  # Generate database migration
 npx space db:migrate   # Run pending migrations
 ```
@@ -24,7 +25,9 @@ Peer deps: `biome`, `vite`, `vitest` (you provide them).
 
 ## Script Runner
 
-Create a `scripts/` directory in your project root:
+Create a `scripts/` directory in your project root. Scripts can be simple functions or full CLI commands with typed args.
+
+### Simple scripts
 
 ```ts
 // scripts/db:seed.ts
@@ -37,10 +40,33 @@ export default async function () {
 }
 ```
 
+### Scripts with args (defineCmd)
+
+```ts
+// scripts/db:seed.ts
+import { defineCmd, log } from "@spacefn/cli";
+
+export default defineCmd({
+  meta: { name: "db:seed", description: "Seed the database" },
+  args: {
+    count: { type: "number", description: "Number of records", default: 10 },
+    clear: { type: "boolean", description: "Clear existing data first", alias: "c" },
+  },
+  async run({ args }) {
+    log.info(`Seeding ${args.count} records...`);
+    if (args.clear) log.info("Clearing existing data...");
+    // Your seed logic here
+    log.success("Done!");
+  },
+});
+```
+
 Run it:
 
 ```bash
-npx space run --name=db:seed
+npx space run db:seed                    # Simple invocation
+npx space run db:seed -- --count 20      # With args
+npx space run db:seed -- --count 20 -c   # With flags
 ```
 
 List available scripts:
@@ -86,12 +112,13 @@ Ships with a default `biome.json` config. If your project doesn't have one, the 
 |---------|-------------|
 | `space dev` | Start Vite dev server |
 | `space build` | Build for production |
+| `space test` | Run tests with Vitest |
 | `space fmt` | Format code with Biome |
 | `space fmt --check` | Check formatting (don't write) |
 | `space lint` | Lint code with Biome |
 | `space lint --fix` | Lint and auto-fix issues |
 | `space check` | Run fmt + lint + typecheck |
-| `space run --name=<name>` | Run script from `scripts/` |
+| `space run <name>` | Run script from `scripts/` |
 | `space run --list` | List available scripts |
 | `space db:generate` | Generate migration from schema |
 | `space db:migrate` | Run pending migrations |
