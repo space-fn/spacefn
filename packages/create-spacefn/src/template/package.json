@@ -1,0 +1,13 @@
+{
+  "name": "{{app_name}}",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "space dev",
+    "build": "space build",
+    "test": "space test",
+    "fmt": "space fmt",
+    "lint": "space lint",
+    "check": "space check"
+  }
+}

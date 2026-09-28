@@ -1,6 +1,6 @@
 # create-spacefn
 
-Scaffold a new SpaceFn project.
+Scaffold a new SpaceFn project with a single command.
 
 ## Usage
 
@@ -9,13 +9,17 @@ npm create spacefn@latest
 # or: pnpm create spacefn@latest
 ```
 
-The interactive CLI asks for the project directory, package manager (`npm`, `pnpm`, `yarn`, or `bun`), and template. It copies the selected template, substitutes the project name, and optionally installs dependencies.
+The interactive CLI asks for the project name and package manager (`npm`, `pnpm`, `yarn`, or `bun`). It creates the project, installs dependencies, and sets up all conventions.
 
-## Templates
+## What's included
 
-| Template  | Contents                                                                                                                      |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `minimal` | Vite server, file-based routes/pages/middleware, HTML, DataStar, TypeScript, formatting/linting, and Cloudflare configuration |
+- **@spacefn/asteroids** — HTML, CSS, DataStar, Database, Hono utilities
+- **@spacefn/cli** — `space dev`, `space build`, `space test`, `space fmt`, `space lint`, `space run`
+- **Hono** — Web framework for Cloudflare Workers
+- **Vite + Cloudflare** — Dev server and production build
+- **Biome** — Linter and formatter (via CLI)
+- **Vitest** — Testing
+- **Example files** — Route, page, database schema, and custom script
 
 ## After scaffolding
 
@@ -24,4 +28,4 @@ cd my-project
 pnpm dev
 ```
 
-Open `http://localhost:5173`. Generated route/page/middleware modules live in `.space/` and should not be edited. See the [getting started guide](../../docs/getting-started.md).
+Open `http://localhost:5173`. See the [getting started guide](../../docs/getting-started.md).
