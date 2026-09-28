@@ -1,61 +1,30 @@
-# @spacefn/server
+> ⚠️ **DEPRECATED** — Use `@spacefn/asteroids` with Hono instead.
 
-`@spacefn/server` is the runtime for SpaceFn's file-based routes, pages, and middleware. It is intentionally based on the Web `Request` and `Response` APIs.
+# @spacefn/server (deprecated)
 
-## Install
+`@spacefn/server` was the h3-based runtime for SpaceFn's file-based routes, pages, and middleware. It has been replaced by Hono-based routing in `@spacefn/asteroids`.
 
-```bash
-pnpm add @spacefn/server
-```
+## Migration
 
-For file scanning and Vite integration:
+Replace `@spacefn/server` with `@spacefn/asteroids` + `hono`:
 
 ```bash
-pnpm add -D @spacefn/server vite
+pnpm remove @spacefn/server
+pnpm add @spacefn/asteroids hono
 ```
 
-## Runtime API
+Update imports:
 
 ```ts
+// Before
 import { createServer } from "@spacefn/server";
+import { defineRoute } from "@spacefn/server";
+import type { MiddlewareHandler } from "@spacefn/server";
 
-const server = createServer({
-	routes: [
-		{
-			pattern: "/health",
-			method: "get",
-			handler: async () => ({ default: () => new Response("ok") }),
-		},
-	],
-});
-
-const response = await server(new Request("https://example.com/health"));
+// After
+import { Hono } from "hono";
+import { defineRoute, defineLoader } from "@spacefn/asteroids/hono";
+import type { MiddlewareHandler } from "hono";
 ```
 
-A route handler may return a module-like object whose `default` export handles the request. Page routes use the `loader`, `actions`, and rendered `page` fields instead. `createServer` returns a Web API handler and supports `onError` for uncaught failures.
-
-## Generated application
-
-Use the Vite integration for file-based applications:
-
-```ts
-import { createServer } from "@spacefn/server";
-import middlewares from "#space/middlewares";
-import pages from "#space/pages";
-import routes from "#space/routes";
-
-export default createServer({ routes, pages, middlewares });
-```
-
-See [framework.md](./framework.md) for file patterns and handler contracts.
-
-## Deployment
-
-The runtime has no Node request dependency. Export the handler from the worker entry point expected by your deployment adapter. The CLI commands are:
-
-```bash
-spacefn dev
-spacefn build
-```
-
-`spacefn build` delegates to Vite with the SpaceFn plugin. Configure the final worker entry/output in the deployment tool used by your project.
+See [framework.md](./framework.md) and [getting-started.md](./getting-started.md) for the current approach.

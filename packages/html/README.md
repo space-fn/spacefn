@@ -6,14 +6,27 @@ Typed functional server-side HTML renderer.
 import { h, render } from "@spacefn/html";
 
 const html = render(
-	h.html(
-		{},
-		h.head({}, h.title({}, "Home")),
-		h.body({}, h.h1({}, "Welcome"), h.p({}, "Rendered on the server.")),
-	),
+  h.html(
+    {},
+    h.head({}, h.title({}, "Home")),
+    h.body({}, h.h1({}, "Welcome"), h.p({}, "Rendered on the server.")),
+  ),
 );
 ```
 
-Text and attributes are escaped. Void elements are emitted without closing tags. Use `raw()` only for trusted markup. `defineComponent` and `renderComponent` provide typed props/slots composition; `HtmlElement`, `HtmlChild`, `AttrValue`, and per-tag attribute types are exported for library authors.
+Text and attributes are escaped. Void elements are emitted without closing tags. Use `raw()` only for trusted markup.
+
+## Merge attributes
+
+Use `h.attrs()` to merge multiple attribute objects:
+
+```ts
+h.button(h.attrs({ class: "btn" }, { id: "submit" }), "Save");
+// <button class="btn" id="submit">Save</button>
+```
+
+## Components
+
+`defineComponent` and `renderComponent` provide typed props/slots composition. `HtmlElement`, `HtmlChild`, `AttrValue`, and per-tag attribute types are exported for library authors.
 
 See the [HTML guide](../../docs/html.md).
