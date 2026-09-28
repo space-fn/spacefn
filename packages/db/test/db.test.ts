@@ -1,177 +1,277 @@
 import { describe, it, expect } from "vitest";
 
-import { defineTable, column } from "../src/index.js";
-import type { InferDatabaseType } from "../src/index.js";
+import {
+	column,
+	index,
+	defineSchema,
+	generateTypes,
+	generateMigration,
+	generateMigrationName,
+} from "../src/index.js";
 
-// --- defineTable -------------------------------------------------------------
+// --- column chain API -------------------------------------------------------
 
-describe("defineTable", () => {
-	it("creates a table definition", () => {
-		const users = defineTable("users", {
-			id: column.id(),
-			name: column.string(),
-			email: column.string().unique(),
-		});
-
-		expect(users.name).toBe("users");
-		expect(users.columns.id.dataType).toBe("serial");
-		expect(users.columns.id.default).toBe("auto");
-		expect(users.columns.name.dataType).toBe("varchar");
-		expect(users.columns.name.nullable).toBe(false);
-		expect(users.columns.email.unique).toBe(true);
+describe("column", () => {
+	it("text() creates text column", () => {
+		const col = column.text().build();
+		expect(col.type).toBe("text");
 	});
 
-	it("supports nullable columns", () => {
-		const users = defineTable("users", {
-			bio: column.text().nullable(),
-		});
-
-		expect(users.columns.bio.nullable).toBe(true);
+	it("integer() creates integer column", () => {
+		const col = column.integer().build();
+		expect(col.type).toBe("integer");
 	});
 
-	it("supports default values", () => {
-		const posts = defineTable("posts", {
-			role: column.enum("admin", "user").default("user"),
-		});
-
-		expect(posts.columns.role.default).toBe("user");
-		expect(posts.columns.role.enumValues).toEqual(["admin", "user"]);
+	it("real() creates real column", () => {
+		const col = column.real().build();
+		expect(col.type).toBe("real");
 	});
 
-	it("supports varchar with length", () => {
-		const users = defineTable("users", {
-			slug: column.string(8),
-		});
-
-		expect(users.columns.slug.length).toBe(8);
+	it("blob() creates blob column", () => {
+		const col = column.blob().build();
+		expect(col.type).toBe("blob");
 	});
 
-	it("supports foreign key references", () => {
-		const posts = defineTable("posts", {
-			userId: column.integer().references("users", "id"),
-		});
-
-		expect(posts.columns.userId.references).toEqual(["users", "id"]);
+	it("json() creates json column", () => {
+		const col = column.json().build();
+		expect(col.type).toBe("json");
 	});
 
-	it("supports timestamps helper", () => {
-		const users = defineTable("users", {
-			createdAt: column.timestamps().create,
-			updatedAt: column.timestamps().update,
-		});
-
-		expect(users.columns.createdAt.dataType).toBe("timestamp");
-		expect(users.columns.createdAt.default).toBe("auto");
-		expect(users.columns.updatedAt.dataType).toBe("timestamp");
-		expect(users.columns.updatedAt.default).toBe("auto");
+	it("chains primaryKey()", () => {
+		const col = column.integer().primaryKey().build();
+		expect(col.primaryKey).toBe(true);
 	});
 
-	it("serializes to JSON", () => {
-		const users = defineTable("users", {
-			id: column.id(),
-			name: column.string().nullable(),
-		});
+	it("chains autoIncrement()", () => {
+		const col = column.integer().autoIncrement().build();
+		expect(col.autoIncrement).toBe(true);
+	});
 
-		const json = JSON.parse(JSON.stringify(users));
-		expect(json.name).toBe("users");
-		expect(json.columns.id.dataType).toBe("serial");
-		expect(json.columns.name.nullable).toBe(true);
+	it("chains notNull()", () => {
+		const col = column.text().notNull().build();
+		expect(col.notNull).toBe(true);
+	});
+
+	it("chains unique()", () => {
+		const col = column.text().unique().build();
+		expect(col.unique).toBe(true);
+	});
+
+	it("chains default()", () => {
+		const col = column.text().default("hello").build();
+		expect(col.default).toBe("hello");
+	});
+
+	it("chains references()", () => {
+		const col = column.integer().references("users.id").build();
+		expect(col.references).toBe("users.id");
+	});
+
+	it("chains index()", () => {
+		const col = column.text().index({ unique: true }).build();
+		expect(col.index).toEqual({ unique: true });
+	});
+
+	it("full chain works", () => {
+		const col = column.integer().primaryKey().autoIncrement().build();
+		expect(col).toEqual({
+			type: "integer",
+			primaryKey: true,
+			autoIncrement: true,
+		});
 	});
 });
 
-// --- column helpers ----------------------------------------------------------
+// --- index() ----------------------------------------------------------------
 
-describe("column helpers", () => {
-	it("id() creates serial with auto default", () => {
-		const col = column.id();
-		const json = col.toJSON();
-		expect(json.dataType).toBe("serial");
-		expect(json.default).toBe("auto");
+describe("index", () => {
+	it("creates an index definition", () => {
+		const idx = index("idx_email", ["email"], { unique: true });
+		expect(idx).toEqual({
+			name: "idx_email",
+			columns: ["email"],
+			options: { unique: true },
+		});
 	});
 
-	it("string() creates varchar(255) by default", () => {
-		const col = column.string();
-		const json = col.toJSON();
-		expect(json.dataType).toBe("varchar");
-		expect(json.length).toBeUndefined();
-	});
-
-	it("string(n) creates varchar(n)", () => {
-		const col = column.string(100);
-		const json = col.toJSON();
-		expect(json.length).toBe(100);
-	});
-
-	it("text() creates text", () => {
-		const col = column.text();
-		expect(col.toJSON().dataType).toBe("text");
-	});
-
-	it("integer() creates integer", () => {
-		const col = column.integer();
-		expect(col.toJSON().dataType).toBe("integer");
-	});
-
-	it("boolean() creates boolean", () => {
-		const col = column.boolean();
-		expect(col.toJSON().dataType).toBe("boolean");
-	});
-
-	it("timestamp() creates timestamp", () => {
-		const col = column.timestamp();
-		expect(col.toJSON().dataType).toBe("timestamp");
-	});
-
-	it("json() creates json", () => {
-		const col = column.json();
-		expect(col.toJSON().dataType).toBe("json");
-	});
-
-	it("enum() creates enum with values", () => {
-		const col = column.enum("a", "b", "c");
-		const json = col.toJSON();
-		expect(json.dataType).toBe("enum");
-		expect(json.enumValues).toEqual(["a", "b", "c"]);
-	});
-
-	it("modifiers chain correctly", () => {
-		const col = column.string().nullable().unique().default("'hello'");
-		const json = col.toJSON();
-		expect(json.nullable).toBe(true);
-		expect(json.unique).toBe(true);
-		expect(json.default).toBe("'hello'");
-	});
-
-	it("references() stores foreign key", () => {
-		const col = column.integer().references("users", "id");
-		const json = col.toJSON();
-		expect(json.references).toEqual(["users", "id"]);
+	it("creates index without options", () => {
+		const idx = index("idx_name", ["name"]);
+		expect(idx).toEqual({
+			name: "idx_name",
+			columns: ["name"],
+			options: undefined,
+		});
 	});
 });
 
-// --- InferDatabaseType -------------------------------------------------------
+// --- defineSchema ------------------------------------------------------------
 
-describe("InferDatabaseType", () => {
-	it("infers types from schema", () => {
-		const schema = {
-			users: defineTable("users", {
-				id: column.id(),
-				email: column.string(),
-				name: column.string().nullable(),
-				active: column.boolean(),
-			}),
-		};
-
-		type DB = InferDatabaseType<typeof schema>;
-		// Type test: DB.users should have the right shape
-		const _test: DB = {
+describe("defineSchema", () => {
+	it("returns the schema object", () => {
+		const schema = defineSchema({
 			users: {
-				id: 1,
-				email: "test@example.com",
-				name: null,
-				active: true,
+				id: column.integer().primaryKey().autoIncrement(),
+				email: column.text().notNull().unique(),
 			},
-		};
-		expect(_test.users.id).toBe(1);
+		});
+		expect(schema).toBeDefined();
+		expect(schema.users).toBeDefined();
+	});
+});
+
+// --- generateTypes -----------------------------------------------------------
+
+describe("generateTypes", () => {
+	it("generates valid TypeScript types", () => {
+		const schema = defineSchema({
+			users: {
+				id: column.integer().primaryKey().autoIncrement(),
+				email: column.text().notNull().unique(),
+				name: column.text(),
+			},
+		});
+
+		const types = generateTypes(schema, "abc123");
+
+		expect(types).toContain("Auto-generated by db generators");
+		expect(types).toContain("schema-hash: abc123");
+		expect(types).toContain(
+			'import type { Generated, Selectable, Insertable, Updateable } from "kysely"',
+		);
+		expect(types).toContain("export type Users = {");
+		expect(types).toContain("id: Generated<number>");
+		expect(types).toContain("email: string");
+		expect(types).toContain("name: string | null");
+		expect(types).toContain("export type UsersSelect = Selectable<Users>");
+		expect(types).toContain("export type UsersInsert = Insertable<Users>");
+		expect(types).toContain("export type UsersUpdate = Updateable<Users>");
+		expect(types).toContain("export type Database = {");
+		expect(types).toContain("  users: Users");
+	});
+
+	it("handles nullable columns", () => {
+		const schema = defineSchema({
+			posts: {
+				id: column.integer().primaryKey().autoIncrement(),
+				title: column.text().notNull(),
+				body: column.text(),
+			},
+		});
+
+		const types = generateTypes(schema);
+		expect(types).toContain("title: string");
+		expect(types).toContain("body: string | null");
+	});
+
+	it("handles default values", () => {
+		const schema = defineSchema({
+			settings: {
+				id: column.integer().primaryKey().autoIncrement(),
+				theme: column.text().default("light"),
+			},
+		});
+
+		const types = generateTypes(schema);
+		expect(types).toContain("theme: Generated<string>");
+	});
+
+	it("handles json columns", () => {
+		const schema = defineSchema({
+			events: {
+				id: column.integer().primaryKey().autoIncrement(),
+				metadata: column.json(),
+			},
+		});
+
+		const types = generateTypes(schema);
+		expect(types).toContain("metadata: string | null");
+	});
+
+	it("handles blob columns", () => {
+		const schema = defineSchema({
+			attachments: {
+				id: column.integer().primaryKey().autoIncrement(),
+				data: column.blob().notNull(),
+			},
+		});
+
+		const types = generateTypes(schema);
+		expect(types).toContain("data: ArrayBuffer");
+	});
+});
+
+// --- generateMigration -------------------------------------------------------
+
+describe("generateMigration", () => {
+	it("generates up/down migration functions", () => {
+		const schema = defineSchema({
+			users: {
+				id: column.integer().primaryKey().autoIncrement(),
+				email: column.text().notNull().unique(),
+			},
+		});
+
+		const migration = generateMigration(schema, "001_create_users");
+
+		expect(migration).toContain('import { type Kysely, sql } from "kysely"');
+		expect(migration).toContain("export async function up(db: Kysely<any>): Promise<void>");
+		expect(migration).toContain("await db.schema");
+		expect(migration).toContain('.createTable("users")');
+		expect(migration).toContain('.addColumn("id", "integer"');
+		expect(migration).toContain('.addColumn("email", "text"');
+		expect(migration).toContain("export async function down(db: Kysely<any>): Promise<void>");
+		expect(migration).toContain('.dropTable("users")');
+	});
+
+	it("generates index creation", () => {
+		const schema = defineSchema({
+			users: {
+				id: column.integer().primaryKey().autoIncrement(),
+				email: column.text().notNull(),
+				_indexes: [index("idx_email", ["email"], { unique: true })],
+			},
+		});
+
+		const migration = generateMigration(schema, "001");
+		expect(migration).toContain('.createIndex("idx_email")');
+		expect(migration).toContain('.on("users")');
+		expect(migration).toContain(".unique()");
+		expect(migration).toContain('.column("email")');
+	});
+
+	it("handles multiple tables", () => {
+		const schema = defineSchema({
+			users: {
+				id: column.integer().primaryKey().autoIncrement(),
+				email: column.text().notNull(),
+			},
+			posts: {
+				id: column.integer().primaryKey().autoIncrement(),
+				title: column.text().notNull(),
+				userId: column.integer().references("users.id"),
+			},
+		});
+
+		const migration = generateMigration(schema, "001");
+		expect(migration).toContain('.createTable("users")');
+		expect(migration).toContain('.createTable("posts")');
+		// Down drops in reverse order
+		expect(migration.indexOf('.dropTable("posts")')).toBeLessThan(
+			migration.indexOf('.dropTable("users")'),
+		);
+	});
+});
+
+// --- generateMigrationName ---------------------------------------------------
+
+describe("generateMigrationName", () => {
+	it("generates timestamp-based name", () => {
+		const name = generateMigrationName("create users table");
+		expect(name).toMatch(/^\d{14}_create_users_table$/);
+	});
+
+	it("slugifies description", () => {
+		const name = generateMigrationName("Add User Email Index");
+		expect(name).toMatch(/^\d{14}_add_user_email_index$/);
 	});
 });
