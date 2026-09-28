@@ -1,3 +1,5 @@
+> ⚠️ **DEPRECATED** — Use `@spacefn/asteroids` instead.
+
 # @spacefn/server
 
 Web API server runtime and file-based Vite integration for SpaceFn applications.

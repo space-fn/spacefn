@@ -1,6 +1,7 @@
 {
 	"name": "@spacefn/server",
 	"version": "0.2.0",
+	"description": "DEPRECATED: Use @spacefn/asteroids instead.",
 	"bin": {
 		"spacefn": "./bin/spacefn.js"
 	},
