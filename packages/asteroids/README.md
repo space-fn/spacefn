@@ -180,6 +180,20 @@ h.input({ type: "text", disabled: true, readonly: false });
 // <input type="text" disabled>
 ```
 
+### Merging attributes
+
+Use `h.attrs()` to merge multiple attribute objects. Later objects override earlier ones:
+
+```ts
+const base = { class: "btn", disabled: false };
+const primary = { class: "btn-primary" };
+
+h.button(h.attrs(base, primary, { id: "submit" }), "Save");
+// <button class="btn-primary" id="submit">Save</button>
+```
+
+This is especially useful with DataStar helpers — see the [DataStar section](#datastar).
+
 ### Raw HTML
 
 `raw()` bypasses escaping. Only use it for trusted, already-sanitized markup.
@@ -323,17 +337,18 @@ Typed helpers for DataStar attributes, fetch expressions, and server-sent events
 
 ### Attributes
 
-DataStar helpers return attribute objects that compose with `h` elements:
+DataStar helpers return attribute objects. Use `h.attrs()` to merge them with your own attributes:
 
 ```ts
 import { h, ds } from "@spacefn/asteroids";
 
 h.button(
-  {
-    ...ds.dataSignal("count", "0"),
-    ...ds.dataOn("click", "@get('/api/count')"),
-    ...ds.dataText("count"),
-  },
+  h.attrs(
+    ds.dataSignal("count", "0"),
+    ds.dataOn("click", "@get('/api/count')"),
+    ds.dataText("count"),
+    { class: "btn btn-primary" },
+  ),
   "Increment",
 );
 ```
@@ -342,6 +357,11 @@ Or import individual helpers:
 
 ```ts
 import { dataSignal, dataOn, dataText } from "@spacefn/asteroids";
+
+h.button(
+  h.attrs(dataSignal("count", "0"), dataOn("click", "$count++"), { class: "btn" }),
+  "Click",
+);
 ```
 
 ### Available helpers

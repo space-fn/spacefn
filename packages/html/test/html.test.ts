@@ -341,3 +341,40 @@ describe("complex structures", () => {
 		expect(result).toBe("<ul><li>One</li><li>Two</li><li>Three</li></ul>");
 	});
 });
+
+// ─── mergeAttrs ──────────────────────────────────────────────────────────────
+
+describe("mergeAttrs / h.attrs", () => {
+	it("merges two objects", () => {
+		const result = h.attrs({ class: "a" }, { id: "b" });
+		expect(result).toEqual({ class: "a", id: "b" });
+	});
+
+	it("later object overrides earlier", () => {
+		const result = h.attrs({ class: "a" }, { class: "b" });
+		expect(result).toEqual({ class: "b" });
+	});
+
+	it("handles empty input", () => {
+		expect(h.attrs()).toEqual({});
+	});
+
+	it("works with DataStar-style objects", () => {
+		const signal = { "data-signals": '{"count":0}' };
+		const handler = { "data-on:click": "$count++" };
+		const result = h.attrs(signal, handler, { class: "btn" });
+		expect(result).toEqual({
+			"data-signals": '{"count":0}',
+			"data-on:click": "$count++",
+			class: "btn",
+		});
+	});
+
+	it("returns usable attributes in h.button", () => {
+		const el = h.button(
+			h.attrs({ class: "btn" }, { "data-on:click": "$count++" }),
+			"Click",
+		);
+		expect(renderElement(el)).toBe('<button class="btn" data-on:click="$count++">Click</button>');
+	});
+});

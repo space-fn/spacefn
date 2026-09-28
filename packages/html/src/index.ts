@@ -316,6 +316,13 @@ function renderComponent(element: HtmlElement): string {
 	return renderElement(element);
 }
 
+// ─── Attribute Merge ─────────────────────────────────────────────────────────
+
+/** Merge multiple attribute objects into one. Later objects override earlier ones. */
+export function mergeAttrs(...objects: Record<string, AttrValue>[]): Record<string, AttrValue> {
+	return Object.assign({}, ...objects);
+}
+
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 export type { HtmlElement, HtmlChild, AttrValue, TagFn, TypedTagFn };
@@ -447,6 +454,7 @@ export const h = {
 	dialog,
 	// Utilities
 	raw,
+	attrs: mergeAttrs,
 };
 
 export { defineComponent, renderComponent, renderComponent as render };
