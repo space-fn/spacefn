@@ -12,6 +12,7 @@ import { defineRoute, defineLoader } from "@spacefn/asteroids/hono";
 ## Table of contents
 
 - [Setup guide](#setup-guide)
+- [CLI](#cli)
 - [HTML](#html)
 - [CSS](#css)
 - [DataStar](#datastar)
@@ -134,6 +135,100 @@ Open `http://localhost:5173` — you should see "Hello from SpaceFn!".
 ```bash
 pnpm build
 pnpm deploy
+```
+
+---
+
+## CLI
+
+`@spacefn/cli` provides a unified `space` command for all project tasks. Install it alongside your other deps:
+
+```bash
+pnpm add -D @spacefn/cli @biomejs/biome vite vitest
+```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `space dev` | Start Vite dev server |
+| `space build` | Build for production |
+| `space test` | Run tests with Vitest |
+| `space fmt` | Format code with Biome |
+| `space fmt --check` | Check formatting (don't write) |
+| `space lint` | Lint code with Biome |
+| `space lint --fix` | Lint and auto-fix issues |
+| `space check` | Run fmt + lint + typecheck |
+| `space run <name>` | Run script from `scripts/` |
+| `space run -- --list` | List available scripts |
+| `space db:generate` | Generate migration from schema |
+| `space db:migrate` | Run pending migrations |
+
+### Script runner
+
+Create a `scripts/` directory for custom scripts:
+
+```ts
+// scripts/db:seed.ts
+import { log } from "@spacefn/cli";
+
+export default async function () {
+  log.info("Seeding database...");
+  // Your seed logic here
+  log.success("Done!");
+}
+```
+
+Run it:
+
+```bash
+space run db:seed
+```
+
+### Typed scripts with defineCmd
+
+For scripts with arguments and flags, use `defineCmd`:
+
+```ts
+// scripts/db:seed.ts
+import { defineCmd, log } from "@spacefn/cli";
+
+export default defineCmd({
+  meta: { name: "db:seed", description: "Seed the database" },
+  args: {
+    count: { type: "number", description: "Number of records", default: 10 },
+    clear: { type: "boolean", description: "Clear existing data first", alias: "c" },
+  },
+  async run({ args }) {
+    log.info(`Seeding ${args.count} records...`);
+    if (args.clear) log.info("Clearing existing data...");
+    // Your seed logic here
+    log.success("Done!");
+  },
+});
+```
+
+Run with args:
+
+```bash
+space run db:seed -- --count 20
+space run db:seed -- --count 20 -c
+```
+
+### Utilities
+
+Import CLI helpers for your own scripts:
+
+```ts
+import { log, spinner, exec, table, steps } from "@spacefn/cli";
+
+log.success("It works!");
+
+await spinner("Loading...", async () => {
+  await fetchData();
+});
+
+await exec("echo", ["hello"]);
 ```
 
 ---
