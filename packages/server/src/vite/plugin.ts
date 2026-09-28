@@ -4,7 +4,7 @@
 
 import { relative } from "node:path";
 
-import { space as baseSpace } from "@spacefn/vite-plugin";
+import { generators } from "@spacefn/vite-plugin";
 import type { Generator } from "@spacefn/vite-plugin";
 import type { Plugin, ViteDevServer } from "vite";
 
@@ -243,12 +243,9 @@ export function space(options: SpacePluginOptions = {}): Plugin[] {
 	};
 
 	// Delegate to @spacefn/vite-plugin for Vite lifecycle + file writing
-	const generator = baseSpace({
-		root,
-		generators: [routeGenerator, middlewareGenerator, pagesGenerator],
-	});
+	const generator = generators(routeGenerator, middlewareGenerator, pagesGenerator);
 
-	return [generator, aliasPlugin, devMiddleware];
+	return [generator as Plugin, aliasPlugin, devMiddleware];
 }
 
 export type { SpacePluginOptions, ScannedRoute, ScannedMiddleware } from "./types.js";
