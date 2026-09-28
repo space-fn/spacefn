@@ -19,11 +19,22 @@ for dir in packages/*/; do
       skipped=$((skipped + 1))
     else
       echo "📦 Publishing $name@$version"
-      if (cd "$dir" && npm publish --access public); then
-        published=$((published + 1))
+
+      # Asteroids publishes from dist/ (bundled, zero deps)
+      if [ "$name" = "@spacefn/asteroids" ]; then
+        if (cd "$dir/dist" && npm publish --access public); then
+          published=$((published + 1))
+        else
+          echo "❌ Failed to publish $name@$version"
+          failed=$((failed + 1))
+        fi
       else
-        echo "❌ Failed to publish $name@$version"
-        failed=$((failed + 1))
+        if (cd "$dir" && npm publish --access public); then
+          published=$((published + 1))
+        else
+          echo "❌ Failed to publish $name@$version"
+          failed=$((failed + 1))
+        fi
       fi
     fi
   fi

@@ -19,7 +19,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsup",
+		"build": "tsup && node scripts/build-publish-json.mjs",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
