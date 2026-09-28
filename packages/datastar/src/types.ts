@@ -3,17 +3,81 @@
 
 // --- Client Types ------------------------------------------------------------
 
-/** Modifier for data-on event handlers */
+/** Common DOM events for dataOn */
+export type DomEvent =
+	| "click"
+	| "dblclick"
+	| "mousedown"
+	| "mouseup"
+	| "mousemove"
+	| "mouseenter"
+	| "mouseleave"
+	| "mouseover"
+	| "mouseout"
+	| "contextmenu"
+	| "wheel"
+	| "keydown"
+	| "keyup"
+	| "keypress"
+	| "input"
+	| "change"
+	| "submit"
+	| "reset"
+	| "focus"
+	| "blur"
+	| "focusin"
+	| "focusout"
+	| "scroll"
+	| "resize"
+	| "load"
+	| "DOMContentLoaded"
+	| "error"
+	| "touchstart"
+	| "touchend"
+	| "touchmove"
+	| "touchcancel"
+	| "pointerdown"
+	| "pointerup"
+	| "pointermove"
+	| "pointerover"
+	| "pointerout"
+	| "pointerenter"
+	| "pointerleave"
+	| "drag"
+	| "dragstart"
+	| "dragend"
+	| "dragover"
+	| "dragenter"
+	| "dragleave"
+	| "drop"
+	| "copy"
+	| "cut"
+	| "paste"
+	| "animationstart"
+	| "animationend"
+	| "animationiteration"
+	| "transitionend"
+	| "transitionstart"
+	| "transitionrun"
+	| "transitioncancel"
+	| (string & {});
+
+/** Modifier for data-on event handlers (matches datastar docs) */
 export type DataOnModifier =
-	| "immelmann"
-	| "counter"
-	| "debounce"
-	| "throttle"
-	| "leading"
-	| "fit"
 	| "once"
-	| "none"
-	| "ignore";
+	| "passive"
+	| "capture"
+	| "window"
+	| "document"
+	| "outside"
+	| "prevent"
+	| "stop"
+	| "viewtransition"
+	| "leading"
+	| "notrailing"
+	| "noleading"
+	| "trailing"
+	| (string & {});
 
 /** Options for POST/PUT/PATCH fetch expressions */
 export interface PostOptions {
@@ -31,7 +95,16 @@ export interface GetOptions {
 
 /** Options for patchElements SSE event */
 export interface PatchElementsOptions {
-	merge?: "morph" | "replace" | "inner" | "outer";
+	merge?:
+		| "morph"
+		| "replace"
+		| "inner"
+		| "outer"
+		| "prepend"
+		| "append"
+		| "before"
+		| "after"
+		| "remove";
 	select?: string;
 	settleDuration?: number;
 	useViewTransition?: boolean;

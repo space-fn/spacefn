@@ -3,7 +3,7 @@
 // https://data-star.dev/
 import type { AttrValue } from "@spacefn/html";
 
-import type { DataOnModifier, GetOptions, PostOptions } from "./types.js";
+import type { DataOnModifier, DomEvent, GetOptions, PostOptions } from "./types.js";
 
 // --- Action path helper -------------------------------------------------------
 
@@ -73,26 +73,19 @@ function toast(message: string, opts?: { level?: string; timeout?: number }): st
 	return `@toast(${parts.join(", ")})`;
 }
 
-function setAll(pattern: string, value: unknown): string {
-	return `@setAll(${pattern}, ${JSON.stringify(value)})`;
+function setAll(value: unknown, filter?: string): string {
+	if (filter) return `@setAll(${JSON.stringify(value)}, ${filter})`;
+	return `@setAll(${JSON.stringify(value)})`;
 }
 
-function toggleAll(pattern?: string): string {
-	if (pattern) return `@toggleAll({include: ${pattern}})`;
+function toggleAll(filter?: string): string {
+	if (filter) return `@toggleAll(${filter})`;
 	return "@toggleAll()";
 }
 
-function resetAll(pattern?: string): string {
-	if (pattern) return `@resetAll({only: ${pattern}})`;
+function resetAll(filter?: string): string {
+	if (filter) return `@resetAll(${filter})`;
 	return "@resetAll()";
-}
-
-function interval(expression: string, ms: number): string {
-	return `@setInterval(() => ${expression}, ${ms})`;
-}
-
-function timeout(expression: string, ms: number): string {
-	return `@setTimeout(() => ${expression}, ${ms})`;
 }
 
 // --- DataStar attribute generators --------------------------------------------
@@ -102,19 +95,20 @@ function dataSignals(signals: Record<string, unknown>): Record<string, AttrValue
 }
 
 function dataSignal(name: string, expression: string): Record<string, AttrValue> {
-	return { [`data-signals-${name}`]: expression };
+	return { [`data-signals:${name}`]: expression };
 }
 
 function dataText(expression: string): Record<string, AttrValue> {
 	return { "data-text": expression };
 }
 
-function dataBind(attribute: string, expression: string): Record<string, AttrValue> {
-	return { [`data-bind-${attribute}`]: expression };
+function dataBind(attribute: string, expression?: string): Record<string, AttrValue> {
+	if (expression !== undefined) return { [`data-bind:${attribute}`]: expression };
+	return { [`data-bind`]: attribute };
 }
 
 function dataComputed(name: string, expression: string): Record<string, AttrValue> {
-	return { [`data-computed-${name}`]: expression };
+	return { [`data-computed:${name}`]: expression };
 }
 
 function dataComputedAll(expressions: Record<string, string>): Record<string, AttrValue> {
@@ -126,11 +120,11 @@ function dataShow(expression: string): Record<string, AttrValue> {
 }
 
 function dataClass(className: string, expression: string): Record<string, AttrValue> {
-	return { [`data-class-${className}`]: expression };
+	return { [`data-class:${className}`]: expression };
 }
 
 function dataAttr(attribute: string, expression: string): Record<string, AttrValue> {
-	return { [`data-attr-${attribute}`]: expression };
+	return { [`data-attr:${attribute}`]: expression };
 }
 
 function dataAttrs(attrs: Record<string, string>): Record<string, AttrValue> {
@@ -145,11 +139,11 @@ function dataRef(name: string): Record<string, AttrValue> {
 }
 
 function dataOn(
-	event: string,
+	event: DomEvent,
 	expression: string,
 	modifier?: DataOnModifier,
 ): Record<string, AttrValue> {
-	const key = modifier ? `data-on-${event}.__${modifier}` : `data-on-${event}`;
+	const key = modifier ? `data-on:${event}__${modifier}` : `data-on:${event}`;
 	return { [key]: expression };
 }
 
@@ -170,7 +164,7 @@ function dataIgnore(): Record<string, AttrValue> {
 }
 
 function dataIgnoreSelf(): Record<string, AttrValue> {
-	return { "data-ignore.__self": "" };
+	return { "data-ignore__self": "" };
 }
 
 function dataIgnoreMorph(): Record<string, AttrValue> {
@@ -219,8 +213,6 @@ export const ds = {
 	setAll,
 	toggleAll,
 	resetAll,
-	interval,
-	timeout,
 };
 
 // --- Named exports (for tree-shaking or direct use) ---------------------------
@@ -254,8 +246,6 @@ export {
 	setAll,
 	toggleAll,
 	resetAll,
-	interval,
-	timeout,
 };
 
-export type { DataOnModifier, PostOptions, GetOptions } from "./types.js";
+export type { DomEvent, DataOnModifier, PostOptions, GetOptions } from "./types.js";

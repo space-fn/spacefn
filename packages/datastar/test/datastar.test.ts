@@ -30,8 +30,6 @@ import {
 	setAll,
 	toggleAll,
 	resetAll,
-	interval,
-	timeout,
 	actions,
 } from "../src/index.js";
 
@@ -58,8 +56,6 @@ describe("ds namespace", () => {
 	it("contains all action helpers", () => {
 		expect(typeof ds.clipboard).toBe("function");
 		expect(typeof ds.toast).toBe("function");
-		expect(typeof ds.interval).toBe("function");
-		expect(typeof ds.timeout).toBe("function");
 	});
 });
 
@@ -88,12 +84,12 @@ describe("dataSignals", () => {
 
 describe("dataSignal", () => {
 	it("sets single named signal", () => {
-		expect(dataSignal("count", "0")).toEqual({ "data-signals-count": "0" });
+		expect(dataSignal("count", "0")).toEqual({ "data-signals:count": "0" });
 	});
 
 	it("sets expression signal", () => {
 		expect(dataSignal("doubled", "$count * 2")).toEqual({
-			"data-signals-doubled": "$count * 2",
+			"data-signals:doubled": "$count * 2",
 		});
 	});
 });
@@ -105,9 +101,15 @@ describe("dataText", () => {
 });
 
 describe("dataBind", () => {
-	it("two-way binds attribute", () => {
+	it("two-way binds attribute with expression", () => {
 		expect(dataBind("value", "$input")).toEqual({
-			"data-bind-value": "$input",
+			"data-bind:value": "$input",
+		});
+	});
+
+	it("two-way binds attribute without expression", () => {
+		expect(dataBind("title")).toEqual({
+			"data-bind": "title",
 		});
 	});
 });
@@ -115,7 +117,7 @@ describe("dataBind", () => {
 describe("dataComputed", () => {
 	it("creates single computed signal", () => {
 		expect(dataComputed("doubled", "$count * 2")).toEqual({
-			"data-computed-doubled": "$count * 2",
+			"data-computed:doubled": "$count * 2",
 		});
 	});
 });
@@ -143,7 +145,7 @@ describe("dataShow", () => {
 describe("dataClass", () => {
 	it("toggles single class", () => {
 		expect(dataClass("active", "$selected")).toEqual({
-			"data-class-active": "$selected",
+			"data-class:active": "$selected",
 		});
 	});
 });
@@ -151,7 +153,7 @@ describe("dataClass", () => {
 describe("dataAttr", () => {
 	it("sets single attribute", () => {
 		expect(dataAttr("disabled", "$loading")).toEqual({
-			"data-attr-disabled": "$loading",
+			"data-attr:disabled": "$loading",
 		});
 	});
 });
@@ -178,13 +180,13 @@ describe("dataRef", () => {
 describe("dataOn", () => {
 	it("binds event without modifier", () => {
 		expect(dataOn("click", ds.post("/api/click"))).toEqual({
-			"data-on-click": "post('/api/click')",
+			"data-on:click": "post('/api/click')",
 		});
 	});
 
 	it("binds event with modifier", () => {
 		expect(dataOn("input", "$value", "debounce")).toEqual({
-			"data-on-input.__debounce": "$value",
+			"data-on:input__debounce": "$value",
 		});
 	});
 });
@@ -223,7 +225,7 @@ describe("dataIgnore", () => {
 
 describe("dataIgnoreSelf", () => {
 	it("ignores only element", () => {
-		expect(dataIgnoreSelf()).toEqual({ "data-ignore.__self": "" });
+		expect(dataIgnoreSelf()).toEqual({ "data-ignore__self": "" });
 	});
 });
 
@@ -313,43 +315,31 @@ describe("toast", () => {
 
 describe("setAll", () => {
 	it("generates setAll expression", () => {
-		expect(setAll("count", 0)).toBe("@setAll(count, 0)");
+		expect(setAll(true)).toBe("@setAll(true)");
 	});
 
-	it("serializes object value", () => {
-		expect(setAll("user", { name: "Alice" })).toBe('@setAll(user, {"name":"Alice"})');
+	it("generates setAll with filter", () => {
+		expect(setAll(true, "{include: /^foo$/}")).toBe("@setAll(true, {include: /^foo$/})");
 	});
 });
 
 describe("toggleAll", () => {
-	it("generates toggleAll without pattern", () => {
+	it("generates toggleAll without filter", () => {
 		expect(toggleAll()).toBe("@toggleAll()");
 	});
 
-	it("generates toggleAll with pattern", () => {
-		expect(toggleAll("show_*")).toBe("@toggleAll({include: show_*})");
+	it("generates toggleAll with filter", () => {
+		expect(toggleAll("{include: /^foo$/}")).toBe("@toggleAll({include: /^foo$/})");
 	});
 });
 
 describe("resetAll", () => {
-	it("generates resetAll without pattern", () => {
+	it("generates resetAll without filter", () => {
 		expect(resetAll()).toBe("@resetAll()");
 	});
 
-	it("generates resetAll with pattern", () => {
-		expect(resetAll("temp_*")).toBe("@resetAll({only: temp_*})");
-	});
-});
-
-describe("interval", () => {
-	it("generates setInterval expression", () => {
-		expect(interval("$count++", 1000)).toBe("@setInterval(() => $count++, 1000)");
-	});
-});
-
-describe("timeout", () => {
-	it("generates setTimeout expression", () => {
-		expect(timeout("$visible = false", 2000)).toBe("@setTimeout(() => $visible = false, 2000)");
+	it("generates resetAll with filter", () => {
+		expect(resetAll("{include: /^foo$/}")).toBe("@resetAll({include: /^foo$/})");
 	});
 });
 
@@ -361,6 +351,5 @@ describe("named exports", () => {
 		expect(dataText("$x")).toEqual(ds.dataText("$x"));
 		expect(get("/api")).toEqual(ds.get("/api"));
 		expect(del("/api")).toEqual(ds.delete("/api"));
-		expect(interval("fn()", 100)).toEqual(ds.interval("fn()", 100));
 	});
 });
