@@ -1,6 +1,6 @@
 # @spacefn/db
 
-Convention-based schema and migration helpers for Kysely projects.
+SQLite-oriented schema definitions, type generation, migrations, and hashing for Kysely projects.
 
 ## Install
 
@@ -8,62 +8,163 @@ Convention-based schema and migration helpers for Kysely projects.
 pnpm add @spacefn/db kysely
 ```
 
-## Define tables
+## Define schema
 
 ```ts
-import { column, defineTable } from "@spacefn/db";
+import { column, defineSchema, index } from "@spacefn/db";
 
-export const users = defineTable("users", {
-	id: column.serial("id").primaryKey(),
-	name: column.text("name").notNull(),
-	email: column.text("email").unique().notNull(),
-	bio: column.text("bio").nullable(),
-	createdAt: column.timestamp("created_at").default("now()"),
-});
-
-export const posts = defineTable("posts", {
-	id: column.serial("id").primaryKey(),
-	userId: column.integer("user_id").references("users", "id").notNull(),
-	title: column.text("title").notNull(),
+export const schema = defineSchema({
+  users: {
+    id: column.integer().primaryKey().autoIncrement(),
+    name: column.text().notNull(),
+    email: column.text().unique().notNull(),
+    bio: column.text(),
+    createdAt: column.text().default("CURRENT_TIMESTAMP"),
+    _indexes: [index("idx_users_email", ["email"])],
+  },
+  posts: {
+    id: column.integer().primaryKey().autoIncrement(),
+    userId: column.integer().references("users.id").notNull(),
+    title: column.text().notNull(),
+    body: column.text(),
+    _indexes: [index("idx_posts_user", ["userId"])],
+  },
 });
 ```
 
-`serial()` is an auto-incrementing type; call `.primaryKey()` explicitly when required. Modifiers include `notNull`, `nullable`, `unique`, `default`, and `references`.
+### Column types
 
-## Type inference
+| Type | SQLite | TypeScript |
+|------|--------|------------|
+| `column.text()` | TEXT | `string` |
+| `column.integer()` | INTEGER | `number` |
+| `column.real()` | REAL | `number` |
+| `column.blob()` | BLOB | `ArrayBuffer` |
+| `column.json()` | TEXT (JSON) | `string` |
+
+### Modifiers
 
 ```ts
-import type { InferDatabaseType } from "@spacefn/db";
-import { posts, users } from "./schema";
+column.text()
+  .primaryKey()
+  .autoIncrement()
+  .notNull()
+  .unique()
+  .default("value")
+  .references("table.column")
+  .index({ unique: true })
+```
 
-type Database = InferDatabaseType<{ users: typeof users; posts: typeof posts }>;
+### Indexes
+
+Define indexes on the `_indexes` key:
+
+```ts
+import { index } from "@spacefn/db";
+
+const schema = defineSchema({
+  users: {
+    id: column.integer().primaryKey().autoIncrement(),
+    email: column.text().unique().notNull(),
+    _indexes: [
+      index("idx_users_email", ["email"]),
+      index("idx_users_name", ["name"], { unique: true }),
+    ],
+  },
+});
+```
+
+## Generate types
+
+Generate Kysely-compatible TypeScript types from your schema:
+
+```ts
+import { generateTypes } from "@spacefn/db";
+import { schema } from "./schema";
+
+const types = generateTypes(schema);
+// Write to src/db/types.ts
+```
+
+Generates:
+
+```ts
+export type Users = {
+  id: Generated<number>;
+  name: string;
+  email: string;
+  bio: string | null;
+  createdAt: Generated<string>;
+};
+
+export type UsersSelect = Selectable<Users>;
+export type UsersInsert = Insertable<Users>;
+export type UsersUpdate = Updateable<Users>;
+
+export type Database = {
+  users: Users;
+  posts: Posts;
+};
 ```
 
 ## Migrations
 
-Use `defineMigration` for explicit migration files and `createMigrator` to run them through Kysely's migrator. The generated Vite plugin also creates migration SQL when a schema snapshot changes.
+### Generate migration
 
 ```ts
-import { defineMigration } from "@spacefn/db";
+import { generateMigration, generateMigrationName } from "@spacefn/db";
+import { schema } from "./schema";
 
-export const migration = defineMigration({
-	name: "001_create_users",
-	up: async (sql) => sql.exec('CREATE TABLE "users" (...)'),
-	down: async (sql) => sql.exec('DROP TABLE "users"'),
-});
+const name = generateMigrationName("create_users");
+const migration = generateMigration(schema, name);
+// Write to src/db/migrations/{name}.ts
 ```
 
-## Vite plugin
+### Run migrations
 
 ```ts
-import { defineConfig } from "vite";
-import { db } from "@spacefn/db/vite";
+import { migrate, migrateDown, migrateStatus } from "@spacefn/db";
+import type { Kysely } from "kysely";
 
-export default defineConfig(async () => ({
-	plugins: [await db({ dialect: "postgres" })],
-}));
+// Run pending migrations
+await migrate(db, migrations);
+
+// Rollback last migration
+await migrateDown(db, migrations);
+
+// Check status
+const status = await migrateStatus(db, migrations);
+console.log(status.applied, status.pending);
 ```
 
-The plugin scans `src/db/<name>/schema.ts` and `migrations/*.ts`, writes `types.ts` and `migrations/index.ts`, and supports `postgres`, `mysql`, and `sqlite`. Its factory is asynchronous because it scans the project before creating generators.
+Migrations use a `_migrations` table to track applied state.
 
-See [database documentation](../../docs/db.md).
+### Incremental migrations
+
+Generate only the diff between old and new schema:
+
+```ts
+import { generateIncrementalMigration } from "@spacefn/db";
+
+const migration = generateIncrementalMigration(oldSchema, newSchema, "add_posts_table");
+```
+
+## Schema hashing
+
+Track schema changes with content hashing:
+
+```ts
+import { computeSchemaHash, hasSchemaChanged } from "@spacefn/db";
+
+const hash = computeSchemaHash(schemaContent); // 12-char SHA-256
+const changed = hasSchemaChanged(root, schemaContent);
+```
+
+## Utilities
+
+```ts
+import { toCamelCase, toPascalCase } from "@spacefn/db";
+
+toCamelCase("users_table"); // "usersTable"
+toPascalCase("users_table"); // "UsersTable"
+```
