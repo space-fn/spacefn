@@ -9,7 +9,7 @@ npm create spacefn@latest
 # or: pnpm create spacefn@latest
 ```
 
-The interactive CLI asks for the project name and package manager (`npm`, `pnpm`, `yarn`, or `bun`). It creates the project, installs dependencies, and sets up all conventions.
+The interactive CLI asks for the project name, copies the template, and pins every dependency to the latest version published on the npm registry. It then prints the install command for the package manager that invoked it.
 
 ## What's included
 
@@ -25,7 +25,8 @@ The interactive CLI asks for the project name and package manager (`npm`, `pnpm`
 
 ```bash
 cd my-project
-pnpm dev
+npm install # or pnpm install / yarn / bun install
+npm run dev
 ```
 
 Open `http://localhost:5173`. See the [getting started guide](../../docs/getting-started.md).
