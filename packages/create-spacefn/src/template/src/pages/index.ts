@@ -1,7 +1,7 @@
 import { defineLoader, defineActions, definePage, html } from "@spacefn/asteroids/hono";
 import { h } from "@spacefn/asteroids";
 
-export const loader = defineLoader(async (c) => {
+export const loader = defineLoader(async () => {
   return { title: "Home" };
 });
 
@@ -20,14 +20,7 @@ export default definePage<typeof loader>((data) => {
         h.meta({ name: "description", content: data.title }),
         h.meta({ name: "viewport", content: "width=device-width, initial-scale=1.0" }),
       ),
-      h.body(
-        {},
-        h.main(
-          {},
-          h.h1({}, data.title),
-          h.p({}, "Welcome to your SpaceFn app"),
-        ),
-      ),
+      h.body({}, h.main({}, h.h1({}, data.title), h.p({}, "Welcome to your SpaceFn app"))),
     ),
   );
 });
