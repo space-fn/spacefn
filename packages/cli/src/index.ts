@@ -4,3 +4,10 @@ export { log, colors } from "./helpers/log.js";
 export { spinner } from "./helpers/spinner.js";
 export { table } from "./helpers/table.js";
 export { steps } from "./helpers/steps.js";
+export {
+	defineCmd,
+	type CmdArgs,
+	type CmdHandler,
+	type CmdMeta,
+	type CmdOptions,
+} from "./helpers/define-cmd.js";
