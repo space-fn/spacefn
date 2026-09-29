@@ -9,8 +9,8 @@
 ## Install
 
 ```bash
-pnpm add @spacefn/asteroids hono
-pnpm add -D @spacefn/cli @spacefn/vite-plugin @biomejs/biome vite vitest @cloudflare/vite-plugin
+pnpm add @spacefn/asteroids @spacefn/db hono
+pnpm add -D @spacefn/cli @spacefn/vite-plugin @biomejs/biome typescript vite vitest wrangler @cloudflare/vite-plugin
 ```
 
 Or install individual packages:
@@ -35,8 +35,9 @@ my-app/
 │   │   └── schema.ts         # Database schema
 │   └── worker.ts             # Hono entry point
 ├── scripts/                   # Custom CLI scripts
-├── biome.json                 # Linter/formatter config
-├── vite.config.ts
+├── configs/
+│   └── vite.config.ts         # Vite config (resolved by the CLI)
+├── biome.jsonc                # Linter/formatter config
 └── package.json
 ```
 
@@ -48,10 +49,10 @@ Create `src/routes/index.ts`:
 import { h, render } from "@spacefn/html";
 
 export default function GET() {
-  return new Response(
-    render(h.html({}, h.head({}, h.title({}, "Home")), h.body({}, h.h1({}, "Hello from SpaceFn")))),
-    { headers: { "content-type": "text/html; charset=utf-8" } },
-  );
+	return new Response(
+		render(h.html({}, h.head({}, h.title({}, "Home")), h.body({}, h.h1({}, "Hello from SpaceFn")))),
+		{ headers: { "content-type": "text/html; charset=utf-8" } },
+	);
 }
 ```
 
@@ -66,16 +67,16 @@ Pages use Hono with typed loaders and actions:
 import { defineLoader, defineActions } from "@spacefn/asteroids/hono";
 
 export const loader = defineLoader(async (c) => {
-  return { title: "About" };
+	return { title: "About" };
 });
 
 export const actions = defineActions({
-  submit: {
-    resolver: async (c) => {
-      // Handle form submission
-      return new Response("Saved");
-    },
-  },
+	submit: {
+		resolver: async (c) => {
+			// Handle form submission
+			return new Response("Saved");
+		},
+	},
 });
 ```
 
@@ -85,7 +86,7 @@ import { definePage } from "@spacefn/asteroids/hono";
 import { h } from "@spacefn/asteroids";
 
 export default definePage<{ title: string }>((data) =>
-  h.html({}, h.body({}, h.h1({}, data.title))),
+	h.html({}, h.body({}, h.h1({}, data.title))),
 );
 ```
 
@@ -97,9 +98,9 @@ Create `src/middlewares/01-logging.ts`:
 import type { MiddlewareHandler } from "hono";
 
 const logging: MiddlewareHandler = async (c, next) => {
-  const started = Date.now();
-  await next();
-  console.log(c.req.method, c.req.path, Date.now() - started);
+	const started = Date.now();
+	await next();
+	console.log(c.req.method, c.req.path, Date.now() - started);
 };
 
 export default logging;
@@ -119,13 +120,9 @@ import { h } from "@spacefn/asteroids";
 const app = new Hono();
 
 app.get("/", (c) => {
-  return html(
-    h.html(
-      {},
-      h.head({}, h.title({}, "My App")),
-      h.body({}, h.h1({}, "Hello from SpaceFn!")),
-    ),
-  );
+	return html(
+		h.html({}, h.head({}, h.title({}, "My App")), h.body({}, h.h1({}, "Hello from SpaceFn!"))),
+	);
 });
 
 export default app;
@@ -158,3 +155,4 @@ The command invokes Vite with the Cloudflare Workers plugin and generates the pr
 - Check that route/page files export the expected default handler/component.
 - Check the terminal for Vite and generator errors before debugging the request handler.
 - Run `space check` to catch formatting, lint, and type errors.
+- `#space/*` imports resolve to generated modules in `.space/`. Run `space dev` or `space build` once after scaffolding; before that, `space check` reports those imports as missing modules.
