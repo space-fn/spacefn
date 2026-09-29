@@ -1,26 +1,18 @@
-import { resolve } from "node:path";
-import { existsSync } from "node:fs";
-
 import { defineCommand } from "citty";
 import { execa } from "execa";
 
+import { resolveBiomeConfig } from "../helpers/biome.js";
+
 export default defineCommand({
-  meta: { name: "lint", description: "Lint code with Biome" },
-  args: {
-    fix: { type: "boolean", description: "Auto-fix issues" },
-  },
-  async run({ args }) {
-    const root = process.cwd();
-    const config = resolve(root, "biome.json");
-
-    if (!existsSync(config)) {
-      const defaultConfig = new URL("../biome.json", import.meta.url).pathname;
-      const flag = args.fix ? "--write" : "--write=false";
-      await execa("biome", [flag, "--config-path", defaultConfig, "."], { stdio: "inherit" });
-      return;
-    }
-
-    const flag = args.fix ? "--write" : "--write=false";
-    await execa("biome", [flag, "--config-path", root, "."], { stdio: "inherit" });
-  },
+	meta: { name: "lint", description: "Lint code with Biome" },
+	args: {
+		fix: { type: "boolean", description: "Auto-fix issues" },
+	},
+	async run({ args }) {
+		const config = resolveBiomeConfig(process.cwd());
+		const writeFlag = args.fix ? ["--write"] : [];
+		await execa("biome", ["lint", ...writeFlag, "--config-path", config, "."], {
+			stdio: "inherit",
+		});
+	},
 });

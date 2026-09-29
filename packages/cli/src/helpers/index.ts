@@ -4,3 +4,4 @@ export { table } from "./table.js";
 export { exec } from "./exec.js";
 export { log, colors } from "./log.js";
 export { defineCmd } from "./define-cmd.js";
+export { resolveBiomeConfig } from "./biome.js";
