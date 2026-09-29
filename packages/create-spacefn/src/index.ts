@@ -46,22 +46,19 @@ function install(targetDir: string, pm: PackageManager): void {
     "@spacefn/cli",
     "hono",
     "@biomejs/biome",
+    "@cloudflare/vite-plugin",
     "@cloudflare/workers-types",
     "@types/node",
     "typescript",
     "vite",
     "vitest",
+    "wrangler",
   ];
 
-  const buildDeps = [
-    "@cloudflare/vite-plugin",
-    "wrangler",
-  ]
-
-  // pnpm 12.5+ blocks build scripts by default; use --allow-build to approve esbuild/workerd
+  // pnpm 12.5+ blocks build scripts by default; use --allow-build to approve them
   const allowBuild = pm === "pnpm"
-    ? buildDeps.map(d => `--allow-build='${d}'`).join(" ")
-    : buildDeps.join(" ");
+    ? "--allow-build='@cloudflare/vite-plugin' --allow-build='wrangler'"
+    : "";
   execSync(`${mgr.addDev} ${allDeps.join(" ")} ${allowBuild}`, { cwd: targetDir, stdio: "inherit" });
 }
 
