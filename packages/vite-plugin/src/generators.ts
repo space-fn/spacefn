@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 
-import { type PluginOption } from "vite";
+import { type Plugin } from "vite";
 
 import type { Generator } from "./types.js";
 
@@ -67,7 +67,7 @@ function debounce(fn: () => Promise<void>, ms: number): () => void {
 	};
 }
 
-export function generators(...defs: Generator[]): PluginOption {
+export function generators(...defs: Generator[]): Plugin {
 	const root = process.cwd();
 
 	return {
