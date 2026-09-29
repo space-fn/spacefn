@@ -174,7 +174,7 @@ importers:
         version: 1.83.0
 
   packages/asteroids:
-    dependencies:
+    devDependencies:
       '@spacefn/css':
         specifier: workspace:*
         version: link:../css
@@ -190,7 +190,6 @@ importers:
       '@spacefn/vite-plugin':
         specifier: workspace:*
         version: link:../vite-plugin
-    devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.3
@@ -199,13 +198,13 @@ importers:
         version: 4.13.9
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/cli:
     dependencies:
@@ -245,13 +244,13 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/create-spacefn:
     dependencies:
@@ -273,7 +272,7 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
@@ -285,13 +284,13 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/datastar:
     dependencies:
@@ -304,13 +303,13 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/db:
     devDependencies:
@@ -322,13 +321,13 @@ importers:
         version: 0.28.17
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/html:
     devDependencies:
@@ -337,13 +336,13 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/server:
     dependencies:
@@ -365,7 +364,7 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
@@ -374,7 +373,37 @@ importers:
         version: 6.4.3(@types/node@22.20.3)(lightningcss@1.33.0)
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
+
+  packages/trail:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.3
+      hono:
+        specifier: ^4.0.0
+        version: 4.13.9
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.17
+      kysely-d1:
+        specifier: ^0.4.0
+        version: 0.4.0(kysely@0.28.17)
+      kysely-libsql:
+        specifier: ^0.7.1
+        version: 0.7.1(kysely@0.28.17)
+      miniflare:
+        specifier: 3.20250718.3
+        version: 3.20250718.3
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   packages/vite-plugin:
     devDependencies:
@@ -383,7 +412,7 @@ importers:
         version: 22.20.3
       tsup:
         specifier: ^8.0.0
-        version: 8.5.1(postcss@8.5.28)(typescript@5.9.3)
+        version: 8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3)
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
@@ -392,7 +421,7 @@ importers:
         version: 6.4.3(@types/node@22.20.3)(lightningcss@1.33.0)
       vitest:
         specifier: ^3.0.0
-        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)
+        version: 3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
 
   playground:
     dependencies:
@@ -1987,6 +2016,11 @@ packages:
   js-tokens@9.0.1:
     resolution: {integrity: sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ==}
 
+  kysely-d1@0.4.0:
+    resolution: {integrity: sha512-wUcVvQNtm30OTfuo7Ad5vYJ1qHqPXOCZc+zWchVKNyuvqY3u8OuGw4gmUx1Ypdx2wRVFLHVQC9I7v0pTmF7Nkw==}
+    peerDependencies:
+      kysely: '*'
+
   kysely-libsql@0.7.1:
     resolution: {integrity: sha512-65zt+cBklFuTJLirWep3ZC+K2mDSwyR/af1cW6xUFy9PUYJBp/MNaswX7iaiP9bybRsTxe/b3VM8IDbqK4jY9Q==}
     peerDependencies:
@@ -2344,6 +2378,10 @@ packages:
     resolution: {integrity: sha512-DhuTmvZWux4H1UOnWMB3sk0sbaCVOoQZjv8u1rDoTV0HTdGem9hkAZtl4JZy8P2z4Bg0nT+YMeOFyVr4zcG5Tw==}
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
+
+  supports-color@10.2.2:
+    resolution: {integrity: sha512-SS+jx45GF1QjgEXQx4NJZV9ImqmO2NPz5FNsIHrsDjh2YsHnawpan7SNQ1o8NuhrbHZy9AZhIoCUiCeaW/C80g==}
+    engines: {node: '>=18'}
 
   thenify-all@1.6.0:
     resolution: {integrity: sha512-RNxQH/qI8/t3thXJDwcstUO4zeqo64+Uy/+sNVRBx4Xn2OX+OZ9oP+iJnNFqplFra2ZUVeKCSa2oVWi3T4uVmA==}
@@ -3489,9 +3527,11 @@ snapshots:
 
   data-uri-to-buffer@4.0.1: {}
 
-  debug@4.4.3:
+  debug@4.4.3(supports-color@10.2.2):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 10.2.2
 
   deep-eql@5.0.2: {}
 
@@ -3703,6 +3743,10 @@ snapshots:
   js-base64@3.9.4: {}
 
   js-tokens@9.0.1: {}
+
+  kysely-d1@0.4.0(kysely@0.28.17):
+    dependencies:
+      kysely: 0.28.17
 
   kysely-libsql@0.7.1(kysely@0.28.17):
     dependencies:
@@ -4096,6 +4140,9 @@ snapshots:
       tinyglobby: 0.2.17
       ts-interface-checker: 0.1.13
 
+  supports-color@10.2.2:
+    optional: true
+
   thenify-all@1.6.0:
     dependencies:
       thenify: 3.3.1
@@ -4129,13 +4176,13 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  tsup@8.5.1(postcss@8.5.28)(typescript@5.9.3):
+  tsup@8.5.1(postcss@8.5.28)(supports-color@10.2.2)(typescript@5.9.3):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.27.7)
       cac: 6.7.14
       chokidar: 4.0.3
       consola: 3.4.2
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       esbuild: 0.27.7
       fix-dts-default-cjs-exports: 1.0.1
       joycon: 3.1.1
@@ -4171,10 +4218,10 @@ snapshots:
 
   unicorn-magic@0.3.0: {}
 
-  vite-node@3.2.4(@types/node@22.20.3)(lightningcss@1.33.0):
+  vite-node@3.2.4(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2):
     dependencies:
       cac: 6.7.14
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       es-module-lexer: 1.7.0
       pathe: 2.0.3
       vite: 6.4.3(@types/node@22.20.3)(lightningcss@1.33.0)
@@ -4217,7 +4264,7 @@ snapshots:
       esbuild: 0.28.2
       fsevents: 2.3.3
 
-  vitest@3.2.7(@types/node@22.20.3)(lightningcss@1.33.0):
+  vitest@3.2.7(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/expect': 3.2.7
@@ -4228,7 +4275,7 @@ snapshots:
       '@vitest/spy': 3.2.7
       '@vitest/utils': 3.2.7
       chai: 5.3.3
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       expect-type: 1.4.0
       magic-string: 0.30.21
       pathe: 2.0.3
@@ -4240,7 +4287,7 @@ snapshots:
       tinypool: 1.1.1
       tinyrainbow: 2.0.0
       vite: 6.4.3(@types/node@22.20.3)(lightningcss@1.33.0)
-      vite-node: 3.2.4(@types/node@22.20.3)(lightningcss@1.33.0)
+      vite-node: 3.2.4(@types/node@22.20.3)(lightningcss@1.33.0)(supports-color@10.2.2)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.20.3
