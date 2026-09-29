@@ -1,6 +1,6 @@
 {
   "name": "@spacefn/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unified CLI for SpaceFn projects — dev, build, fmt, lint, and script runner",
   "type": "module",
   "bin": {
