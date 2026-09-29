@@ -1,0 +1,3 @@
+# Scaffold template is a standalone project with its own biome config.
+# Repo tooling must not touch it.
+packages/create-spacefn/src/template/
