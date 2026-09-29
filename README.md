@@ -14,6 +14,7 @@ The packages are independent. Use `@spacefn/html` or `@spacefn/css` without adop
 | [`@spacefn/vite-plugin`](./packages/vite-plugin) | Generic Vite file scanning and code generation                       |
 | [`@spacefn/server`](./packages/server)           | File-based routes/pages/middleware and Web API server handler        |
 | [`@spacefn/db`](./packages/db)                   | Schema definitions, SQL diffs, migrations, and generated types       |
+| [`@spacefn/trail`](./packages/trail)             | Sentry-like tracing: requests, queries, errors, and frontend signals |
 | [`create-spacefn`](./packages/create-spacefn)    | Project scaffolding CLI                                              |
 
 ## Create an application
