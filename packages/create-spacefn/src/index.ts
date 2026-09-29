@@ -41,13 +41,10 @@ async function writeTemplate(targetDir: string, projectName: string): Promise<vo
 function install(targetDir: string, pm: PackageManager): void {
   const mgr = PKG_MANAGERS.find((m) => m.value === pm)!;
 
-  // Install all deps in one shot
-  const deps = [
+  const allDeps = [
     "@spacefn/asteroids",
     "@spacefn/cli",
     "hono",
-  ];
-  const devDeps = [
     "@biomejs/biome",
     "@cloudflare/vite-plugin",
     "@cloudflare/workers-types",
@@ -58,8 +55,9 @@ function install(targetDir: string, pm: PackageManager): void {
     "wrangler",
   ];
 
-  execSync(`${mgr.addDev} ${devDeps.join(" ")}`, { cwd: targetDir, stdio: "inherit" });
-  execSync(`${mgr.install} ${deps.join(" ")}`, { cwd: targetDir, stdio: "inherit" });
+  // pnpm 12.5+ blocks build scripts by default; use --allow-build to approve esbuild/workerd
+  const allowBuild = pm === "pnpm" ? "--config.onlyBuiltDependencies='[\"esbuild\",\"workerd\"]'" : "";
+  execSync(`${mgr.addDev} ${allDeps.join(" ")} ${allowBuild}`, { cwd: targetDir, stdio: "inherit" });
 }
 
 // --- CLI ----------------------------------------------------------------------
