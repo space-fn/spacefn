@@ -67,7 +67,7 @@ function install(targetDir: string, pm: PackageManager): void {
 const main = defineCommand({
   meta: {
     name: "create-spacefn",
-    version: "0.2.0",
+    version: "0.2.4",
     description: "Scaffold a new SpaceFn project",
   },
   args: {
