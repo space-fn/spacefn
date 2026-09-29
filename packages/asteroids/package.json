@@ -23,14 +23,12 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
-	"dependencies": {
+	"devDependencies": {
 		"@spacefn/css": "workspace:*",
 		"@spacefn/datastar": "workspace:*",
 		"@spacefn/db": "workspace:*",
 		"@spacefn/html": "workspace:*",
-		"@spacefn/vite-plugin": "workspace:*"
-	},
-	"devDependencies": {
+		"@spacefn/vite-plugin": "workspace:*",
 		"@types/node": "^22.0.0",
 		"hono": "^4.0.0",
 		"tsup": "^8.0.0",
