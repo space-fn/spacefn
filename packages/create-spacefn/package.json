@@ -1,6 +1,6 @@
 {
   "name": "create-spacefn",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "bin": {
     "create-spacefn": "./bin/create-space-app.js"
   },
