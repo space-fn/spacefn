@@ -15,15 +15,15 @@ import { defineConfig } from "vite";
 import { generators } from "@spacefn/vite-plugin";
 
 export default defineConfig({
-  plugins: [
-    generators({
-      watch: "src/**/*.ts",
-      output: ".space/files.ts",
-      generate(files) {
-        return `export const files = ${JSON.stringify(files)};`;
-      },
-    }),
-  ],
+	plugins: [
+		generators({
+			watch: "src/**/*.ts",
+			output: ".space/files.ts",
+			generate(files) {
+				return `export const files = ${JSON.stringify(files)};`;
+			},
+		}),
+	],
 });
 ```
 
@@ -38,13 +38,13 @@ import { pageGenerator } from "@spacefn/vite-plugin";
 import { dbGenerator } from "@spacefn/vite-plugin";
 
 export default defineConfig({
-  plugins: [
-    generators(
-      apiGenerator({ srcDir: "src/api" }),
-      pageGenerator({ srcDir: "src/pages" }),
-      dbGenerator({ schema: "src/db/schema.ts" }),
-    ),
-  ],
+	plugins: [
+		generators(
+			apiGenerator({ srcDir: "src/api" }),
+			pageGenerator({ srcDir: "src/pages" }),
+			dbGenerator({ schema: "src/db/schema.ts" }),
+		),
+	],
 });
 ```
 
@@ -52,9 +52,9 @@ export default defineConfig({
 
 ```ts
 interface Generator {
-  watch: string | string[];
-  output: string;
-  generate(files: string[]): string | Promise<string>;
+	watch: string | string[];
+	output: string;
+	generate(files: string[]): string | Promise<string>;
 }
 ```
 
@@ -64,22 +64,22 @@ Returns a Vite `PluginOption`. Runs all generators at build start. During develo
 
 ### Built-in generators
 
-| Generator | Watch | Output | Description |
-|-----------|-------|--------|-------------|
-| `apiGenerator` | `src/api/**/*.ts` | `.space/api.ts` | API route registrations |
-| `pageGenerator` | `src/pages/**/*.ts` | `.space/pages.ts` | Page route registrations |
-| `dbGenerator` | `src/db/**/*.ts` | `.space/db/types.ts` | Database type generation |
+| Generator       | Watch               | Output               | Description              |
+| --------------- | ------------------- | -------------------- | ------------------------ |
+| `apiGenerator`  | `src/api/**/*.ts`   | `.space/api.ts`      | API route registrations  |
+| `pageGenerator` | `src/pages/**/*.ts` | `.space/pages.ts`    | Page route registrations |
+| `dbGenerator`   | `src/db/**/*.ts`    | `.space/db/types.ts` | Database type generation |
 
 ### Custom generator
 
 ```ts
 generators({
-  watch: "locales/**/*.json",
-  output: ".space/locales.ts",
-  generate(files) {
-    const locales = files.map((f) => f.replace("locales/", "").replace(".json", ""));
-    return `export const locales = ${JSON.stringify(locales)};`;
-  },
+	watch: "locales/**/*.json",
+	output: ".space/locales.ts",
+	generate(files) {
+		const locales = files.map((f) => f.replace("locales/", "").replace(".json", ""));
+		return `export const locales = ${JSON.stringify(locales)};`;
+	},
 });
 ```
 

@@ -6,11 +6,11 @@ Typed functional server-side HTML renderer.
 import { h, render } from "@spacefn/html";
 
 const html = render(
-  h.html(
-    {},
-    h.head({}, h.title({}, "Home")),
-    h.body({}, h.h1({}, "Welcome"), h.p({}, "Rendered on the server.")),
-  ),
+	h.html(
+		{},
+		h.head({}, h.title({}, "Home")),
+		h.body({}, h.h1({}, "Welcome"), h.p({}, "Rendered on the server.")),
+	),
 );
 ```
 

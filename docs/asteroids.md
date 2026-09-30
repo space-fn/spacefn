@@ -38,16 +38,22 @@ Re-exports from all packages:
 ### Hono entry (`@spacefn/asteroids/hono`)
 
 ```ts
-import { defineRoute, defineLoader, defineActions, definePage, html } from "@spacefn/asteroids/hono";
+import {
+	defineRoute,
+	defineLoader,
+	defineActions,
+	definePage,
+	html,
+} from "@spacefn/asteroids/hono";
 ```
 
-| Helper | Description |
-|--------|-------------|
-| `defineRoute(handler)` | Typed Hono route handler |
-| `defineLoader(loader)` | Typed page data loader |
-| `defineActions(actions)` | Named action resolvers |
-| `definePage(component)` | Page component with typed loader data |
-| `html(element)` | Render `HtmlElement` to `Response` |
+| Helper                   | Description                           |
+| ------------------------ | ------------------------------------- |
+| `defineRoute(handler)`   | Typed Hono route handler              |
+| `defineLoader(loader)`   | Typed page data loader                |
+| `defineActions(actions)` | Named action resolvers                |
+| `definePage(component)`  | Page component with typed loader data |
+| `html(element)`          | Render `HtmlElement` to `Response`    |
 
 ### Vite entry (`@spacefn/asteroids/vite`)
 

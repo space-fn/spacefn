@@ -12,9 +12,7 @@ import { h } from "@spacefn/asteroids";
 const app = new Hono();
 
 app.get("/", (c) => {
-  return html(
-    h.html({}, h.head({}, h.title({}, "Home")), h.body({}, h.h1({}, "Hello"))),
-  );
+	return html(h.html({}, h.head({}, h.title({}, "Home")), h.body({}, h.h1({}, "Hello"))));
 });
 
 export default app;
@@ -33,8 +31,8 @@ const app = new Hono();
 app.get("/health", (c) => c.text("ok"));
 
 app.get("/users/:id", (c) => {
-  const id = c.req.param("id");
-  return c.json({ id });
+	const id = c.req.param("id");
+	return c.json({ id });
 });
 ```
 
@@ -47,18 +45,18 @@ Pages use `defineLoader`, `defineActions`, and `definePage` from `@spacefn/aster
 import { defineLoader, defineActions } from "@spacefn/asteroids/hono";
 
 export const loader = defineLoader(async (c) => {
-  const user = await loadUser(c.req.param("id"));
-  return { user };
+	const user = await loadUser(c.req.param("id"));
+	return { user };
 });
 
 export const actions = defineActions({
-  save: {
-    resolver: async (c) => {
-      const data = await c.req.formData();
-      await saveProfile(data);
-      return new Response("Saved");
-    },
-  },
+	save: {
+		resolver: async (c) => {
+			const data = await c.req.formData();
+			await saveProfile(data);
+			return new Response("Saved");
+		},
+	},
 });
 ```
 
@@ -68,7 +66,7 @@ import { definePage } from "@spacefn/asteroids/hono";
 import { h } from "@spacefn/asteroids";
 
 export default definePage<{ user: { name: string } }>((data) =>
-  h.html({}, h.body({}, h.h1({}, data.user.name))),
+	h.html({}, h.body({}, h.h1({}, data.user.name))),
 );
 ```
 
@@ -82,10 +80,10 @@ Middleware is scanned from `src/middlewares/**/*.ts` and ordered lexically. Pref
 import type { MiddlewareHandler } from "hono";
 
 const auth: MiddlewareHandler = async (c, next) => {
-  if (!c.req.header("authorization")) {
-    return c.text("Unauthorized", 401);
-  }
-  return next();
+	if (!c.req.header("authorization")) {
+		return c.text("Unauthorized", 401);
+	}
+	return next();
 };
 
 export default auth;
@@ -99,12 +97,10 @@ Use `h.attrs()` to merge DataStar helpers with regular attributes:
 import { h, ds } from "@spacefn/asteroids";
 
 h.button(
-  h.attrs(
-    ds.dataSignal("count", "0"),
-    ds.dataOn("click", "$count++"),
-    { class: "btn btn-primary" },
-  ),
-  "Click me",
+	h.attrs(ds.dataSignal("count", "0"), ds.dataOn("click", "$count++"), {
+		class: "btn btn-primary",
+	}),
+	"Click me",
 );
 ```
 
@@ -115,15 +111,15 @@ import { h } from "@spacefn/asteroids";
 import { getCSS, sx } from "@spacefn/css";
 
 const button = sx.css.id("button").style(() => ({
-  base: { padding: "0.5rem 1rem", borderRadius: "0.25rem" },
+	base: { padding: "0.5rem 1rem", borderRadius: "0.25rem" },
 }));
 
 const stylesheet = getCSS({ styles: [button] });
 
 h.html(
-  {},
-  h.head({}, h.style({}, stylesheet)),
-  h.body({}, h.button({ class: button.base }, "Save")),
+	{},
+	h.head({}, h.style({}, stylesheet)),
+	h.body({}, h.button({ class: button.base }, "Save")),
 );
 ```
 

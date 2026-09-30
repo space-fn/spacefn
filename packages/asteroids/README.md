@@ -37,14 +37,14 @@ Edit `package.json`:
 
 ```json
 {
-  "name": "my-app",
-  "version": "0.0.1",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "deploy": "wrangler deploy"
-  }
+	"name": "my-app",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"deploy": "wrangler deploy"
+	}
 }
 ```
 
@@ -61,15 +61,15 @@ Create `tsconfig.json`:
 
 ```json
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "skipLibCheck": true,
-    "types": ["node"]
-  },
-  "include": ["src"]
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"skipLibCheck": true,
+		"types": ["node"]
+	},
+	"include": ["src"]
 }
 ```
 
@@ -82,7 +82,7 @@ import { defineConfig } from "vite";
 import cloudflare from "@cloudflare/vite-plugin";
 
 export default defineConfig({
-  plugins: [cloudflare()],
+	plugins: [cloudflare()],
 });
 ```
 
@@ -92,9 +92,9 @@ Create `wrangler.jsonc`:
 
 ```jsonc
 {
-  "name": "my-app",
-  "main": "src/worker.ts",
-  "compatibility_date": "2024-01-01"
+	"name": "my-app",
+	"main": "src/worker.ts",
+	"compatibility_date": "2024-01-01",
 }
 ```
 
@@ -110,13 +110,9 @@ import { h } from "@spacefn/asteroids";
 const app = new Hono();
 
 app.get("/", (c) => {
-  return html(
-    h.html(
-      {},
-      h.head({}, h.title({}, "My App")),
-      h.body({}, h.h1({}, "Hello from SpaceFn!")),
-    ),
-  );
+	return html(
+		h.html({}, h.head({}, h.title({}, "My App")), h.body({}, h.h1({}, "Hello from SpaceFn!"))),
+	);
 });
 
 export default app;
@@ -149,20 +145,20 @@ pnpm add -D @spacefn/cli @biomejs/biome vite vitest
 
 ### Commands
 
-| Command | Description |
-|---------|-------------|
-| `space dev` | Start Vite dev server |
-| `space build` | Build for production |
-| `space test` | Run tests with Vitest |
-| `space fmt` | Format code with Biome |
-| `space fmt --check` | Check formatting (don't write) |
-| `space lint` | Lint code with Biome |
-| `space lint --fix` | Lint and auto-fix issues |
-| `space check` | Run fmt + lint + typecheck |
-| `space run <name>` | Run script from `scripts/` |
-| `space run -- --list` | List available scripts |
-| `space db:generate` | Generate migration from schema |
-| `space db:migrate` | Run pending migrations |
+| Command               | Description                    |
+| --------------------- | ------------------------------ |
+| `space dev`           | Start Vite dev server          |
+| `space build`         | Build for production           |
+| `space test`          | Run tests with Vitest          |
+| `space fmt`           | Format code with Biome         |
+| `space fmt --check`   | Check formatting (don't write) |
+| `space lint`          | Lint code with Biome           |
+| `space lint --fix`    | Lint and auto-fix issues       |
+| `space check`         | Run fmt + lint + typecheck     |
+| `space run <name>`    | Run script from `scripts/`     |
+| `space run -- --list` | List available scripts         |
+| `space db:generate`   | Generate migration from schema |
+| `space db:migrate`    | Run pending migrations         |
 
 ### Script runner
 
@@ -173,9 +169,9 @@ Create a `scripts/` directory for custom scripts:
 import { log } from "@spacefn/cli";
 
 export default async function () {
-  log.info("Seeding database...");
-  // Your seed logic here
-  log.success("Done!");
+	log.info("Seeding database...");
+	// Your seed logic here
+	log.success("Done!");
 }
 ```
 
@@ -194,17 +190,17 @@ For scripts with arguments and flags, use `defineCmd`:
 import { defineCmd, log } from "@spacefn/cli";
 
 export default defineCmd({
-  meta: { name: "db:seed", description: "Seed the database" },
-  args: {
-    count: { type: "number", description: "Number of records", default: 10 },
-    clear: { type: "boolean", description: "Clear existing data first", alias: "c" },
-  },
-  async run({ args }) {
-    log.info(`Seeding ${args.count} records...`);
-    if (args.clear) log.info("Clearing existing data...");
-    // Your seed logic here
-    log.success("Done!");
-  },
+	meta: { name: "db:seed", description: "Seed the database" },
+	args: {
+		count: { type: "number", description: "Number of records", default: 10 },
+		clear: { type: "boolean", description: "Clear existing data first", alias: "c" },
+	},
+	async run({ args }) {
+		log.info(`Seeding ${args.count} records...`);
+		if (args.clear) log.info("Clearing existing data...");
+		// Your seed logic here
+		log.success("Done!");
+	},
 });
 ```
 
@@ -225,7 +221,7 @@ import { log, spinner, exec, table, steps } from "@spacefn/cli";
 log.success("It works!");
 
 await spinner("Loading...", async () => {
-  await fetchData();
+	await fetchData();
 });
 
 await exec("echo", ["hello"]);
@@ -243,9 +239,9 @@ Server-side HTML rendering with typed attributes, escaping, and components.
 import { h, render } from "@spacefn/asteroids";
 
 const element = h.div(
-  { class: "card", id: "welcome" },
-  h.h1({}, "Welcome"),
-  h.p({}, "Rendered on the server."),
+	{ class: "card", id: "welcome" },
+	h.h1({}, "Welcome"),
+	h.p({}, "Rendered on the server."),
 );
 
 const html = render(element);
@@ -310,19 +306,17 @@ type CardProps = { title: string };
 type CardSlots = { default: HtmlElement; footer: HtmlElement };
 
 const Card = defineComponent<CardProps, CardSlots>((props, slots) =>
-  h.article(
-    { class: "card" },
-    h.h2({}, props.title),
-    slots.default,
-    slots.footer,
-  ),
+	h.article({ class: "card" }, h.h2({}, props.title), slots.default, slots.footer),
 );
 
 const html = render(
-  Card({ title: "Hello" }, {
-    default: h.p({}, "Content"),
-    footer: h.small({}, "Footer"),
-  }),
+	Card(
+		{ title: "Hello" },
+		{
+			default: h.p({}, "Content"),
+			footer: h.small({}, "Footer"),
+		},
+	),
 );
 ```
 
@@ -344,14 +338,14 @@ Server-rendered CSS with deterministic class names, design tokens, variants, and
 import { css, getCSS } from "@spacefn/asteroids";
 
 const card = css("card", {
-  base: {
-    background: "white",
-    padding: "1rem",
-    borderRadius: "0.5rem",
-  },
-  hover: {
-    "&:hover": { boxShadow: "0 2px 8px #0002" },
-  },
+	base: {
+		background: "white",
+		padding: "1rem",
+		borderRadius: "0.5rem",
+	},
+	hover: {
+		"&:hover": { boxShadow: "0 2px 8px #0002" },
+	},
 });
 
 // card.base → "card-abc123"
@@ -368,11 +362,11 @@ Tokens become CSS custom properties (`var(--token-path)`) in generated output.
 import { css, getCSS } from "@spacefn/asteroids";
 
 const tokens = css.tokens((t) => ({
-  colors: {
-    gray: { 50: "#f8fafc", 900: "#0f172a" },
-    primary: t.colors.blue[600],
-  },
-  spacing: { sm: "0.5rem", md: "1rem" },
+	colors: {
+		gray: { 50: "#f8fafc", 900: "#0f172a" },
+		primary: t.colors.blue[600],
+	},
+	spacing: { sm: "0.5rem", md: "1rem" },
 }));
 
 const stylesheet = getCSS({ tokens, styles: [] });
@@ -384,16 +378,16 @@ Define variant combinations and defaults:
 
 ```ts
 const button = css
-  .id("button")
-  .variants({
-    size: { sm: {}, lg: {} },
-    tone: { primary: {}, danger: {} },
-  })
-  .defaults({ size: "sm", tone: "primary" })
-  .style((variant) => ({
-    base: { borderRadius: "0.375rem" },
-    label: { fontWeight: variant.tone === "danger" ? "700" : "500" },
-  }));
+	.id("button")
+	.variants({
+		size: { sm: {}, lg: {} },
+		tone: { primary: {}, danger: {} },
+	})
+	.defaults({ size: "sm", tone: "primary" })
+	.style((variant) => ({
+		base: { borderRadius: "0.375rem" },
+		label: { fontWeight: variant.tone === "danger" ? "700" : "500" },
+	}));
 
 // button.base → default variant class
 // button.variant({ size: "lg", tone: "danger" }) → explicit variant class
@@ -409,9 +403,9 @@ import { button, card } from "./styles";
 const stylesheet = getCSS({ styles: [button, card] });
 
 h.html(
-  {},
-  h.head({}, h.style({}, stylesheet)),
-  h.body({}, h.button({ class: button.base }, "Click me")),
+	{},
+	h.head({}, h.style({}, stylesheet)),
+	h.body({}, h.button({ class: button.base }, "Click me")),
 );
 ```
 
@@ -438,13 +432,13 @@ DataStar helpers return attribute objects. Use `h.attrs()` to merge them with yo
 import { h, ds } from "@spacefn/asteroids";
 
 h.button(
-  h.attrs(
-    ds.dataSignal("count", "0"),
-    ds.dataOn("click", "@get('/api/count')"),
-    ds.dataText("count"),
-    { class: "btn btn-primary" },
-  ),
-  "Increment",
+	h.attrs(
+		ds.dataSignal("count", "0"),
+		ds.dataOn("click", "@get('/api/count')"),
+		ds.dataText("count"),
+		{ class: "btn btn-primary" },
+	),
+	"Increment",
 );
 ```
 
@@ -453,26 +447,23 @@ Or import individual helpers:
 ```ts
 import { dataSignal, dataOn, dataText } from "@spacefn/asteroids";
 
-h.button(
-  h.attrs(dataSignal("count", "0"), dataOn("click", "$count++"), { class: "btn" }),
-  "Click",
-);
+h.button(h.attrs(dataSignal("count", "0"), dataOn("click", "$count++"), { class: "btn" }), "Click");
 ```
 
 ### Available helpers
 
-| Helper | Purpose |
-|--------|---------|
-| `dataSignal(name, expr)` | Initialize a signal |
-| `dataText(expr)` | Bind text content |
-| `dataBind(attr, expr?)` | Bind an attribute |
-| `dataComputed(name, expr)` | Computed signal |
-| `dataShow(expr)` | Conditional visibility |
-| `dataClass(name, expr)` | Toggle CSS class |
-| `dataOn(event, expr)` | Event listener |
-| `dataIndicator(signal)` | Loading indicator |
-| `dataEffect(expr)` | Side effect |
-| `dataRef(name)` | Element reference |
+| Helper                     | Purpose                |
+| -------------------------- | ---------------------- |
+| `dataSignal(name, expr)`   | Initialize a signal    |
+| `dataText(expr)`           | Bind text content      |
+| `dataBind(attr, expr?)`    | Bind an attribute      |
+| `dataComputed(name, expr)` | Computed signal        |
+| `dataShow(expr)`           | Conditional visibility |
+| `dataClass(name, expr)`    | Toggle CSS class       |
+| `dataOn(event, expr)`      | Event listener         |
+| `dataIndicator(signal)`    | Loading indicator      |
+| `dataEffect(expr)`         | Side effect            |
+| `dataRef(name)`            | Element reference      |
 
 ### Fetch expressions
 
@@ -490,20 +481,20 @@ ds.dataOn("click", del("/api/users/1"));
 import { patchElements, patchSignals } from "@spacefn/asteroids";
 
 export async function GET() {
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(patchElements("#status", "<p>Ready</p>"));
-      controller.enqueue(patchSignals({ count: 1 }));
-      controller.close();
-    },
-  });
+	const stream = new ReadableStream({
+		start(controller) {
+			controller.enqueue(patchElements("#status", "<p>Ready</p>"));
+			controller.enqueue(patchSignals({ count: 1 }));
+			controller.close();
+		},
+	});
 
-  return new Response(stream, {
-    headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache",
-    },
-  });
+	return new Response(stream, {
+		headers: {
+			"content-type": "text/event-stream",
+			"cache-control": "no-cache",
+		},
+	});
 }
 ```
 
@@ -521,39 +512,39 @@ Schema definitions, type generation, migrations, and schema hashing for SQLite (
 import { defineSchema, column } from "@spacefn/asteroids";
 
 const schema = defineSchema({
-  users: {
-    id: column.integer().primaryKey().autoIncrement(),
-    email: column.text().notNull().unique(),
-    name: column.text(),
-    createdAt: column.text().default("CURRENT_TIMESTAMP"),
-  },
-  posts: {
-    id: column.integer().primaryKey().autoIncrement(),
-    title: column.text().notNull(),
-    body: column.text(),
-    userId: column.integer().references("users.id"),
-  },
+	users: {
+		id: column.integer().primaryKey().autoIncrement(),
+		email: column.text().notNull().unique(),
+		name: column.text(),
+		createdAt: column.text().default("CURRENT_TIMESTAMP"),
+	},
+	posts: {
+		id: column.integer().primaryKey().autoIncrement(),
+		title: column.text().notNull(),
+		body: column.text(),
+		userId: column.integer().references("users.id"),
+	},
 });
 ```
 
 ### Column types
 
-| Type | SQLite | TypeScript |
-|------|--------|------------|
-| `column.text()` | TEXT | `string` |
-| `column.integer()` | INTEGER | `number` |
-| `column.real()` | REAL | `number` |
-| `column.blob()` | BLOB | `ArrayBuffer` |
-| `column.json()` | TEXT | `string` |
+| Type               | SQLite  | TypeScript    |
+| ------------------ | ------- | ------------- |
+| `column.text()`    | TEXT    | `string`      |
+| `column.integer()` | INTEGER | `number`      |
+| `column.real()`    | REAL    | `number`      |
+| `column.blob()`    | BLOB    | `ArrayBuffer` |
+| `column.json()`    | TEXT    | `string`      |
 
 ### Column modifiers
 
 Chain modifiers in any order:
 
 ```ts
-column.text().notNull().unique().default("hello").index()
-column.integer().primaryKey().autoIncrement()
-column.integer().references("users.id")
+column.text().notNull().unique().default("hello").index();
+column.integer().primaryKey().autoIncrement();
+column.integer().references("users.id");
 ```
 
 ### Generate types
@@ -564,10 +555,10 @@ Generate Kysely-compatible TypeScript types from your schema:
 import { generateTypes, defineSchema, column } from "@spacefn/asteroids";
 
 const schema = defineSchema({
-  users: {
-    id: column.integer().primaryKey().autoIncrement(),
-    email: column.text().notNull().unique(),
-  },
+	users: {
+		id: column.integer().primaryKey().autoIncrement(),
+		email: column.text().notNull().unique(),
+	},
 });
 
 const types = generateTypes(schema);
@@ -624,7 +615,13 @@ const changed = hasSchemaChanged(projectRoot, schemaContent);
 Typed helpers for Hono route handlers, loaders, actions, and pages.
 
 ```ts
-import { defineRoute, defineLoader, defineActions, definePage, html } from "@spacefn/asteroids/hono";
+import {
+	defineRoute,
+	defineLoader,
+	defineActions,
+	definePage,
+	html,
+} from "@spacefn/asteroids/hono";
 ```
 
 ### defineRoute
@@ -639,11 +636,11 @@ import { h } from "@spacefn/asteroids";
 const app = new Hono();
 
 app.get(
-  "/users/:id",
-  defineRoute((c) => {
-    const id = c.req.param("id");
-    return html(h.div({}, `User ${id}`));
-  }),
+	"/users/:id",
+	defineRoute((c) => {
+		const id = c.req.param("id");
+		return html(h.div({}, `User ${id}`));
+	}),
 );
 ```
 
@@ -653,8 +650,8 @@ Typed data loader for pages:
 
 ```ts
 export const loader = defineLoader(async (c) => {
-  const user = await getUser(c.req.param("id"));
-  return { user };
+	const user = await getUser(c.req.param("id"));
+	return { user };
 });
 ```
 
@@ -664,21 +661,21 @@ Action map with `_action` query parameter paths:
 
 ```ts
 const actions = defineActions({
-  save: {
-    method: "post",
-    resolver: async (c) => {
-      const data = await c.req.json();
-      await saveUser(data);
-      return html(h.p({}, "Saved!"));
-    },
-  },
-  delete: {
-    method: "post",
-    resolver: async (c) => {
-      await deleteUser(c.req.param("id"));
-      return html(h.p({}, "Deleted!"));
-    },
-  },
+	save: {
+		method: "post",
+		resolver: async (c) => {
+			const data = await c.req.json();
+			await saveUser(data);
+			return html(h.p({}, "Saved!"));
+		},
+	},
+	delete: {
+		method: "post",
+		resolver: async (c) => {
+			await deleteUser(c.req.param("id"));
+			return html(h.p({}, "Deleted!"));
+		},
+	},
 });
 
 // actions.save.path → "?_action=save"
@@ -691,7 +688,7 @@ Typed page component that receives loader data:
 
 ```ts
 export default definePage((data: { user: { name: string } }) => {
-  return h.html({}, h.body({}, h.h1({}, data.user.name)));
+	return h.html({}, h.body({}, h.h1({}, data.user.name)));
 });
 ```
 
@@ -724,20 +721,14 @@ import { defineConfig } from "vite";
 import { generators } from "@spacefn/asteroids/vite";
 
 export default defineConfig({
-  plugins: [
-    generators(
-      apiGenerator(),
-      pageGenerator(),
-      dbGenerator(),
-    ),
-  ],
+	plugins: [generators(apiGenerator(), pageGenerator(), dbGenerator())],
 });
 ```
 
 Or use the combined `generators()` with no args for all defaults:
 
 ```ts
-plugins: [generators(apiGenerator(), pageGenerator(), dbGenerator())]
+plugins: [generators(apiGenerator(), pageGenerator(), dbGenerator())];
 ```
 
 ### API generator
@@ -766,15 +757,15 @@ Create your own generator:
 import { generators, type Generator } from "@spacefn/asteroids/vite";
 
 const myGenerator: Generator = {
-  watch: "src/locales/**/*.json",
-  output: ".space/i18n.ts",
-  generate(files) {
-    // files = absolute paths matching the glob
-    return `export const locales = ${JSON.stringify(files)};`;
-  },
+	watch: "src/locales/**/*.json",
+	output: ".space/i18n.ts",
+	generate(files) {
+		// files = absolute paths matching the glob
+		return `export const locales = ${JSON.stringify(files)};`;
+	},
 };
 
-plugins: [generators(myGenerator)]
+plugins: [generators(myGenerator)];
 ```
 
 Generators run at build start and re-run on file changes during dev with 100ms debounce.

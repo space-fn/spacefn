@@ -14,44 +14,45 @@ pnpm add @spacefn/db kysely
 import { column, defineSchema, index } from "@spacefn/db";
 
 export const schema = defineSchema({
-  users: {
-    id: column.integer().primaryKey().autoIncrement(),
-    name: column.text().notNull(),
-    email: column.text().unique().notNull(),
-    bio: column.text(),
-    createdAt: column.text().default("CURRENT_TIMESTAMP"),
-    _indexes: [index("idx_users_email", ["email"])],
-  },
-  posts: {
-    id: column.integer().primaryKey().autoIncrement(),
-    userId: column.integer().references("users.id").notNull(),
-    title: column.text().notNull(),
-    body: column.text(),
-  },
+	users: {
+		id: column.integer().primaryKey().autoIncrement(),
+		name: column.text().notNull(),
+		email: column.text().unique().notNull(),
+		bio: column.text(),
+		createdAt: column.text().default("CURRENT_TIMESTAMP"),
+		_indexes: [index("idx_users_email", ["email"])],
+	},
+	posts: {
+		id: column.integer().primaryKey().autoIncrement(),
+		userId: column.integer().references("users.id").notNull(),
+		title: column.text().notNull(),
+		body: column.text(),
+	},
 });
 ```
 
 ### Column types
 
-| Type | SQLite | TypeScript |
-|------|--------|------------|
-| `column.text()` | TEXT | `string` |
-| `column.integer()` | INTEGER | `number` |
-| `column.real()` | REAL | `number` |
-| `column.blob()` | BLOB | `ArrayBuffer` |
-| `column.json()` | TEXT (JSON) | `string` |
+| Type               | SQLite      | TypeScript    |
+| ------------------ | ----------- | ------------- |
+| `column.text()`    | TEXT        | `string`      |
+| `column.integer()` | INTEGER     | `number`      |
+| `column.real()`    | REAL        | `number`      |
+| `column.blob()`    | BLOB        | `ArrayBuffer` |
+| `column.json()`    | TEXT (JSON) | `string`      |
 
 ### Modifiers
 
 ```ts
-column.text()
-  .primaryKey()
-  .autoIncrement()
-  .notNull()
-  .unique()
-  .default("value")
-  .references("table.column")
-  .index({ unique: true })
+column
+	.text()
+	.primaryKey()
+	.autoIncrement()
+	.notNull()
+	.unique()
+	.default("value")
+	.references("table.column")
+	.index({ unique: true });
 ```
 
 ## Generate types
@@ -68,11 +69,11 @@ Generates Kysely-compatible types:
 
 ```ts
 export type Users = {
-  id: Generated<number>;
-  name: string;
-  email: string;
-  bio: string | null;
-  createdAt: Generated<string>;
+	id: Generated<number>;
+	name: string;
+	email: string;
+	bio: string | null;
+	createdAt: Generated<string>;
 };
 
 export type UsersSelect = Selectable<Users>;
@@ -80,8 +81,8 @@ export type UsersInsert = Insertable<Users>;
 export type UsersUpdate = Updateable<Users>;
 
 export type Database = {
-  users: Users;
-  posts: Posts;
+	users: Users;
+	posts: Posts;
 };
 ```
 
@@ -134,7 +135,7 @@ import { defineConfig } from "vite";
 import { generators, dbGenerator } from "@spacefn/vite-plugin";
 
 export default defineConfig({
-  plugins: [generators(dbGenerator({ schema: "src/db/schema.ts" }))],
+	plugins: [generators(dbGenerator({ schema: "src/db/schema.ts" }))],
 });
 ```
 

@@ -17,13 +17,10 @@ import { h } from "@spacefn/html";
 import { ds } from "@spacefn/datastar";
 
 h.button(
-  h.attrs(
-    ds.dataSignal("count", "0"),
-    ds.dataOn("click", "@get('/count')"),
-    ds.dataText("count"),
-    { class: "btn btn-primary" },
-  ),
-  "Increment",
+	h.attrs(ds.dataSignal("count", "0"), ds.dataOn("click", "@get('/count')"), ds.dataText("count"), {
+		class: "btn btn-primary",
+	}),
+	"Increment",
 );
 ```
 
@@ -32,10 +29,7 @@ Or import individual helpers:
 ```ts
 import { dataSignal, dataOn, dataText } from "@spacefn/datastar";
 
-h.button(
-  h.attrs(dataSignal("count", "0"), dataOn("click", "$count++"), { class: "btn" }),
-  "Click",
-);
+h.button(h.attrs(dataSignal("count", "0"), dataOn("click", "$count++"), { class: "btn" }), "Click");
 ```
 
 ### Reactive and DOM helpers
@@ -81,20 +75,20 @@ Helpers do not execute JavaScript; they only serialize DataStar attributes for t
 import { patchElements, patchSignals } from "@spacefn/datastar";
 
 export async function GET() {
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(patchElements("#status", "<p>Ready</p>"));
-      controller.enqueue(patchSignals({ count: 1 }));
-      controller.close();
-    },
-  });
+	const stream = new ReadableStream({
+		start(controller) {
+			controller.enqueue(patchElements("#status", "<p>Ready</p>"));
+			controller.enqueue(patchSignals({ count: 1 }));
+			controller.close();
+		},
+	});
 
-  return new Response(stream, {
-    headers: {
-      "content-type": "text/event-stream",
-      "cache-control": "no-cache",
-    },
-  });
+	return new Response(stream, {
+		headers: {
+			"content-type": "text/event-stream",
+			"cache-control": "no-cache",
+		},
+	});
 }
 ```
 

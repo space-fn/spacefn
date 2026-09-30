@@ -371,10 +371,7 @@ describe("mergeAttrs / h.attrs", () => {
 	});
 
 	it("returns usable attributes in h.button", () => {
-		const el = h.button(
-			h.attrs({ class: "btn" }, { "data-on:click": "$count++" }),
-			"Click",
-		);
+		const el = h.button(h.attrs({ class: "btn" }, { "data-on:click": "$count++" }), "Click");
 		expect(renderElement(el)).toBe('<button class="btn" data-on:click="$count++">Click</button>');
 	});
 });

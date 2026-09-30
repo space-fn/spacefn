@@ -16,9 +16,9 @@ Every tag accepts an attribute object (or `null`) followed by children. Children
 import { h, render } from "@spacefn/html";
 
 const element = h.div(
-  { class: "card", id: "welcome" },
-  h.h1({}, "Welcome"),
-  h.p({}, "Rendered on the server."),
+	{ class: "card", id: "welcome" },
+	h.h1({}, "Welcome"),
+	h.p({}, "Rendered on the server."),
 );
 
 const html = render(element);
@@ -51,12 +51,10 @@ This is especially useful with DataStar helpers:
 import { ds } from "@spacefn/datastar";
 
 h.button(
-  h.attrs(
-    ds.dataSignal("count", "0"),
-    ds.dataOn("click", "$count++"),
-    { class: "btn btn-primary" },
-  ),
-  "Click",
+	h.attrs(ds.dataSignal("count", "0"), ds.dataOn("click", "$count++"), {
+		class: "btn btn-primary",
+	}),
+	"Click",
 );
 ```
 
@@ -71,11 +69,11 @@ type CardProps = { title: string };
 type CardSlots = { default: HtmlElement; footer: HtmlElement };
 
 const Card = defineComponent<CardProps, CardSlots>((props, slots) =>
-  h.article({ class: "card" }, h.h2({}, props.title), slots.default, slots.footer),
+	h.article({ class: "card" }, h.h2({}, props.title), slots.default, slots.footer),
 );
 
 const html = renderComponent(
-  Card({ title: "Post Card" }, { default: h.p({}, "Content"), footer: h.small({}, "Footer") }),
+	Card({ title: "Post Card" }, { default: h.p({}, "Content"), footer: h.small({}, "Footer") }),
 );
 ```
 
