@@ -40,23 +40,23 @@ function buildFetchExpression(
 }
 
 function get(url: string, opts: GetOptions = {}): string {
-	return buildFetchExpression("get", url, opts);
+	return buildFetchExpression("@get", url, opts);
 }
 
 function post(url: string, opts: PostOptions = {}): string {
-	return buildFetchExpression("post", url, opts);
+	return buildFetchExpression("@post", url, opts);
 }
 
 function put(url: string, opts: PostOptions = {}): string {
-	return buildFetchExpression("put", url, opts);
+	return buildFetchExpression("@put", url, opts);
 }
 
 function patch(url: string, opts: PostOptions = {}): string {
-	return buildFetchExpression("patch", url, opts);
+	return buildFetchExpression("@patch", url, opts);
 }
 
 function del(url: string, opts: GetOptions = {}): string {
-	return buildFetchExpression("delete", url, opts);
+	return buildFetchExpression("@delete", url, opts);
 }
 
 // --- Action expression builders -----------------------------------------------
