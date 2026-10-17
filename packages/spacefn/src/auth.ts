@@ -13,3 +13,5 @@ export {
 export type { CookieOptions, NewSession, SessionPolicy, SessionRecord } from "./auth/session";
 export { requireSession, sessionResolver } from "./auth/middleware";
 export type { SessionOptions } from "./auth/middleware";
+export { csrfGuard, isSameSiteRequest } from "./auth/csrf";
+export type { CsrfOptions } from "./auth/csrf";
