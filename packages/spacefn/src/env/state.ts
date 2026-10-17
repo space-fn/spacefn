@@ -3,12 +3,6 @@ import type { MiddlewareHandler } from "hono";
 import type { Schema } from "./fields";
 import { parseEnv } from "./parse";
 
-/** Augmented by the generated `.space/env.d.ts` so `env` gets the app's types. */
-// oxlint-disable-next-line typescript/no-empty-interface
-export interface Register {}
-
-export type AppEnv = Register extends { env: infer E } ? E : Record<string, unknown>;
-
 const cache = new WeakMap<object, Record<string, unknown>>();
 let current: Record<string, unknown> | undefined;
 
@@ -27,8 +21,8 @@ function values(): Record<string, unknown> {
 	return current;
 }
 
-/** The validated environment declared in `env.ts`. */
-export const env = new Proxy({} as AppEnv, {
+/** Untyped view of the validated environment. `spacefn/env` exposes it typed. */
+export const envValues = new Proxy({} as Record<string, unknown>, {
 	get: (_, key) => (typeof key === "string" ? values()[key] : undefined),
 	has: (_, key) => typeof key === "string" && key in values(),
 	ownKeys: () => Reflect.ownKeys(values()),
