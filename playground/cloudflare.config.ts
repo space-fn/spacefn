@@ -1,9 +1,6 @@
-import { defineConfig } from "cf/config";
+import { defineSpace } from "spacefn/cloudflare";
 
-export default defineConfig({
-	worker: {
-		name: "playground",
-		entrypoint: "./.space/worker.ts",
-		compatibilityDate: "2026-10-01",
-	},
+export default defineSpace({
+	name: "playground",
+	compatibilityDate: "2026-10-01",
 });
