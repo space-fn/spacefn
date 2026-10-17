@@ -60,6 +60,17 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("change", onEnvChange);
 			server.watcher.on("unlink", onEnvChange);
 
+			// SQL changes only regenerate the typed queries; no restart needed.
+			const dbDir = resolve(root, "db");
+			const onSqlChange = (file: string) => {
+				if (!file.startsWith(dbDir + sep) || !file.endsWith(".sql")) return;
+				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+			server.watcher.add(dbDir);
+			server.watcher.on("add", onSqlChange);
+			server.watcher.on("change", onSqlChange);
+			server.watcher.on("unlink", onSqlChange);
+
 			// Queue and cron files change the Worker config: a binding, a consumer or a schedule.
 			const configDirs = [resolve(root, "queues"), resolve(root, "crons")];
 			const onConfigFileChange = (file: string) => {
