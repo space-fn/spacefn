@@ -37,13 +37,15 @@ function nanos(ms: number): string {
 	return (BigInt(ms) * 1_000_000n).toString();
 }
 
+const OTLP_KIND = { internal: 1, server: 2, client: 3, producer: 4, consumer: 5 } as const;
+
 function encodeSpan(record: SpanRecord) {
 	return {
 		traceId: record.traceId,
 		spanId: record.spanId,
 		...(record.parentSpanId ? { parentSpanId: record.parentSpanId } : {}),
 		name: record.name,
-		kind: 1,
+		kind: OTLP_KIND[record.kind],
 		startTimeUnixNano: nanos(record.startTimeMs),
 		endTimeUnixNano: nanos(record.endTimeMs),
 		attributes: encodeAttributes(record.attributes),

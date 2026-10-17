@@ -61,7 +61,7 @@ test("records and rethrows an error, and still ends the span", async () => {
 
 test("exposes attributes set during the span", async () => {
 	capture();
-	await withSpan("db", (span) => span.setAttributes({ rows: 3 }), { system: "d1" });
+	await withSpan("db", (span) => span.setAttributes({ rows: 3 }), { attributes: { system: "d1" } });
 	expect(records[0]?.attributes).toEqual({ system: "d1", rows: 3 });
 });
 
@@ -72,4 +72,21 @@ test("is a no-op without a tracer but still tracks the current span", async () =
 	});
 	expect(inside).toMatch(/^[0-9a-f]{16}$/);
 	expect(currentSpan()).toBeUndefined();
+});
+
+test("uses an explicit parent over the enclosing span", async () => {
+	capture();
+	const parent = { traceId: "a".repeat(32), spanId: "b".repeat(16) };
+	await withSpan("incoming", () => undefined, { parent, kind: "server" });
+	expect(records[0]).toMatchObject({
+		traceId: parent.traceId,
+		parentSpanId: parent.spanId,
+		kind: "server",
+	});
+});
+
+test("setError marks a span without throwing", async () => {
+	capture();
+	await withSpan("soft", (span) => span.setError("degraded"));
+	expect(records[0]?.error).toBe("degraded");
 });

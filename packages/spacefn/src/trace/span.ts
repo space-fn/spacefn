@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 export type AttributeValue = string | number | boolean;
 export type Attributes = Record<string, AttributeValue>;
+export type SpanKind = "internal" | "server" | "client" | "producer" | "consumer";
 
 export interface SpanContext {
 	traceId: string;
@@ -10,6 +11,7 @@ export interface SpanContext {
 
 export interface SpanRecord extends SpanContext {
 	name: string;
+	kind: SpanKind;
 	parentSpanId?: string;
 	startTimeMs: number;
 	endTimeMs: number;
@@ -19,11 +21,23 @@ export interface SpanRecord extends SpanContext {
 
 export interface Span {
 	readonly context: SpanContext;
+	setName(name: string): void;
 	setAttributes(attributes: Attributes): void;
+	/** Marks the span failed without throwing. */
+	setError(message: string): void;
+}
+
+export interface SpanOptions {
+	attributes?: Attributes;
+	kind?: SpanKind;
+	/** Continues this context instead of the enclosing span, e.g. an incoming `traceparent`. */
+	parent?: SpanContext;
 }
 
 export interface Tracer {
 	onEnd(record: SpanRecord): void;
+	/** Sends buffered spans. Called after a request, queue batch or cron run. */
+	flush?(): Promise<void>;
 }
 
 const storage = new AsyncLocalStorage<SpanContext>();
@@ -32,6 +46,10 @@ let tracer: Tracer | undefined;
 /** Installs the tracer that receives finished spans. `undefined` turns export off. */
 export function setTracer(next: Tracer | undefined): void {
 	tracer = next;
+}
+
+export function getTracer(): Tracer | undefined {
+	return tracer;
 }
 
 /** The span that encloses the current async work, if any. */
@@ -52,9 +70,9 @@ function hex(bytes: number): string {
 export async function withSpan<T>(
 	name: string,
 	fn: (span: Span) => T | Promise<T>,
-	attributes: Attributes = {},
+	options: SpanOptions = {},
 ): Promise<T> {
-	const parent = storage.getStore();
+	const parent = options.parent ?? storage.getStore();
 	const context: SpanContext = {
 		traceId: parent?.traceId ?? hex(16),
 		spanId: hex(8),
@@ -62,15 +80,22 @@ export async function withSpan<T>(
 	const record: SpanRecord = {
 		...context,
 		name,
+		kind: options.kind ?? "internal",
 		parentSpanId: parent?.spanId,
 		startTimeMs: Date.now(),
 		endTimeMs: 0,
-		attributes: { ...attributes },
+		attributes: { ...options.attributes },
 	};
 	const span: Span = {
 		context,
+		setName: (next) => {
+			record.name = next;
+		},
 		setAttributes: (next) => {
 			Object.assign(record.attributes, next);
+		},
+		setError: (message) => {
+			record.error = message;
 		},
 	};
 
