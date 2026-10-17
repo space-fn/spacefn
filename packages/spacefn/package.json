@@ -34,6 +34,10 @@
 		"./trace": {
 			"types": "./dist/trace.d.ts",
 			"import": "./dist/trace.js"
+		},
+		"./queues": {
+			"types": "./dist/queues.d.ts",
+			"import": "./dist/queues.js"
 		}
 	},
 	"scripts": {

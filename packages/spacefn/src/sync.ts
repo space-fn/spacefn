@@ -6,6 +6,7 @@ import { generateEnvTypesSource } from "./env/types";
 import { scanMiddleware } from "./middleware/scan";
 import type { Mode } from "./routes/scan";
 import { syncRoutes } from "./routes/sync";
+import { scanCodeFiles } from "./scan";
 import { writeIfChanged } from "./write";
 
 /** Regenerates everything under `<root>/.space`. Returns whether any file changed. */
@@ -15,9 +16,13 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		() => false,
 	);
 	const middleware = await scanMiddleware(join(root, "middleware"));
+	const queues = await scanCodeFiles(join(root, "queues"));
 	const results = await Promise.all([
 		syncRoutes(root, mode),
-		writeIfChanged(join(root, ".space", "worker.ts"), generateWorkerSource({ hasEnv, middleware })),
+		writeIfChanged(
+			join(root, ".space", "worker.ts"),
+			generateWorkerSource({ hasEnv, middleware, queues }),
+		),
 		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
 	]);
 	return results.some(Boolean);

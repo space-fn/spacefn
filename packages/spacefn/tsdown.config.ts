@@ -8,6 +8,7 @@ export default defineConfig({
 		"src/cloudflare.ts",
 		"src/env.ts",
 		"src/trace.ts",
+		"src/queues.ts",
 	],
 	format: "esm",
 	dts: true,
