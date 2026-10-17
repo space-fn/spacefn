@@ -9,6 +9,8 @@ export interface WorkerSourceOptions {
 	crons?: string[];
 	/** The project has a `tenant/` folder, so the Worker exports the `Tenant` Durable Object. */
 	tenant?: boolean;
+	/** The project has a `pages/` folder, registered after the routes. */
+	pages?: boolean;
 }
 
 function stripExtension(file: string): string {
@@ -22,6 +24,7 @@ export function generateWorkerSource({
 	queues = [],
 	crons = [],
 	tenant = false,
+	pages = false,
 }: WorkerSourceOptions = {}): string {
 	const runtime = [
 		"Hono",
@@ -54,8 +57,10 @@ export function generateWorkerSource({
 		...(hasEnv ? ["app.use(envMiddleware(schema));"] : []),
 		...middleware.map((_, i) => `app.use(middleware${i});`),
 		"registerRoutes(app);",
+		...(pages ? ["registerPages(app);"] : []),
 		"",
 		...(tenant ? ['export { Tenant } from "./tenant";'] : []),
+		...(pages ? ['import { registerPages } from "./pages";'] : []),
 		"export default {",
 		"\tfetch: (request: Request, env: object, ctx: ExecutionContext) => {",
 		"\t\tconst bindings = traceBindings(env);",

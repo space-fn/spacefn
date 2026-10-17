@@ -8,3 +8,4 @@ export { dispatchQueue } from "./queues/dispatch";
 export { dispatchScheduled } from "./crons/dispatch";
 export type { CronJob } from "./crons/define";
 export type { QueueBatch, QueueHandler, QueueMessage } from "./queues/define";
+export { mountPage } from "./pages/mount";

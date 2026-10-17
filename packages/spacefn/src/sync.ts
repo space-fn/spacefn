@@ -8,8 +8,11 @@ import { scanMigrations } from "./db/scan";
 import { generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
 import { scanMiddleware } from "./middleware/scan";
+import { generatePagesSource } from "./pages/generate";
+import { scanPages } from "./pages/scan";
 import { generateQueuesSource } from "./queues/generate";
 import type { Mode } from "./routes/scan";
+import { scanRoutes } from "./routes/scan";
 import { syncRoutes } from "./routes/sync";
 import { scanCodeFiles } from "./scan";
 import { writeIfChanged } from "./write";
@@ -25,6 +28,20 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const crons = await scanCodeFiles(join(root, "crons"));
 	const migrations = await scanMigrations(join(root, "db", "migrations"));
 	const queriesSource = await buildQueries(join(root, "db", "queries"), migrations);
+	const pages = await scanPages(join(root, "pages"));
+	if (pages.length > 0) {
+		const routePaths = new Set(
+			(await scanRoutes(join(root, "routes"), mode)).map((route) => route.path),
+		);
+		for (const page of pages) {
+			if (routePaths.has(page.path)) {
+				throw new Error(
+					`pages/${page.file} and a route both serve ${page.path}. Give one of them another path.`,
+				);
+			}
+		}
+	}
+
 	const tenantDir = join(root, "tenant");
 	const hasTenant = await access(tenantDir).then(
 		() => true,
@@ -41,12 +58,20 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		syncRoutes(root, mode),
 		writeIfChanged(
 			join(root, ".space", "worker.ts"),
-			generateWorkerSource({ hasEnv, middleware, queues, crons, tenant: hasTenant }),
+			generateWorkerSource({
+				hasEnv,
+				middleware,
+				queues,
+				crons,
+				tenant: hasTenant,
+				pages: pages.length > 0,
+			}),
 		),
 		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
 		writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
 		writeIfChanged(join(root, ".space", "migrations.ts"), generateMigrationsSource(migrations)),
 		writeIfChanged(join(root, ".space", "queries.ts"), queriesSource),
+		writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),
 		...(tenantSource === undefined
 			? []
 			: [writeIfChanged(join(root, ".space", "tenant.ts"), tenantSource)]),

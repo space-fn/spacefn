@@ -13,6 +13,7 @@ export default defineConfig({
 		"src/db.ts",
 		"src/tenancy.ts",
 		"src/auth.ts",
+		"src/pages.ts",
 	],
 	format: "esm",
 	dts: true,
