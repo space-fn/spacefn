@@ -14,26 +14,26 @@ let root: string;
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "space-pages-"));
-	await mkdir(join(root, "pages", "users"), { recursive: true });
-	await mkdir(join(root, "routes"), { recursive: true });
+	await mkdir(join(root, "app", "pages", "users"), { recursive: true });
+	await mkdir(join(root, "app", "routes"), { recursive: true });
 });
 
 afterEach(() => rm(root, { recursive: true, force: true }));
 
 test("pairs each page with its server module and gives it a URL", async () => {
-	await writeFile(join(root, "pages", "index.page.ts"), "");
-	await writeFile(join(root, "pages", "users", "[id].page.ts"), "");
-	await writeFile(join(root, "pages", "users", "[id].server.ts"), "");
-	await writeFile(join(root, "pages", "_layout.page.ts"), "");
-	expect(await scanPages(join(root, "pages"))).toEqual([
+	await writeFile(join(root, "app", "pages", "index.page.ts"), "");
+	await writeFile(join(root, "app", "pages", "users", "[id].page.ts"), "");
+	await writeFile(join(root, "app", "pages", "users", "[id].server.ts"), "");
+	await writeFile(join(root, "app", "pages", "_layout.page.ts"), "");
+	expect(await scanPages(join(root, "app", "pages"))).toEqual([
 		{ file: "index.page.ts", server: undefined, path: "/" },
 		{ file: "users/[id].page.ts", server: "users/[id].server.ts", path: "/users/:id" },
 	]);
 });
 
 test("refuses a page and a route that serve the same path", async () => {
-	await writeFile(join(root, "pages", "about.page.ts"), "");
-	await writeFile(join(root, "routes", "about.ts"), "");
+	await writeFile(join(root, "app", "pages", "about.page.ts"), "");
+	await writeFile(join(root, "app", "routes", "about.ts"), "");
 	await expect(sync(root, "dev")).rejects.toThrow("both serve /about");
 });
 
@@ -42,14 +42,14 @@ test("generates a registrar that mounts every page with its server module", () =
 		{ file: "index.page.ts", path: "/" },
 		{ file: "users/[id].page.ts", server: "users/[id].server.ts", path: "/users/:id" },
 	]);
-	expect(source).toContain('import page0 from "../pages/index.page";');
-	expect(source).toContain('import * as server1 from "../pages/users/[id].server";');
+	expect(source).toContain('import page0 from "../app/pages/index.page";');
+	expect(source).toContain('import * as server1 from "../app/pages/users/[id].server";');
 	expect(source).toContain('mountPage(app, "/", page0, undefined);');
 	expect(source).toContain('mountPage(app, "/users/:id", page1, server1);');
 });
 
 test("sync writes .space/pages.ts and the worker registers it", async () => {
-	await writeFile(join(root, "pages", "index.page.ts"), "");
+	await writeFile(join(root, "app", "pages", "index.page.ts"), "");
 	await sync(root, "dev");
 	expect(await readFile(join(root, ".space", "pages.ts"), "utf8")).toContain("registerPages");
 	expect(await readFile(join(root, ".space", "worker.ts"), "utf8")).toContain(

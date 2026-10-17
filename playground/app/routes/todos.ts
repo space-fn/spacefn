@@ -1,6 +1,6 @@
 import { defineHandler } from "spacefn";
 
-import { addTodo, listTodos } from "../.space/queries";
+import { addTodo, listTodos } from "../../.space/queries";
 import { migrated } from "../db/migrate";
 
 export const GET = defineHandler(async (c) => {

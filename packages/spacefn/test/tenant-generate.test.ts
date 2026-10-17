@@ -29,19 +29,22 @@ let root: string;
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "space-tenant-"));
-	await mkdir(join(root, "tenant", "migrations"), { recursive: true });
-	await mkdir(join(root, "tenant", "queries"), { recursive: true });
-	await writeFile(join(root, "tenant", "migrations", "0001_todos.sql"), migrations[0]?.sql ?? "");
+	await mkdir(join(root, "app", "tenant", "migrations"), { recursive: true });
+	await mkdir(join(root, "app", "tenant", "queries"), { recursive: true });
+	await writeFile(
+		join(root, "app", "tenant", "migrations", "0001_todos.sql"),
+		migrations[0]?.sql ?? "",
+	);
 });
 
 afterEach(() => rm(root, { recursive: true, force: true }));
 
 async function generate(queries: Record<string, string>) {
 	for (const [name, body] of Object.entries(queries)) {
-		await writeFile(join(root, "tenant", "queries", `${name}.sql`), body);
+		await writeFile(join(root, "app", "tenant", "queries", `${name}.sql`), body);
 	}
 	return generateTenantSource(
-		await analyzeQueries(join(root, "tenant", "queries"), migrations),
+		await analyzeQueries(join(root, "app", "tenant", "queries"), migrations),
 		migrations,
 	);
 }

@@ -7,9 +7,9 @@ function stripExtension(file: string): string {
 /** Source of `.space/pages.ts`: registers every page and its server module. */
 export function generatePagesSource(pages: PageFile[]): string {
 	const imports = pages.flatMap((page, i) => [
-		`import page${i} from "../pages/${stripExtension(page.file)}";`,
+		`import page${i} from "../app/pages/${stripExtension(page.file)}";`,
 		...(page.server
-			? [`import * as server${i} from "../pages/${stripExtension(page.server)}";`]
+			? [`import * as server${i} from "../app/pages/${stripExtension(page.server)}";`]
 			: []),
 	]);
 	const mounts = pages.map(

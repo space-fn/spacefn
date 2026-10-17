@@ -9,10 +9,10 @@ import type { CronJob } from "./define";
  * effects at import time, because this runs while the build config loads.
  */
 export async function loadCronJobs(root: string): Promise<Record<string, CronJob>> {
-	const files = await scanCodeFiles(join(root, "crons"));
+	const files = await scanCodeFiles(join(root, "app", "crons"));
 	const jobs: Record<string, CronJob> = {};
 	for (const file of files) {
-		const url = `${pathToFileURL(join(root, "crons", file)).href}?v=${crypto.randomUUID()}`;
+		const url = `${pathToFileURL(join(root, "app", "crons", file)).href}?v=${crypto.randomUUID()}`;
 		const mod = (await import(/* @vite-ignore */ url)) as { default?: CronJob };
 		if (!mod.default || typeof mod.default.run !== "function") {
 			throw new Error(`crons/${file} must default-export the result of defineCron()`);

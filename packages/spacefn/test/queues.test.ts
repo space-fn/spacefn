@@ -101,7 +101,7 @@ test("a failing consumer records an error on its span and rethrows", async () =>
 test("the worker entry routes queue batches only when queues exist", () => {
 	expect(generateWorkerSource({})).not.toContain("queue:");
 	const source = generateWorkerSource({ queues: ["emails.ts"] });
-	expect(source).toContain('import queue0 from "../queues/emails";');
+	expect(source).toContain('import queue0 from "../app/queues/emails";');
 	expect(source).toContain('"emails": queue0,');
 	expect(source).toContain(
 		'import { Hono, runWithBindings, traceBindings, traceConfig, traceRequest, dispatchQueue, type QueueBatch } from "spacefn/runtime";',

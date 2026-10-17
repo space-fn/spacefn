@@ -9,15 +9,7 @@
 		"noEmit": true
 	},
 	"include": [
-		"pages",
-		"middleware",
-		"tenant",
-		"db",
-		"crons",
-		"queues",
-		"middleware",
-		"env.ts",
-		"routes",
+		"app",
 		"durable-objects",
 		"entry.ts",
 		".space/**/*",

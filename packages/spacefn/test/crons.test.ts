@@ -82,7 +82,7 @@ test("traces the run under a cron span with the job name", async () => {
 test("the worker entry dispatches scheduled events only when crons exist", () => {
 	expect(generateWorkerSource({})).not.toContain("scheduled:");
 	const source = generateWorkerSource({ crons: ["nightly.ts"] });
-	expect(source).toContain('import cron0 from "../crons/nightly";');
+	expect(source).toContain('import cron0 from "../app/crons/nightly";');
 	expect(source).toContain('"nightly": cron0,');
 	expect(source).toContain("dispatchScheduled({ cron: controller.cron");
 });
@@ -90,9 +90,9 @@ test("the worker entry dispatches scheduled events only when crons exist", () =>
 test("loads each cron file's schedule from disk", async () => {
 	const root = await mkdtemp(join(tmpdir(), "space-cron-"));
 	try {
-		await mkdir(join(root, "crons"));
+		await mkdir(join(root, "app", "crons"), { recursive: true });
 		await writeFile(
-			join(root, "crons", "nightly.ts"),
+			join(root, "app", "crons", "nightly.ts"),
 			`import { defineCron } from ${JSON.stringify(new URL("../src/crons.ts", import.meta.url).pathname)};\nexport default defineCron("0 3 * * *", async () => undefined);\n`,
 		);
 		const jobs = await loadCronJobs(root);

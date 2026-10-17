@@ -6,7 +6,7 @@ import {
 	TenantTransitionError,
 } from "spacefn/tenancy";
 
-import { findTenant, setActive, setDeleted, setSuspended } from "../../../../.space/queries";
+import { findTenant, setActive, setDeleted, setSuspended } from "../../../../../.space/queries";
 import { migrated } from "../../../../db/migrate";
 
 const ACTIONS = new Set<TenantAction>(["suspend", "resume", "delete", "restore"]);

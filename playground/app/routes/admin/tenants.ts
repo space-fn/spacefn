@@ -1,7 +1,7 @@
 import { defineHandler } from "spacefn";
 import { assertValidSlug } from "spacefn/tenancy";
 
-import { addTenant, findTenant } from "../../.space/queries";
+import { addTenant, findTenant } from "../../../.space/queries";
 import { migrated } from "../../db/migrate";
 
 /** Dev-only for this playground: there is no sign-in in front of it. */

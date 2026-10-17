@@ -1,7 +1,7 @@
 import { defineHandler } from "spacefn";
 import { hashPassword, newSession, sessionCookie, verifyPassword } from "spacefn/auth";
 
-import { addSession, findUser } from "../../.space/queries";
+import { addSession, findUser } from "../../../.space/queries";
 import { migrated } from "../../db/migrate";
 
 /** Verified against when the email is unknown, so a miss takes as long as a hit. */

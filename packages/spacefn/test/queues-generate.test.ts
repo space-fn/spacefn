@@ -15,7 +15,7 @@ test("rejects file names that cannot be identifiers", () => {
 
 test("generates a typed producer per queue file", () => {
 	const source = generateQueuesSource(["emails.ts", "order-jobs.ts"]);
-	expect(source).toContain('import type handler0 from "../queues/emails";');
+	expect(source).toContain('import type handler0 from "../app/queues/emails";');
 	expect(source).toContain('emails: queueProducer<QueueBodyOf<typeof handler0>>("QUEUE_EMAILS"),');
 	expect(source).toContain(
 		'orderJobs: queueProducer<QueueBodyOf<typeof handler1>>("QUEUE_ORDER_JOBS"),',

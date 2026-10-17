@@ -5,7 +5,8 @@ const EXTENSION = /\.(?:[cm]?[jt]s|[jt]sx)$/;
 /** Source of `.space/routes.ts`, which registers every scanned route on a Hono app. */
 export function generateRoutesSource(routes: RouteFile[]): string {
 	const imports = routes.map(
-		(route, i) => `import * as route${i} from "../routes/${route.file.replace(EXTENSION, "")}";`,
+		(route, i) =>
+			`import * as route${i} from "../app/routes/${route.file.replace(EXTENSION, "")}";`,
 	);
 	const mounts = routes.map(
 		(route, i) => `\tmountRoute(app, ${JSON.stringify(route.path)}, route${i});`,

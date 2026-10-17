@@ -1,7 +1,7 @@
 import { defineHandler } from "spacefn";
 import { clearSessionCookie, hashSessionToken, readCookie } from "spacefn/auth";
 
-import { deleteSession } from "../../.space/queries";
+import { deleteSession } from "../../../.space/queries";
 import { migrated } from "../../db/migrate";
 
 export const POST = defineHandler(async (c) => {

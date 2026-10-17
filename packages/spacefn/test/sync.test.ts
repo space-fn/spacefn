@@ -10,8 +10,8 @@ let root: string;
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "space-all-"));
-	await mkdir(join(root, "routes"));
-	await writeFile(join(root, "routes", "index.ts"), "");
+	await mkdir(join(root, "app", "routes"), { recursive: true });
+	await writeFile(join(root, "app", "routes", "index.ts"), "");
 });
 
 afterEach(() => rm(root, { recursive: true, force: true }));
@@ -37,13 +37,13 @@ test("wires env.ts into the worker entry when it exists", async () => {
 	const without = await readFile(join(root, ".space", "worker.ts"), "utf8");
 	expect(without).not.toContain("envMiddleware");
 
-	await writeFile(join(root, "env.ts"), "");
+	await writeFile(join(root, "app", "env.ts"), "");
 	expect(await sync(root, "dev")).toBe(true);
 	const withEnv = await readFile(join(root, ".space", "worker.ts"), "utf8");
 	expect(withEnv).toContain(
 		'import { Hono, runWithBindings, traceBindings, traceConfig, traceRequest, envMiddleware } from "spacefn/runtime";',
 	);
-	expect(withEnv).toContain('import schema from "../env";');
+	expect(withEnv).toContain('import schema from "../app/env";');
 	expect(withEnv.indexOf("app.use(envMiddleware(schema));")).toBeLessThan(
 		withEnv.indexOf("registerRoutes(app);"),
 	);
@@ -53,25 +53,25 @@ test("writes env types only when env.ts exists", async () => {
 	await sync(root, "dev");
 	expect(await readFile(join(root, ".space", "env.d.ts"), "utf8")).not.toContain("Register");
 
-	await writeFile(join(root, "env.ts"), "");
+	await writeFile(join(root, "app", "env.ts"), "");
 	await sync(root, "dev");
 	const types = await readFile(join(root, ".space", "env.d.ts"), "utf8");
 	expect(types).toContain('declare module "spacefn/env"');
 	expect(types).toContain("env: InferEnv<typeof schema>;");
 
-	await rm(join(root, "env.ts"));
+	await rm(join(root, "app", "env.ts"));
 	await sync(root, "dev");
 	expect(await readFile(join(root, ".space", "env.d.ts"), "utf8")).not.toContain("Register");
 });
 
 test("registers middleware files in order, after the built-ins", async () => {
-	await mkdir(join(root, "middleware"));
-	await writeFile(join(root, "middleware", "02-log.ts"), "");
-	await writeFile(join(root, "middleware", "01-auth.ts"), "");
+	await mkdir(join(root, "app", "middleware"), { recursive: true });
+	await writeFile(join(root, "app", "middleware", "02-log.ts"), "");
+	await writeFile(join(root, "app", "middleware", "01-auth.ts"), "");
 	await sync(root, "dev");
 	const worker = await readFile(join(root, ".space", "worker.ts"), "utf8");
-	expect(worker).toContain('import middleware0 from "../middleware/01-auth";');
-	expect(worker).toContain('import middleware1 from "../middleware/02-log";');
+	expect(worker).toContain('import middleware0 from "../app/middleware/01-auth";');
+	expect(worker).toContain('import middleware1 from "../app/middleware/02-log";');
 	const order = [
 		"app.use(traceRequest());",
 		"app.use(middleware0);",

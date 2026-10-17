@@ -17,21 +17,27 @@ import { syncRoutes } from "./routes/sync";
 import { scanCodeFiles } from "./scan";
 import { writeIfChanged } from "./write";
 
+/** Convention folders live under `<root>/app` (see the folder conventions doc). */
+function appDir(root: string): string {
+	return join(root, "app");
+}
+
 /** Regenerates everything under `<root>/.space`. Returns whether any file changed. */
 export async function sync(root: string, mode: Mode): Promise<boolean> {
-	const hasEnv = await access(join(root, "env.ts")).then(
+	const app = appDir(root);
+	const hasEnv = await access(join(app, "env.ts")).then(
 		() => true,
 		() => false,
 	);
-	const middleware = await scanMiddleware(join(root, "middleware"));
-	const queues = await scanCodeFiles(join(root, "queues"));
-	const crons = await scanCodeFiles(join(root, "crons"));
-	const migrations = await scanMigrations(join(root, "db", "migrations"));
-	const queriesSource = await buildQueries(join(root, "db", "queries"), migrations);
-	const pages = await scanPages(join(root, "pages"));
+	const middleware = await scanMiddleware(join(app, "middleware"));
+	const queues = await scanCodeFiles(join(app, "queues"));
+	const crons = await scanCodeFiles(join(app, "crons"));
+	const migrations = await scanMigrations(join(app, "db", "migrations"));
+	const queriesSource = await buildQueries(join(app, "db", "queries"), migrations);
+	const pages = await scanPages(join(app, "pages"));
 	if (pages.length > 0) {
 		const routePaths = new Set(
-			(await scanRoutes(join(root, "routes"), mode)).map((route) => route.path),
+			(await scanRoutes(join(app, "routes"), mode)).map((route) => route.path),
 		);
 		for (const page of pages) {
 			if (routePaths.has(page.path)) {
@@ -42,7 +48,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		}
 	}
 
-	const tenantDir = join(root, "tenant");
+	const tenantDir = join(app, "tenant");
 	const hasTenant = await access(tenantDir).then(
 		() => true,
 		() => false,

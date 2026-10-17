@@ -48,7 +48,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 		},
 
 		configureServer(server) {
-			const routesDir = resolve(root, "routes");
+			const routesDir = resolve(root, "app", "routes");
 			server.watcher.add(routesDir);
 
 			const onChange = (file: string) => {
@@ -59,7 +59,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("unlink", onChange);
 
 			// Bindings come from env.ts when Vite resolves its config, so a change needs a restart.
-			const envFile = resolve(root, "env.ts");
+			const envFile = resolve(root, "app", "env.ts");
 			const onEnvChange = (file: string) => {
 				if (file !== envFile) return;
 				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));
@@ -69,7 +69,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("unlink", onEnvChange);
 
 			// SQL changes only regenerate the typed queries; no restart needed.
-			const dbDir = resolve(root, "db");
+			const dbDir = resolve(root, "app", "db");
 			const onSqlChange = (file: string) => {
 				if (!file.startsWith(dbDir + sep) || !file.endsWith(".sql")) return;
 				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
@@ -80,7 +80,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("unlink", onSqlChange);
 
 			// Queue and cron files change the Worker config: a binding, a consumer or a schedule.
-			const configDirs = [resolve(root, "queues"), resolve(root, "crons")];
+			const configDirs = [resolve(root, "app", "queues"), resolve(root, "app", "crons")];
 			const onConfigFileChange = (file: string) => {
 				if (!configDirs.some((dir) => file.startsWith(dir + sep))) return;
 				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));

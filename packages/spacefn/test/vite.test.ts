@@ -10,8 +10,8 @@ let root: string;
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "space-vite-"));
-	await mkdir(join(root, "routes"));
-	await writeFile(join(root, "routes", "hello.ts"), "");
+	await mkdir(join(root, "app", "routes"), { recursive: true });
+	await writeFile(join(root, "app", "routes", "hello.ts"), "");
 });
 
 afterEach(() => rm(root, { recursive: true, force: true }));
@@ -24,7 +24,7 @@ test("generates .space on config", async () => {
 });
 
 test("leaves production-only routes out of dev and keeps them in build", async () => {
-	await writeFile(join(root, "routes", "metrics.prod.ts"), "");
+	await writeFile(join(root, "app", "routes", "metrics.prod.ts"), "");
 	const config = spaceSync().config as (c: object, env: object) => Promise<void>;
 
 	await config({ root }, { command: "serve", mode: "development" });

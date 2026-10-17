@@ -1,7 +1,7 @@
 import { defineCron } from "spacefn/crons";
 import { isPurgeDue, type TenantStatus } from "spacefn/tenancy";
 
-import type { Tenant } from "../.space/tenant";
+import type { Tenant } from "../../.space/tenant";
 
 interface Bindings {
 	DB: D1Database;
@@ -19,7 +19,7 @@ interface Bindings {
  */
 export default defineCron("0 2 * * *", async (_event, env) => {
 	const { DB, TENANTS, BACKUPS } = env as Bindings;
-	const { listTenants, setPurged } = await import("../.space/queries");
+	const { listTenants, setPurged } = await import("../../.space/queries");
 	const { migrated } = await import("../db/migrate");
 	await migrated(DB);
 

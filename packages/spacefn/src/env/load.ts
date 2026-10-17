@@ -6,7 +6,7 @@ import type { Schema } from "./fields";
 
 /** Loads the default export of `<root>/env.ts`, or `undefined` when there is none. */
 export async function loadEnvSchema(root: string): Promise<Schema | undefined> {
-	const file = join(root, "env.ts");
+	const file = join(root, "app", "env.ts");
 	const exists = await access(file).then(
 		() => true,
 		() => false,

@@ -13,8 +13,9 @@ let dir: string;
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "space-db-"));
-	dir = join(root, "db", "migrations");
+	dir = join(root, "app", "db", "migrations");
 	await mkdir(dir, { recursive: true });
+	await mkdir(join(root, "app"), { recursive: true });
 });
 
 afterEach(() => rm(root, { recursive: true, force: true }));

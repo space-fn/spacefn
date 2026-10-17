@@ -1,6 +1,6 @@
 import { defineActions, defineLoader } from "spacefn/pages";
 
-import { addTodo, listTodos } from "../.space/queries";
+import { addTodo, listTodos } from "../../.space/queries";
 import { migrated } from "../db/migrate";
 
 export const loader = defineLoader(async (c) => {

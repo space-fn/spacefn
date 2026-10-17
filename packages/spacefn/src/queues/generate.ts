@@ -17,7 +17,7 @@ export function producerName(file: string): string {
 /** Source of `.space/queues.ts`: one typed producer per `queues/` file. */
 export function generateQueuesSource(files: string[]): string {
 	const imports = files.map(
-		(file, i) => `import type handler${i} from "../queues/${baseName(file)}";`,
+		(file, i) => `import type handler${i} from "../app/queues/${baseName(file)}";`,
 	);
 	const producers = files.map(
 		(file, i) =>

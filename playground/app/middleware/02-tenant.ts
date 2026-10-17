@@ -1,7 +1,7 @@
 import { defineMiddleware } from "spacefn";
 import { tenantResolver, type TenantStatus } from "spacefn/tenancy";
 
-import { findTenant } from "../.space/queries";
+import { findTenant } from "../../.space/queries";
 import { migrated } from "../db/migrate";
 
 const resolve = tenantResolver<{ DB: object }>({
