@@ -207,9 +207,6 @@ importers:
         specifier: workspace:*
         version: link:../packages/spacefn
     devDependencies:
-      cf:
-        specifier: 1.0.0-beta.18
-        version: 1.0.0-beta.18(@types/node@26.6.5)
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)

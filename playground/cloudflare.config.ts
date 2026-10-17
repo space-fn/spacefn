@@ -1,5 +1,4 @@
-import { bindings, exports } from "cf/config";
-import { defineSpace } from "spacefn/cloudflare";
+import { bindings, defineSpace, exports } from "spacefn/cloudflare";
 
 export default defineSpace({
 	name: "playground",
