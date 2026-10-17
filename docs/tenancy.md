@@ -11,15 +11,16 @@ Tenant rows never enter the shared database. A query written against one tenant'
 ## Layout
 
 ```txt
-app/db/                 registry (shared D1)
+app/db/main_db/         registry (shared D1)
   migrations/0002_tenants.sql
   queries/find-tenant.sql, add-tenant.sql
-app/tenant/             one database per tenant
-  migrations/0001_todos.sql
-  queries/list-todos.sql, add-todo.sql
+app/durable-objects/    one Durable Object per tenant (or any other DO)
+  tenant.ts
 app/middleware/02-tenant.ts resolves the tenant for /t/ routes
 app/routes/t/todos.ts   tenant-scoped handlers
 ```
+
+Tenant data lives in a Durable Object, not in a special folder. The library gives you the resolution rules and the lifecycle helpers; the Durable Object itself is yours to write, using `durableObjectExecutor` for its migrations.
 
 ## Tenant names
 
