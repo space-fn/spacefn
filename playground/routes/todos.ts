@@ -1,8 +1,18 @@
 import { defineHandler } from "spacefn";
 
+import { addTodo, listTodos } from "../.space/queries";
+import { migrated } from "../db/migrate";
+
 export const GET = defineHandler(async (c) => {
-	const db = c.env.DB as D1Database;
-	await db.prepare("CREATE TABLE IF NOT EXISTS todos (id INTEGER PRIMARY KEY, title TEXT)").run();
-	const { results } = await db.prepare("SELECT id, title FROM todos").all();
-	return results;
+	const db = c.env.DB as object;
+	await migrated(db);
+	return listTodos(c.env.DB, {});
+});
+
+export const POST = defineHandler(async (c) => {
+	const db = c.env.DB as object;
+	await migrated(db);
+	const body = await c.req.json<{ title: string }>();
+	await addTodo(c.env.DB, { title: body.title });
+	return { created: true };
 });
