@@ -22,6 +22,10 @@
 		"./vite": {
 			"types": "./dist/vite.d.ts",
 			"import": "./dist/vite.js"
+		},
+		"./cloudflare": {
+			"types": "./dist/cloudflare.d.ts",
+			"import": "./dist/cloudflare.js"
 		}
 	},
 	"scripts": {
@@ -30,6 +34,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"cf": "1.0.0-beta.18",
 		"hono": "^4.13.13"
 	},
 	"devDependencies": {
