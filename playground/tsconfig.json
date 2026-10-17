@@ -9,6 +9,7 @@
 		"noEmit": true
 	},
 	"include": [
+		"queues",
 		"middleware",
 		"env.ts",
 		"routes",
