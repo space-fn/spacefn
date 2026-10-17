@@ -1,15 +1,21 @@
 import { isD1, traceD1 } from "./d1";
+import { isKV, traceKV } from "./kv";
+import { isQueue, traceQueue } from "./queue";
 
 const tracedEnvs = new WeakMap<object, object>();
 const tracedBindings = new WeakMap<object, unknown>();
 
 function traceBinding(value: unknown): unknown {
-	if (!isD1(value)) return value;
+	if (typeof value !== "object" || value === null) return value;
 	let traced = tracedBindings.get(value);
-	if (!traced) {
-		traced = traceD1(value);
-		tracedBindings.set(value, traced);
-	}
+	if (traced) return traced;
+
+	if (isD1(value)) traced = traceD1(value);
+	else if (isKV(value)) traced = traceKV(value);
+	else if (isQueue(value)) traced = traceQueue(value);
+	else return value;
+
+	tracedBindings.set(value, traced);
 	return traced;
 }
 
