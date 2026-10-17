@@ -9,6 +9,7 @@
 		"noEmit": true
 	},
 	"include": [
+		"pages",
 		"middleware",
 		"tenant",
 		"db",
