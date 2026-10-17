@@ -18,6 +18,10 @@
 		"./runtime": {
 			"types": "./dist/runtime.d.ts",
 			"import": "./dist/runtime.js"
+		},
+		"./vite": {
+			"types": "./dist/vite.d.ts",
+			"import": "./dist/vite.js"
 		}
 	},
 	"scripts": {
@@ -32,6 +36,10 @@
 		"@types/node": "^26.6.5",
 		"tsdown": "^0.23.1",
 		"typescript": "^7.0.2",
+		"vite": "^8.3.4",
 		"vitest": "^5.0.5"
+	},
+	"peerDependencies": {
+		"vite": ">=8"
 	}
 }
