@@ -105,18 +105,18 @@ test("two files cannot define the same function name", async () => {
 test("sync writes .space/queries.ts from db/queries", async () => {
 	const root = await mkdtemp(join(tmpdir(), "space-sync-q-"));
 	try {
-		await mkdir(join(root, "app", "db", "migrations"), { recursive: true });
-		await mkdir(join(root, "app", "db", "queries"), { recursive: true });
+		await mkdir(join(root, "app", "db", "main_db", "migrations"), { recursive: true });
+		await mkdir(join(root, "app", "db", "main_db", "queries"), { recursive: true });
 		await writeFile(
-			join(root, "app", "db", "migrations", "0001_init.sql"),
+			join(root, "app", "db", "main_db", "migrations", "0001_init.sql"),
 			migrations[0]?.sql ?? "",
 		);
 		await writeFile(
-			join(root, "app", "db", "queries", "find.sql"),
+			join(root, "app", "db", "main_db", "queries", "find.sql"),
 			"-- name: findUser :one\nSELECT id FROM users WHERE id = :id",
 		);
 		await sync(root, "dev");
-		expect(await readFile(join(root, ".space", "queries.ts"), "utf8")).toContain(
+		expect(await readFile(join(root, ".space", "db", "main_db.ts"), "utf8")).toContain(
 			"export async function findUser",
 		);
 	} finally {

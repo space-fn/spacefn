@@ -1,9 +1,8 @@
-import { access } from "node:fs/promises";
+import { access, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
-import { analyzeQueries, buildQueries } from "./db/build-queries";
-import { generateMigrationsSource } from "./db/generate";
-import { generateTenantSource } from "./db/generate-tenant";
+import { analyzeQueries } from "./db/build-queries";
+import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
 import { generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
@@ -17,9 +16,23 @@ import { syncRoutes } from "./routes/sync";
 import { scanCodeFiles } from "./scan";
 import { writeIfChanged } from "./write";
 
-/** Convention folders live under `<root>/app` (see the folder conventions doc). */
+/** Convention folders live under `<root>/app`. */
 function appDir(root: string): string {
 	return join(root, "app");
+}
+
+/** Reads the names of database folders under `<root>/app/db`. */
+async function scanDatabases(dir: string): Promise<string[]> {
+	const entries = await readdir(dir, { withFileTypes: true }).catch(
+		(error: NodeJS.ErrnoException) => {
+			if (error.code === "ENOENT") return [];
+			throw error;
+		},
+	);
+	return entries
+		.filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
+		.map((entry) => entry.name)
+		.sort();
 }
 
 /** Regenerates everything under `<root>/.space`. Returns whether any file changed. */
@@ -32,8 +45,6 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const middleware = await scanMiddleware(join(app, "middleware"));
 	const queues = await scanCodeFiles(join(app, "queues"));
 	const crons = await scanCodeFiles(join(app, "crons"));
-	const migrations = await scanMigrations(join(app, "db", "migrations"));
-	const queriesSource = await buildQueries(join(app, "db", "queries"), migrations);
 	const pages = await scanPages(join(app, "pages"));
 	if (pages.length > 0) {
 		const routePaths = new Set(
@@ -48,39 +59,35 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		}
 	}
 
-	const tenantDir = join(app, "tenant");
-	const hasTenant = await access(tenantDir).then(
-		() => true,
-		() => false,
-	);
-	const tenantMigrations = hasTenant ? await scanMigrations(join(tenantDir, "migrations")) : [];
-	const tenantSource = hasTenant
-		? generateTenantSource(
-				await analyzeQueries(join(tenantDir, "queries"), tenantMigrations),
-				tenantMigrations,
-			)
-		: undefined;
-	const results = await Promise.all([
-		syncRoutes(root, mode),
-		writeIfChanged(
+	const databases = await scanDatabases(join(app, "db"));
+	const results: (boolean | undefined)[] = [
+		await syncRoutes(root, mode),
+		await writeIfChanged(
 			join(root, ".space", "worker.ts"),
 			generateWorkerSource({
 				hasEnv,
 				middleware,
 				queues,
 				crons,
-				tenant: hasTenant,
 				pages: pages.length > 0,
 			}),
 		),
-		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
-		writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
-		writeIfChanged(join(root, ".space", "migrations.ts"), generateMigrationsSource(migrations)),
-		writeIfChanged(join(root, ".space", "queries.ts"), queriesSource),
-		writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),
-		...(tenantSource === undefined
-			? []
-			: [writeIfChanged(join(root, ".space", "tenant.ts"), tenantSource)]),
-	]);
+		await writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
+		await writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
+		await writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),
+	];
+
+	for (const name of databases) {
+		const dir = join(app, "db", name);
+		const migrations = await scanMigrations(join(dir, "migrations"));
+		const queries = await analyzeQueries(join(dir, "queries"), migrations);
+		results.push(
+			await writeIfChanged(
+				join(root, ".space", "db", `${name}.ts`),
+				generateDbSource(name, migrations, queries),
+			),
+		);
+	}
+
 	return results.some(Boolean);
 }

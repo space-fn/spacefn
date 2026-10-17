@@ -1,4 +1,3 @@
-import { access } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 
 import { cloudflare, type PluginConfig } from "@cloudflare/vite-plugin";
@@ -13,7 +12,6 @@ import { queueConfig } from "./queues/config";
 import type { Mode } from "./routes/scan";
 import { scanCodeFiles } from "./scan";
 import { sync } from "./sync";
-import { tenantConfig } from "./tenancy/config";
 
 export interface SpaceState {
 	/** The schema from `env.ts`, loaded when Vite resolves its config. */
@@ -22,8 +20,6 @@ export interface SpaceState {
 	queueFiles?: string[];
 	/** Schedules declared by `crons/`, read when Vite resolves its config. */
 	cronSchedules?: string[];
-	/** The project has a `tenant/` folder, which adds the `Tenant` Durable Object. */
-	hasTenant?: boolean;
 }
 
 /** Keeps `.space/` in step with the project's convention folders. */
@@ -40,10 +36,6 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			state.envSchema = await loadEnvSchema(root);
 			state.queueFiles = await scanCodeFiles(join(root, "queues"));
 			state.cronSchedules = Object.values(await loadCronJobs(root)).map((job) => job.schedule);
-			state.hasTenant = await access(join(root, "tenant")).then(
-				() => true,
-				() => false,
-			);
 			await sync(root, mode);
 		},
 
@@ -111,15 +103,12 @@ export function space(options: SpaceOptions = {}): PluginOption[] {
 				const queues = queueConfig(state.queueFiles ?? []);
 				const crons = cronConfig(state.cronSchedules ?? []);
 				const scheduled = [...queues.triggers, ...crons.triggers];
-				const tenant = state.hasTenant ? tenantConfig(worker.name) : undefined;
 				return {
 					env: {
 						...(state.envSchema && envBindings(state.envSchema)),
 						...queues.env,
-						...tenant?.env,
 						...worker.env,
 					} as never,
-					...(tenant ? { exports: tenant.exports as never } : {}),
 					...(scheduled.length > 0 ? { triggers: scheduled as never } : {}),
 				};
 			},

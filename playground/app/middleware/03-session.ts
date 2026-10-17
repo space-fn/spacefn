@@ -1,7 +1,7 @@
 import { defineMiddleware } from "spacefn";
 import { sessionResolver } from "spacefn/auth";
 
-import { findSession } from "../../.space/queries";
+import { findSession } from "../../.space/db/main_db";
 import { migrated } from "../db/migrate";
 
 /** Attaches the signed-in user, if any, to every request. */

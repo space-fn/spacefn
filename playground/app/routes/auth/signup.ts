@@ -1,7 +1,7 @@
 import { defineHandler } from "spacefn";
 import { hashPassword, MAX_PASSWORD_LENGTH } from "spacefn/auth";
 
-import { addUser, findUser } from "../../../.space/queries";
+import { addUser, findUser } from "../../../.space/db/main_db";
 import { migrated } from "../../db/migrate";
 
 export const POST = defineHandler(async (c) => {

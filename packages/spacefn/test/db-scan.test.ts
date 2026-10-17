@@ -13,7 +13,7 @@ let dir: string;
 
 beforeEach(async () => {
 	root = await mkdtemp(join(tmpdir(), "space-db-"));
-	dir = join(root, "app", "db", "migrations");
+	dir = join(root, "app", "db", "main_db", "migrations");
 	await mkdir(dir, { recursive: true });
 	await mkdir(join(root, "app"), { recursive: true });
 });
@@ -52,8 +52,10 @@ test("generated source inlines the SQL", () => {
 	expect(source).toContain("export const migrations: Migration[] = [");
 });
 
-test("sync writes .space/migrations.ts", async () => {
+test("sync writes .space/db/main_db.ts", async () => {
 	await writeFile(join(dir, "0001_a.sql"), "CREATE TABLE a (id);");
 	await sync(root, "dev");
-	expect(await readFile(join(root, ".space", "migrations.ts"), "utf8")).toContain('id: "0001_a"');
+	expect(await readFile(join(root, ".space", "db", "main_db.ts"), "utf8")).toContain(
+		'id: "0001_a"',
+	);
 });

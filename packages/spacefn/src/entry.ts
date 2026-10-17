@@ -7,8 +7,6 @@ export interface WorkerSourceOptions {
 	queues?: string[];
 	/** Files in `crons/`. Each is a scheduled job named after the file. */
 	crons?: string[];
-	/** The project has a `tenant/` folder, so the Worker exports the `Tenant` Durable Object. */
-	tenant?: boolean;
 	/** The project has a `pages/` folder, registered after the routes. */
 	pages?: boolean;
 }
@@ -23,7 +21,6 @@ export function generateWorkerSource({
 	middleware = [],
 	queues = [],
 	crons = [],
-	tenant = false,
 	pages = false,
 }: WorkerSourceOptions = {}): string {
 	const runtime = [
@@ -50,6 +47,7 @@ export function generateWorkerSource({
 		...queues.map((file, i) => `import queue${i} from "../app/queues/${stripExtension(file)}";`),
 		...crons.map((file, i) => `import cron${i} from "../app/crons/${stripExtension(file)}";`),
 		'import { registerRoutes } from "./routes";',
+		...(pages ? ['import { registerPages } from "./pages";'] : []),
 		"",
 		"const app = new Hono();",
 		"app.use(traceConfig());",
@@ -59,8 +57,6 @@ export function generateWorkerSource({
 		"registerRoutes(app);",
 		...(pages ? ["registerPages(app);"] : []),
 		"",
-		...(tenant ? ['export { Tenant } from "./tenant";'] : []),
-		...(pages ? ['import { registerPages } from "./pages";'] : []),
 		"export default {",
 		"\tfetch: (request: Request, env: object, ctx: ExecutionContext) => {",
 		"\t\tconst bindings = traceBindings(env);",
