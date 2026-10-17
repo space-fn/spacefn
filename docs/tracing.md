@@ -35,6 +35,10 @@ Export happens after the response, through `waitUntil`. A failed export is logge
 | `db.query`                                 | internal | D1 `prepare`, `exec`, `batch`                                       | `db.system`, `db.operation.name`, `db.query.text`, `db.rows_read`, `db.rows_written`, `db.batch.size` |
 | `kv.get`, `kv.put`, `kv.delete`, `kv.list` | internal | KV bindings                                                         | `db.system` (`kv`), `db.operation.name`                                                               |
 | `queue.publish`                            | internal | Queue producer bindings                                             | `messaging.operation.name`, `messaging.batch.message_count`                                           |
+| `queue.process`                            | consumer | Each `queues/` batch, under the trace of its first message          | `messaging.destination.name`, `messaging.batch.message_count`                                         |
+| `cron`                                     | internal | Each scheduled event                                                | `cron.schedule`, `cron.jobs`                                                                          |
+| `cron.run`                                 | internal | Each job that ran, under `cron`                                     | `cron.job`                                                                                            |
+| `do.call`                                  | client   | Each Durable Object stub method call                                | `do.binding`, `rpc.method`                                                                            |
 
 Queries made through `tracedFetch` or bindings nest under the span that was active when they ran, so a request trace shows its database work in place.
 
@@ -75,7 +79,7 @@ export async function charge(orderId: string) {
 ## Limits
 
 - No sampling. Every request is exported. Add a sampler before production traffic gets large.
-- Durable Object stub calls are not traced yet.
-- Queue consumers do not continue the producer's trace yet. That arrives with queues.
+- Durable Object code runs in its own isolate, so its internal queries are not linked to the caller's trace yet. The `do.call` span on the caller side is recorded.
 - Logs go to the console only, not to the OTLP endpoint.
+- Queue messages carry a `$spacefn` envelope with the trace context. A Worker that is not built with spacefn sees that envelope around the body.
 - Export happens once per request. A long-running background job without a request has no flush point until cron and queue support lands.
