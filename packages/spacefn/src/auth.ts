@@ -17,3 +17,12 @@ export { csrfGuard, isSameSiteRequest } from "./auth/csrf";
 export type { CsrfOptions } from "./auth/csrf";
 export { memoryRateStore, rateLimit, clientKey } from "./auth/rate-limit";
 export type { RateHit, RateLimitOptions, RateStore } from "./auth/rate-limit";
+export {
+	base32Decode,
+	base32Encode,
+	newTotpSecret,
+	otpauthUri,
+	totpAt,
+	verifyTotp,
+} from "./auth/totp";
+export type { TotpVerdict } from "./auth/totp";
