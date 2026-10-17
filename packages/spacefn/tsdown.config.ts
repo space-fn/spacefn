@@ -14,6 +14,8 @@ export default defineConfig({
 		"src/db.ts",
 		"src/tenancy.ts",
 		"src/auth.ts",
+		"src/durable-objects.ts",
+		"src/workflows.ts",
 		"src/pages.ts",
 	],
 	format: "esm",

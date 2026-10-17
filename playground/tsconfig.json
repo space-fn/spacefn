@@ -9,6 +9,7 @@
 		"noEmit": true
 	},
 	"include": [
+		"workflows",
 		"app",
 		"durable-objects",
 		"entry.ts",

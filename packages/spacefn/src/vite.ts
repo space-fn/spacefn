@@ -6,12 +6,14 @@ import type { Plugin, PluginOption } from "vite";
 import { envBindings } from "./cloudflare";
 import { cronConfig } from "./crons/config";
 import { loadCronJobs } from "./crons/load";
+import { durableObjectsConfig } from "./durable-objects/config";
 import type { Schema } from "./env/fields";
 import { loadEnvSchema } from "./env/load";
 import { queueConfig } from "./queues/config";
 import type { Mode } from "./routes/scan";
 import { scanCodeFiles } from "./scan";
 import { sync } from "./sync";
+import { workflowsConfig } from "./workflows/config";
 
 export interface SpaceState {
 	/** The schema from `env.ts`, loaded when Vite resolves its config. */
@@ -20,6 +22,10 @@ export interface SpaceState {
 	queueFiles?: string[];
 	/** Schedules declared by `crons/`, read when Vite resolves its config. */
 	cronSchedules?: string[];
+	/** Files in `durable-objects/`. */
+	durableObjectFiles?: string[];
+	/** Files in `workflows/`. */
+	workflowFiles?: string[];
 }
 
 /** Keeps `.space/` in step with the project's convention folders. */
@@ -36,6 +42,8 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			state.envSchema = await loadEnvSchema(root);
 			state.queueFiles = await scanCodeFiles(join(root, "queues"));
 			state.cronSchedules = Object.values(await loadCronJobs(root)).map((job) => job.schedule);
+			state.durableObjectFiles = await scanCodeFiles(join(root, "app", "durable-objects"));
+			state.workflowFiles = await scanCodeFiles(join(root, "app", "workflows"));
 			await sync(root, mode);
 		},
 
@@ -72,7 +80,12 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("unlink", onSqlChange);
 
 			// Queue and cron files change the Worker config: a binding, a consumer or a schedule.
-			const configDirs = [resolve(root, "app", "queues"), resolve(root, "app", "crons")];
+			const configDirs = [
+				resolve(root, "app", "queues"),
+				resolve(root, "app", "crons"),
+				resolve(root, "app", "durable-objects"),
+				resolve(root, "app", "workflows"),
+			];
 			const onConfigFileChange = (file: string) => {
 				if (!configDirs.some((dir) => file.startsWith(dir + sep))) return;
 				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));
@@ -103,12 +116,17 @@ export function space(options: SpaceOptions = {}): PluginOption[] {
 				const queues = queueConfig(state.queueFiles ?? []);
 				const crons = cronConfig(state.cronSchedules ?? []);
 				const scheduled = [...queues.triggers, ...crons.triggers];
+				const dos = durableObjectsConfig(state.durableObjectFiles ?? [], worker.name);
+				const wfs = workflowsConfig(state.workflowFiles ?? [], worker.name);
 				return {
 					env: {
 						...(state.envSchema && envBindings(state.envSchema)),
 						...queues.env,
+						...dos.env,
+						...wfs.env,
 						...worker.env,
 					} as never,
+					exports: { ...worker.exports, ...dos.exports, ...wfs.exports } as never,
 					...(scheduled.length > 0 ? { triggers: scheduled as never } : {}),
 				};
 			},

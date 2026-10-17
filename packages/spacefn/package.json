@@ -62,6 +62,14 @@
 		"./sync": {
 			"types": "./dist/sync.d.ts",
 			"import": "./dist/sync.js"
+		},
+		"./durable-objects": {
+			"types": "./dist/durable-objects.d.ts",
+			"import": "./dist/durable-objects.js"
+		},
+		"./workflows": {
+			"types": "./dist/workflows.d.ts",
+			"import": "./dist/workflows.js"
 		}
 	},
 	"scripts": {

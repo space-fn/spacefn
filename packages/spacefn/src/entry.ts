@@ -7,6 +7,10 @@ export interface WorkerSourceOptions {
 	queues?: string[];
 	/** Files in `crons/`. Each is a scheduled job named after the file. */
 	crons?: string[];
+	/** Files in `durable-objects/`. Each exports a class extending DurableObject. */
+	durableObjects?: string[];
+	/** Files in `workflows/`. Each exports a class extending WorkflowEntrypoint. */
+	workflows?: string[];
 	/** The project has a `pages/` folder, registered after the routes. */
 	pages?: boolean;
 }
@@ -21,6 +25,8 @@ export function generateWorkerSource({
 	middleware = [],
 	queues = [],
 	crons = [],
+	durableObjects = [],
+	workflows = [],
 	pages = false,
 }: WorkerSourceOptions = {}): string {
 	const runtime = [
@@ -48,6 +54,24 @@ export function generateWorkerSource({
 		...crons.map((file, i) => `import cron${i} from "../app/crons/${stripExtension(file)}";`),
 		'import { registerRoutes } from "./routes";',
 		...(pages ? ['import { registerPages } from "./pages";'] : []),
+		...durableObjects.map((file, _i) => {
+			const name = file
+				.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, "")
+				.split(/[-_]/)
+				.filter(Boolean)
+				.map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+				.join("");
+			return `export { ${name} } from "../app/durable-objects/${file.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, "")}";`;
+		}),
+		...workflows.map((file, _i) => {
+			const name = file
+				.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, "")
+				.split(/[-_]/)
+				.filter(Boolean)
+				.map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+				.join("");
+			return `export { ${name} } from "../app/workflows/${file.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, "")}";`;
+		}),
 		"",
 		"const app = new Hono();",
 		"app.use(traceConfig());",

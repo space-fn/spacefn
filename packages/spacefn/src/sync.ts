@@ -45,6 +45,8 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const middleware = await scanMiddleware(join(app, "middleware"));
 	const queues = await scanCodeFiles(join(app, "queues"));
 	const crons = await scanCodeFiles(join(app, "crons"));
+	const durableObjects = await scanCodeFiles(join(app, "durable-objects"));
+	const workflows = await scanCodeFiles(join(app, "workflows"));
 	const pages = await scanPages(join(app, "pages"));
 	if (pages.length > 0) {
 		const routePaths = new Set(
@@ -69,6 +71,8 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 				middleware,
 				queues,
 				crons,
+				durableObjects,
+				workflows,
 				pages: pages.length > 0,
 			}),
 		),
