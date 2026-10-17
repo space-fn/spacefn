@@ -2,13 +2,15 @@
 
 Each folder in a spacefn project does one job. Files are found by name, so there is no registry to maintain.
 
-| Folder            | Each file is                                     | Generated                                       |
-| ----------------- | ------------------------------------------------ | ----------------------------------------------- |
-| `app/routes/`     | HTTP endpoints, named exports `GET`, `POST`, ... | Route table                                     |
-| `app/middleware/` | One middleware, run in name order                | `app.use` calls                                 |
-| `app/queues/`     | One queue and its consumer                       | Queue binding, consumer trigger, typed producer |
-| `app/crons/`      | One scheduled job                                | Scheduled trigger                               |
-| `app/env.ts`      | Environment fields                               | Bindings and types                              |
+| Folder                 | Each file is                                     | Generated                                       |
+| ---------------------- | ------------------------------------------------ | ----------------------------------------------- |
+| `app/routes/`          | HTTP endpoints, named exports `GET`, `POST`, ... | Route table                                     |
+| `app/middleware/`      | One middleware, run in name order                | `app.use` calls                                 |
+| `app/queues/`          | One queue and its consumer                       | Queue binding, consumer trigger, typed producer |
+| `app/crons/`           | One scheduled job                                | Scheduled trigger                               |
+| `app/durable-objects/` | One Durable Object class                         | Class export, binding, config entry             |
+| `app/workflows/`       | One Workflow class                               | Class export, binding, config entry             |
+| `app/env.ts`           | Environment fields                               | Bindings and types                              |
 
 ## Middleware
 
