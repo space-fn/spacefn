@@ -11,3 +11,4 @@ export { tenantResolver } from "./tenancy/middleware";
 export type { TenantOptions, TenantVariables } from "./tenancy/middleware";
 export { migrateTenant, queryTenant } from "./tenancy/storage";
 export type { DurableStorageLike, SqlStorageLike } from "./db/executors";
+export { currentTenant } from "./tenancy/current";
