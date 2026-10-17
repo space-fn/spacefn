@@ -8,5 +8,5 @@
 		"verbatimModuleSyntax": true,
 		"noEmit": true
 	},
-	"include": ["routes", ".space"]
+	"include": ["routes", ".space", "cloudflare.config.ts"]
 }
