@@ -9,6 +9,7 @@ export default defineConfig({
 		"src/env.ts",
 		"src/trace.ts",
 		"src/queues.ts",
+		"src/sync.ts",
 		"src/crons.ts",
 		"src/db.ts",
 		"src/tenancy.ts",

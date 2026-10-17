@@ -58,6 +58,10 @@
 		"./pages": {
 			"types": "./dist/pages.d.ts",
 			"import": "./dist/pages.js"
+		},
+		"./sync": {
+			"types": "./dist/sync.d.ts",
+			"import": "./dist/sync.js"
 		}
 	},
 	"scripts": {
