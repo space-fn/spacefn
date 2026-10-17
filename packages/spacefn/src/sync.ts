@@ -1,6 +1,7 @@
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 
+import { buildQueries } from "./db/build-queries";
 import { generateMigrationsSource } from "./db/generate";
 import { scanMigrations } from "./db/scan";
 import { generateWorkerSource } from "./entry";
@@ -22,6 +23,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const queues = await scanCodeFiles(join(root, "queues"));
 	const crons = await scanCodeFiles(join(root, "crons"));
 	const migrations = await scanMigrations(join(root, "db", "migrations"));
+	const queriesSource = await buildQueries(join(root, "db", "queries"), migrations);
 	const results = await Promise.all([
 		syncRoutes(root, mode),
 		writeIfChanged(
@@ -31,6 +33,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
 		writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
 		writeIfChanged(join(root, ".space", "migrations.ts"), generateMigrationsSource(migrations)),
+		writeIfChanged(join(root, ".space", "queries.ts"), queriesSource),
 	]);
 	return results.some(Boolean);
 }

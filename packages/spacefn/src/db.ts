@@ -6,3 +6,5 @@ export { generateMigrationsSource } from "./db/generate";
 export { d1Executor, durableObjectExecutor } from "./db/executors";
 export type { D1Database, DurableStorageLike, SqlStorageLike } from "./db/executors";
 export { runMigrations } from "./db/run";
+export { queryD1 } from "./db/query";
+export type { D1Reader, SqlValue } from "./db/query";
