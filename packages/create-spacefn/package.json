@@ -4,15 +4,15 @@
 	"description": "Scaffold a spacefn project",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
-	"type": "module",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
 	"bin": {
 		"create-spacefn": "./dist/index.js"
 	},
 	"files": [
 		"dist"
 	],
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"scripts": {
 		"build": "tsdown",
 		"typecheck": "tsc --noEmit",
@@ -24,8 +24,8 @@
 	},
 	"devDependencies": {
 		"@types/node": "^26.6.5",
-		"typescript": "^7.0.2",
 		"tsdown": "^0.23.1",
+		"typescript": "^7.0.2",
 		"vitest": "^5.0.5"
 	}
 }
