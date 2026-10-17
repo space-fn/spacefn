@@ -4,11 +4,11 @@ SpaceFn is one TypeScript package for building full-stack apps on Cloudflare Wor
 
 ## Packages
 
-| Package | Purpose |
-| --- | --- |
-| `spacefn` | The framework: routes, pages, middleware, env, tracing, SQL, tenancy, auth |
-| `space` | CLI: `dev`, `build`, `gen`, `deploy`, `migrate` |
-| `create-spacefn` | Scaffold a project |
+| Package          | Purpose                                                                    |
+| ---------------- | -------------------------------------------------------------------------- |
+| `spacefn`        | The framework: routes, pages, middleware, env, tracing, SQL, tenancy, auth |
+| `space`          | CLI: `dev`, `build`, `gen`, `deploy`, `migrate`                            |
+| `create-spacefn` | Scaffold a project                                                         |
 
 ## Quick start
 
@@ -64,5 +64,6 @@ pnpm lint
 cd packages/spacefn && pnpm test
 cd playground && pnpm dev
 ```
+
 EOF
 cd /Users/wailinaung/Develop/TheAnka/space && vpr fmt >/dev/null 2>&1; vpr fmt:check > /tmp/fc.txt 2>&1; echo fmt=$?; vpr lint > /tmp/lint.txt 2>&1; echo lint=$?; git add README.md && git commit -q -m "docs: rewrite README for the new spacefn" && git status --short
