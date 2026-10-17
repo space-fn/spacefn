@@ -4,6 +4,8 @@ import { cloudflare, type PluginConfig } from "@cloudflare/vite-plugin";
 import type { Plugin, PluginOption } from "vite";
 
 import { envBindings } from "./cloudflare";
+import { cronConfig } from "./crons/config";
+import { loadCronJobs } from "./crons/load";
 import type { Schema } from "./env/fields";
 import { loadEnvSchema } from "./env/load";
 import { queueConfig } from "./queues/config";
@@ -16,6 +18,8 @@ export interface SpaceState {
 	envSchema?: Schema;
 	/** Files in `queues/`, loaded when Vite resolves its config. */
 	queueFiles?: string[];
+	/** Schedules declared by `crons/`, read when Vite resolves its config. */
+	cronSchedules?: string[];
 }
 
 /** Keeps `.space/` in step with the project's convention folders. */
@@ -31,6 +35,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			mode = env.command === "serve" ? "dev" : "prod";
 			state.envSchema = await loadEnvSchema(root);
 			state.queueFiles = await scanCodeFiles(join(root, "queues"));
+			state.cronSchedules = Object.values(await loadCronJobs(root)).map((job) => job.schedule);
 			await sync(root, mode);
 		},
 
@@ -55,15 +60,16 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("change", onEnvChange);
 			server.watcher.on("unlink", onEnvChange);
 
-			// Adding or removing a queue file adds or removes a binding and a consumer trigger.
-			const queuesDir = resolve(root, "queues");
-			const onQueueChange = (file: string) => {
-				if (!file.startsWith(queuesDir + sep)) return;
+			// Queue and cron files change the Worker config: a binding, a consumer or a schedule.
+			const configDirs = [resolve(root, "queues"), resolve(root, "crons")];
+			const onConfigFileChange = (file: string) => {
+				if (!configDirs.some((dir) => file.startsWith(dir + sep))) return;
 				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));
 			};
-			server.watcher.add(queuesDir);
-			server.watcher.on("add", onQueueChange);
-			server.watcher.on("unlink", onQueueChange);
+			for (const dir of configDirs) server.watcher.add(dir);
+			server.watcher.on("add", onConfigFileChange);
+			server.watcher.on("change", onConfigFileChange);
+			server.watcher.on("unlink", onConfigFileChange);
 		},
 	};
 }
@@ -84,13 +90,15 @@ export function space(options: SpaceOptions = {}): PluginOption[] {
 			// every file the config imports unreadable to the Worker.
 			config: (worker) => {
 				const queues = queueConfig(state.queueFiles ?? []);
+				const crons = cronConfig(state.cronSchedules ?? []);
+				const scheduled = [...queues.triggers, ...crons.triggers];
 				return {
 					env: {
 						...(state.envSchema && envBindings(state.envSchema)),
 						...queues.env,
 						...worker.env,
 					} as never,
-					...(queues.triggers.length > 0 ? { triggers: queues.triggers as never } : {}),
+					...(scheduled.length > 0 ? { triggers: scheduled as never } : {}),
 				};
 			},
 		}),

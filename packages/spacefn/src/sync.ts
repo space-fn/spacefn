@@ -18,11 +18,12 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	);
 	const middleware = await scanMiddleware(join(root, "middleware"));
 	const queues = await scanCodeFiles(join(root, "queues"));
+	const crons = await scanCodeFiles(join(root, "crons"));
 	const results = await Promise.all([
 		syncRoutes(root, mode),
 		writeIfChanged(
 			join(root, ".space", "worker.ts"),
-			generateWorkerSource({ hasEnv, middleware, queues }),
+			generateWorkerSource({ hasEnv, middleware, queues, crons }),
 		),
 		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
 		writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),

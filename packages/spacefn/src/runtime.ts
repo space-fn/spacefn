@@ -5,4 +5,6 @@ export { envMiddleware } from "./env/state";
 export { configureTracing, traceBindings, traceConfig, traceRequest } from "./trace";
 export { runWithBindings } from "./env/current";
 export { dispatchQueue } from "./queues/dispatch";
+export { dispatchScheduled } from "./crons/dispatch";
+export type { CronJob } from "./crons/define";
 export type { QueueBatch, QueueHandler, QueueMessage } from "./queues/define";

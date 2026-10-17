@@ -9,6 +9,7 @@ export default defineConfig({
 		"src/env.ts",
 		"src/trace.ts",
 		"src/queues.ts",
+		"src/crons.ts",
 	],
 	format: "esm",
 	dts: true,

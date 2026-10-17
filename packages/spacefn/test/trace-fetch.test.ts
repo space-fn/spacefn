@@ -41,16 +41,19 @@ test("sends the current trace downstream as traceparent", async () => {
 	await withSpan("outer", () => tracedFetch("https://api.example.com/"));
 	const outer = records.find((r) => r.name === "outer");
 	const client = records.find((r) => r.kind === "client");
-	const sent = parseTraceparent((spy.mock.calls[0]?.[0] as Request).headers.get("traceparent"));
-	expect(sent).toEqual({ traceId: outer?.traceId, spanId: client?.spanId });
-	expect(client?.parentSpanId).toBe(outer?.spanId);
+	if (!outer || !client) throw new Error("expected both spans to be recorded");
+	const [sentRequest] = spy.mock.calls[0] ?? [];
+	const sent = parseTraceparent((sentRequest as Request).headers.get("traceparent"));
+	expect(sent).toEqual({ traceId: outer.traceId, spanId: client.spanId });
+	expect(client.parentSpanId).toBe(outer.spanId);
 });
 
 test("keeps a caller-provided traceparent", async () => {
 	const spy = answer(200);
 	const own = "00-" + "a".repeat(32) + "-" + "b".repeat(16) + "-01";
 	await tracedFetch("https://api.example.com/", { headers: { traceparent: own } });
-	expect((spy.mock.calls[0]?.[0] as Request).headers.get("traceparent")).toBe(own);
+	const [sentRequest] = spy.mock.calls[0] ?? [];
+	expect((sentRequest as Request).headers.get("traceparent")).toBe(own);
 });
 
 test("marks server errors and records network failures", async () => {
