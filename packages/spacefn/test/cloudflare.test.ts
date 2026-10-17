@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest";
 
-import { bindings, defineSpace } from "../src/cloudflare";
+import { bindings, defineSpace, envBindings } from "../src/cloudflare";
 import { boolean, defineEnv, number, secret, string } from "../src/env";
 
 const base = { name: "app", compatibilityDate: "2026-10-01" };
 
 test("points the worker at the generated entry", () => {
 	expect(defineSpace(base)).toEqual({
-		worker: { ...base, entrypoint: "./.space/worker.ts", env: {} },
+		worker: { ...base, entrypoint: "./.space/worker.ts" },
 	});
 });
 
@@ -23,8 +23,8 @@ test("re-exports the config builders", async () => {
 	expect(mod.triggers.scheduled({ schedule: "* * * * *" })).toMatchObject({ type: "scheduled" });
 });
 
-describe("envSchema", () => {
-	const envSchema = defineEnv({
+describe("envBindings", () => {
+	const schema = defineEnv({
 		GREETING: string({ default: "hi" }),
 		LIMIT: number({ default: 10 }),
 		DEBUG: boolean({ default: false }),
@@ -34,7 +34,7 @@ describe("envSchema", () => {
 	});
 
 	test("declares defaults as text and everything else as secrets", () => {
-		expect(defineSpace({ ...base, envSchema }).worker?.env).toEqual({
+		expect(envBindings(schema)).toEqual({
 			GREETING: bindings.text("hi"),
 			LIMIT: bindings.text("10"),
 			DEBUG: bindings.text("false"),
@@ -42,10 +42,5 @@ describe("envSchema", () => {
 			NOTE: bindings.secret(),
 			TOKEN: bindings.secret(),
 		});
-	});
-
-	test("keeps hand-written bindings and lets them win", () => {
-		const env = { GREETING: bindings.text("hello"), JOBS: bindings.queue({ name: "jobs" }) };
-		expect(defineSpace({ ...base, envSchema, env }).worker?.env).toMatchObject(env);
 	});
 });
