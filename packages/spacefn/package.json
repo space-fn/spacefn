@@ -26,6 +26,10 @@
 		"./cloudflare": {
 			"types": "./dist/cloudflare.d.ts",
 			"import": "./dist/cloudflare.js"
+		},
+		"./env": {
+			"types": "./dist/env.d.ts",
+			"import": "./dist/env.js"
 		}
 	},
 	"scripts": {
