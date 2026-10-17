@@ -43,6 +43,9 @@ function recordResult(result: unknown, span: { setAttributes(a: Record<string, n
 	span.setAttributes(attributes);
 }
 
+/** Maps each traced statement back to the native one D1 needs in `batch`. */
+const nativeStatements = new WeakMap<object, D1StatementLike>();
+
 function traceStatement(statement: D1StatementLike, sql: string): D1StatementLike {
 	const run = <T>(operation: string, fn: () => Promise<T>) =>
 		withSpan("db.query", async (span) => {
@@ -52,13 +55,15 @@ function traceStatement(statement: D1StatementLike, sql: string): D1StatementLik
 			return result;
 		});
 
-	return {
+	const traced: D1StatementLike = {
 		bind: (...values) => traceStatement(statement.bind(...values), sql),
 		first: (column) => run("first", () => statement.first(column)),
 		run: () => run("run", () => statement.run()),
 		all: () => run("all", () => statement.all()),
 		raw: (options) => run("raw", () => statement.raw(options)),
 	};
+	nativeStatements.set(traced, statement);
+	return traced;
 }
 
 /** Wraps a D1 database so every query becomes a `db.query` span. */
@@ -72,7 +77,9 @@ export function traceD1(db: D1Like): D1Like {
 					"db.operation.name": "batch",
 					"db.batch.size": statements.length,
 				});
-				return db.batch(statements);
+				// D1 only accepts its own statement objects, so unwrap the traced ones.
+				const native = statements.map((statement) => nativeStatements.get(statement) ?? statement);
+				return db.batch(native as D1StatementLike[]);
 			}),
 		exec: (sql) =>
 			withSpan("db.query", async (span) => {

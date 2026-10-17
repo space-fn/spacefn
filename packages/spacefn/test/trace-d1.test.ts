@@ -95,3 +95,31 @@ test("traceBindings wraps D1 bindings and leaves others alone", () => {
 	expect(traced.DB).toBe(traced.DB);
 	expect(traceBindings(env)).toBe(traced);
 });
+
+test("batch passes D1's own statements, not the traced wrappers", async () => {
+	capture();
+	const native: { sql: string }[] = [];
+	const db = traceD1({
+		prepare: (sql: string) => {
+			const statement = {
+				sql,
+				bind: () => statement,
+				first: async () => null,
+				run: async () => ({}),
+				all: async () => ({ results: [] }),
+				raw: async () => [],
+			};
+			return statement as never;
+		},
+		batch: async (statements: unknown[]) => {
+			for (const statement of statements as never[]) {
+				if (!(statement as { sql?: string }).sql) throw new Error("not a native statement");
+				native.push(statement as { sql: string });
+			}
+			return [];
+		},
+		exec: async () => ({ count: 0 }),
+	} as never);
+	await db.batch([db.prepare("SELECT 1").bind(), db.prepare("SELECT 2")] as never);
+	expect(native.map((s) => s.sql)).toEqual(["SELECT 1", "SELECT 2"]);
+});
