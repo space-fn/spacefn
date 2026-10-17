@@ -4,7 +4,8 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, expect, test } from "vitest";
 
-import { generateMigrationsSource, scanMigrations } from "../src/db";
+import { generateMigrationsSource } from "../src/db";
+import { scanMigrations } from "../src/db/scan";
 import { sync } from "../src/sync";
 
 let root: string;
