@@ -14,6 +14,7 @@ export interface SqlStorageLike {
 export interface DurableStorageLike {
 	sql: SqlStorageLike;
 	transactionSync<T>(fn: () => T): T;
+	deleteAll(): Promise<void>;
 }
 
 /**

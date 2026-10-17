@@ -10,7 +10,13 @@ import { analyzeQueries } from "../src/db/build-queries";
 import { generateTenantSource } from "../src/db/generate-tenant";
 import { generateWorkerSource } from "../src/entry";
 import { sync } from "../src/sync";
-import { migrateTenant, queryTenant, type DurableStorageLike } from "../src/tenancy";
+import {
+	exportTenantData,
+	migrateTenant,
+	queryTenant,
+	wipeTenantData,
+	type DurableStorageLike,
+} from "../src/tenancy";
 
 const migrations: Migration[] = [
 	{
@@ -95,6 +101,13 @@ function storage(db: DatabaseSync): DurableStorageLike {
 				return { toArray: () => rows };
 			},
 		},
+		deleteAll: async () => {
+			for (const { name } of db
+				.prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+				.all() as { name: string }[]) {
+				db.exec(`DROP TABLE "${name}"`);
+			}
+		},
 		transactionSync: <T>(fn: () => T): T => {
 			db.exec("BEGIN");
 			try {
@@ -121,4 +134,33 @@ test("tenant storage migrates once and keeps each tenant's data apart", async ()
 	expect(queryTenant<{ title: string }>(storage(acme), "SELECT title FROM todos", [])).toEqual([
 		{ title: "acme only" },
 	]);
+});
+
+test("export reads every user table as JSON, including the ledger", async () => {
+	const db = new DatabaseSync(":memory:");
+	await migrateTenant(storage(db), migrations);
+	storage(db).sql.exec("INSERT INTO todos (title) VALUES ('keep me')");
+	const dump = exportTenantData(storage(db), new Date("2026-01-02T03:04:05Z"));
+	expect(dump.exportedAt).toBe("2026-01-02T03:04:05.000Z");
+	expect(dump.tables.map((t) => t.name)).toEqual(["space_migrations", "todos"]);
+	expect(dump.tables.find((t) => t.name === "todos")?.rows).toEqual([
+		{ id: 1, title: "keep me", done: 0 },
+	]);
+});
+
+test("wipe erases the tenant, and a later export is empty", async () => {
+	const db = new DatabaseSync(":memory:");
+	await migrateTenant(storage(db), migrations);
+	storage(db).sql.exec("INSERT INTO todos (title) VALUES ('gone soon')");
+	await wipeTenantData(storage(db));
+	expect(exportTenantData(storage(db), new Date()).tables).toEqual([]);
+});
+
+test("the generated class exposes export and wipe, and they cannot be shadowed", async () => {
+	const source = await generate({ list: "-- name: listTodos :many\nSELECT id FROM todos" });
+	expect(source).toContain("exportData(): TenantDump {");
+	expect(source).toContain("wipe(): Promise<void> {");
+	await expect(generate({ wipe: "-- name: wipe :exec\nDELETE FROM todos" })).rejects.toThrow(
+		"clashes",
+	);
 });

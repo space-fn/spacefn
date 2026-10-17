@@ -46,6 +46,13 @@ function fakeStorage(db: DatabaseSync) {
 				return { toArray: () => rows };
 			},
 		},
+		deleteAll: async () => {
+			for (const { name } of db
+				.prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+				.all() as { name: string }[]) {
+				db.exec(`DROP TABLE "${name}"`);
+			}
+		},
 		transactionSync: <T>(fn: () => T): T => {
 			db.exec("BEGIN");
 			try {
