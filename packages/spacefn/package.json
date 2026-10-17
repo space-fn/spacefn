@@ -42,6 +42,10 @@
 		"./crons": {
 			"types": "./dist/crons.d.ts",
 			"import": "./dist/crons.js"
+		},
+		"./db": {
+			"types": "./dist/db.d.ts",
+			"import": "./dist/db.js"
 		}
 	},
 	"scripts": {
