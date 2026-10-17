@@ -6,3 +6,4 @@ dist/
 output
 *.tsbuildinfo
 .cloudflare/
+.dev.vars
