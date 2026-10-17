@@ -10,5 +10,6 @@ export default defineSpace({
 	env: {
 		COUNTER: bindings.durableObject({ worker: "playground", exportName: "Counter" }),
 		DB: bindings.d1({ name: "playground-db" }),
+		BACKUPS: bindings.r2({ name: "playground-backups" }),
 	},
 });
