@@ -9,10 +9,11 @@
 		"noEmit": true
 	},
 	"include": [
+		"env.ts",
 		"routes",
 		"durable-objects",
 		"entry.ts",
-		".space",
+		".space/**/*",
 		".cloudflare/types",
 		"cloudflare.config.ts"
 	]
