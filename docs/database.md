@@ -6,12 +6,16 @@ SQL stays SQL. You write migrations and queries as `.sql` files. spacefn checks 
 
 ```txt
 app/db/
-├── migrations/
-│   ├── 0001_create_todos.sql
-│   └── 0002_add_owner.sql
-└── queries/
-    ├── list-todos.sql
-    └── find-todo.sql
+├── main_db/
+│   ├── migrations/
+│   │   ├── 0001_create_todos.sql
+│   │   └── 0002_add_owner.sql
+│   └── queries/
+│       ├── list-todos.sql
+│       └── find-todo.sql
+└── analytics_db/
+    ├── migrations/
+    └── queries/
 ```
 
 ## Migrations
