@@ -1,12 +1,13 @@
 import { resolve, sep } from "node:path";
 
-import type { Plugin } from "vite";
+import { cloudflare, type PluginConfig } from "@cloudflare/vite-plugin";
+import type { Plugin, PluginOption } from "vite";
 
 import type { Mode } from "./routes/scan";
 import { sync } from "./sync";
 
 /** Keeps `.space/` in step with the project's convention folders. */
-export function space(): Plugin {
+export function spaceSync(): Plugin {
 	let root = process.cwd();
 	let mode: Mode = "dev";
 
@@ -31,4 +32,14 @@ export function space(): Plugin {
 			server.watcher.on("unlink", onChange);
 		},
 	};
+}
+
+export interface SpaceOptions {
+	/** Passed through to the Cloudflare Vite plugin. */
+	cloudflare?: PluginConfig;
+}
+
+/** The one Vite plugin a spacefn app needs: folder sync plus the Cloudflare runtime. */
+export function space(options: SpaceOptions = {}): PluginOption[] {
+	return [spaceSync(), cloudflare(options.cloudflare)];
 }

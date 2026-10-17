@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, expect, test } from "vitest";
 
-import { space } from "../src/vite";
+import { space, spaceSync } from "../src/vite";
 
 let root: string;
 
@@ -17,7 +17,7 @@ beforeEach(async () => {
 afterEach(() => rm(root, { recursive: true, force: true }));
 
 test("generates .space on config", async () => {
-	const plugin = space();
+	const plugin = spaceSync();
 	const config = plugin.config as (c: object, env: object) => Promise<void>;
 	await config({ root }, { command: "serve", mode: "development" });
 	expect(await readFile(join(root, ".space", "routes.ts"), "utf8")).toContain('"/hello"');
@@ -25,11 +25,17 @@ test("generates .space on config", async () => {
 
 test("leaves production-only routes out of dev and keeps them in build", async () => {
 	await writeFile(join(root, "routes", "metrics.prod.ts"), "");
-	const config = space().config as (c: object, env: object) => Promise<void>;
+	const config = spaceSync().config as (c: object, env: object) => Promise<void>;
 
 	await config({ root }, { command: "serve", mode: "development" });
 	expect(await readFile(join(root, ".space", "routes.ts"), "utf8")).not.toContain("/metrics");
 
 	await config({ root }, { command: "build", mode: "production" });
 	expect(await readFile(join(root, ".space", "routes.ts"), "utf8")).toContain("/metrics");
+});
+
+test("bundles the sync plugin with the cloudflare plugin", () => {
+	const plugins = space().flat() as { name: string }[];
+	expect(plugins[0]?.name).toBe("space");
+	expect(plugins.length).toBeGreaterThan(1);
 });

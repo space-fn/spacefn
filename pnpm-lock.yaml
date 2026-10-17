@@ -175,6 +175,9 @@ importers:
 
   packages/spacefn:
     dependencies:
+      '@cloudflare/vite-plugin':
+        specifier: 2.0.0-beta.v.1
+        version: 2.0.0-beta.v.1(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2))(workerd@1.20261012.1)
       cf:
         specifier: 1.0.0-beta.18
         version: 1.0.0-beta.18(@types/node@26.6.5)
@@ -204,9 +207,6 @@ importers:
         specifier: workspace:*
         version: link:../packages/spacefn
     devDependencies:
-      '@cloudflare/vite-plugin':
-        specifier: 2.0.0-beta.v.1
-        version: 2.0.0-beta.v.1(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2))(workerd@1.20261012.1)
       cf:
         specifier: 1.0.0-beta.18
         version: 1.0.0-beta.18(@types/node@26.6.5)
