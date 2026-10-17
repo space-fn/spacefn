@@ -12,6 +12,7 @@ export default defineConfig({
 		"src/crons.ts",
 		"src/db.ts",
 		"src/tenancy.ts",
+		"src/auth.ts",
 	],
 	format: "esm",
 	dts: true,

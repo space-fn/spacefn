@@ -50,6 +50,10 @@
 		"./tenancy": {
 			"types": "./dist/tenancy.d.ts",
 			"import": "./dist/tenancy.js"
+		},
+		"./auth": {
+			"types": "./dist/auth.d.ts",
+			"import": "./dist/auth.js"
 		}
 	},
 	"scripts": {
