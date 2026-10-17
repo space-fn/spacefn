@@ -19,6 +19,7 @@ export function generateWorkerSource({
 }: WorkerSourceOptions = {}): string {
 	const runtime = [
 		"Hono",
+		"runWithBindings",
 		"traceBindings",
 		"traceConfig",
 		"traceRequest",
@@ -46,8 +47,10 @@ export function generateWorkerSource({
 		"registerRoutes(app);",
 		"",
 		"export default {",
-		"\tfetch: (request: Request, env: object, ctx: ExecutionContext) =>",
-		"\t\tapp.fetch(request, traceBindings(env), ctx),",
+		"\tfetch: (request: Request, env: object, ctx: ExecutionContext) => {",
+		"\t\tconst bindings = traceBindings(env);",
+		"\t\treturn runWithBindings(bindings, () => app.fetch(request, bindings, ctx));",
+		"\t},",
 		...(queues.length > 0
 			? [
 					"\tqueue: (batch: QueueBatch<unknown>, env: object, ctx: ExecutionContext) =>",

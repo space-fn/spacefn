@@ -104,6 +104,6 @@ test("the worker entry routes queue batches only when queues exist", () => {
 	expect(source).toContain('import queue0 from "../queues/emails";');
 	expect(source).toContain('"emails": queue0,');
 	expect(source).toContain(
-		'import { Hono, traceBindings, traceConfig, traceRequest, dispatchQueue, type QueueBatch } from "spacefn/runtime";',
+		'import { Hono, runWithBindings, traceBindings, traceConfig, traceRequest, dispatchQueue, type QueueBatch } from "spacefn/runtime";',
 	);
 });

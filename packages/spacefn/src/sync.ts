@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
 import { scanMiddleware } from "./middleware/scan";
+import { generateQueuesSource } from "./queues/generate";
 import type { Mode } from "./routes/scan";
 import { syncRoutes } from "./routes/sync";
 import { scanCodeFiles } from "./scan";
@@ -24,6 +25,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 			generateWorkerSource({ hasEnv, middleware, queues }),
 		),
 		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
+		writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
 	]);
 	return results.some(Boolean);
 }

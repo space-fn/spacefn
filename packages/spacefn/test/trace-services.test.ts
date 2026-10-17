@@ -56,9 +56,14 @@ test("traces queue publishing with the message count and no bodies", async () =>
 	} satisfies QueueLike);
 
 	await queue.send({ email: "private@example.com" });
-	await queue.sendBatch([{ n: 1 }, { n: 2 }]);
+	await queue.sendBatch([{ body: { n: 1 } }, { body: { n: 2 } }]);
 
 	expect(sent).toHaveLength(3);
+	expect(sent[0]).toMatchObject({
+		$spacefn: { version: 1 },
+		body: { email: "private@example.com" },
+	});
+	expect(sent[1]).toMatchObject({ body: { $spacefn: { version: 1 }, body: { n: 1 } } });
 	expect(records[0]).toMatchObject({
 		name: "queue.publish",
 		attributes: { "messaging.operation.name": "send", "messaging.batch.message_count": 1 },

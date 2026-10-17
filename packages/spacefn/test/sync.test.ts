@@ -23,7 +23,7 @@ test("writes the routes module and the worker entry", async () => {
 	expect(worker).toContain('import { registerRoutes } from "./routes";');
 	expect(worker).toContain("app.use(traceConfig());");
 	expect(worker).toContain("app.use(traceRequest());");
-	expect(worker).toContain("app.fetch(request, traceBindings(env), ctx)");
+	expect(worker).toContain("runWithBindings(bindings, () => app.fetch(request, bindings, ctx))");
 	expect(worker).toContain("export default {");
 });
 
@@ -41,7 +41,7 @@ test("wires env.ts into the worker entry when it exists", async () => {
 	expect(await sync(root, "dev")).toBe(true);
 	const withEnv = await readFile(join(root, ".space", "worker.ts"), "utf8");
 	expect(withEnv).toContain(
-		'import { Hono, traceBindings, traceConfig, traceRequest, envMiddleware } from "spacefn/runtime";',
+		'import { Hono, runWithBindings, traceBindings, traceConfig, traceRequest, envMiddleware } from "spacefn/runtime";',
 	);
 	expect(withEnv).toContain('import schema from "../env";');
 	expect(withEnv.indexOf("app.use(envMiddleware(schema));")).toBeLessThan(
