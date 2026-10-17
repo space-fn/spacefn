@@ -39,6 +39,16 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			};
 			server.watcher.on("add", onChange);
 			server.watcher.on("unlink", onChange);
+
+			// Bindings come from env.ts when Vite resolves its config, so a change needs a restart.
+			const envFile = resolve(root, "env.ts");
+			const onEnvChange = (file: string) => {
+				if (file !== envFile) return;
+				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+			server.watcher.on("add", onEnvChange);
+			server.watcher.on("change", onEnvChange);
+			server.watcher.on("unlink", onEnvChange);
 		},
 	};
 }
