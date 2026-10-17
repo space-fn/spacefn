@@ -28,3 +28,18 @@ test("reports no change on a second run", async () => {
 	await sync(root, "dev");
 	expect(await sync(root, "dev")).toBe(false);
 });
+
+test("wires env.ts into the worker entry when it exists", async () => {
+	await sync(root, "dev");
+	const without = await readFile(join(root, ".space", "worker.ts"), "utf8");
+	expect(without).not.toContain("envMiddleware");
+
+	await writeFile(join(root, "env.ts"), "");
+	expect(await sync(root, "dev")).toBe(true);
+	const withEnv = await readFile(join(root, ".space", "worker.ts"), "utf8");
+	expect(withEnv).toContain('import { Hono, envMiddleware } from "spacefn/runtime";');
+	expect(withEnv).toContain('import schema from "../env";');
+	expect(withEnv.indexOf("app.use(envMiddleware(schema));")).toBeLessThan(
+		withEnv.indexOf("registerRoutes(app);"),
+	);
+});
