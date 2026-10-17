@@ -15,3 +15,5 @@ export { requireSession, sessionResolver } from "./auth/middleware";
 export type { SessionOptions } from "./auth/middleware";
 export { csrfGuard, isSameSiteRequest } from "./auth/csrf";
 export type { CsrfOptions } from "./auth/csrf";
+export { memoryRateStore, rateLimit, clientKey } from "./auth/rate-limit";
+export type { RateHit, RateLimitOptions, RateStore } from "./auth/rate-limit";
