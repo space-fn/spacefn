@@ -42,3 +42,11 @@ All run under `vite dev` with local state in `.cloudflare/state/`.
 - Queues, crons, Durable Objects and Workflows map from folders to config entries. The generated worker entry must export the classes.
 - Removed Durable Object classes need a user-declared `deleted` entry.
 - `space dev` and `space build` wrap Vite. `space deploy` wraps `cf deploy`.
+
+## Constraints found while building env
+
+- **Config imports are unreadable to the Worker.** The plugin adds every file `cloudflare.config.ts` imports to Vite's `server.fs.deny`. If the Worker imports the same file, dev fails with `Failed to load url ... Does the file exist?`. So `env.ts` must not be imported by the config. The `space()` plugin loads it instead and passes bindings through the plugin's `config` option.
+- **Only declared bindings reach the Worker.** A value in `.dev.vars` that the config does not declare is invisible.
+- **`.dev.vars` does not override a declared text var locally.** Use a secret binding for values that differ per environment. At deploy time `--secrets-file` does override.
+- **A declared secret that is missing** prints a warning at startup and does not stop the server. Optional secrets trigger the same warning.
+- **Type includes.** Use `.space/**/*` in `tsconfig.json`. The plain `.space` entry matches nothing, because TypeScript skips dot folders.
