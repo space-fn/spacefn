@@ -8,17 +8,20 @@ import { namedParams } from "./params";
 import { parseQueryFile } from "./query-file";
 
 /**
- * Reads `db/queries/*.sql`, checks each against the migrated schema, and returns
- * the source of `.space/queries.ts`. Any mismatch throws, so a bad query stops the build.
+ * Reads and checks every `*.sql` query in `dir` against the migrated schema.
+ * Any mismatch throws, so a bad query stops the build.
  */
-export async function buildQueries(dir: string, migrations: Migration[]): Promise<string> {
+export async function analyzeQueries(
+	dir: string,
+	migrations: Migration[],
+): Promise<GeneratedQuery[]> {
 	const files = await readdir(dir)
 		.then((names) => names.filter((name) => name.endsWith(".sql") && !name.startsWith("_")).sort())
 		.catch((error: NodeJS.ErrnoException) => {
 			if (error.code === "ENOENT") return [];
 			throw error;
 		});
-	if (files.length === 0) return generateQueriesSource([]);
+	if (files.length === 0) return [];
 
 	const scratch = scratchDatabase(migrations);
 	const seen = new Set<string>();
@@ -39,5 +42,10 @@ export async function buildQueries(dir: string, migrations: Migration[]): Promis
 			paramTypes: parsed.params,
 		});
 	}
-	return generateQueriesSource(queries);
+	return queries;
+}
+
+/** Reads `db/queries/*.sql` and returns the source of `.space/queries.ts`. */
+export async function buildQueries(dir: string, migrations: Migration[]): Promise<string> {
+	return generateQueriesSource(await analyzeQueries(dir, migrations));
 }

@@ -10,16 +10,28 @@ export interface GeneratedQuery extends InferredQuery {
 	boundSql: string;
 }
 
-const RESULT = (mode: QueryMode, row: string) =>
+/** The return type of a query function, by mode. */
+export const RESULT = (mode: QueryMode, row: string) =>
 	mode === "many" ? `${row}[]` : mode === "one" ? `${row} | undefined` : "void";
 
-function columnType(column: { type: string; nullable: boolean }): string {
+/** The TypeScript type of a query's parameter object. */
+export function paramsType(query: GeneratedQuery): string {
+	if (query.paramNames.length === 0) return "Record<string, never>";
+	const fields = [...new Set(query.paramNames)].map(
+		(name) => `${name}: ${query.paramTypes[name] ?? "SqlValue"}`,
+	);
+	return `{ ${fields.join("; ")} }`;
+}
+
+/** The TypeScript type of one result column. */
+export function columnType(column: { type: string; nullable: boolean }): string {
 	const base =
 		column.type === "bytes" ? "Uint8Array" : column.type === "unknown" ? "SqlValue" : column.type;
 	return column.nullable ? `${base} | null` : base;
 }
 
-function pascal(name: string): string {
+/** `findTodo` becomes `FindTodo`. */
+export function pascal(name: string): string {
 	return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
@@ -28,11 +40,7 @@ export function generateQueriesSource(queries: GeneratedQuery[]): string {
 	const blocks = queries.map((query) => {
 		const row = `${pascal(query.name)}Row`;
 		const fields = query.columns.map((column) => `\t${column.name}: ${columnType(column)};`);
-		const paramType = query.paramNames.length
-			? `{ ${[...new Set(query.paramNames)]
-					.map((name) => `${name}: ${query.paramTypes[name] ?? "SqlValue"}`)
-					.join("; ")} }`
-			: "Record<string, never>";
+		const paramType = paramsType(query);
 		const values = query.paramNames.map((name) => `params.${name}`).join(", ");
 		const hasRows = query.mode !== "exec";
 		const rows = query.columns.length ? [`export interface ${row} {`, ...fields, "}", ""] : [];

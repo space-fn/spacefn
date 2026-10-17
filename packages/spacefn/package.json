@@ -46,6 +46,10 @@
 		"./db": {
 			"types": "./dist/db.d.ts",
 			"import": "./dist/db.js"
+		},
+		"./tenancy": {
+			"types": "./dist/tenancy.d.ts",
+			"import": "./dist/tenancy.js"
 		}
 	},
 	"scripts": {

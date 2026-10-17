@@ -7,6 +7,8 @@ export interface WorkerSourceOptions {
 	queues?: string[];
 	/** Files in `crons/`. Each is a scheduled job named after the file. */
 	crons?: string[];
+	/** The project has a `tenant/` folder, so the Worker exports the `Tenant` Durable Object. */
+	tenant?: boolean;
 }
 
 function stripExtension(file: string): string {
@@ -19,6 +21,7 @@ export function generateWorkerSource({
 	middleware = [],
 	queues = [],
 	crons = [],
+	tenant = false,
 }: WorkerSourceOptions = {}): string {
 	const runtime = [
 		"Hono",
@@ -52,6 +55,7 @@ export function generateWorkerSource({
 		...middleware.map((_, i) => `app.use(middleware${i});`),
 		"registerRoutes(app);",
 		"",
+		...(tenant ? ['export { Tenant } from "./tenant";'] : []),
 		"export default {",
 		"\tfetch: (request: Request, env: object, ctx: ExecutionContext) => {",
 		"\t\tconst bindings = traceBindings(env);",

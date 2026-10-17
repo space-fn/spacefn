@@ -11,6 +11,7 @@ export default defineConfig({
 		"src/queues.ts",
 		"src/crons.ts",
 		"src/db.ts",
+		"src/tenancy.ts",
 	],
 	format: "esm",
 	dts: true,
