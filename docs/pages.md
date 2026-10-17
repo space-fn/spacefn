@@ -19,7 +19,7 @@ app/pages/
 ## A page
 
 ```ts
-// pages/board.page.ts
+// app/pages/board.page.ts
 import { definePage, html } from "spacefn/pages";
 
 export default definePage<{ todos: { title: string }[] }>(
@@ -38,7 +38,7 @@ export default definePage<{ todos: { title: string }[] }>(
 ## Data and actions
 
 ```ts
-// pages/board.server.ts
+// app/pages/board.server.ts
 import { defineActions, defineLoader } from "spacefn/pages";
 
 export const loader = defineLoader(async (c) => ({

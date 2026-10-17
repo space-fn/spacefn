@@ -110,10 +110,10 @@ const claims = await verifyToken(token, env.TOKEN_KEY, "invite", Date.now());
 
 `playground/` runs these together: sign-up, sign-in with rate limiting, a session cookie, `/auth/me`, sign-out, and a cross-site guard on writes. It is verified in `workerd` through `vite dev`.
 
-- `middleware/03-session.ts` attaches the user to every request.
-- `middleware/04-csrf.ts` guards writes that carry a session.
-- `middleware/05-login-limit.ts` limits sign-in attempts.
-- `routes/auth/*` are the handlers.
+- `app/middleware/03-session.ts` attaches the user to every request.
+- `app/middleware/04-csrf.ts` guards writes that carry a session.
+- `app/middleware/05-login-limit.ts` limits sign-in attempts.
+- `app/routes/auth/*` are the handlers.
 
 The playground does not use TOTP or signed tokens, and the library tests cover them.
 

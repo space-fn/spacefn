@@ -42,7 +42,7 @@ Deleted and purged tenants answer exactly like unknown ones, so the API does not
 ## Using it
 
 ```ts
-// middleware/02-tenant.ts
+// app/middleware/02-tenant.ts
 import { tenantResolver } from "spacefn/tenancy";
 
 const resolve = tenantResolver<{ DB: object }>({
@@ -54,7 +54,7 @@ const resolve = tenantResolver<{ DB: object }>({
 ```
 
 ```ts
-// routes/t/todos.ts
+// app/routes/t/todos.ts
 import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler((c) => {

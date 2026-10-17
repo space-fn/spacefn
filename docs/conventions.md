@@ -2,18 +2,18 @@
 
 Each folder in a spacefn project does one job. Files are found by name, so there is no registry to maintain.
 
-| Folder        | Each file is                                     | Generated                                       |
-| ------------- | ------------------------------------------------ | ----------------------------------------------- |
-| `routes/`     | HTTP endpoints, named exports `GET`, `POST`, ... | Route table                                     |
-| `middleware/` | One middleware, run in name order                | `app.use` calls                                 |
-| `queues/`     | One queue and its consumer                       | Queue binding, consumer trigger, typed producer |
-| `crons/`      | One scheduled job                                | Scheduled trigger                               |
-| `env.ts`      | Environment fields                               | Bindings and types                              |
+| Folder            | Each file is                                     | Generated                                       |
+| ----------------- | ------------------------------------------------ | ----------------------------------------------- |
+| `app/routes/`     | HTTP endpoints, named exports `GET`, `POST`, ... | Route table                                     |
+| `app/middleware/` | One middleware, run in name order                | `app.use` calls                                 |
+| `app/queues/`     | One queue and its consumer                       | Queue binding, consumer trigger, typed producer |
+| `app/crons/`      | One scheduled job                                | Scheduled trigger                               |
+| `app/env.ts`      | Environment fields                               | Bindings and types                              |
 
 ## Middleware
 
 ```ts
-// middleware/01-powered-by.ts
+// app/middleware/01-powered-by.ts
 import { defineMiddleware } from "spacefn";
 
 export default defineMiddleware(async (c, next) => {
@@ -29,7 +29,7 @@ export default defineMiddleware(async (c, next) => {
 ## Queues
 
 ```ts
-// queues/emails.ts
+// app/queues/emails.ts
 import { defineQueue } from "spacefn/queues";
 
 export default defineQueue<{ to: string; subject: string }>(async (batch) => {
@@ -59,7 +59,7 @@ Each queue name maps to a camelCase producer: `order-jobs.ts` is `queues.orderJo
 ## Crons
 
 ```ts
-// crons/nightly.ts
+// app/crons/nightly.ts
 import { defineCron } from "spacefn/crons";
 
 export default defineCron("0 3 * * *", async (event, env) => {
