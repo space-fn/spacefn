@@ -1,0 +1,30 @@
+import { isD1, traceD1 } from "./d1";
+
+const tracedEnvs = new WeakMap<object, object>();
+const tracedBindings = new WeakMap<object, unknown>();
+
+function traceBinding(value: unknown): unknown {
+	if (!isD1(value)) return value;
+	let traced = tracedBindings.get(value);
+	if (!traced) {
+		traced = traceD1(value);
+		tracedBindings.set(value, traced);
+	}
+	return traced;
+}
+
+/**
+ * Returns the environment with every supported binding wrapped in tracing.
+ * The same environment object always maps to the same result, so per-env
+ * caching (see `envMiddleware`) keeps working.
+ */
+export function traceBindings<E extends object>(env: E): E {
+	const cached = tracedEnvs.get(env);
+	if (cached) return cached as E;
+
+	const traced = new Proxy(env, {
+		get: (target, key) => traceBinding(Reflect.get(target, key, target)),
+	});
+	tracedEnvs.set(env, traced);
+	return traced;
+}

@@ -1,5 +1,8 @@
+export { traceBindings } from "./bindings";
 export { parseTraceparent } from "./context";
 export { formatTraceparent, tracedFetch } from "./fetch";
+export { isD1, traceD1 } from "./d1";
+export type { D1Like } from "./d1";
 export { createLogger, setLogSink } from "./log";
 export type { LogFields, LogLevel, LogRecord, LogSink, Logger } from "./log";
 export { traceRequest } from "./http";
