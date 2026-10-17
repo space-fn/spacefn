@@ -1,0 +1,23 @@
+{
+	"name": "spacefn",
+	"version": "0.0.0",
+	"description": "All-in-one framework for Cloudflare Workers",
+	"license": "Apache-2.0",
+	"author": "wai-lin",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.5",
+		"typescript": "^7.0.2"
+	}
+}
