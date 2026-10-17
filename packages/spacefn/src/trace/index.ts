@@ -1,4 +1,6 @@
 export { traceBindings } from "./bindings";
+export { configureTracing, parseOtlpHeaders, traceConfig } from "./config";
+export type { TraceEnv } from "./config";
 export { parseTraceparent } from "./context";
 export { formatTraceparent, tracedFetch } from "./fetch";
 export { isD1, traceD1 } from "./d1";
