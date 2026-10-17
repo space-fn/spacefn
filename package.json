@@ -1,5 +1,6 @@
 {
-	"name": "spacefn",
+	"name": "space",
+	"private": true,
 	"description": "",
 	"keywords": [],
 	"license": "Apache-2.0",
