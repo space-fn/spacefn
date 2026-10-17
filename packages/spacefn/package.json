@@ -30,6 +30,10 @@
 		"./env": {
 			"types": "./dist/env.d.ts",
 			"import": "./dist/env.js"
+		},
+		"./trace": {
+			"types": "./dist/trace.d.ts",
+			"import": "./dist/trace.js"
 		}
 	},
 	"scripts": {
