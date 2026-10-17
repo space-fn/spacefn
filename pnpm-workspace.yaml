@@ -1,10 +1,5 @@
 packages:
   - "packages/*"
-  - "playground"
 allowBuilds:
   esbuild: true
   workerd: true
-minimumReleaseAgeExclude:
-  - "@spacefn/html@0.1.0"
-  - "@spacefn/vite-plugin@0.1.0"
-  - "@spacefn/db@0.3.0"
