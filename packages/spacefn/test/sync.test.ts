@@ -63,3 +63,22 @@ test("writes env types only when env.ts exists", async () => {
 	await sync(root, "dev");
 	expect(await readFile(join(root, ".space", "env.d.ts"), "utf8")).not.toContain("Register");
 });
+
+test("registers middleware files in order, after the built-ins", async () => {
+	await mkdir(join(root, "middleware"));
+	await writeFile(join(root, "middleware", "02-log.ts"), "");
+	await writeFile(join(root, "middleware", "01-auth.ts"), "");
+	await sync(root, "dev");
+	const worker = await readFile(join(root, ".space", "worker.ts"), "utf8");
+	expect(worker).toContain('import middleware0 from "../middleware/01-auth";');
+	expect(worker).toContain('import middleware1 from "../middleware/02-log";');
+	const order = [
+		"app.use(traceRequest());",
+		"app.use(middleware0);",
+		"app.use(middleware1);",
+		"registerRoutes(app);",
+	];
+	const positions = order.map((line) => worker.indexOf(line));
+	expect(positions.every((p) => p >= 0)).toBe(true);
+	expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+});
