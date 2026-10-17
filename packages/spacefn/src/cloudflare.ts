@@ -11,3 +11,5 @@ export const DEFAULT_ENTRYPOINT = "./.space/worker.ts";
 export function defineSpace(worker: SpaceWorkerConfig): CloudflareConfig {
 	return { worker: { entrypoint: DEFAULT_ENTRYPOINT, ...worker } };
 }
+
+export { bindings, exports, triggers } from "cf/config";
