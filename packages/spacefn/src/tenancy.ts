@@ -12,3 +12,5 @@ export type { TenantOptions, TenantVariables } from "./tenancy/middleware";
 export { migrateTenant, queryTenant } from "./tenancy/storage";
 export type { DurableStorageLike, SqlStorageLike } from "./db/executors";
 export { currentTenant } from "./tenancy/current";
+export { GRACE_MS, isPurgeDue, transition, TenantTransitionError } from "./tenancy/lifecycle";
+export type { LifecycleState, TenantAction } from "./tenancy/lifecycle";
