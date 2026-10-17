@@ -2,7 +2,7 @@ import { defineMiddleware } from "spacefn";
 import { sessionResolver } from "spacefn/auth";
 
 import { findSession } from "../../.space/db/main_db";
-import { migrated } from "../db/migrate";
+import { migrated } from "../db/main_db/migrate";
 
 /** Attaches the signed-in user, if any, to every request. */
 const resolve = sessionResolver<{ DB: object }, { id: number; email: string }>({
