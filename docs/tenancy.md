@@ -86,8 +86,33 @@ await stub.listTodos({});
 
 Each stub call is a `do.call` span with the binding and the method name. Migrations are a `db.migrate` span.
 
+## Lifecycle
+
+Actions on a tenant follow fixed rules, enforced by `transition` in `spacefn/tenancy`:
+
+| From                     | Action  | To        | Notes                                       |
+| ------------------------ | ------- | --------- | ------------------------------------------- |
+| active                   | suspend | suspended | Requests get 403                            |
+| suspended                | resume  | active    |                                             |
+| active, suspended        | delete  | deleted   | Requests get 404. Data is kept for 30 days. |
+| deleted                  | restore | active    | Only within the 30 days. Data is intact.    |
+| deleted (30 days passed) | purge   | purged    | Done by the daily cron. Final.              |
+
+An action that breaks a rule gets 409 and changes nothing.
+
+## Backups and purge
+
+The playground's `crons/tenant-backups.ts` runs daily at 02:00:
+
+- Every active and suspended tenant is exported to R2 as `daily/<date>/<internal-id>.json`.
+- A deleted tenant whose 30 days have passed is purged. Its export goes to `purged/<internal-id>.json`, and the cron checks that the object exists in R2 before it does anything else. Only then does it wipe the Durable Object and mark the tenant `purged`.
+- A failure for one tenant is reported at the end, and the other tenants still run. A failed tenant is never wiped.
+
+Each export is a JSON document of every table, including the migration ledger. A `Tenant` exposes `exportData()` and `wipe()`.
+
+The bucket is declared in `cloudflare.config.ts` as `BACKUPS`. The cron needs it, and so does the purge.
+
 ## Not yet
 
-- Lifecycle: suspend, soft delete with a grace period, and purge after export. The status rules are in place; the transitions are not.
-- Backups to R2.
-- Admin authentication. The playground's `/admin/tenants` route is open, for development only.
+- Restoring a backup into a new tenant. The export format is in place; the import is not.
+- Admin authentication. The playground's `/admin/` routes are open, for development only.
