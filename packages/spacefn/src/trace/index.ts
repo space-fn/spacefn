@@ -1,4 +1,5 @@
 export { parseTraceparent } from "./context";
+export { formatTraceparent, tracedFetch } from "./fetch";
 export { createLogger, setLogSink } from "./log";
 export type { LogFields, LogLevel, LogRecord, LogSink, Logger } from "./log";
 export { traceRequest } from "./http";
