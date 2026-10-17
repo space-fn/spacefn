@@ -7,3 +7,5 @@ export type {
 	TenantRefusal,
 	TenantStatus,
 } from "./tenancy/resolve";
+export { tenantResolver } from "./tenancy/middleware";
+export type { TenantOptions, TenantVariables } from "./tenancy/middleware";
