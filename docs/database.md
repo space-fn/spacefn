@@ -10,15 +10,19 @@ app/db/
 │   ├── migrations/
 │   │   ├── 0001_create_todos.sql
 │   │   └── 0002_add_owner.sql
-│   └── queries/
-│       ├── list-todos.sql
-│       └── find-todo.sql
+│   ├── queries/
+│   │   ├── list-todos.sql
+│   │   └── find-todo.sql
+│   └── migrate.ts
 └── analytics_db/
     ├── migrations/
-    └── queries/
+    ├── queries/
+    └── migrate.ts
 ```
 
 ## Migrations
+
+Each database folder holds its own `migrate.ts`, which imports its migrations and calls `runMigrations` with the right executor. Routes import `migrated` from `../db/<name>/migrate`.
 
 `NNNN_name.sql`, applied in number order. Two files with the same number are an error.
 
