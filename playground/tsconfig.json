@@ -9,6 +9,7 @@
 		"noEmit": true
 	},
 	"include": [
+		"middleware",
 		"tenant",
 		"db",
 		"crons",

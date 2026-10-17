@@ -1,0 +1,5 @@
+CREATE TABLE tenants (
+	slug TEXT PRIMARY KEY NOT NULL,
+	internal_id TEXT NOT NULL UNIQUE,
+	status TEXT NOT NULL DEFAULT 'active'
+);
