@@ -43,3 +43,18 @@ test("wires env.ts into the worker entry when it exists", async () => {
 		withEnv.indexOf("registerRoutes(app);"),
 	);
 });
+
+test("writes env types only when env.ts exists", async () => {
+	await sync(root, "dev");
+	expect(await readFile(join(root, ".space", "env.d.ts"), "utf8")).not.toContain("Register");
+
+	await writeFile(join(root, "env.ts"), "");
+	await sync(root, "dev");
+	const types = await readFile(join(root, ".space", "env.d.ts"), "utf8");
+	expect(types).toContain('declare module "spacefn/env"');
+	expect(types).toContain("env: InferEnv<typeof schema>;");
+
+	await rm(join(root, "env.ts"));
+	await sync(root, "dev");
+	expect(await readFile(join(root, ".space", "env.d.ts"), "utf8")).not.toContain("Register");
+});

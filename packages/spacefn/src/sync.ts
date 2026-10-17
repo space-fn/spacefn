@@ -2,6 +2,7 @@ import { access } from "node:fs/promises";
 import { join } from "node:path";
 
 import { generateWorkerSource } from "./entry";
+import { generateEnvTypesSource } from "./env/types";
 import type { Mode } from "./routes/scan";
 import { syncRoutes } from "./routes/sync";
 import { writeIfChanged } from "./write";
@@ -15,6 +16,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const results = await Promise.all([
 		syncRoutes(root, mode),
 		writeIfChanged(join(root, ".space", "worker.ts"), generateWorkerSource({ hasEnv })),
+		writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
 	]);
 	return results.some(Boolean);
 }
