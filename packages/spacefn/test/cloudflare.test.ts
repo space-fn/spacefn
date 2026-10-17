@@ -1,12 +1,13 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
-import { defineSpace } from "../src/cloudflare";
+import { bindings, defineSpace } from "../src/cloudflare";
+import { boolean, defineEnv, number, secret, string } from "../src/env";
 
 const base = { name: "app", compatibilityDate: "2026-10-01" };
 
 test("points the worker at the generated entry", () => {
 	expect(defineSpace(base)).toEqual({
-		worker: { ...base, entrypoint: "./.space/worker.ts" },
+		worker: { ...base, entrypoint: "./.space/worker.ts", env: {} },
 	});
 });
 
@@ -20,4 +21,31 @@ test("re-exports the config builders", async () => {
 	expect(mod.bindings.queue({ name: "jobs" })).toMatchObject({ type: "queue" });
 	expect(mod.exports.durableObject({ storage: "sqlite" })).toMatchObject({ storage: "sqlite" });
 	expect(mod.triggers.scheduled({ schedule: "* * * * *" })).toMatchObject({ type: "scheduled" });
+});
+
+describe("envSchema", () => {
+	const envSchema = defineEnv({
+		GREETING: string({ default: "hi" }),
+		LIMIT: number({ default: 10 }),
+		DEBUG: boolean({ default: false }),
+		NAME: string(),
+		NOTE: string({ optional: true }),
+		TOKEN: secret(),
+	});
+
+	test("declares defaults as text and everything else as secrets", () => {
+		expect(defineSpace({ ...base, envSchema }).worker?.env).toEqual({
+			GREETING: bindings.text("hi"),
+			LIMIT: bindings.text("10"),
+			DEBUG: bindings.text("false"),
+			NAME: bindings.secret(),
+			NOTE: bindings.secret(),
+			TOKEN: bindings.secret(),
+		});
+	});
+
+	test("keeps hand-written bindings and lets them win", () => {
+		const env = { GREETING: bindings.text("hello"), JOBS: bindings.queue({ name: "jobs" }) };
+		expect(defineSpace({ ...base, envSchema, env }).worker?.env).toMatchObject(env);
+	});
 });
