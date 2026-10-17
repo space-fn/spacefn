@@ -1,0 +1,57 @@
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach, beforeEach, expect, test } from "vitest";
+
+import { generateMigrationsSource, scanMigrations } from "../src/db";
+import { sync } from "../src/sync";
+
+let root: string;
+let dir: string;
+
+beforeEach(async () => {
+	root = await mkdtemp(join(tmpdir(), "space-db-"));
+	dir = join(root, "db", "migrations");
+	await mkdir(dir, { recursive: true });
+});
+
+afterEach(() => rm(root, { recursive: true, force: true }));
+
+test("reads migrations in numeric order and ignores other files", async () => {
+	await writeFile(join(dir, "0002_done.sql"), "ALTER TABLE t ADD c;");
+	await writeFile(join(dir, "0001_create.sql"), "CREATE TABLE t (id);");
+	await writeFile(join(dir, "notes.md"), "");
+	await writeFile(join(dir, "_draft.sql"), "");
+	expect(await scanMigrations(dir)).toEqual([
+		{ id: "0001_create", sql: "CREATE TABLE t (id);" },
+		{ id: "0002_done", sql: "ALTER TABLE t ADD c;" },
+	]);
+});
+
+test("rejects names without a number", async () => {
+	await writeFile(join(dir, "create.sql"), "");
+	await expect(scanMigrations(dir)).rejects.toThrow("must be named NNNN_name.sql");
+});
+
+test("rejects two migrations with the same number", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "");
+	await writeFile(join(dir, "0001_b.sql"), "");
+	await expect(scanMigrations(dir)).rejects.toThrow("share the number 1");
+});
+
+test("returns nothing without a migrations folder", async () => {
+	expect(await scanMigrations(join(root, "nope"))).toEqual([]);
+});
+
+test("generated source inlines the SQL", () => {
+	const source = generateMigrationsSource([{ id: "0001_a", sql: 'CREATE TABLE "x" (y);' }]);
+	expect(source).toContain('{ id: "0001_a", sql: "CREATE TABLE \\"x\\" (y);" },');
+	expect(source).toContain("export const migrations: Migration[] = [");
+});
+
+test("sync writes .space/migrations.ts", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "CREATE TABLE a (id);");
+	await sync(root, "dev");
+	expect(await readFile(join(root, ".space", "migrations.ts"), "utf8")).toContain('id: "0001_a"');
+});
