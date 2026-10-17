@@ -9,5 +9,6 @@ export default defineSpace({
 	},
 	env: {
 		COUNTER: bindings.durableObject({ worker: "playground", exportName: "Counter" }),
+		DB: bindings.d1({ name: "playground-db" }),
 	},
 });
