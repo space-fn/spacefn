@@ -26,3 +26,5 @@ export {
 	verifyTotp,
 } from "./auth/totp";
 export type { TotpVerdict } from "./auth/totp";
+export { signToken, verifyToken, TokenError } from "./auth/signed-token";
+export type { TokenPayload } from "./auth/signed-token";
