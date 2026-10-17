@@ -9,6 +9,7 @@
 		"noEmit": true
 	},
 	"include": [
+		"crons",
 		"queues",
 		"middleware",
 		"env.ts",
