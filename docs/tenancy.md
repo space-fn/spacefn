@@ -11,14 +11,14 @@ Tenant rows never enter the shared database. A query written against one tenant'
 ## Layout
 
 ```txt
-db/                     registry (shared D1)
+app/db/                 registry (shared D1)
   migrations/0002_tenants.sql
   queries/find-tenant.sql, add-tenant.sql
-tenant/                 one database per tenant
+app/tenant/             one database per tenant
   migrations/0001_todos.sql
   queries/list-todos.sql, add-todo.sql
-middleware/02-tenant.ts resolves the tenant for /t/ routes
-routes/t/todos.ts       tenant-scoped handlers
+app/middleware/02-tenant.ts resolves the tenant for /t/ routes
+app/routes/t/todos.ts   tenant-scoped handlers
 ```
 
 ## Tenant names
@@ -102,7 +102,7 @@ An action that breaks a rule gets 409 and changes nothing.
 
 ## Backups and purge
 
-The playground's `crons/tenant-backups.ts` runs daily at 02:00:
+The playground's `app/crons/tenant-backups.ts` runs daily at 02:00:
 
 - Every active and suspended tenant is exported to R2 as `daily/<date>/<internal-id>.json`.
 - A deleted tenant whose 30 days have passed is purged. Its export goes to `purged/<internal-id>.json`, and the cron checks that the object exists in R2 before it does anything else. Only then does it wipe the Durable Object and mark the tenant `purged`.

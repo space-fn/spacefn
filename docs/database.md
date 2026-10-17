@@ -5,7 +5,7 @@ SQL stays SQL. You write migrations and queries as `.sql` files. spacefn checks 
 ## Layout
 
 ```txt
-db/
+app/db/
 ├── migrations/
 │   ├── 0001_create_todos.sql
 │   └── 0002_add_owner.sql

@@ -5,7 +5,7 @@ Server-rendered HTML written as template strings. No component framework and no 
 ## Layout
 
 ```txt
-pages/
+app/pages/
 ├── index.page.ts           → GET /
 ├── board.page.ts           → GET /board
 ├── board.server.ts         loader and actions for /board
@@ -89,4 +89,4 @@ html`<p>${userComment}</p>`; // <script> in the comment is shown as text
 
 ## Playground
 
-`pages/board.page.ts` and `pages/board.server.ts` list the todos from D1 and add one through a form. Verified in `vite dev`: the page renders, a form post redirects back, an empty title gets 400, an unknown action gets 404, and a script in a title is shown as text.
+`app/pages/board.page.ts` and `app/pages/board.server.ts` list the todos from D1 and add one through a form. Verified in `vite dev`: the page renders, a form post redirects back, an empty title gets 400, an unknown action gets 404, and a script in a title is shown as text.
