@@ -1,78 +1,68 @@
 # SpaceFn
 
-SpaceFn is a TypeScript server-rendering toolkit for Cloudflare Workers and Web API runtimes. It provides functional HTML, server-generated CSS, DataStar attributes/SSE helpers, convention-based Vite code generation, routing, middleware, and database schema generation.
-
-The packages are independent. Use `@spacefn/html` or `@spacefn/css` without adopting the server framework.
+SpaceFn is one TypeScript package for building full-stack apps on Cloudflare Workers. File-based conventions, typed SQL, multi-tenancy, observability and hand-rolled auth primitives.
 
 ## Packages
 
-| Package                                          | Purpose                                                              |
-| ------------------------------------------------ | -------------------------------------------------------------------- |
-| [`@spacefn/html`](./packages/html)               | Typed server-side HTML elements, escaping, components, and rendering |
-| [`@spacefn/css`](./packages/css)                 | Design tokens, class generation, variants, and transition helpers    |
-| [`@spacefn/datastar`](./packages/datastar)       | Typed DataStar attributes, HTTP expressions, and server-side SSE     |
-| [`@spacefn/vite-plugin`](./packages/vite-plugin) | Generic Vite file scanning and code generation                       |
-| [`@spacefn/server`](./packages/server)           | File-based routes/pages/middleware and Web API server handler        |
-| [`@spacefn/db`](./packages/db)                   | Schema definitions, SQL diffs, migrations, and generated types       |
-| [`@spacefn/trail`](./packages/trail)             | Sentry-like tracing: requests, queries, errors, and frontend signals |
-| [`create-spacefn`](./packages/create-spacefn)    | Project scaffolding CLI                                              |
+| Package | Purpose |
+| --- | --- |
+| `spacefn` | The framework: routes, pages, middleware, env, tracing, SQL, tenancy, auth |
+| `space` | CLI: `dev`, `build`, `gen`, `deploy`, `migrate` |
+| `create-spacefn` | Scaffold a project |
 
-## Create an application
+## Quick start
 
-```bash
-npm create spacefn@latest
-# or: pnpm create spacefn@latest
-```
-
-Choose a package manager and the `minimal` template. Then:
-
-```bash
-cd my-project
-pnpm dev       # or npm run dev
-curl http://localhost:5173/
-pnpm build     # or npm run build
-```
-
-The template contains `src/main.ts`, file-based routes, optional page loaders/components, a Vite config, and Cloudflare configuration. Generated files are written to `.space/` and should not be committed.
-
-## Local repository development
-
-```bash
+```sh
+npm create spacefn@latest my-app
+cd my-app
 pnpm install
-pnpm -r test
-pnpm -r build
+pnpm dev
+```
+
+Or use the playground in this repo:
+
+```sh
+pnpm install
+cd playground
+pnpm dev
+```
+
+## Conventions
+
+A project is a folder of convention files. `spacefn` scans them and generates `.space/`.
+
+```txt
+routes/            HTTP endpoints
+pages/             server-rendered pages with loaders and actions
+middleware/        numbered middleware
+queues/            queue consumers
+crons/             scheduled jobs
+env.ts             environment schema
+db/migrations/     SQL migrations
+db/queries/        named, typed SQL queries
+tenant/            one Durable Object per tenant
+```
+
+## Docs
+
+- [Getting started](docs/cloudflare-v2.md)
+- [Conventions](docs/conventions.md)
+- [Environment](docs/env.md)
+- [Tracing](docs/tracing.md)
+- [Database](docs/database.md)
+- [Tenancy](docs/tenancy.md)
+- [Auth](docs/auth.md)
+- [Pages](docs/pages.md)
+- [CLI](docs/cli.md)
+
+## Local development
+
+```sh
+pnpm install
 pnpm fmt:check
 pnpm lint
-pnpm --filter playground dev
+cd packages/spacefn && pnpm test
+cd playground && pnpm dev
 ```
-
-The `playground/` workspace is a local copy of the minimal template. It uses workspace packages so package changes can be smoke-tested without publishing.
-
-## Project conventions
-
-```text
-src/
-  main.ts                 # createServer entry point
-  routes/                 # request handlers
-  pages/                  # *.server.ts loaders/actions + *.page.ts components
-  middlewares/            # ordered request middleware
-.space/                   # generated route/page/middleware modules
-```
-
-Route file names become URL patterns. Numeric middleware prefixes determine order. See the [getting started guide](./docs/getting-started.md), [framework overview](./docs/framework.md), and package documentation for details.
-
-## Development commands
-
-```bash
-pnpm fmt              # format repository files
-pnpm fmt:check        # verify formatting
-pnpm lint             # lint repository files
-pnpm -r test          # run package and playground tests
-pnpm -r build         # build packages (exclude playground if needed)
-```
-
-`pnpm -r test` requires at least one test file in every selected workspace. The playground has a smoke test and is included in the workspace.
-
-## License
-
-Apache-2.0
+EOF
+cd /Users/wailinaung/Develop/TheAnka/space && vpr fmt >/dev/null 2>&1; vpr fmt:check > /tmp/fc.txt 2>&1; echo fmt=$?; vpr lint > /tmp/lint.txt 2>&1; echo lint=$?; git add README.md && git commit -q -m "docs: rewrite README for the new spacefn" && git status --short
