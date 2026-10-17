@@ -1,11 +1,12 @@
 import { isD1, traceD1 } from "./d1";
+import { isDurableNamespace, traceDurableNamespace } from "./durable";
 import { isKV, traceKV } from "./kv";
 import { isQueue, traceQueue } from "./queue";
 
 const tracedEnvs = new WeakMap<object, object>();
 const tracedBindings = new WeakMap<object, unknown>();
 
-function traceBinding(value: unknown): unknown {
+function traceBinding(key: string | symbol, value: unknown): unknown {
 	if (typeof value !== "object" || value === null) return value;
 	let traced = tracedBindings.get(value);
 	if (traced) return traced;
@@ -13,6 +14,7 @@ function traceBinding(value: unknown): unknown {
 	if (isD1(value)) traced = traceD1(value);
 	else if (isKV(value)) traced = traceKV(value);
 	else if (isQueue(value)) traced = traceQueue(value);
+	else if (isDurableNamespace(value)) traced = traceDurableNamespace(value, String(key));
 	else return value;
 
 	tracedBindings.set(value, traced);
@@ -29,7 +31,7 @@ export function traceBindings<E extends object>(env: E): E {
 	if (cached) return cached as E;
 
 	const traced = new Proxy(env, {
-		get: (target, key) => traceBinding(Reflect.get(target, key, target)),
+		get: (target, key) => traceBinding(key, Reflect.get(target, key, target)),
 	});
 	tracedEnvs.set(env, traced);
 	return traced;

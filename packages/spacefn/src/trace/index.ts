@@ -8,6 +8,7 @@ export type { D1Like } from "./d1";
 export { isKV, traceKV } from "./kv";
 export type { KVLike } from "./kv";
 export { isQueue, traceQueue } from "./queue";
+export { isDurableNamespace, traceDurableNamespace } from "./durable";
 export type { QueueLike } from "./queue";
 export { createLogger, setLogSink } from "./log";
 export type { LogFields, LogLevel, LogRecord, LogSink, Logger } from "./log";
