@@ -7,7 +7,7 @@ export type SpaceWorkerConfig = Omit<WorkerConfig, "entrypoint"> & {
 	entrypoint?: WorkerConfig["entrypoint"];
 };
 
-export const DEFAULT_ENTRYPOINT = "./.space/worker.ts";
+export const DEFAULT_ENTRYPOINT = "./app/entry.ts";
 
 type EnvBindings = NonNullable<WorkerConfig["env"]>;
 

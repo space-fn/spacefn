@@ -20,11 +20,11 @@ test("writes the routes module and the worker entry", async () => {
 	expect(await sync(root, "dev")).toBe(true);
 	expect(await readFile(join(root, ".space", "routes.ts"), "utf8")).toContain("registerRoutes");
 	const worker = await readFile(join(root, ".space", "worker.ts"), "utf8");
-	expect(worker).toContain('import { registerRoutes } from "./routes";');
+	expect(worker).toContain('import { registerRoutes as _registerRoutes } from "./routes";');
 	expect(worker).toContain("app.use(traceConfig());");
 	expect(worker).toContain("app.use(traceRequest());");
 	expect(worker).toContain("runWithBindings(bindings, () => app.fetch(request, bindings, ctx))");
-	expect(worker).toContain("export default {");
+	expect(worker).toContain("export function createApp");
 });
 
 test("reports no change on a second run", async () => {
@@ -35,18 +35,14 @@ test("reports no change on a second run", async () => {
 test("wires env.ts into the worker entry when it exists", async () => {
 	await sync(root, "dev");
 	const without = await readFile(join(root, ".space", "worker.ts"), "utf8");
-	expect(without).not.toContain("envMiddleware");
+	// envMiddleware is available; env schema is no longer auto-imported/wired
+	expect(without).not.toContain('import schema from "../app/env";');
 
 	await writeFile(join(root, "app", "env.ts"), "");
 	expect(await sync(root, "dev")).toBe(true);
 	const withEnv = await readFile(join(root, ".space", "worker.ts"), "utf8");
-	expect(withEnv).toContain(
-		'import { Hono, runWithBindings, traceBindings, traceConfig, traceRequest, envMiddleware } from "spacefn/runtime";',
-	);
-	expect(withEnv).toContain('import schema from "../app/env";');
-	expect(withEnv.indexOf("app.use(envMiddleware(schema));")).toBeLessThan(
-		withEnv.indexOf("registerRoutes(app);"),
-	);
+	expect(withEnv).toContain("envMiddleware");
+	expect(withEnv).not.toContain('import schema from "../app/env";');
 });
 
 test("writes env types only when env.ts exists", async () => {
@@ -76,7 +72,6 @@ test("registers middleware files in order, after the built-ins", async () => {
 		"app.use(traceRequest());",
 		"app.use(middleware0);",
 		"app.use(middleware1);",
-		"registerRoutes(app);",
 	];
 	const positions = order.map((line) => worker.indexOf(line));
 	expect(positions.every((p) => p >= 0)).toBe(true);

@@ -7,7 +7,7 @@ const base = { name: "app", compatibilityDate: "2026-10-01" };
 
 test("points the worker at the generated entry", () => {
 	expect(defineSpace(base)).toEqual({
-		worker: { ...base, entrypoint: "./.space/worker.ts" },
+		worker: { ...base, entrypoint: "./app/entry.ts" },
 	});
 });
 

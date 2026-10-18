@@ -5,7 +5,7 @@ import { generateBindingsSource } from "./bindings/generate";
 import { analyzeQueries } from "./db/build-queries";
 import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
-import { generateWorkerSource } from "./entry";
+import { generateExportsSource, generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
 import { scanMiddleware } from "./middleware/scan";
 import { generatePagesSource } from "./pages/generate";
@@ -91,13 +91,17 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		await writeIfChanged(
 			join(root, ".space", "worker.ts"),
 			generateWorkerSource({
-				hasEnv,
 				middleware,
 				queues,
 				crons,
+				pages: pages.length > 0,
+			}),
+		),
+		await writeIfChanged(
+			join(root, ".space", "exports.ts"),
+			generateExportsSource({
 				durableObjects,
 				workflows,
-				pages: pages.length > 0,
 			}),
 		),
 		await writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
