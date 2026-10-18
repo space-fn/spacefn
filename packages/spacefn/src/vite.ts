@@ -15,79 +15,6 @@ import { scanCodeFiles } from "./scan";
 import { sync } from "./sync";
 import { workflowsConfig } from "./workflows/config";
 
-function escapeHtml(s: string): string {
-	return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function renderMarkdown(md: string): string {
-	const lines = md.split(/\r?\n/);
-	const out: string[] = [];
-	let inCode = false;
-	let codeBuf: string[] = [];
-	let listBuf: string[] = [];
-	const flushList = () => {
-		if (listBuf.length) {
-			out.push("<ul>" + listBuf.map((l) => `<li>${inline(l)}</li>`).join("") + "</ul>");
-			listBuf = [];
-		}
-	};
-	const flushCode = () => {
-		if (codeBuf.length) {
-			out.push(`<pre><code>${escapeHtml(codeBuf.join("\\n"))}</code></pre>`);
-			codeBuf = [];
-		}
-	};
-	for (const line of lines) {
-		if (line.startsWith("```")) {
-			if (inCode) {
-				flushCode();
-				inCode = false;
-			} else {
-				flushList();
-				inCode = true;
-			}
-			continue;
-		}
-		if (inCode) {
-			codeBuf.push(line);
-			continue;
-		}
-		const h = /^(#{1,6})\s+(.*)$/.exec(line);
-		if (h) {
-			flushList();
-			const level = h[1]!.length;
-			out.push(`<h${level}>${inline(h[2]!)}</h${level}>`);
-			continue;
-		}
-		if (/^---+$/.test(line.trim())) {
-			flushList();
-			out.push("<hr>");
-			continue;
-		}
-		if (/^\s*[-*]\s+/.test(line)) {
-			listBuf.push(line.replace(/^\s*[-*]\s+/, ""));
-			continue;
-		}
-		if (line.trim() === "") {
-			flushList();
-			continue;
-		}
-		flushList();
-		out.push(`<p>${inline(line)}</p>`);
-	}
-	flushList();
-	flushCode();
-	return out.join("\\n");
-}
-
-function inline(s: string): string {
-	return escapeHtml(s)
-		.replace(/`([^`]+)`/g, "<code>$1</code>")
-		.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-		.replace(/\*([^*]+)\*/g, "<em>$1</em>")
-		.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-}
-
 export interface SpaceState {
 	/** The schema from `env.ts`, loaded when Vite resolves its config. */
 	envSchema?: Schema;
@@ -122,53 +49,8 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 
 		configureServer(server) {
 			// Dev-only: render the project's docs/ folder as HTML at /__space_docs.
-			server.middlewares.use("/__space_docs", async (req, res) => {
-				const docsRoot = resolve(root, "docs");
-				const url = (req.url ?? "/").split("?")[0] ?? "/";
-				const rel = url.replace(/^\/+/, "");
-				const target = resolve(docsRoot, rel || ".");
-				if (target !== docsRoot && !target.startsWith(docsRoot + sep)) {
-					res.statusCode = 403;
-					res.end("forbidden");
-					return;
-				}
-				const { stat, readdir, readFile } = await import("node:fs/promises");
-				let st: import("node:fs").Stats;
-				try {
-					st = await stat(target);
-				} catch {
-					res.statusCode = 404;
-					res.end("not found");
-					return;
-				}
-				const css =
-					"body{font-family:system-ui,-apple-system,sans-serif;max-width:860px;margin:2rem auto;padding:0 1.25rem;line-height:1.65;color:#222}" +
-					"a{color:#2563eb}pre{background:#f4f4f5;padding:1rem;overflow:auto;border-radius:6px}" +
-					"code{background:#f4f4f5;padding:.1rem .3rem;border-radius:3px;font-size:.9em}" +
-					"h1,h2,h3{margin-top:1.6rem}ul{padding-left:1.25rem}hr{border:none;border-top:1px solid #e5e7eb;margin:2rem 0}";
-				if (st.isDirectory()) {
-					const entries = (await readdir(target, { withFileTypes: true }))
-						.filter((e) => !e.name.startsWith("."))
-						.sort((a, b) => a.name.localeCompare(b.name));
-					const links = entries
-						.map((e) => {
-							const href = "/__space_docs/" + (rel ? rel + "/" : "") + e.name;
-							return `<li><a href="${href}">${escapeHtml(e.name)}${e.isDirectory() ? "/" : ""}</a></li>`;
-						})
-						.join("");
-					res.setHeader("Content-Type", "text/html; charset=utf-8");
-					res.end(
-						`<!doctype html><html><head><meta charset="utf-8"><title>docs</title><style>${css}</style></head><body><h1>/${escapeHtml(rel)}</h1><ul>${links}</ul></body></html>`,
-					);
-					return;
-				}
-				const raw = await readFile(target, "utf8");
-				const body = target.endsWith(".md") ? renderMarkdown(raw) : `<pre>${escapeHtml(raw)}</pre>`;
-				res.setHeader("Content-Type", "text/html; charset=utf-8");
-				res.end(
-					`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(rel)}</title><style>${css}</style></head><body>${body}<hr><p><a href="/__space_docs/">← docs</a></p></body></html>`,
-				);
-			});
+			const { createDocsReader } = await import("./docs/reader");
+			server.middlewares.use("/__space_docs", createDocsReader(root));
 
 			const syncFile = (file: string, dirs: string[]) => {
 				if (!dirs.some((dir) => file.startsWith(dir + sep))) return;

@@ -104,11 +104,17 @@
 		"space": "./dist/cli.js"
 	},
 	"peerDependenciesMeta": {
+		"vite": {
+			"optional": false
+		},
 		"@electric-sql/pglite": {
 			"optional": true
 		},
-		"vite": {
-			"optional": false
+		"marked": {
+			"optional": true
+		},
+		"shiki": {
+			"optional": true
 		}
 	}
 }
