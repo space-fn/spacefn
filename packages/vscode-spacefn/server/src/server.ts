@@ -332,6 +332,26 @@ function detectContext(before: string, fullText: string): CompletionContext {
 	return { kind: "keyword" };
 }
 
+function resolveAliases(sql: string): Map<string, string> {
+	const m = new Map<string, string>();
+	try {
+		const ast = parser.astify(sql + " ", { database: "sqlite" }) as any;
+		const node = Array.isArray(ast) ? ast[0] : ast;
+		const from = node?.from;
+		if (Array.isArray(from)) {
+			for (const n of from) {
+				if (n && typeof n.table === "string") {
+					m.set(n.table, n.table);
+					if (typeof n.as === "string" && n.as) m.set(n.as, n.table);
+				}
+			}
+		}
+	} catch {
+		// ignore
+	}
+	return m;
+}
+
 function extractTables(sql: string): string[] {
 	try {
 		const ast = parser.astify(sql + " ", { database: "sqlite" }) as any;
@@ -372,6 +392,7 @@ connection.onCompletion(async (params) => {
 	const offset = doc.offsetAt(params.position);
 	const before = text.slice(0, offset);
 	const items: CompletionItem[] = [];
+	const aliasMap = resolveAliases(text);
 	const ctx = detectContext(before, text);
 	const prefix = (before.match(/(\w*)$/) || ["", ""])[1]!.toLowerCase();
 
@@ -387,7 +408,7 @@ connection.onCompletion(async (params) => {
 		// only suggest columns when at least one table is in scope;
 		// otherwise we'd leak columns from unrelated tables
 		if (!ctx.tables.length) return [];
-		const tables = ctx.tables;
+		const tables = ctx.tables.map((t) => aliasMap.get(t) ?? t);
 		const seen = new Set<string>();
 		for (const t of tables) {
 			const cols = schema.columns.get(t) ?? schema.columns.get(t.toLowerCase()) ?? [];
@@ -429,13 +450,15 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
 	if (!wordRange) return null;
 	const word = doc.getText(wordRange);
+	const aliasMap = resolveAliases(doc.getText());
+	const baseTable = aliasMap.get(word) ?? word;
 	// table?
-	if (schema.tables.includes(word)) {
-		const cols = schema.columns.get(word) ?? [];
+	if (schema.tables.includes(baseTable)) {
+		const cols = schema.columns.get(baseTable) ?? [];
 		return {
 			contents: {
 				kind: "markdown",
-				value: `**table** \`${word}\`\n\nColumns: ${cols.map((c) => c.name).join(", ")}`,
+				value: `**table** \`${baseTable}\`\n\nColumns: ${cols.map((c) => c.name).join(", ")}`,
 			},
 			range: wordRange,
 		};
@@ -467,6 +490,8 @@ connection.onDefinition(async (params): Promise<Location[] | null> => {
 	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
 	if (!wordRange) return null;
 	const word = doc.getText(wordRange);
+	const aliasMap = resolveAliases(doc.getText());
+	const target = aliasMap.get(word) ?? word;
 	// search migrations for CREATE TABLE <word>
 	const migrationsDir = path.join(resolved.targetDb, "migrations");
 	let files: string[] = [];
@@ -480,7 +505,7 @@ connection.onDefinition(async (params): Promise<Location[] | null> => {
 		const full = path.join(migrationsDir, f);
 		const content = await fs.readFile(full, "utf8");
 		const re = new RegExp(
-			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${word}["'\`]?`,
+			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${target}["'\`]?`,
 			"i",
 		);
 		if (re.test(content)) {
