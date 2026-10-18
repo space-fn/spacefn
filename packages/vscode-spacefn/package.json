@@ -1,0 +1,62 @@
+{
+	"name": "vscode-spacefn",
+	"displayName": "spacefn",
+	"version": "0.1.0",
+	"description": "spacefn support for VS Code: HTML injection for html tagged templates (Datastar) + SQL diagnostics for db queries.",
+	"categories": [
+		"Programming Languages"
+	],
+	"publisher": "wai-lin",
+	"main": "./out/extension.js",
+	"scripts": {
+		"compile": "tsc -p .",
+		"package": "vsce package"
+	},
+	"dependencies": {
+		"spacefn": "workspace:*",
+		"vscode-languageclient": "^9.0.1",
+		"vscode-languageserver": "^9.0.1",
+		"vscode-languageserver-textdocument": "^1.0.12"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.5",
+		"@types/vscode": "^1.63.0",
+		"typescript": "^7.0.2",
+		"vsce": "^2.15.0"
+	},
+	"contributes": {
+		"grammars": [
+			{
+				"injectTo": [
+					"source.js",
+					"source.ts"
+				],
+				"scopeName": "source.datastar.spacefn.injection",
+				"path": "./src/grammars/javascript.injection.tmLanguage.json"
+			}
+		],
+		"languages": [
+			{
+				"id": "spacefn-sql",
+				"aliases": [
+					"Spacefn SQL"
+				],
+				"extensions": [
+					".sql"
+				]
+			}
+		]
+	},
+	"activationEvents": [
+		"onLanguage:javascript",
+		"onLanguage:sql",
+		"onLanguage:typescript",
+		"workspaceContains:app/db"
+	],
+	"extensionDependencies": [
+		"starfederation.datastar-vscode"
+	],
+	"engines": {
+		"vscode": "^1.63.0"
+	}
+}

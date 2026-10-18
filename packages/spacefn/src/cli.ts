@@ -97,7 +97,8 @@ program
 	.command("doctor")
 	.description("Validate db migrations and queries against their schema")
 	.option("--db <name>", "Database name under app/db/")
-	.action(async (options: { db?: string }) => {
+	.option("--json", "Output machine-readable JSON")
+	.action(async (options: { db?: string; json?: boolean }) => {
 		const { readdir } = await import("node:fs/promises");
 		const { join, resolve } = await import("node:path");
 		const appDb = resolve(process.cwd(), "app", "db");
@@ -117,6 +118,7 @@ program
 			}
 		}
 		let ok = true;
+		const results: { db: string; ok: boolean; message: string }[] = [];
 		for (const name of names) {
 			const dir = join(appDb, name);
 			try {
@@ -130,12 +132,21 @@ program
 				const { scanMigrations, analyzeQueries } = await import("./db");
 				const migrations = await scanMigrations(join(dir, "migrations"));
 				await analyzeQueries(join(dir, "queries"), migrations, dialect);
-				console.log(`OK  ${name} (${migrations.length} migrations, dialect=${dialect})`);
+				results.push({
+					db: name,
+					ok: true,
+					message: `${migrations.length} migrations, dialect=${dialect}`,
+				});
+				if (!options.json)
+					console.log(`OK  ${name} (${migrations.length} migrations, dialect=${dialect})`);
 			} catch (error) {
 				ok = false;
-				console.error(`FAIL ${name}: ${error instanceof Error ? error.message : String(error)}`);
+				const msg = error instanceof Error ? error.message : String(error);
+				results.push({ db: name, ok: false, message: msg });
+				if (!options.json) console.error(`FAIL ${name}: ${msg}`);
 			}
 		}
+		if (options.json) console.log(JSON.stringify(results));
 		if (!ok) process.exit(1);
 	});
 
