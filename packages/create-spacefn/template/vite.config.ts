@@ -8,6 +8,20 @@ export default defineConfig({
 	test: {
 		include: ["**/*.test.ts"],
 	},
+	fmt: {
+		useTabs: true,
+		sortImports: true,
+		sortPackageJson: true,
+		sortTailwindcss: true,
+		trailingComma: "all",
+	},
+	lint: {
+		rules: {
+			"no-unused-vars": "error",
+			"typescript/no-deprecated": "error",
+		},
+		options: { typeAware: true, typeCheck: true },
+	},
 	resolve: {
 		alias: {
 			"@space": resolve(process.cwd(), ".space"),
