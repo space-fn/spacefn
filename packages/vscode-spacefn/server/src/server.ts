@@ -15,6 +15,7 @@ import {
 	Hover,
 	Location,
 	Position,
+	Range,
 	DidChangeWatchedFilesNotification,
 } from "vscode-languageserver/node";
 
@@ -45,14 +46,44 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 		const { dialect, migrations } = await loadDialectAndMigrations(dbDir);
 		await analyzeQueries(queriesDir, migrations, dialect);
 	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		const ident = extractBadIdentifier(message);
+		const range = (ident && rangeForIdentifier(doc, ident)) || {
+			start: { line: 0, character: 0 },
+			end: { line: 0, character: 1 },
+		};
 		diagnostics.push({
 			severity: DiagnosticSeverity.Error,
-			range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
-			message: err instanceof Error ? err.message : String(err),
+			range,
+			message,
 			source: "spacefn",
 		});
 	}
 	void connection.sendDiagnostics({ uri, diagnostics: diagnostics });
+}
+
+function extractBadIdentifier(message: string): string | null {
+	const patterns = [
+		/no such column: ["']?([A-Za-z_][A-Za-z0-9_]*)["']?/i,
+		/column ["']([A-Za-z_][A-Za-z0-9_]*)["'] does not exist/i,
+		/Unknown column ['"]([A-Za-z_][A-Za-z0-9_]*)['"]/i,
+		/relation .* has no column named ["']?([A-Za-z_][A-Za-z0-9_]*)["']?/i,
+	];
+	for (const p of patterns) {
+		const m = message.match(p);
+		if (m) return m[1]!;
+	}
+	return null;
+}
+
+function rangeForIdentifier(doc: TextDocument, ident: string): Range | null {
+	const text = doc.getText();
+	const re = new RegExp("\\\\b" + ident + "\\\\b");
+	const m = re.exec(text);
+	if (!m) return null;
+	const start = doc.positionAt(m.index);
+	const end = doc.positionAt(m.index + ident.length);
+	return { start, end };
 }
 
 function findDbDir(filePath: string): string | null {
@@ -100,10 +131,16 @@ async function validateEmbedded(doc: TextDocument): Promise<void> {
 			const stmt = await scratch.prepare(sql);
 			await stmt.columns();
 		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			const ident = extractBadIdentifier(message);
+			const range = (ident && rangeForIdentifier(doc, ident)) || {
+				start: startPos,
+				end: startPos,
+			};
 			diagnostics.push({
 				severity: DiagnosticSeverity.Error,
-				range: { start: startPos, end: startPos },
-				message: err instanceof Error ? err.message : String(err),
+				range,
+				message,
 				source: "spacefn",
 			});
 		}
