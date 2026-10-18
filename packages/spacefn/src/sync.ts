@@ -1,12 +1,12 @@
 import { access, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
+import { generateBindingsSource } from "./bindings/generate";
 import { analyzeQueries } from "./db/build-queries";
 import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
 import { generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
-import { generateBindingsSource } from "./bindings/generate";
 import { scanMiddleware } from "./middleware/scan";
 import { generatePagesSource } from "./pages/generate";
 import { scanPages } from "./pages/scan";
@@ -103,7 +103,13 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		await writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
 		await writeIfChanged(
 			join(root, ".space", "bindings.d.ts"),
-			generateBindingsSource({ envFields, cloudflareBindings, durableObjectFiles: durableObjects, workflowFiles: workflows, queueFiles: queues }),
+			generateBindingsSource({
+				envFields,
+				cloudflareBindings,
+				durableObjectFiles: durableObjects,
+				workflowFiles: workflows,
+				queueFiles: queues,
+			}),
 		),
 		await writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
 		await writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),

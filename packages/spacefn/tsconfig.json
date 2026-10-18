@@ -8,13 +8,7 @@
 		"skipLibCheck": true,
 		"verbatimModuleSyntax": true,
 		"noEmit": true,
-		"types": [
-			"node",
-			"@cloudflare/workers-types"
-		]
+		"types": ["node", "@cloudflare/workers-types"]
 	},
-	"include": [
-		"src",
-		"test"
-	]
+	"include": ["src", "test"]
 }

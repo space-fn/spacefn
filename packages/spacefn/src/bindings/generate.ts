@@ -17,7 +17,9 @@ export function bindingType(descriptor: { type?: string }, durableObjectClass?: 
 		case "kv":
 			return "KVNamespace";
 		case "durable-object":
-			return durableObjectClass ? `DurableObjectNamespace<${durableObjectClass}>` : "DurableObjectNamespace";
+			return durableObjectClass
+				? `DurableObjectNamespace<${durableObjectClass}>`
+				: "DurableObjectNamespace";
 		case "workflow":
 			return "Workflow";
 		case "queue":
