@@ -268,7 +268,7 @@ function detectContext(before: string): CompletionContext {
 	) {
 		// try to extract tables from FROM clause in the statement
 		const tables = extractTables(before);
-		return { kind: "column", tables };
+		if (tables.length) return { kind: "column", tables };
 	}
 	return { kind: "keyword" };
 }
