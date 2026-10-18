@@ -11,6 +11,7 @@ Each folder in a spacefn project does one job. Files are found by name, so there
 | `app/durable-objects/` | One Durable Object class                         | Class export, binding, config entry             |
 | `app/workflows/`       | One Workflow class                               | Class export, binding, config entry             |
 | `app/env.ts`           | Environment fields                               | Bindings and types                              |
+| `app/db/<name>/`       | Migrations and queries for one database          | Typed query functions and migration runner      |
 
 ## Middleware
 
@@ -76,3 +77,17 @@ export default defineCron("0 3 * * *", async (event, env) => {
 ## Bindings and env in jobs
 
 Queue consumers and cron jobs get the same bindings as a request: `env` fields, D1, KV, queue producers and Durable Objects are all traced.
+
+## Modules (recommended)
+
+Business logic that is not a Cloudflare convention lives in `modules/` at the project root. The framework does not scan it; import it from `app/` files.
+
+```
+modules/
+├── auth/
+│   └── users.ts
+└── billing/
+    └── invoices.ts
+```
+
+Keep `app/` for Cloudflare-facing code (routes, queues, crons, durable objects, workflows, db) and `modules/` for domain logic. This keeps the convention folder small and the business logic testable on its own.
