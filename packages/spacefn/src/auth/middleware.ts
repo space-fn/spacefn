@@ -45,3 +45,15 @@ export function requireSession(): MiddlewareHandler {
 		await next();
 	};
 }
+
+/**
+ * Convenience wrapper around `sessionResolver` for the common D1-backed
+ * session table. `lookup` receives the binding and the token hash.
+ */
+export function createSessionMiddleware<Env extends object, User>(options: {
+	cookie?: string;
+	policy?: SessionPolicy;
+	lookup: (env: Env, tokenHash: string) => Promise<(SessionRecord & { user: User }) | undefined>;
+}): MiddlewareHandler<{ Bindings: Env; Variables: { user?: User } }> {
+	return sessionResolver<Env, User>(options);
+}

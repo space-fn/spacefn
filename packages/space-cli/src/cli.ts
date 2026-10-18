@@ -107,6 +107,50 @@ program
 		}
 	});
 
+program
+	.command("clean")
+	.description("Remove generated .space/ and .cloudflare/ directories")
+	.action(async () => {
+		const { rmSync, existsSync } = await import("node:fs");
+		const root = process.cwd();
+		for (const dir of [".space", ".cloudflare"]) {
+			const p = resolve(root, dir);
+			if (existsSync(p)) {
+				rmSync(p, { recursive: true, force: true });
+				console.log(`Removed ${dir}/`);
+			}
+		}
+	});
+
+program
+	.command("doctor")
+	.description("Validate the app/ layout and generated files")
+	.action(async () => {
+		const { existsSync, statSync } = await import("node:fs");
+		const root = process.cwd();
+		const checks: string[] = [];
+		if (!existsSync(resolve(root, "app"))) checks.push("missing app/ folder");
+		if (!existsSync(resolve(root, ".space"))) checks.push("missing .space/ (run `space gen`)");
+		if (!existsSync(resolve(root, "tsconfig.json"))) checks.push("missing tsconfig.json");
+		const tsconfig = existsSync(resolve(root, "tsconfig.json"))
+			? JSON.parse((await import("node:fs")).readFileSync(resolve(root, "tsconfig.json"), "utf8"))
+			: null;
+		if (tsconfig && !tsconfig.compilerOptions?.paths?.["@space/*"]) {
+			checks.push("tsconfig missing @space/* path alias");
+		}
+		const envFile = resolve(root, "app", "env.ts");
+		if (existsSync(envFile)) {
+			const devVars = resolve(root, ".dev.vars");
+			if (!existsSync(devVars)) checks.push("missing .dev.vars (needed for local secrets)");
+		}
+		if (checks.length === 0) {
+			console.log("OK: app layout looks valid.");
+		} else {
+			for (const c of checks) console.error(`- ${c}`);
+			process.exit(1);
+		}
+	});
+
 program.parseAsync(process.argv).catch((error) => {
 	console.error(error instanceof Error ? error.message : error);
 	process.exit(1);

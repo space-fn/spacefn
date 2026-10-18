@@ -48,15 +48,49 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 		},
 
 		configureServer(server) {
+			const syncFile = (file: string, dirs: string[]) => {
+				if (!dirs.some((dir) => file.startsWith(dir + sep))) return;
+				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+
+			// Routes: sync on add/change/unlink.
 			const routesDir = resolve(root, "app", "routes");
 			server.watcher.add(routesDir);
-
-			const onChange = (file: string) => {
+			const onRouteChange = (file: string) => {
 				if (!file.startsWith(routesDir + sep)) return;
 				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
 			};
-			server.watcher.on("add", onChange);
-			server.watcher.on("unlink", onChange);
+			server.watcher.on("add", onRouteChange);
+			server.watcher.on("change", onRouteChange);
+			server.watcher.on("unlink", onRouteChange);
+			server.watcher.on("addDir", onRouteChange);
+			server.watcher.on("unlinkDir", onRouteChange);
+
+			// Pages: sync (route table changes).
+			const pagesDir = resolve(root, "app", "pages");
+			server.watcher.add(pagesDir);
+			const onPageChange = (file: string) => {
+				if (!file.startsWith(pagesDir + sep)) return;
+				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+			server.watcher.on("add", onPageChange);
+			server.watcher.on("change", onPageChange);
+			server.watcher.on("unlink", onPageChange);
+			server.watcher.on("addDir", onPageChange);
+			server.watcher.on("unlinkDir", onPageChange);
+
+			// DB: sql files regenerate typed queries; migrate.ts/queries changes too.
+			const dbDir = resolve(root, "app", "db");
+			const onDbChange = (file: string) => {
+				if (!file.startsWith(dbDir + sep)) return;
+				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+			server.watcher.add(dbDir);
+			server.watcher.on("add", onDbChange);
+			server.watcher.on("change", onDbChange);
+			server.watcher.on("unlink", onDbChange);
+			server.watcher.on("addDir", onDbChange);
+			server.watcher.on("unlinkDir", onDbChange);
 
 			// Bindings come from env.ts when Vite resolves its config, so a change needs a restart.
 			const envFile = resolve(root, "app", "env.ts");
@@ -68,23 +102,13 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("change", onEnvChange);
 			server.watcher.on("unlink", onEnvChange);
 
-			// SQL changes only regenerate the typed queries; no restart needed.
-			const dbDir = resolve(root, "app", "db");
-			const onSqlChange = (file: string) => {
-				if (!file.startsWith(dbDir + sep) || !file.endsWith(".sql")) return;
-				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
-			};
-			server.watcher.add(dbDir);
-			server.watcher.on("add", onSqlChange);
-			server.watcher.on("change", onSqlChange);
-			server.watcher.on("unlink", onSqlChange);
-
-			// Queue and cron files change the Worker config: a binding, a consumer or a schedule.
+			// Queue/cron/DO/workflow files change the Worker config: restart.
 			const configDirs = [
 				resolve(root, "app", "queues"),
 				resolve(root, "app", "crons"),
-				resolve(root, "app", "durable-objects"),
-				resolve(root, "app", "workflows"),
+			  resolve(root, "app", "durable-objects"),
+			  resolve(root, "app", "workflows"),
+			  resolve(root, "app", "middleware"),
 			];
 			const onConfigFileChange = (file: string) => {
 				if (!configDirs.some((dir) => file.startsWith(dir + sep))) return;
@@ -94,6 +118,8 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("add", onConfigFileChange);
 			server.watcher.on("change", onConfigFileChange);
 			server.watcher.on("unlink", onConfigFileChange);
+			server.watcher.on("addDir", onConfigFileChange);
+			server.watcher.on("unlinkDir", onConfigFileChange);
 		},
 	};
 }

@@ -33,6 +33,18 @@ export function defineLoader<P>(load: PageLoader<P>): PageLoader<P> {
  * Declares a page's form actions. Export it as `actions` from `pages/<path>.server.ts`.
  * A form selects one with `?_action=<name>` on a POST to the page.
  */
-export function defineActions<const A extends Record<string, PageAction>>(actions: A): A {
-	return actions;
+export function defineActions<const A extends Record<string, PageAction>>(
+	actions: A,
+): { [K in keyof A]: A[K] & { path(): string } } {
+	const result = { ...actions } as unknown as Record<string, PageAction & { path(): string }>;
+	for (const name of Object.keys(actions)) {
+		const fn = actions[name as keyof A];
+		const path = () => `?_action=${name}`;
+		(result[name] as PageAction & { path(): string }).path = path;
+		// Preserve callability: copy the function.
+		const wrapped = ((...args: Parameters<PageAction>) => (fn as PageAction)(...args)) as PageAction & { path(): string };
+		wrapped.path = path;
+		result[name] = wrapped;
+	}
+	return result as { [K in keyof A]: A[K] & { path(): string } };
 }
