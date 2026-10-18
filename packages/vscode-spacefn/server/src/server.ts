@@ -150,11 +150,22 @@ function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | n
 	if (!dbDir) return null;
 	let targetDb: string | null = null;
 	try {
-		// sync not available; do sync via fs
-		const { readdirSync } = require("node:fs");
+		const { readdirSync, readFileSync } = require("node:fs");
 		const entries = readdirSync(dbDir, { withFileTypes: true });
 		const dbs = entries.filter((e: any) => e.isDirectory()).map((e: any) => e.name);
-		if (dbs.length > 0) targetDb = path.join(dbDir, dbs[0]!);
+		let preferred: string | null = null;
+		try {
+			const content = readFileSync(filePath, "utf8");
+			const m = content.match(/@space\/db\/([A-Za-z0-9_-]+)|@app\/db\/([A-Za-z0-9_-]+)/);
+			if (m) preferred = m[1] || m[2];
+		} catch {}
+		if (preferred && dbs.includes(preferred)) {
+			targetDb = path.join(dbDir, preferred);
+		} else if (dbs.length === 1) {
+			targetDb = path.join(dbDir, dbs[0]!);
+		} else {
+			return null;
+		}
 	} catch {
 		return null;
 	}
