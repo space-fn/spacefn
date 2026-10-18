@@ -1,4 +1,20 @@
+# Dependencies
 node_modules
+
+# Generated
 .space
 .cloudflare
 dist
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+.idea
+.vscode
