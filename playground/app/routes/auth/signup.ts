@@ -2,6 +2,7 @@ import { addUser, findUser } from "@space/db/main_db";
 import { migrated } from "@space/db/main_db";
 import { defineHandler } from "spacefn";
 import { hashPassword, MAX_PASSWORD_LENGTH } from "spacefn/auth";
+import { d1Executor } from "spacefn/db";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ email?: string; password?: string }>();
@@ -16,8 +17,8 @@ export const POST = defineHandler(async (c) => {
 		);
 	}
 	await migrated(c.env.DB);
-	if (await findUser(c.env.DB, { email }))
+	if (await findUser(d1Executor(c.env.DB), { email }))
 		return c.json({ error: "conflict", message: "Email is taken" }, 409);
-	await addUser(c.env.DB, { email, passwordHash: await hashPassword(password) });
+	await addUser(d1Executor(c.env.DB), { email, passwordHash: await hashPassword(password) });
 	return c.json({ email }, 201);
 });

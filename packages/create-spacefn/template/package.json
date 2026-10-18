@@ -14,7 +14,10 @@
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "latest",
-		"typescript": "^7.0.2",
+		"@types/node": "latest",
+		"marked": "latest",
+		"shiki": "latest",
+		"typescript": "latest",
 		"vite-plus": "latest"
 	}
 }

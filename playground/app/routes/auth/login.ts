@@ -2,6 +2,7 @@ import { addSession, findUser } from "@space/db/main_db";
 import { migrated } from "@space/db/main_db";
 import { defineHandler } from "spacefn";
 import { hashPassword, newSession, sessionCookie, verifyPassword } from "spacefn/auth";
+import { d1Executor } from "spacefn/db";
 
 /** Verified against when the email is unknown, so a miss takes as long as a hit. */
 let decoy: Promise<string> | undefined;
@@ -11,7 +12,7 @@ export const POST = defineHandler(async (c) => {
 	const email = body.email?.trim().toLowerCase() ?? "";
 	const password = body.password ?? "";
 	await migrated(c.env.DB);
-	const user = await findUser(c.env.DB, { email });
+	const user = await findUser(d1Executor(c.env.DB), { email });
 	decoy ??= hashPassword("decoy-password-never-matches");
 	const checked = await verifyPassword(password || "x", user?.passwordHash ?? (await decoy));
 	if (!user || !checked.valid)
@@ -19,7 +20,7 @@ export const POST = defineHandler(async (c) => {
 
 	const now = Date.now();
 	const session = await newSession();
-	await addSession(c.env.DB, {
+	await addSession(d1Executor(c.env.DB), {
 		tokenHash: session.tokenHash,
 		userId: user.id,
 		expiresAt: now + 30 * 24 * 60 * 60 * 1000,

@@ -26,8 +26,15 @@ export interface ServerModule {
 	actions?: Record<string, PageAction>;
 }
 
+/** Extracts the props type from a `PageLoader`, so `definePage<typeof loader>` works. */
+type LoaderProps<L> = L extends PageLoader<infer R> ? Exclude<R, Response> : L;
+
 /** Declares a page's markup. The default export of `pages/<path>.page.ts`. */
-export function definePage<P = Record<string, never>>(render: PageRender<P>): PageRender<P> {
+export function definePage<L extends PageLoader<any>>(
+	render: PageRender<LoaderProps<L>>,
+): PageRender<LoaderProps<L>>;
+export function definePage<P = Record<string, never>>(render: PageRender<P>): PageRender<P>;
+export function definePage(render: unknown): unknown {
 	return render;
 }
 
