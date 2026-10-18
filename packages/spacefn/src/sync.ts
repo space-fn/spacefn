@@ -6,6 +6,7 @@ import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
 import { generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
+import { generateBindingsSource } from "./bindings/generate";
 import { scanMiddleware } from "./middleware/scan";
 import { generatePagesSource } from "./pages/generate";
 import { scanPages } from "./pages/scan";
@@ -47,6 +48,29 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const crons = await scanCodeFiles(join(app, "crons"));
 	const durableObjects = await scanCodeFiles(join(app, "durable-objects"));
 	const workflows = await scanCodeFiles(join(app, "workflows"));
+
+	// Read env schema (best effort)
+	let envFields: Array<{ name: string }> = [];
+	if (hasEnv) {
+		try {
+			const mod = await import(join(app, "env.ts"));
+			const schema = mod.default ?? mod;
+			envFields = Object.keys(schema ?? {}).map((name) => ({ name }));
+		} catch {
+			envFields = [];
+		}
+	}
+
+	// Read cloudflare config (best effort)
+	let cloudflareBindings: Record<string, { type?: string }> = {};
+	try {
+		const cfg = await import(join(root, "cloudflare.config.ts"));
+		const config = cfg.default ?? cfg;
+		const env = config?.worker?.env ?? config?.env ?? {};
+		cloudflareBindings = env;
+	} catch {
+		cloudflareBindings = {};
+	}
 	const pages = await scanPages(join(app, "pages"));
 	if (pages.length > 0) {
 		const routePaths = new Set(
@@ -77,6 +101,10 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 			}),
 		),
 		await writeIfChanged(join(root, ".space", "env.d.ts"), generateEnvTypesSource(hasEnv)),
+		await writeIfChanged(
+			join(root, ".space", "bindings.d.ts"),
+			generateBindingsSource({ envFields, cloudflareBindings, durableObjectFiles: durableObjects, workflowFiles: workflows, queueFiles: queues }),
+		),
 		await writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
 		await writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),
 	];

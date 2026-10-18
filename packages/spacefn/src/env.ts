@@ -8,6 +8,7 @@ import { envValues } from "./env/state";
 export interface Register {}
 
 export type AppEnv = Register extends { env: infer E } ? E : Record<string, unknown>;
+export type AppBindings = (Register extends { bindings: infer B } ? B : Record<string, unknown>) & AppEnv;
 
 /** The validated environment declared in `env.ts`. */
 export const env = envValues as AppEnv;

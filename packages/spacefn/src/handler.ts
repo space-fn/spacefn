@@ -1,8 +1,10 @@
 import type { Context } from "hono";
 
+import type { AppBindings } from "./env";
+
 export type HandlerResult = Response | string | unknown | null | undefined;
 
-export type Handler = (c: Context) => HandlerResult | Promise<HandlerResult>;
+export type Handler = (c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>) => HandlerResult | Promise<HandlerResult>;
 
 /**
  * Wraps a route handler. A returned `Response` passes through, a string
@@ -10,7 +12,7 @@ export type Handler = (c: Context) => HandlerResult | Promise<HandlerResult>;
  */
 export function defineHandler(handler: Handler) {
 	return async (c: Context): Promise<Response> => {
-		const result = await handler(c);
+		const result = await handler(c as Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>);
 		if (result instanceof Response) return result;
 		if (typeof result === "string") return c.text(result);
 		if (result === undefined) return c.body(null, 204);

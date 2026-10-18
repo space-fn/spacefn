@@ -1,10 +1,7 @@
 import type { MigrationExecutor } from "./migrate";
 
 /** The part of a D1 database the executor uses. */
-export interface D1Database {
-	prepare(sql: string): { bind(...values: unknown[]): { all<T>(): Promise<{ results: T[] }> } };
-	batch(statements: unknown[]): Promise<unknown[]>;
-}
+export type D1Database = globalThis.D1Database;
 
 /** The part of a Durable Object's SQLite storage the executor uses. */
 export interface SqlStorageLike {
