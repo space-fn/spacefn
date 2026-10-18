@@ -1,20 +1,20 @@
 {
-	"name": "space-root",
-	"private": true,
-	"description": "",
-	"keywords": [],
-	"license": "Apache-2.0",
-	"author": "wai-lin",
-	"type": "module",
-	"scripts": {
-		"fmt": "oxfmt -c ./configs/oxfmt.ts",
-		"fmt:check": "oxfmt -c ./configs/oxfmt.ts --check",
-		"lint": "oxlint -c ./configs/oxlint.ts",
-		"lint:fix": "oxlint -c ./configs/oxlint.ts --fix",
-		"publish": "./scripts/publish.sh"
-	},
-	"devDependencies": {
-		"oxfmt": "^0.68.0",
-		"oxlint": "^1.83.0"
-	}
+  "name": "space-root",
+  "private": true,
+  "description": "",
+  "keywords": [],
+  "license": "Apache-2.0",
+  "author": "wai-lin",
+  "type": "module",
+  "scripts": {
+    "fmt": "vp fmt -c ./configs/oxfmt.ts",
+    "fmt:check": "vp fmt -c ./configs/oxfmt.ts --check",
+    "lint": "vp lint -c ./configs/oxlint.ts",
+    "lint:fix": "vp lint -c ./configs/oxlint.ts --fix",
+    "publish": "./scripts/publish.sh",
+    "prepare": "vp config"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
 }

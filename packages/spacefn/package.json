@@ -1,120 +1,118 @@
 {
-	"name": "spacefn",
-	"version": "0.0.0",
-	"description": "All-in-one framework for Cloudflare Workers",
-	"license": "Apache-2.0",
-	"author": "wai-lin",
-	"files": [
-		"dist"
-	],
-	"type": "module",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		},
-		"./runtime": {
-			"types": "./dist/runtime.d.ts",
-			"import": "./dist/runtime.js"
-		},
-		"./vite": {
-			"types": "./dist/vite.d.ts",
-			"import": "./dist/vite.js"
-		},
-		"./cloudflare": {
-			"types": "./dist/cloudflare.d.ts",
-			"import": "./dist/cloudflare.js"
-		},
-		"./env": {
-			"types": "./dist/env.d.ts",
-			"import": "./dist/env.js"
-		},
-		"./trace": {
-			"types": "./dist/trace.d.ts",
-			"import": "./dist/trace.js"
-		},
-		"./queues": {
-			"types": "./dist/queues.d.ts",
-			"import": "./dist/queues.js"
-		},
-		"./crons": {
-			"types": "./dist/crons.d.ts",
-			"import": "./dist/crons.js"
-		},
-		"./db": {
-			"types": "./dist/db.d.ts",
-			"import": "./dist/db.js"
-		},
-		"./tenancy": {
-			"types": "./dist/tenancy.d.ts",
-			"import": "./dist/tenancy.js"
-		},
-		"./auth": {
-			"types": "./dist/auth.d.ts",
-			"import": "./dist/auth.js"
-		},
-		"./pages": {
-			"types": "./dist/pages.d.ts",
-			"import": "./dist/pages.js"
-		},
-		"./sync": {
-			"types": "./dist/sync.d.ts",
-			"import": "./dist/sync.js"
-		},
-		"./durable-objects": {
-			"types": "./dist/durable-objects.d.ts",
-			"import": "./dist/durable-objects.js"
-		},
-		"./workflows": {
-			"types": "./dist/workflows.d.ts",
-			"import": "./dist/workflows.js"
-		},
-		"./testing": {
-			"types": "./dist/testing/index.d.ts",
-			"import": "./dist/testing/index.js"
-		}
-	},
-	"scripts": {
-		"build": "tsdown",
-		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
-	},
-	"dependencies": {
-		"@cloudflare/vite-plugin": "2.0.0-beta.v.1",
-		"cf": "1.0.0-beta.18",
-		"hono": "^4.13.13",
-		"commander": "^12.1.0"
-	},
-	"devDependencies": {
-		"@cloudflare/workers-types": "^5.20261016.1",
-		"@types/node": "^26.6.5",
-		"tsdown": "^0.23.1",
-		"typescript": "^7.0.2",
-		"vite": "^8.3.4",
-		"vitest": "^5.0.5",
-		"@electric-sql/pglite": "^0.2.0"
-	},
-	"peerDependencies": {
-		"vite": ">=8",
-		"@electric-sql/pglite": ">=0.2"
-	},
-	"bin": {
-		"space": "./dist/cli.js"
-	},
-	"peerDependenciesMeta": {
-		"vite": {
-			"optional": false
-		},
-		"@electric-sql/pglite": {
-			"optional": true
-		},
-		"marked": {
-			"optional": true
-		},
-		"shiki": {
-			"optional": true
-		}
-	}
+  "name": "spacefn",
+  "version": "0.0.0",
+  "description": "All-in-one framework for Cloudflare Workers",
+  "license": "Apache-2.0",
+  "author": "wai-lin",
+  "bin": {
+    "space": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.mts",
+      "import": "./dist/runtime.mjs"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.mts",
+      "import": "./dist/vite.mjs"
+    },
+    "./cloudflare": {
+      "types": "./dist/cloudflare.d.mts",
+      "import": "./dist/cloudflare.mjs"
+    },
+    "./env": {
+      "types": "./dist/env.d.mts",
+      "import": "./dist/env.mjs"
+    },
+    "./trace": {
+      "types": "./dist/trace.d.mts",
+      "import": "./dist/trace.mjs"
+    },
+    "./queues": {
+      "types": "./dist/queues.d.mts",
+      "import": "./dist/queues.mjs"
+    },
+    "./crons": {
+      "types": "./dist/crons.d.mts",
+      "import": "./dist/crons.mjs"
+    },
+    "./db": {
+      "types": "./dist/db.d.mts",
+      "import": "./dist/db.mjs"
+    },
+    "./tenancy": {
+      "types": "./dist/tenancy.d.mts",
+      "import": "./dist/tenancy.mjs"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.mts",
+      "import": "./dist/auth.mjs"
+    },
+    "./pages": {
+      "types": "./dist/pages.d.mts",
+      "import": "./dist/pages.mjs"
+    },
+    "./sync": {
+      "types": "./dist/sync.d.mts",
+      "import": "./dist/sync.mjs"
+    },
+    "./durable-objects": {
+      "types": "./dist/durable-objects.d.mts",
+      "import": "./dist/durable-objects.mjs"
+    },
+    "./workflows": {
+      "types": "./dist/workflows.d.mts",
+      "import": "./dist/workflows.mjs"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.mts",
+      "import": "./dist/testing/index.mjs"
+    }
+  },
+  "scripts": {
+    "build": "vp pack",
+    "typecheck": "tsc --noEmit",
+    "test": "vp test"
+  },
+  "dependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.1",
+    "cf": "1.0.0-beta.18",
+    "commander": "^12.1.0",
+    "hono": "^4.13.13",
+    "vite-plus": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261016.1",
+    "@electric-sql/pglite": "^0.2.0",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "vite": ">=8",
+    "vite-plus": ">=1"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": false
+    },
+    "@electric-sql/pglite": {
+      "optional": true
+    },
+    "marked": {
+      "optional": true
+    },
+    "shiki": {
+      "optional": true
+    }
+  }
 }

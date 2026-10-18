@@ -12,3 +12,13 @@ minimumReleaseAgeExclude:
   - "@cloudflare/runtime-types@0.1.12"
   - "@cloudflare/vite-plugin@2.0.0-beta.v.1"
   - cf@1.0.0-beta.18
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@1.3.0
+  vite-plus: 1.3.0
+overrides:
+  vite@*: "catalog:"
+peerDependencyRules:
+  allowAny:
+    - vite
+  allowedVersions:
+    vite: "*"
