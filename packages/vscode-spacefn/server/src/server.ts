@@ -460,6 +460,33 @@ type CompletionContext =
 	| { kind: "column"; tables: string[] }
 	| { kind: "keyword" };
 
+function inSqlString(text: string, offset: number): boolean {
+	// crude: walk back to find an unclosed quote/backtick
+	let i = offset - 1;
+	let quote: string | null = null;
+	while (i >= 0) {
+		const ch = text[i];
+		if (ch === "`" || ch === '"' || ch === "'") {
+			// count consecutive backslashes
+			let bs = 0;
+			let j = i - 1;
+			while (j >= 0 && text[j] === "\\") {
+				bs++;
+				j--;
+			}
+			if (bs % 2 === 0) {
+				quote = ch;
+				break;
+			}
+		}
+		i--;
+	}
+	if (!quote) return false;
+	// ensure there's a closing quote after offset
+	const close = text.indexOf(quote, offset);
+	return close !== -1;
+}
+
 function detectContext(before: string, fullText: string): CompletionContext {
 	// table context: last keyword before cursor is a table-introducing keyword
 	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
@@ -526,6 +553,9 @@ connection.onCompletion(async (params) => {
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
+	const isSqlFile = filePath.endsWith(".sql");
+	const offset = doc.offsetAt(params.position);
+	if (!isSqlFile && !inSqlString(doc.getText(), offset)) return null;
 	const resolved = resolveDbDir(filePath);
 	if (!resolved) return null;
 	let schema: SchemaInfo;
@@ -535,7 +565,6 @@ connection.onCompletion(async (params) => {
 		return null;
 	}
 	const text = doc.getText();
-	const offset = doc.offsetAt(params.position);
 	const before = text.slice(0, offset);
 	const items: CompletionItem[] = [];
 	const aliasMap = resolveAliases(text);
@@ -594,6 +623,9 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
+	const isSqlFile = filePath.endsWith(".sql");
+	const offset = doc.offsetAt(params.position);
+	if (!isSqlFile && !inSqlString(doc.getText(), offset)) return null;
 	const resolved = resolveDbDir(filePath);
 	if (!resolved) return null;
 	let schema: SchemaInfo;
@@ -647,6 +679,9 @@ connection.onDefinition(async (params): Promise<Location[] | null> => {
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
+	const isSqlFile = filePath.endsWith(".sql");
+	const offset = doc.offsetAt(params.position);
+	if (!isSqlFile && !inSqlString(doc.getText(), offset)) return null;
 	const resolved = resolveDbDir(filePath);
 	if (!resolved) return null;
 	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
