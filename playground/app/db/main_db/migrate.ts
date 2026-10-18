@@ -1,6 +1,6 @@
 import { d1Executor, runMigrations } from "spacefn/db";
 
-import { migrations } from "../../../.space/db/main_db";
+import { migrations } from "@space/db/main_db";
 
 const ready = new WeakMap<WeakKey, Promise<string[]>>();
 

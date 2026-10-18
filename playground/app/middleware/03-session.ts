@@ -3,8 +3,8 @@ import { sessionResolver } from "spacefn/auth";
 
 import type { AppBindings } from "spacefn/env";
 
-import { findSession } from "../../.space/db/main_db";
-import { migrated } from "../db/main_db/migrate";
+import { findSession } from "@space/db/main_db";
+import { migrated } from "@app/db/main_db/migrate";
 
 /** Attaches the signed-in user, if any, to every request. */
 const resolve = sessionResolver<AppBindings, { id: number; email: string }>({

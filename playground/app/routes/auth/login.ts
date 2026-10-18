@@ -1,8 +1,8 @@
 import { defineHandler } from "spacefn";
 import { hashPassword, newSession, sessionCookie, verifyPassword } from "spacefn/auth";
 
-import { addSession, findUser } from "../../../.space/db/main_db";
-import { migrated } from "../../db/main_db/migrate";
+import { addSession, findUser } from "@space/db/main_db";
+import { migrated } from "@app/db/main_db/migrate";
 
 /** Verified against when the email is unknown, so a miss takes as long as a hit. */
 let decoy: Promise<string> | undefined;

@@ -1,8 +1,8 @@
 import { defineHandler } from "spacefn";
 import { clearSessionCookie, hashSessionToken, readCookie } from "spacefn/auth";
 
-import { deleteSession } from "../../../.space/db/main_db";
-import { migrated } from "../../db/main_db/migrate";
+import { deleteSession } from "@space/db/main_db";
+import { migrated } from "@app/db/main_db/migrate";
 
 export const POST = defineHandler(async (c) => {
 	const token = readCookie(c.req.header("cookie"));
