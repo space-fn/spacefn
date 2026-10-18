@@ -325,7 +325,10 @@ connection.onCompletion(async (params) => {
 	}
 
 	if (ctx.kind === "column") {
-		const tables = ctx.tables.length ? ctx.tables : schema.tables;
+		// only suggest columns when at least one table is in scope;
+		// otherwise we'd leak columns from unrelated tables
+		if (!ctx.tables.length) return [];
+		const tables = ctx.tables;
 		const seen = new Set<string>();
 		for (const t of tables) {
 			const cols = schema.columns.get(t) ?? schema.columns.get(t.toLowerCase()) ?? [];
