@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
 import { Parser } from "node-sql-parser";
-import { scanMigrations, analyzeQueries, scratchDatabase } from "spacefn/db";
+import { scanMigrations, scratchDatabase } from "spacefn/db";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
 	createConnection,
@@ -40,11 +40,21 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 	const m = filePath.match(/[/\\]app[/\\]db[/\\]([^/\\]+)[/\\]queries[/\\]/);
 	if (!m) return;
 	const dbDir = filePath.replace(/[/\\]queries[/\\].*/, "");
-	const queriesDir = path.join(dbDir, "queries");
 	const diagnostics: Diagnostic[] = [];
 	try {
 		const { dialect, migrations } = await loadDialectAndMigrations(dbDir);
-		await analyzeQueries(queriesDir, migrations, dialect);
+		const scratch = await scratchDatabase(migrations, dialect);
+		// strip leading -- comment lines to get the SQL
+		const text = doc.getText();
+		const sql = text
+			.split("\\n")
+			.filter((l) => !l.trim().startsWith("--"))
+			.join("\\n")
+			.trim();
+		if (sql) {
+			const stmt = await scratch.prepare(sql);
+			await stmt.columns();
+		}
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		const ident = extractBadIdentifier(message);
