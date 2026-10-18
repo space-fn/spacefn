@@ -169,9 +169,16 @@ async function validateEmbedded(doc: TextDocument): Promise<void> {
 	void connection.sendDiagnostics({ uri, diagnostics });
 }
 
+interface ColumnInfo {
+	name: string;
+	type: string;
+	notnull?: boolean;
+	pk?: boolean;
+	defaultValue?: string | null;
+}
 interface SchemaInfo {
 	tables: string[];
-	columns: Map<string, { name: string; type: string }[]>;
+	columns: Map<string, ColumnInfo[]>;
 }
 
 const schemaCache = new Map<string, SchemaInfo>();
@@ -182,17 +189,18 @@ async function getSchema(dbDir: string, targetDb: string): Promise<SchemaInfo> {
 	const { dialect, migrations } = await loadDialectAndMigrations(targetDb);
 	const scratch = await scratchDatabase(migrations, dialect);
 	const tables = await scratch.tables();
-	const columns = new Map<string, { name: string; type: string }[]>();
+	const columns = new Map<string, ColumnInfo[]>();
 	for (const t of tables) {
 		const info = await scratch.tableInfo(t);
-		columns.set(
-			t,
-			info.map((c) => ({ name: c.name, type: c.type })),
-		);
-		columns.set(
-			t.toLowerCase(),
-			info.map((c) => ({ name: c.name, type: c.type })),
-		);
+		const mapped = info.map((c: any) => ({
+			name: c.name,
+			type: c.type,
+			notnull: !!c.notnull,
+			pk: !!c.pk,
+			defaultValue: c.dflt_value ?? c.default_value ?? null,
+		}));
+		columns.set(t, mapped);
+		columns.set(t.toLowerCase(), mapped);
 	}
 	const schema: SchemaInfo = { tables, columns };
 	schemaCache.set(targetDb, schema);
@@ -455,10 +463,13 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	// table?
 	if (schema.tables.includes(baseTable)) {
 		const cols = schema.columns.get(baseTable) ?? [];
+		const colList = cols
+			.map((c) => `${c.pk ? "🔑 " : ""}${c.name} (${c.type}${c.notnull ? ", NN" : ""})`)
+			.join(", ");
 		return {
 			contents: {
 				kind: "markdown",
-				value: `**table** \`${baseTable}\`\n\nColumns: ${cols.map((c) => c.name).join(", ")}`,
+				value: `**table** \`${baseTable}\`\n\nColumns: ${colList}`,
 			},
 			range: wordRange,
 		};
@@ -467,10 +478,14 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	for (const [t, cols] of schema.columns) {
 		const col = cols.find((c) => c.name === word);
 		if (col) {
+			const flags = [col.pk ? "PK" : "", col.notnull ? "NOT NULL" : "nullable"]
+				.filter(Boolean)
+				.join(" · ");
+			const def = col.defaultValue != null ? ` · DEFAULT ${col.defaultValue}` : "";
 			return {
 				contents: {
 					kind: "markdown",
-					value: `**column** \`${col.name}\` : ${col.type} (table ${t})`,
+					value: `**column** \`${col.name}\` : ${col.type} · ${flags}${def} (table ${t})`,
 				},
 				range: wordRange,
 			};
