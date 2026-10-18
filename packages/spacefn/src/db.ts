@@ -13,6 +13,7 @@ export type { D1Database, DurableStorageLike, SqlStorageLike } from "./db/execut
 export { runMigrations } from "./db/run";
 export { scanMigrations } from "./db/scan";
 export { analyzeQueries } from "./db/build-queries";
+export { scratchDatabase } from "./db/infer";
 export { defineDatabase } from "./db/config";
 export type { DatabaseConfig, Dialect } from "./db/config";
 export { queryD1 } from "./db/query";

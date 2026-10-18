@@ -35,6 +35,14 @@
 				],
 				"scopeName": "source.datastar.spacefn.injection",
 				"path": "./src/grammars/javascript.injection.tmLanguage.json"
+			},
+			{
+				"injectTo": [
+					"source.js",
+					"source.ts"
+				],
+				"scopeName": "source.sql.spacefn.injection",
+				"path": "./src/grammars/sql.injection.tmLanguage.json"
 			}
 		],
 		"languages": [
