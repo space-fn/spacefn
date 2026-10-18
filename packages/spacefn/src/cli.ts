@@ -92,6 +92,54 @@ program
 	});
 
 program
+	.command("db")
+	.description("Database tools")
+	.command("doctor")
+	.description("Validate db migrations and queries against their schema")
+	.option("--db <name>", "Database name under app/db/")
+	.action(async (options: { db?: string }) => {
+		const { readdir } = await import("node:fs/promises");
+		const { join, resolve } = await import("node:path");
+		const appDb = resolve(process.cwd(), "app", "db");
+		let names: string[] = [];
+		if (options.db) {
+			names = [options.db];
+		} else {
+			try {
+				const entries = await readdir(appDb, { withFileTypes: true });
+				names = entries
+					.filter((e) => e.isDirectory())
+					.map((e) => e.name)
+					.sort();
+			} catch {
+				console.error("No app/db/ folder found.");
+				process.exit(1);
+			}
+		}
+		let ok = true;
+		for (const name of names) {
+			const dir = join(appDb, name);
+			try {
+				let dialect: "sqlite" | "postgres" = "sqlite";
+				try {
+					const cfg = await import(join(dir, "config.ts"));
+					dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
+				} catch {
+					// config optional
+				}
+				const { scanMigrations, analyzeQueries } = await import("./db");
+				const migrations = await scanMigrations(join(dir, "migrations"));
+				await analyzeQueries(join(dir, "queries"), migrations, dialect);
+				console.log(`OK  ${name} (${migrations.length} migrations, dialect=${dialect})`);
+			} catch (error) {
+				ok = false;
+				console.error(`FAIL ${name}: ${error instanceof Error ? error.message : String(error)}`);
+			}
+		}
+		if (!ok) process.exit(1);
+	});
+
+program
 	.command("clean")
 	.description("Remove generated .space/ and .cloudflare/ directories")
 	.action(async () => {
