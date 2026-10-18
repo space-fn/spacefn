@@ -9,4 +9,5 @@ export const DOCS_CSS =
 	"table{border-collapse:collapse;width:100%;margin:1rem 0}" +
 	"th,td{border:1px solid #e5e7eb;padding:.4rem .6rem}th{background:#f4f4f5}" +
 	"blockquote{border-left:3px solid #e5e7eb;margin:1rem 0;padding:.2rem 1rem;color:#555}" +
-	"img{max-width:100%}";
+	"img{max-width:100%}" +
+	"@media (max-width:600px){body{margin:1rem auto;padding:0 .75rem}pre{padding:.75rem;font-size:.85em}table{font-size:.85em}}";

@@ -39,7 +39,7 @@ export function createDocsReader(root: string) {
 				.join("");
 			res.setHeader("Content-Type", "text/html; charset=utf-8");
 			res.end(
-				`<!doctype html><html><head><meta charset="utf-8"><title>docs</title><style>${DOCS_CSS}</style></head><body><h1>/${escapeHtml(rel)}</h1><ul>${links}</ul></body></html>`,
+				`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>docs</title><style>${DOCS_CSS}</style></head><body><h1>/${escapeHtml(rel)}</h1><ul>${links}</ul></body></html>`,
 			);
 			return;
 		}
@@ -47,7 +47,7 @@ export function createDocsReader(root: string) {
 		const body = target.endsWith(".md") ? await renderMarkdown(raw) : `<pre>${escapeHtml(raw)}</pre>`;
 		res.setHeader("Content-Type", "text/html; charset=utf-8");
 		res.end(
-			`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(rel)}</title><style>${DOCS_CSS}</style></head><body>${body}<hr><p><a href="/__space_docs/">← docs</a></p></body></html>`,
+			`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel)}</title><style>${DOCS_CSS}</style></head><body>${body}<hr><p><a href="/__space_docs/">← docs</a></p></body></html>`,
 		);
 	};
 }
