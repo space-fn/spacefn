@@ -37,8 +37,12 @@ async function loadDialectAndMigrations(dbDir: string) {
 async function validateSqlFile(doc: TextDocument): Promise<void> {
 	const uri = doc.uri;
 	const filePath = uri.startsWith("file://") ? decodeURIComponent(uri.replace("file://", "")) : uri;
+	console.error("[spacefn] validateSqlFile:", filePath);
 	const m = filePath.match(/[/\\]app[/\\]db[/\\]([^/\\]+)[/\\]queries[/\\]/);
-	if (!m) return;
+	if (!m) {
+		console.error("[spacefn] no match, return");
+		return;
+	}
 	const dbDir = filePath.replace(/[/\\]queries[/\\].*/, "");
 	const diagnostics: Diagnostic[] = [];
 	try {
@@ -47,13 +51,18 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 		// strip leading -- comment lines to get the SQL
 		const text = doc.getText();
 		const sql = text
-			.split("\\n")
+			.split("\n")
 			.filter((l) => !l.trim().startsWith("--"))
-			.join("\\n")
+			.join("\n")
 			.trim();
+		console.error("[spacefn] sql:", JSON.stringify(sql));
 		if (sql) {
 			const stmt = await scratch.prepare(sql);
-			await stmt.columns();
+			const cols = await stmt.columns();
+			console.error(
+				"[spacefn] prepared OK, cols:",
+				cols.map((c: any) => c.name),
+			);
 		}
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
@@ -223,6 +232,7 @@ function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | n
 }
 
 documents.onDidChangeContent((change) => {
+	console.error("[spacefn] didChange:", change.document.uri);
 	if (change.document.uri.includes("/migrations/")) schemaCache.clear();
 	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
 	else void validateEmbedded(change.document);
