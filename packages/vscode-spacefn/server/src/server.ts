@@ -59,7 +59,7 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 		// validate -- name: directive
 		const nameLine = text.split("\n").find((l) => l.trim().startsWith("-- name:"));
 		if (nameLine) {
-			const m = nameLine.match(/--\s*name:\s*(\S+)/);
+			const m = nameLine.match(/--\s*name:\s*(\S+)(?:\s+:(one|many|exec))?/);
 			if (!m) {
 				diagnostics.push({
 					severity: 1,
@@ -67,16 +67,13 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 					message: "Invalid -- name: directive",
 					source: "spacefn",
 				});
-			} else {
-				const mode = m[1].match(/:(one|many|exec)$/);
-				if (!mode) {
-					diagnostics.push({
-						severity: 1,
-						range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
-						message: "Query mode must be :one, :many, or :exec",
-						source: "spacefn",
-					});
-				}
+			} else if (!m[2]) {
+				diagnostics.push({
+					severity: 1,
+					range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+					message: "Query mode must be :one, :many, or :exec",
+					source: "spacefn",
+				});
 			}
 		}
 		if (sql) {
