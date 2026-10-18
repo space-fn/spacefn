@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
+import { Parser } from "node-sql-parser";
 import { scanMigrations, analyzeQueries, scratchDatabase } from "spacefn/db";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
@@ -169,6 +170,118 @@ documents.onDidOpen((e) => {
 	else void validateEmbedded(e.document);
 });
 
+const SQL_KEYWORDS = [
+	"SELECT",
+	"FROM",
+	"WHERE",
+	"JOIN",
+	"INNER",
+	"LEFT",
+	"RIGHT",
+	"FULL",
+	"OUTER",
+	"ON",
+	"GROUP",
+	"BY",
+	"ORDER",
+	"HAVING",
+	"LIMIT",
+	"OFFSET",
+	"INSERT",
+	"INTO",
+	"VALUES",
+	"UPDATE",
+	"SET",
+	"DELETE",
+	"CREATE",
+	"TABLE",
+	"ALTER",
+	"DROP",
+	"INDEX",
+	"PRIMARY",
+	"KEY",
+	"FOREIGN",
+	"REFERENCES",
+	"NOT",
+	"NULL",
+	"DEFAULT",
+	"UNIQUE",
+	"CHECK",
+	"CONSTRAINT",
+	"AS",
+	"AND",
+	"OR",
+	"IN",
+	"BETWEEN",
+	"LIKE",
+	"IS",
+	"DISTINCT",
+	"COUNT",
+	"SUM",
+	"AVG",
+	"MIN",
+	"MAX",
+	"CASE",
+	"WHEN",
+	"THEN",
+	"ELSE",
+	"END",
+	"EXISTS",
+	"UNION",
+	"ALL",
+	"ASC",
+	"DESC",
+	"WITH",
+	"RETURNING",
+];
+
+const parser = new Parser();
+
+type CompletionContext =
+	| { kind: "table" }
+	| { kind: "column"; tables: string[] }
+	| { kind: "keyword" };
+
+function detectContext(before: string): CompletionContext {
+	// table context: last keyword before cursor is a table-introducing keyword
+	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
+	// column context after dot
+	const dot = before.match(/(\w+)\.\s*\w*$/);
+	if (dot) return { kind: "column", tables: [dot[1]!] };
+	// column context: after SELECT/WHERE/ON/GROUP/ORDER/HAVING/SET
+	if (
+		/\b(SELECT|WHERE|ON|GROUP\s+BY|ORDER\s+BY|HAVING|SET)\s+[\w,\s]*$/i.test(before) &&
+		!/\b(FROM|JOIN)\s+\w*$/i.test(before)
+	) {
+		// try to extract tables from FROM clause in the statement
+		const tables = extractTables(before);
+		return { kind: "column", tables };
+	}
+	return { kind: "keyword" };
+}
+
+function extractTables(sql: string): string[] {
+	try {
+		const ast = parser.astify(sql + " ", { database: "sqlite" }) as any;
+		const tables = new Set<string>();
+		const walk = (node: any) => {
+			if (!node || typeof node !== "object") return;
+			if (node.table && typeof node.table === "string") tables.add(node.table);
+			for (const k of Object.keys(node)) {
+				const v = node[k];
+				if (Array.isArray(v)) v.forEach(walk);
+				else if (v && typeof v === "object") walk(v);
+			}
+		};
+		walk(ast);
+		return [...tables];
+	} catch {
+		// fallback regex
+		const m = sql.match(/\bFROM\s+(\w+)/gi);
+		return m ? m.map((x) => x.replace(/\bFROM\s+/i, "")) : [];
+	}
+}
+
 connection.onCompletion(async (params) => {
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) return null;
@@ -187,38 +300,39 @@ connection.onCompletion(async (params) => {
 	const offset = doc.offsetAt(params.position);
 	const before = text.slice(0, offset);
 	const items: CompletionItem[] = [];
+	const ctx = detectContext(before);
+	const prefix = (before.match(/(\w*)$/) || ["", ""])[1]!.toLowerCase();
 
-	// table context
-	const tableCtx = before.match(/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+(\w*)$/i);
-	if (tableCtx) {
-		const prefix = tableCtx[2].toLowerCase();
+	if (ctx.kind === "table") {
 		for (const t of schema.tables) {
-			if (t.toLowerCase().startsWith(prefix)) {
+			if (t.toLowerCase().startsWith(prefix))
 				items.push({ label: t, kind: CompletionItemKind.Class });
+		}
+		return items;
+	}
+
+	if (ctx.kind === "column") {
+		const tables = ctx.tables.length ? ctx.tables : schema.tables;
+		const seen = new Set<string>();
+		for (const t of tables) {
+			const cols = schema.columns.get(t) ?? schema.columns.get(t.toLowerCase()) ?? [];
+			for (const c of cols) {
+				if (c.name.toLowerCase().startsWith(prefix) && !seen.has(c.name)) {
+					seen.add(c.name);
+					items.push({ label: c.name, kind: CompletionItemKind.Field, detail: c.type });
+				}
 			}
 		}
 		return items;
 	}
 
-	// column context after dot
-	const dotCtx = before.match(/(\w+)\.\s*(\w*)$/);
-	if (dotCtx) {
-		const table = dotCtx[1]!;
-		const prefix = dotCtx[2]!.toLowerCase();
-		const cols = schema.columns.get(table) ?? schema.columns.get(table.toLowerCase()) ?? [];
-		for (const c of cols) {
-			if (c.name.toLowerCase().startsWith(prefix)) {
-				items.push({ label: c.name, kind: CompletionItemKind.Field, detail: c.type });
-			}
-		}
-		return items;
+	for (const k of SQL_KEYWORDS) {
+		if (k.toLowerCase().startsWith(prefix))
+			items.push({ label: k, kind: CompletionItemKind.Keyword });
 	}
-
-	// default: all tables + all columns
-	for (const t of schema.tables) items.push({ label: t, kind: CompletionItemKind.Class });
-	for (const cols of schema.columns.values()) {
-		for (const c of cols)
-			items.push({ label: c.name, kind: CompletionItemKind.Field, detail: c.type });
+	for (const t of schema.tables) {
+		if (t.toLowerCase().startsWith(prefix))
+			items.push({ label: t, kind: CompletionItemKind.Class });
 	}
 	return items;
 });
