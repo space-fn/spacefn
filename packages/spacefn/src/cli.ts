@@ -29,7 +29,7 @@ program
 	.command("gen")
 	.description("Regenerate .space/ without starting Vite")
 	.action(async () => {
-		const { sync } = await import("spacefn/sync");
+		const { sync } = await import("./sync");
 		await sync(resolve(process.cwd()), "dev");
 		console.log("Regenerated .space/");
 	});
@@ -77,7 +77,7 @@ program
 			);
 			process.exit(1);
 		}
-		const { d1Executor, runMigrations } = await import("spacefn/db");
+		const { d1Executor, runMigrations } = await import("./db");
 		if (options.dryRun) {
 			console.log(
 				`Pending migrations: ${migrations.migrations.map((m: { name: string }) => m.name).join(", ") || "(none)"}`,
@@ -86,25 +86,6 @@ program
 		}
 		const applied = await runMigrations(d1Executor(binding), migrations.migrations);
 		console.log(applied.length === 0 ? "No pending migrations" : `Applied: ${applied.join(", ")}`);
-	});
-
-program
-	.command("doctor")
-	.description("Validate the app/ layout and generated .space/ files")
-	.action(async () => {
-		const { existsSync } = await import("node:fs");
-		const root = process.cwd();
-		const checks: string[] = [];
-		if (!existsSync(resolve(root, "app"))) checks.push("missing app/ folder");
-		if (!existsSync(resolve(root, ".space"))) checks.push("missing .space/ (run `space gen`)");
-		if (!existsSync(resolve(root, "env.ts")))
-			checks.push("missing env.ts (optional but recommended)");
-		if (checks.length === 0) {
-			console.log("OK: app layout looks valid.");
-		} else {
-			for (const c of checks) console.error(`- ${c}`);
-			process.exit(1);
-		}
 	});
 
 program

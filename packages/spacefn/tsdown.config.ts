@@ -17,6 +17,7 @@ export default defineConfig({
 		"src/durable-objects.ts",
 		"src/workflows.ts",
 		"src/pages.ts",
+		"src/cli.ts",
 		"src/testing/index.ts",
 	],
 	format: "esm",
