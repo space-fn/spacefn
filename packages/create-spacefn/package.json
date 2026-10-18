@@ -1,6 +1,6 @@
 {
 	"name": "create-spacefn",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "Scaffold a spacefn project",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
@@ -20,11 +20,11 @@
 		"test": "vp test"
 	},
 	"dependencies": {
-		"spacefn": "^0.1.0",
-		"vite-plus": "catalog:"
+		"spacefn": "^0.1.0"
 	},
 	"devDependencies": {
 		"@types/node": "^26.6.5",
-		"typescript": "^7.0.2"
+		"typescript": "^7.0.2",
+		"vite-plus": "latest"
 	}
 }
