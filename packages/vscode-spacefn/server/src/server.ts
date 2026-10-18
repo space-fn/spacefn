@@ -315,6 +315,60 @@ const SQL_KEYWORDS = [
 	"RETURNING",
 ];
 
+const SQL_FUNCTIONS = [
+	"COUNT",
+	"SUM",
+	"AVG",
+	"MIN",
+	"MAX",
+	"TOTAL",
+	"COALESCE",
+	"NULLIF",
+	"IFNULL",
+	"IIF",
+	"CAST",
+	"TYPEOF",
+	"LENGTH",
+	"SUBSTR",
+	"SUBSTRING",
+	"UPPER",
+	"LOWER",
+	"TRIM",
+	"LTRIM",
+	"RTRIM",
+	"REPLACE",
+	"INSTR",
+	"PRINTF",
+	"FORMAT",
+	"ABS",
+	"ROUND",
+	"CEIL",
+	"FLOOR",
+	"RANDOM",
+	"DATE",
+	"TIME",
+	"DATETIME",
+	"JULIANDAY",
+	"STRFTIME",
+	"ROW_NUMBER",
+	"RANK",
+	"DENSE_RANK",
+	"NTILE",
+	"LAG",
+	"LEAD",
+	"FIRST_VALUE",
+	"LAST_VALUE",
+	"NTH_VALUE",
+	"OVER",
+	"PARTITION",
+	"GROUP_CONCAT",
+	"JSON",
+	"JSON_EXTRACT",
+	"JSON_ARRAY",
+	"JSON_OBJECT",
+	"JSON_GROUP_ARRAY",
+];
+
 const parser = new Parser();
 
 type CompletionContext =
@@ -430,6 +484,15 @@ connection.onCompletion(async (params) => {
 		return items;
 	}
 
+	for (const f of SQL_FUNCTIONS) {
+		if (f.toLowerCase().startsWith(prefix))
+			items.push({
+				label: f,
+				kind: CompletionItemKind.Function,
+				insertText: f + "($1)",
+				insertTextFormat: 2,
+			});
+	}
 	for (const k of SQL_KEYWORDS) {
 		if (k.toLowerCase().startsWith(prefix))
 			items.push({ label: k, kind: CompletionItemKind.Keyword });
