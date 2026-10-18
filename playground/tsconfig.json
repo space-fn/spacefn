@@ -12,7 +12,6 @@
 		"workflows",
 		"app",
 		"durable-objects",
-		"entry.ts",
 		".space/**/*",
 		".cloudflare/types",
 		"cloudflare.config.ts"
