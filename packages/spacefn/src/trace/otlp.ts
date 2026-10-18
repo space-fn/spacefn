@@ -29,8 +29,13 @@ function encodeValue(value: AttributeValue): OtlpValue {
 	return Number.isInteger(value) ? { intValue: String(value) } : { doubleValue: value };
 }
 
+const REDACTED_KEYS = /secret|token|password|api[_-]?key|authorization|cookie|header/i;
+
 function encodeAttributes(attributes: Attributes) {
-	return Object.entries(attributes).map(([key, value]) => ({ key, value: encodeValue(value) }));
+	return Object.entries(attributes).map(([key, value]) => ({
+		key,
+		value: REDACTED_KEYS.test(key) ? { stringValue: "[redacted]" } : encodeValue(value),
+	}));
 }
 
 function nanos(ms: number): string {

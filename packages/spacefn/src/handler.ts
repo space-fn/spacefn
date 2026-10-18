@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 
-export type HandlerResult = Response | string | object | null | undefined;
+export type HandlerResult = Response | string | unknown | null | undefined;
 
 export type Handler = (c: Context) => HandlerResult | Promise<HandlerResult>;
 

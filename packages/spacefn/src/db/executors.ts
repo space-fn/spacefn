@@ -21,17 +21,18 @@ export interface DurableStorageLike {
  * D1 executor. A D1 `batch` runs as one transaction, so each migration applies
  * atomically with its ledger row.
  */
-export function d1Executor(db: D1Database): MigrationExecutor {
+export function d1Executor(db: unknown): MigrationExecutor {
+	const d = db as D1Database;
 	return {
 		query: async <T>(sql: string, params: unknown[] = []) => {
-			const { results } = await db
+			const { results } = await d
 				.prepare(sql)
 				.bind(...params)
 				.all<T>();
 			return results;
 		},
 		transaction: async (statements) => {
-			await db.batch(statements.map((sql) => db.prepare(sql).bind()));
+			await d.batch(statements.map((sql) => d.prepare(sql).bind()));
 		},
 	};
 }

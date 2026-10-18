@@ -82,13 +82,13 @@ export function generateWorkerSource({
 		...(pages ? ["registerPages(app);"] : []),
 		"",
 		"export default {",
-		"\tfetch: (request: Request, env: object, ctx: ExecutionContext) => {",
+		'\tfetch: (request: Request, env: import("spacefn/env").AppEnv, ctx: ExecutionContext) => {',
 		"\t\tconst bindings = traceBindings(env);",
 		"\t\treturn runWithBindings(bindings, () => app.fetch(request, bindings, ctx));",
 		"\t},",
 		...(queues.length > 0
 			? [
-					"\tqueue: (batch: QueueBatch<unknown>, env: object, ctx: ExecutionContext) =>",
+					'\tqueue: (batch: QueueBatch<unknown>, env: import("spacefn/env").AppEnv, ctx: ExecutionContext) =>',
 					"\t\tdispatchQueue(batch, env, ctx, {",
 					...handlers,
 					"\t\t}),",
@@ -96,7 +96,7 @@ export function generateWorkerSource({
 			: []),
 		...(crons.length > 0
 			? [
-					"\tscheduled: (controller: ScheduledController, env: object, ctx: ExecutionContext) =>",
+					'\tscheduled: (controller: ScheduledController, env: import("spacefn/env").AppEnv, ctx: ExecutionContext) =>',
 					"\t\tdispatchScheduled({ cron: controller.cron, scheduledTime: controller.scheduledTime }, env, ctx, {",
 					...jobs,
 					"\t\t}),",

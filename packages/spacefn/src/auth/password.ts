@@ -13,6 +13,20 @@ const KEY_BYTES = 32;
 /** Limits the work one request can ask for. */
 export const MAX_PASSWORD_LENGTH = 1024;
 
+if (
+	typeof process === "undefined" ||
+	(process.env?.VITEST === undefined && process.env?.NODE_ENV !== "test")
+) {
+	// One-time notice about the PBKDF2 cap. Workers reject >100k iterations at runtime.
+	if (!(globalThis as { __spacefnPbkdf2Warned?: boolean }).__spacefnPbkdf2Warned) {
+		(globalThis as { __spacefnPbkdf2Warned?: boolean }).__spacefnPbkdf2Warned = true;
+		console.warn(
+			"[spacefn] PBKDF2 is capped at 100,000 iterations (Workers runtime limit), below OWASP's 600,000 recommendation. " +
+				"See docs/auth.md for trade-offs and Argon2 guidance.",
+		);
+	}
+}
+
 export interface HashOptions {
 	/** Iterations for new hashes. Defaults to MAX_ITERATIONS. */
 	iterations?: number;
