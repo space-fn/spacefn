@@ -254,6 +254,9 @@ importers:
         specifier: workspace:*
         version: link:../packages/spacefn
     devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^5.20261016.1
+        version: 5.20261016.1
       vite:
         specifier: ^8.3.4
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)

@@ -91,11 +91,10 @@ export function generateBindingsSource(input: BindingsInput): string {
 		if (!cloudflareBindings[binding]) body.push(`\t${binding}: Queue<unknown>;`);
 	}
 
-	lines.push("interface CloudflareBindings {");
-	lines.push(...body);
-	lines.push("}");
-	lines.push("");
-	lines.push('declare module "spacefn" {');
+	lines.push('declare module "spacefn/env" {');
+	lines.push("\tinterface CloudflareBindings {");
+	for (const b of body) lines.push(`\t${b.trim()}`);
+	lines.push("\t}");
 	lines.push("\tinterface Register {");
 	lines.push("\t\tbindings: CloudflareBindings;");
 	lines.push("\t}");
