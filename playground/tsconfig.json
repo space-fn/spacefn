@@ -6,7 +6,25 @@
 		"strict": true,
 		"skipLibCheck": true,
 		"verbatimModuleSyntax": true,
-		"noEmit": true
+		"noEmit": true,
+		"baseUrl": ".",
+		"paths": {
+			"@space/*": [
+				".space/*"
+			],
+			"@app/*": [
+				"app/*"
+			],
+			"@modules/*": [
+				"modules/*"
+			],
+			"@utils/*": [
+				"utils/*"
+			],
+			"@lib/*": [
+				"lib/*"
+			]
+		}
 	},
 	"include": [
 		"workflows",
