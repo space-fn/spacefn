@@ -115,7 +115,6 @@ documents.onDidOpen((e) => {
 connection.onInitialize(() => ({
 	capabilities: {
 		textDocumentSync: 1,
-		diagnosticProvider: { interFileDependencies: false, workspaceDiagnostics: false },
 	},
 }));
 
