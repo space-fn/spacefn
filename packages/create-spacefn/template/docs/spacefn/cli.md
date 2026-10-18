@@ -2,6 +2,12 @@
 
 `space` wraps Vite and Cloudflare's `cf` CLI so a project has one command for the common tasks.
 
+## Dev docs reader
+
+In dev mode, visit `http://localhost:5173/__space_docs` to browse the project's
+`docs/` folder rendered as HTML. The whole `docs/` tree is served, including
+`docs/spacefn/`.
+
 ## Commands
 
 ```sh
