@@ -507,7 +507,22 @@ connection.onDefinition(async (params): Promise<Location[] | null> => {
 	const word = doc.getText(wordRange);
 	const aliasMap = resolveAliases(doc.getText());
 	const target = aliasMap.get(word) ?? word;
-	// search migrations for CREATE TABLE <word>
+
+	// resolve column -> owning table (if applicable)
+	let ownerTable: string | null = null;
+	try {
+		const schema = await getSchema(resolved.dbDir, resolved.targetDb);
+		for (const [t, cols] of schema.columns) {
+			if (cols.some((c) => c.name === word)) {
+				ownerTable = t;
+				break;
+			}
+		}
+	} catch {
+		// ignore
+	}
+	const searchName = ownerTable ?? target;
+
 	const migrationsDir = path.join(resolved.targetDb, "migrations");
 	let files: string[] = [];
 	try {
@@ -520,11 +535,29 @@ connection.onDefinition(async (params): Promise<Location[] | null> => {
 		const full = path.join(migrationsDir, f);
 		const content = await fs.readFile(full, "utf8");
 		const re = new RegExp(
-			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${target}["'\`]?`,
+			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${searchName}["'\`]?`,
 			"i",
 		);
-		if (re.test(content)) {
-			const idx = content.search(re);
+		const m = content.match(re);
+		if (m && m.index !== undefined) {
+			// if looking for a column, find its line within the CREATE TABLE block
+			let idx = m.index;
+			if (ownerTable && ownerTable.toLowerCase() !== target.toLowerCase()) {
+				// target was a column name; locate column within table block
+				const start = m.index;
+				const endIdx = content.indexOf(";", start);
+				const block = content.slice(start, endIdx === -1 ? undefined : endIdx);
+				const colRe = new RegExp(`\\b${target}\\b`, "i");
+				const cm = block.match(colRe);
+				if (cm && cm.index !== undefined) idx = start + cm.index;
+			} else if (ownerTable) {
+				const start = m.index;
+				const endIdx = content.indexOf(";", start);
+				const block = content.slice(start, endIdx === -1 ? undefined : endIdx);
+				const colRe = new RegExp(`\\b${target}\\b`, "i");
+				const cm = block.match(colRe);
+				if (cm && cm.index !== undefined) idx = start + cm.index;
+			}
 			const pos = offsetToPosition(content, idx);
 			return [
 				{
