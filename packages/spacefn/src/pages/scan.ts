@@ -29,6 +29,7 @@ export async function scanPages(dir: string): Promise<PageFile[]> {
 		if (!entry.isFile()) continue;
 		const file = `${entry.parentPath}/${entry.name}`.slice(dir.length + 1).replaceAll("\\", "/");
 		if (file.split("/").some((segment) => segment.startsWith("_"))) continue;
+		if (file.includes(".test.") || file.includes(".spec.")) continue;
 		files.add(file);
 	}
 

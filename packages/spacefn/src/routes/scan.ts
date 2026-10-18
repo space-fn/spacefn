@@ -44,6 +44,7 @@ export async function scanRoutes(dir: string, mode: Mode): Promise<RouteFile[]> 
 	for (const entry of entries) {
 		if (!entry.isFile()) continue;
 		const file = `${entry.parentPath}/${entry.name}`.slice(dir.length + 1).replaceAll("\\", "/");
+		if (file.includes(".test.") || file.includes(".spec.")) continue;
 		const parsed = parseRoutePath(file);
 		if (!parsed || (parsed.env && parsed.env !== mode)) continue;
 

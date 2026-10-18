@@ -14,7 +14,14 @@ export async function scanCodeFiles(dir: string): Promise<string[]> {
 		},
 	);
 	return entries
-		.filter((entry) => entry.isFile() && CODE_FILE.test(entry.name) && !entry.name.startsWith("_"))
+		.filter(
+			(entry) =>
+				entry.isFile() &&
+				CODE_FILE.test(entry.name) &&
+				!entry.name.startsWith("_") &&
+				!entry.name.includes(".test.") &&
+				!entry.name.includes(".spec."),
+		)
 		.map((entry) => entry.name)
 		.sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
 }
