@@ -1,3 +1,4 @@
+import * as fs from "node:fs/promises";
 import * as path from "node:path";
 
 import { scanMigrations, analyzeQueries, scratchDatabase } from "spacefn/db";
@@ -8,6 +9,11 @@ import {
 	ProposedFeatures,
 	Diagnostic,
 	DiagnosticSeverity,
+	CompletionItem,
+	CompletionItemKind,
+	Hover,
+	Location,
+	Position,
 } from "vscode-languageserver/node";
 
 const connection = createConnection(ProposedFeatures.all);
@@ -51,7 +57,6 @@ function findDbDir(filePath: string): string | null {
 	let dir = path.dirname(filePath);
 	while (dir && dir !== path.parse(dir).root) {
 		if (path.basename(dir) === "db") {
-			// parent should be app
 			return dir;
 		}
 		dir = path.dirname(dir);
@@ -65,12 +70,13 @@ async function validateEmbedded(doc: TextDocument): Promise<void> {
 	if (!filePath.endsWith(".ts") && !filePath.endsWith(".js")) return;
 	const dbDir = findDbDir(filePath);
 	if (!dbDir) return;
-	// find a sub-db dir
 	let targetDb: string | null = null;
 	try {
 		const entries = await (
 			await import("node:fs/promises")
-		).readdir(dbDir, { withFileTypes: true });
+		).readdir(dbDir, {
+			withFileTypes: true,
+		});
 		const dbs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
 		if (dbs.length > 0) targetDb = path.join(dbDir, dbs[0]!);
 	} catch {
@@ -103,6 +109,57 @@ async function validateEmbedded(doc: TextDocument): Promise<void> {
 	void connection.sendDiagnostics({ uri, diagnostics });
 }
 
+interface SchemaInfo {
+	tables: string[];
+	columns: Map<string, { name: string; type: string }[]>;
+}
+
+const schemaCache = new Map<string, SchemaInfo>();
+
+async function getSchema(dbDir: string, targetDb: string): Promise<SchemaInfo> {
+	const cached = schemaCache.get(targetDb);
+	if (cached) return cached;
+	const { dialect, migrations } = await loadDialectAndMigrations(targetDb);
+	const scratch = await scratchDatabase(migrations, dialect);
+	const tables = await scratch.tables();
+	const columns = new Map<string, { name: string; type: string }[]>();
+	for (const t of tables) {
+		const info = await scratch.tableInfo(t);
+		columns.set(
+			t,
+			info.map((c) => ({ name: c.name, type: c.type })),
+		);
+		columns.set(
+			t.toLowerCase(),
+			info.map((c) => ({ name: c.name, type: c.type })),
+		);
+	}
+	const schema: SchemaInfo = { tables, columns };
+	schemaCache.set(targetDb, schema);
+	return schema;
+}
+
+function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | null {
+	if (filePath.match(/[/\\]app[/\\]db[/\\][^/\\]+[/\\]queries[/\\]/)) {
+		const dbDir = filePath.replace(/[/\\]queries[/\\].*/, "");
+		return { dbDir, targetDb: dbDir };
+	}
+	const dbDir = findDbDir(filePath);
+	if (!dbDir) return null;
+	let targetDb: string | null = null;
+	try {
+		// sync not available; do sync via fs
+		const { readdirSync } = require("node:fs");
+		const entries = readdirSync(dbDir, { withFileTypes: true });
+		const dbs = entries.filter((e: any) => e.isDirectory()).map((e: any) => e.name);
+		if (dbs.length > 0) targetDb = path.join(dbDir, dbs[0]!);
+	} catch {
+		return null;
+	}
+	if (!targetDb) return null;
+	return { dbDir, targetDb };
+}
+
 documents.onDidChangeContent((change) => {
 	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
 	else void validateEmbedded(change.document);
@@ -112,10 +169,177 @@ documents.onDidOpen((e) => {
 	else void validateEmbedded(e.document);
 });
 
+connection.onCompletion(async (params) => {
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) return null;
+	const filePath = params.textDocument.uri.startsWith("file://")
+		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
+		: params.textDocument.uri;
+	const resolved = resolveDbDir(filePath);
+	if (!resolved) return null;
+	let schema: SchemaInfo;
+	try {
+		schema = await getSchema(resolved.dbDir, resolved.targetDb);
+	} catch {
+		return null;
+	}
+	const text = doc.getText();
+	const offset = doc.offsetAt(params.position);
+	const before = text.slice(0, offset);
+	const items: CompletionItem[] = [];
+
+	// table context
+	const tableCtx = before.match(/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+(\w*)$/i);
+	if (tableCtx) {
+		const prefix = tableCtx[2].toLowerCase();
+		for (const t of schema.tables) {
+			if (t.toLowerCase().startsWith(prefix)) {
+				items.push({ label: t, kind: CompletionItemKind.Class });
+			}
+		}
+		return items;
+	}
+
+	// column context after dot
+	const dotCtx = before.match(/(\w+)\.\s*(\w*)$/);
+	if (dotCtx) {
+		const table = dotCtx[1]!;
+		const prefix = dotCtx[2]!.toLowerCase();
+		const cols = schema.columns.get(table) ?? schema.columns.get(table.toLowerCase()) ?? [];
+		for (const c of cols) {
+			if (c.name.toLowerCase().startsWith(prefix)) {
+				items.push({ label: c.name, kind: CompletionItemKind.Field, detail: c.type });
+			}
+		}
+		return items;
+	}
+
+	// default: all tables + all columns
+	for (const t of schema.tables) items.push({ label: t, kind: CompletionItemKind.Class });
+	for (const cols of schema.columns.values()) {
+		for (const c of cols)
+			items.push({ label: c.name, kind: CompletionItemKind.Field, detail: c.type });
+	}
+	return items;
+});
+
+connection.onHover(async (params): Promise<Hover | null> => {
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) return null;
+	const filePath = params.textDocument.uri.startsWith("file://")
+		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
+		: params.textDocument.uri;
+	const resolved = resolveDbDir(filePath);
+	if (!resolved) return null;
+	let schema: SchemaInfo;
+	try {
+		schema = await getSchema(resolved.dbDir, resolved.targetDb);
+	} catch {
+		return null;
+	}
+	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
+	if (!wordRange) return null;
+	const word = doc.getText(wordRange);
+	// table?
+	if (schema.tables.includes(word)) {
+		const cols = schema.columns.get(word) ?? [];
+		return {
+			contents: {
+				kind: "markdown",
+				value: `**table** \`${word}\`\n\nColumns: ${cols.map((c) => c.name).join(", ")}`,
+			},
+			range: wordRange,
+		};
+	}
+	// column?
+	for (const [t, cols] of schema.columns) {
+		const col = cols.find((c) => c.name === word);
+		if (col) {
+			return {
+				contents: {
+					kind: "markdown",
+					value: `**column** \`${col.name}\` : ${col.type} (table ${t})`,
+				},
+				range: wordRange,
+			};
+		}
+	}
+	return null;
+});
+
+connection.onDefinition(async (params): Promise<Location[] | null> => {
+	const doc = documents.get(params.textDocument.uri);
+	if (!doc) return null;
+	const filePath = params.textDocument.uri.startsWith("file://")
+		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
+		: params.textDocument.uri;
+	const resolved = resolveDbDir(filePath);
+	if (!resolved) return null;
+	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
+	if (!wordRange) return null;
+	const word = doc.getText(wordRange);
+	// search migrations for CREATE TABLE <word>
+	const migrationsDir = path.join(resolved.targetDb, "migrations");
+	let files: string[] = [];
+	try {
+		files = await fs.readdir(migrationsDir);
+	} catch {
+		return null;
+	}
+	for (const f of files) {
+		if (!f.endsWith(".sql")) continue;
+		const full = path.join(migrationsDir, f);
+		const content = await fs.readFile(full, "utf8");
+		const re = new RegExp(
+			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${word}["'\`]?`,
+			"i",
+		);
+		if (re.test(content)) {
+			const idx = content.search(re);
+			const pos = offsetToPosition(content, idx);
+			return [
+				{
+					uri: `file://${full}`,
+					range: { start: pos, end: pos },
+				},
+			];
+		}
+	}
+	return null;
+});
+
+function wordRangeAt(
+	doc: TextDocument,
+	position: Position,
+	regex: RegExp,
+): { start: Position; end: Position } | null {
+	const text = doc.getText();
+	const offset = doc.offsetAt(position);
+	// expand left
+	let start = offset;
+	while (start > 0 && regex.test(text[start - 1]!)) start--;
+	regex.lastIndex = 0;
+	let end = offset;
+	while (end < text.length && regex.test(text[end]!)) end++;
+	regex.lastIndex = 0;
+	if (start === end) return null;
+	return { start: doc.positionAt(start), end: doc.positionAt(end) };
+}
+
+function offsetToPosition(text: string, offset: number): Position {
+	const before = text.slice(0, offset);
+	const lines = before.split("\n");
+	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+}
+
 connection.onInitialize(() => ({
 	capabilities: {
 		textDocumentSync: 1,
+		completionProvider: { triggerCharacters: [".", " "] },
+		hoverProvider: true,
+		definitionProvider: true,
 	},
 }));
 
 connection.listen();
+documents.listen(connection);

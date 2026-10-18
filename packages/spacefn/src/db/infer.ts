@@ -32,6 +32,7 @@ export interface ColumnMeta {
 export interface ScratchDb {
 	prepare(sql: string): Promise<{ columns(): Promise<ColumnMeta[]> }>;
 	tableInfo(table: string): Promise<{ name: string; notnull: number; pk: number; type: string }[]>;
+	tables(): Promise<string[]>;
 }
 
 const PG_OID: Record<number, ColumnType> = {
@@ -129,6 +130,12 @@ export async function scratchDatabase(
 			async tableInfo(table: string) {
 				return loadTableInfo(table);
 			},
+			async tables() {
+				const res = await db.query(
+					"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
+				);
+				return (res.rows as { table_name: string }[]).map((r) => r.table_name);
+			},
 		};
 	}
 	const db = new DatabaseSync(":memory:");
@@ -156,6 +163,12 @@ export async function scratchDatabase(
 				pk: number;
 				type: string;
 			}[];
+		},
+		async tables() {
+			const rows = db
+				.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+				.all() as { name: string }[];
+			return rows.map((r) => r.name);
 		},
 	};
 }
