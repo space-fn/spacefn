@@ -8,7 +8,8 @@ export {
 export type { Migration, MigrationExecutor } from "./db/migrate";
 export { splitStatements } from "./db/split";
 export { generateMigrationsSource } from "./db/generate";
-export { d1Executor, durableObjectExecutor } from "./db/executors";
+export { d1Executor, durableObjectExecutor, libsqlExecutor } from "./db/executors";
+export type { LibSqlClientLike } from "./db/executors";
 export type { D1Database, DurableStorageLike, SqlStorageLike } from "./db/executors";
 export { runMigrations } from "./db/run";
 export { scanMigrations } from "./db/scan";
@@ -18,3 +19,6 @@ export { defineDatabase } from "./db/config";
 export type { DatabaseConfig, Dialect } from "./db/config";
 export { queryD1 } from "./db/query";
 export type { D1Reader, SqlValue } from "./db/query";
+export interface DbReader {
+	query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]>;
+}

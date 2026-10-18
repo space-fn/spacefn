@@ -35,6 +35,24 @@ export function d1Executor(db: unknown): MigrationExecutor {
 }
 
 /** Durable Object SQLite executor. `transactionSync` makes each migration atomic. */
+export interface LibSqlClientLike {
+	execute(stmt: { sql: string; args?: unknown[] } | string): Promise<{ rows: unknown[] }>;
+	batch(stmts: { sql: string; args?: unknown[] }[]): Promise<unknown>;
+}
+
+/** LibSQL (Turso) executor using the web client (@libsql/client/web). */
+export function libsqlExecutor(db: LibSqlClientLike): MigrationExecutor {
+	return {
+		query: async <T>(sql: string, params: unknown[] = []) => {
+			const res = await db.execute({ sql, args: params });
+			return res.rows as T[];
+		},
+		transaction: async (statements) => {
+			await db.batch(statements.map((sql) => ({ sql })));
+		},
+	};
+}
+
 export function durableObjectExecutor(storage: DurableStorageLike): MigrationExecutor {
 	return {
 		query: async <T>(sql: string, params: unknown[] = []) =>

@@ -37,8 +37,8 @@ publish_one "packages/spacefn"
 publish_one "packages/create-spacefn"
 
 # vscode-spacefn is a VS Code extension (publish via `vsce publish`), not npm.
-echo ""
-echo "vscode-spacefn: publish with 'cd packages/vscode-spacefn && vsce publish'"
+# echo ""
+# echo "vscode-spacefn: publish with 'cd packages/vscode-spacefn && vsce publish'"
 
 echo ""
 echo "Done: $published published, $skipped skipped, $failed failed"

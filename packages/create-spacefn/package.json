@@ -20,7 +20,7 @@
 		"test": "vp test"
 	},
 	"dependencies": {
-		"spacefn": "workspace:*",
+		"spacefn": "^0.1.0",
 		"vite-plus": "catalog:"
 	},
 	"devDependencies": {
