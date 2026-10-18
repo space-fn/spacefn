@@ -15,6 +15,7 @@ import {
 	Hover,
 	Location,
 	Position,
+	DidChangeWatchedFilesNotification,
 } from "vscode-languageserver/node";
 
 const connection = createConnection(ProposedFeatures.all);
@@ -162,6 +163,7 @@ function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | n
 }
 
 documents.onDidChangeContent((change) => {
+	if (change.document.uri.includes("/migrations/")) schemaCache.clear();
 	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
 	else void validateEmbedded(change.document);
 });
@@ -445,6 +447,20 @@ function offsetToPosition(text: string, offset: number): Position {
 	const lines = before.split("\n");
 	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };
 }
+
+connection.onInitialized(async () => {
+	try {
+		await connection.client.register(DidChangeWatchedFilesNotification.type, {
+			watchers: [{ globPattern: "**/migrations/*" }],
+		});
+	} catch {
+		// ignore
+	}
+});
+
+connection.onDidChangeWatchedFiles(() => {
+	schemaCache.clear();
+});
 
 connection.onInitialize(() => ({
 	capabilities: {
