@@ -1,30 +1,30 @@
 {
-  "name": "create-spacefn",
-  "version": "0.0.0",
-  "description": "Scaffold a spacefn project",
-  "license": "Apache-2.0",
-  "author": "wai-lin",
-  "bin": {
-    "create-spacefn": "./dist/index.js"
-  },
-  "files": [
-    "dist",
-    "template"
-  ],
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "build": "vp pack",
-    "typecheck": "vp check",
-    "test": "vp test"
-  },
-  "dependencies": {
-    "spacefn": "workspace:*",
-    "vite-plus": "catalog:"
-  },
-  "devDependencies": {
-    "@types/node": "^26.6.5",
-    "typescript": "^7.0.2"
-  }
+	"name": "create-spacefn",
+	"version": "0.0.0",
+	"description": "Scaffold a spacefn project",
+	"license": "Apache-2.0",
+	"author": "wai-lin",
+	"bin": {
+		"create-spacefn": "./dist/index.js"
+	},
+	"files": [
+		"dist",
+		"template"
+	],
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"build": "vp pack",
+		"typecheck": "vp check",
+		"test": "vp test"
+	},
+	"dependencies": {
+		"spacefn": "workspace:*",
+		"vite-plus": "catalog:"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.5",
+		"typescript": "^7.0.2"
+	}
 }

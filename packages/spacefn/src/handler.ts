@@ -2,11 +2,11 @@ import type { Context } from "hono";
 
 import type { AppBindings } from "./env";
 
-export type HandlerResult = Response | string | unknown | null | undefined;
+export type HandlerResult = unknown;
 
 export type Handler = (
 	c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>,
-) => HandlerResult | Promise<HandlerResult>;
+) => HandlerResult;
 
 export interface HandlerOptions {
 	/** Called when the handler throws. Defaults to logging the error. */

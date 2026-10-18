@@ -40,6 +40,7 @@ export async function dispatchScheduled(
 		),
 	);
 
-	const flush = getTracer()?.flush;
-	if (flush) ctx.waitUntil(flush.call(getTracer()));
+	const tracer = getTracer();
+	const flush = tracer?.flush?.bind(tracer);
+	if (flush) ctx.waitUntil(flush());
 }

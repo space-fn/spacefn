@@ -1,20 +1,20 @@
 {
-  "name": "spacefn-app",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vp dev",
-    "build": "vp build",
-    "gen": "space gen",
-    "test": "vp test"
-  },
-  "dependencies": {
-    "spacefn": "latest"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "latest",
-    "typescript": "^7.0.2",
-    "vite-plus": "latest"
-  }
+	"name": "spacefn-app",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vp dev",
+		"build": "vp build",
+		"gen": "space gen",
+		"test": "vp test"
+	},
+	"dependencies": {
+		"spacefn": "latest"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "latest",
+		"typescript": "^7.0.2",
+		"vite-plus": "latest"
+	}
 }

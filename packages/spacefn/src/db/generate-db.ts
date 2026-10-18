@@ -41,7 +41,7 @@ export function generateDbSource(
 	);
 	blocks.push("");
 	blocks.push(
-		"export async function migrate(db: MigrationExecutor, action: \"up\" | \"down\" = \"up\"): Promise<string[]> {",
+		'export async function migrate(db: MigrationExecutor, action: "up" | "down" = "up"): Promise<string[]> {',
 	);
 	blocks.push('\tif (action === "up") return applyMigrations(db, migrations);');
 	blocks.push("\treturn rollbackMigrations(db, downMigrations);");

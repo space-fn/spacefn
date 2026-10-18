@@ -46,7 +46,10 @@ export async function rollbackMigrations(
 	const toRoll = migrations.filter((m) => applied.has(m.id)).reverse();
 	const ran: string[] = [];
 	for (const migration of toRoll) {
-		await db.transaction([...splitStatements(migration.sql), `DELETE FROM ${LEDGER} WHERE id = '${migration.id}'`]);
+		await db.transaction([
+			...splitStatements(migration.sql),
+			`DELETE FROM ${LEDGER} WHERE id = '${migration.id}'`,
+		]);
 		ran.push(migration.id);
 	}
 	return ran;

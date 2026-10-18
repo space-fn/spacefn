@@ -82,7 +82,9 @@ program
 		const { d1Executor } = await import("./db");
 		const db = d1Executor(binding);
 		if (options.dryRun) {
-			console.log(`Migrations: ${mod.migrations.map((m: { id: string }) => m.id).join(", ") || "(none)"}`);
+			console.log(
+				`Migrations: ${mod.migrations.map((m: { id: string }) => m.id).join(", ") || "(none)"}`,
+			);
 			return;
 		}
 		const applied = await mod.migrate(db, options.down ? "down" : "up");
@@ -108,7 +110,7 @@ program
 	.command("doctor")
 	.description("Validate the app/ layout and generated files")
 	.action(async () => {
-		const { existsSync, statSync } = await import("node:fs");
+		const { existsSync } = await import("node:fs");
 		const root = process.cwd();
 		const checks: string[] = [];
 		if (!existsSync(resolve(root, "app"))) checks.push("missing app/ folder");

@@ -44,24 +44,24 @@ export async function scanMigrations(dir: string): Promise<Migration[]> {
 		}),
 	);
 
-function splitUpDown(raw: string): { up: string; down?: string } {
-	const lines = raw.split(/\r?\n/);
-	let section: "up" | "down" | null = null;
-	const up: string[] = [];
-	const down: string[] = [];
-	for (const line of lines) {
-		const trimmed = line.trim().toLowerCase();
-		if (trimmed === "-- up") {
-			section = "up";
-			continue;
+	function splitUpDown(raw: string): { up: string; down?: string } {
+		const lines = raw.split(/\r?\n/);
+		let section: "up" | "down" | null = null;
+		const up: string[] = [];
+		const down: string[] = [];
+		for (const line of lines) {
+			const trimmed = line.trim().toLowerCase();
+			if (trimmed === "-- up") {
+				section = "up";
+				continue;
+			}
+			if (trimmed === "-- down") {
+				section = "down";
+				continue;
+			}
+			if (section === "up") up.push(line);
+			else if (section === "down") down.push(line);
 		}
-		if (trimmed === "-- down") {
-			section = "down";
-			continue;
-		}
-		if (section === "up") up.push(line);
-		else if (section === "down") down.push(line);
+		return { up: up.join("\n").trim(), down: down.join("\n").trim() || undefined };
 	}
-	return { up: up.join("\n").trim(), down: down.join("\n").trim() || undefined };
-}
 }

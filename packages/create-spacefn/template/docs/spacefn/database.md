@@ -44,6 +44,7 @@ Apply them with `runMigrations`:
 
 ```ts
 import { d1Executor, runMigrations } from "spacefn/db";
+
 import { migrations } from "../.space/migrations";
 
 await runMigrations(d1Executor(c.env.DB), migrations);

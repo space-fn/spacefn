@@ -1,8 +1,7 @@
-import { defineHandler } from "spacefn";
-import { hashPassword, MAX_PASSWORD_LENGTH } from "spacefn/auth";
-
 import { addUser, findUser } from "@space/db/main_db";
 import { migrated } from "@space/db/main_db";
+import { defineHandler } from "spacefn";
+import { hashPassword, MAX_PASSWORD_LENGTH } from "spacefn/auth";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ email?: string; password?: string }>();

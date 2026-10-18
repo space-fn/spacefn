@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createApp, registerRoutes, registerPages, mountApp } from "@space/worker";
 
 import schema from "./env";

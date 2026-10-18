@@ -4,17 +4,17 @@ import { space } from "spacefn/vite";
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  plugins: [space()],
-  test: {
-    include: ["**/*.test.ts"],
-  },
-  resolve: {
-    alias: {
-      "@space": resolve(process.cwd(), ".space"),
-      "@app": resolve(process.cwd(), "app"),
-      "@modules": resolve(process.cwd(), "modules"),
-      "@utils": resolve(process.cwd(), "utils"),
-      "@lib": resolve(process.cwd(), "lib"),
-    },
-  },
+	plugins: [space()],
+	test: {
+		include: ["**/*.test.ts"],
+	},
+	resolve: {
+		alias: {
+			"@space": resolve(process.cwd(), ".space"),
+			"@app": resolve(process.cwd(), "app"),
+			"@modules": resolve(process.cwd(), "modules"),
+			"@utils": resolve(process.cwd(), "utils"),
+			"@lib": resolve(process.cwd(), "lib"),
+		},
+	},
 });

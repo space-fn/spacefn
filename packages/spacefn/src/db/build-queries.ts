@@ -47,6 +47,10 @@ export async function analyzeQueries(
 }
 
 /** Reads `db/queries/*.sql` and returns the source of `.space/queries.ts`. */
-export async function buildQueries(dir: string, migrations: Migration[], dialect: Dialect = "sqlite"): Promise<string> {
+export async function buildQueries(
+	dir: string,
+	migrations: Migration[],
+	dialect: Dialect = "sqlite",
+): Promise<string> {
 	return generateQueriesSource(await analyzeQueries(dir, migrations, dialect));
 }

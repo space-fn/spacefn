@@ -6,13 +6,20 @@ import type { Html } from "./html";
 export type PageOutput = Html | string;
 
 /** The default export of `pages/<path>.page.ts`. Receives the loader's data as `props`. */
-export type PageRender<P = unknown> = (props: P, c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>) => PageOutput | Promise<PageOutput>;
+export type PageRender<P = unknown> = (
+	props: P,
+	c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>,
+) => PageOutput | Promise<PageOutput>;
 
 /** Loads data for a page. Return a `Response` to answer the request yourself, e.g. a redirect. */
-export type PageLoader<P = unknown> = (c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>) => P | Response | Promise<P | Response>;
+export type PageLoader<P = unknown> = (
+	c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>,
+) => P | Response | Promise<P | Response>;
 
 /** A form action. Return a `Response` to answer yourself; return nothing to redirect back. */
-export type PageAction = (c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>) => unknown;
+export type PageAction = (
+	c: Context<{ Bindings: AppBindings; Variables: Record<string, unknown> }>,
+) => unknown;
 
 export interface ServerModule {
 	loader?: PageLoader;
@@ -42,7 +49,8 @@ export function defineActions<const A extends Record<string, PageAction>>(
 		const path = () => `?_action=${name}`;
 		(result[name] as PageAction & { path(): string }).path = path;
 		// Preserve callability: copy the function.
-		const wrapped = ((...args: Parameters<PageAction>) => (fn as PageAction)(...args)) as PageAction & { path(): string };
+		const wrapped = ((...args: Parameters<PageAction>) =>
+			(fn as PageAction)(...args)) as PageAction & { path(): string };
 		wrapped.path = path;
 		result[name] = wrapped;
 	}

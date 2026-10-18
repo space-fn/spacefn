@@ -1,10 +1,9 @@
 import { DatabaseSync } from "node:sqlite";
 
+import type { Dialect } from "./config";
 import type { Migration } from "./migrate";
 import type { QueryFile } from "./query-file";
 import { splitStatements } from "./split";
-
-import type { Dialect } from "./config";
 export type { Dialect };
 
 export type ColumnType = "string" | "number" | "boolean" | "bytes" | "unknown";
@@ -31,7 +30,7 @@ export interface ColumnMeta {
 }
 
 export interface ScratchDb {
-	prepare(sql: string): { columns(): Promise<ColumnMeta[]> };
+	prepare(sql: string): Promise<{ columns(): Promise<ColumnMeta[]> }>;
 	tableInfo(table: string): Promise<{ name: string; notnull: number; pk: number; type: string }[]>;
 }
 
@@ -81,7 +80,10 @@ function outerJoinedTables(sql: string): { tables: Set<string>; everything: bool
 	return { tables, everything };
 }
 
-export async function scratchDatabase(migrations: Migration[], dialect: Dialect = "sqlite"): Promise<ScratchDb> {
+export async function scratchDatabase(
+	migrations: Migration[],
+	dialect: Dialect = "sqlite",
+): Promise<ScratchDb> {
 	if (dialect === "postgres") {
 		const { PGlite } = await import("@electric-sql/pglite");
 		const db = new PGlite();
@@ -89,7 +91,10 @@ export async function scratchDatabase(migrations: Migration[], dialect: Dialect 
 			for (const statement of splitStatements(migration.sql)) await db.exec(statement);
 		}
 		// cache table_info per table
-		const tableInfoCache = new Map<string, { name: string; notnull: number; pk: number; type: string }[]>();
+		const tableInfoCache = new Map<
+			string,
+			{ name: string; notnull: number; pk: number; type: string }[]
+		>();
 		async function loadTableInfo(table: string) {
 			if (tableInfoCache.has(table)) return tableInfoCache.get(table)!;
 			const res = await db.query(
@@ -131,7 +136,7 @@ export async function scratchDatabase(migrations: Migration[], dialect: Dialect 
 		for (const statement of splitStatements(migration.sql)) db.exec(statement);
 	}
 	return {
-		prepare(sql: string) {
+		async prepare(sql: string) {
 			const stmt = db.prepare(sql);
 			return {
 				async columns() {
@@ -145,15 +150,22 @@ export async function scratchDatabase(migrations: Migration[], dialect: Dialect 
 			};
 		},
 		async tableInfo(table: string) {
-			return db
-				.prepare(`PRAGMA table_info("${table.replaceAll('"', '""')}")`)
-				.all() as { name: string; notnull: number; pk: number; type: string }[];
+			return db.prepare(`PRAGMA table_info("${table.replaceAll('"', '""')}")`).all() as {
+				name: string;
+				notnull: number;
+				pk: number;
+				type: string;
+			}[];
 		},
 	};
 }
 
-export async function inferQuery(scratch: ScratchDb, query: QueryFile, dialect: Dialect = "sqlite"): Promise<InferredQuery> {
-	const statement = scratch.prepare(query.sql);
+export async function inferQuery(
+	scratch: ScratchDb,
+	query: QueryFile,
+	dialect: Dialect = "sqlite",
+): Promise<InferredQuery> {
+	const statement = await scratch.prepare(query.sql);
 	const cols = await statement.columns();
 	const outer = outerJoinedTables(query.sql);
 	const isNullable = (table: string | null) =>

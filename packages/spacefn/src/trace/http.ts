@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "hono";
+import { routePath } from "hono/route";
 
 import { parseTraceparent } from "./context";
 import { getTracer, withSpan } from "./span";
@@ -16,14 +17,15 @@ export function traceRequest(): MiddlewareHandler {
 			async (span) => {
 				span.setAttributes({ "http.request.method": c.req.method, "url.path": c.req.path });
 				await next();
-				span.setName(`${c.req.method} ${c.req.routePath}`);
+				span.setName(`${c.req.method} ${routePath(c)}`);
 				span.setAttributes({ "http.response.status_code": c.res.status });
 				if (c.res.status >= 500) span.setError(`HTTP ${c.res.status}`);
 			},
 			{ kind: "server", parent },
 		);
 
-		const flush = getTracer()?.flush;
+		const tracer = getTracer();
+		const flush = tracer?.flush?.bind(tracer);
 		if (flush) {
 			try {
 				c.executionCtx.waitUntil(flush.call(getTracer()));

@@ -9,7 +9,14 @@ export function escapeHtml(s: string): string {
 
 export function createDocsReader(root: string) {
 	const docsRoot = resolve(root, "docs");
-	return async (req: { url?: string }, res: { statusCode: number; setHeader: (k: string, v: string) => void; end: (b: string) => void }) => {
+	return async (
+		req: { url?: string },
+		res: {
+			statusCode: number;
+			setHeader: (k: string, v: string) => void;
+			end: (b: string) => void;
+		},
+	) => {
 		const url = (req.url ?? "/").split("?")[0] ?? "/";
 		const rel = url.replace(/^\/+/, "");
 		const target = resolve(docsRoot, rel || ".");
@@ -44,7 +51,9 @@ export function createDocsReader(root: string) {
 			return;
 		}
 		const raw = await readFile(target, "utf8");
-		const body = target.endsWith(".md") ? await renderMarkdown(raw) : `<pre>${escapeHtml(raw)}</pre>`;
+		const body = target.endsWith(".md")
+			? await renderMarkdown(raw)
+			: `<pre>${escapeHtml(raw)}</pre>`;
 		res.setHeader("Content-Type", "text/html; charset=utf-8");
 		res.end(
 			`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel)}</title><style>${DOCS_CSS}</style></head><body>${body}<hr><p><a href="/__space_docs/">← docs</a></p></body></html>`,

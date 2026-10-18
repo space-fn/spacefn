@@ -5,8 +5,11 @@ const esc = escapeHtml;
 
 async function loadMarked(): Promise<((md: string) => string) | null> {
 	try {
+		// @ts-ignore - optional peer dependency
 		const mod = await import("marked");
-		const marked = (mod as { marked?: (s: string) => string; default?: (s: string) => string }).marked ?? (mod as { default?: (s: string) => string }).default;
+		const marked =
+			(mod as { marked?: (s: string) => string; default?: (s: string) => string }).marked ??
+			(mod as { default?: (s: string) => string }).default;
 		if (typeof marked === "function") return marked;
 		return null;
 	} catch {
@@ -14,10 +17,20 @@ async function loadMarked(): Promise<((md: string) => string) | null> {
 	}
 }
 
-async function loadShiki(): Promise<{ codeToHtml: (code: string, opts: { lang: string; theme: string }) => string } | null> {
+async function loadShiki(): Promise<{
+	codeToHtml: (code: string, opts: { lang: string; theme: string }) => string;
+} | null> {
 	try {
+		// @ts-ignore - optional peer dependency
 		const mod = await import("shiki");
-		const createHighlighter = (mod as { createHighlighter?: (o: { themes: string[]; langs: string[] }) => Promise<{ codeToHtml: (c: string, o: { lang: string; theme: string }) => string }> }).createHighlighter;
+		const createHighlighter = (
+			mod as {
+				createHighlighter?: (o: {
+					themes: string[];
+					langs: string[];
+				}) => Promise<{ codeToHtml: (c: string, o: { lang: string; theme: string }) => string }>;
+			}
+		).createHighlighter;
 		if (!createHighlighter) return null;
 		const highlighter = await createHighlighter({ themes: ["github-light"], langs: [] });
 		return highlighter;
@@ -26,7 +39,9 @@ async function loadShiki(): Promise<{ codeToHtml: (code: string, opts: { lang: s
 	}
 }
 
-let shikiPromise: Promise<{ codeToHtml: (c: string, o: { lang: string; theme: string }) => string } | null> | null = null;
+let shikiPromise: Promise<{
+	codeToHtml: (c: string, o: { lang: string; theme: string }) => string;
+} | null> | null = null;
 function getShiki() {
 	if (!shikiPromise) shikiPromise = loadShiki();
 	return shikiPromise;
@@ -70,17 +85,24 @@ export async function renderMarkdown(md: string): Promise<string> {
 	// highlight code blocks with shiki if available
 	const shiki = await getShiki();
 	if (shiki) {
-		html = html.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (_m, lang, code) => {
-			try {
-				return shiki.codeToHtml(decodeHtml(code), { lang, theme: "github-light" });
-			} catch {
-				return _m;
-			}
-		});
+		html = html.replace(
+			/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
+			(_m, lang, code) => {
+				try {
+					return shiki.codeToHtml(decodeHtml(code), { lang, theme: "github-light" });
+				} catch {
+					return _m;
+				}
+			},
+		);
 	}
 	return html;
 }
 
 function decodeHtml(s: string): string {
-	return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+	return s
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&amp;/g, "&")
+		.replace(/&quot;/g, '"');
 }

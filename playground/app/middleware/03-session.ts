@@ -1,10 +1,8 @@
-import { defineMiddleware } from "spacefn";
-import { sessionResolver } from "spacefn/auth";
-
-import type { AppBindings } from "spacefn/env";
-
 import { findSession } from "@space/db/main_db";
 import { migrated } from "@space/db/main_db";
+import { defineMiddleware } from "spacefn";
+import { sessionResolver } from "spacefn/auth";
+import type { AppBindings } from "spacefn/env";
 
 /** Attaches the signed-in user, if any, to every request. */
 const resolve = sessionResolver<AppBindings, { id: number; email: string }>({
