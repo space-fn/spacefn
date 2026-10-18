@@ -7,22 +7,21 @@
 		"skipLibCheck": true,
 		"verbatimModuleSyntax": true,
 		"noEmit": true,
-		"baseUrl": ".",
 		"paths": {
 			"@space/*": [
-				".space/*"
+				"./.space/*"
 			],
 			"@app/*": [
-				"app/*"
+				"./app/*"
 			],
 			"@modules/*": [
-				"modules/*"
+				"./modules/*"
 			],
 			"@utils/*": [
-				"utils/*"
+				"./utils/*"
 			],
 			"@lib/*": [
-				"lib/*"
+				"./lib/*"
 			]
 		}
 	},
