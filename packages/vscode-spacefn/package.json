@@ -9,11 +9,11 @@
 	"publisher": "wai-lin",
 	"main": "./out/extension.js",
 	"scripts": {
-		"compile": "tsc -p . && tsc -p server/tsconfig.json",
-		"package": "vsce package"
+		"compile": "tsc -p . && npm run bundle",
+		"package": "vsce package",
+		"bundle": "esbuild server/src/server.ts --bundle --platform=node --outfile=server-out/server.js --external:vscode --external:vscode-languageserver --external:vscode-languageserver-textdocument"
 	},
 	"dependencies": {
-		"spacefn": "workspace:*",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",
 		"vscode-languageserver-textdocument": "^1.0.12"
@@ -21,6 +21,8 @@
 	"devDependencies": {
 		"@types/node": "^26.6.5",
 		"@types/vscode": "^1.63.0",
+		"esbuild": "^0.24.0",
+		"spacefn": "workspace:*",
 		"typescript": "^7.0.2",
 		"vsce": "^2.15.0"
 	},
