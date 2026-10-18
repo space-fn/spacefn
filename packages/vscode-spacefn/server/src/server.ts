@@ -3,6 +3,7 @@ import * as path from "node:path";
 
 import { Parser } from "node-sql-parser";
 import { scanMigrations, scratchDatabase } from "spacefn/db";
+import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
 	createConnection,
@@ -452,6 +453,34 @@ const SQL_FUNCTIONS = [
 
 const parser = new Parser();
 
+const htmlLS = htmlService.getLanguageService();
+
+// DataStar attribute provider
+const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
+	version: 1,
+	tags: [],
+	globalAttributes: [
+		{ name: "data-on-click", description: "DataStar click handler" },
+		{ name: "data-on-input", description: "DataStar input handler" },
+		{ name: "data-on-change", description: "DataStar change handler" },
+		{ name: "data-on-submit", description: "DataStar submit handler" },
+		{ name: "data-on-load", description: "DataStar load handler" },
+		{ name: "data-bind", description: "DataStar two-way binding" },
+		{ name: "data-text", description: "DataStar text binding" },
+		{ name: "data-show", description: "DataStar conditional show" },
+		{ name: "data-class", description: "DataStar class binding" },
+		{ name: "data-attr", description: "DataStar attribute binding" },
+		{ name: "data-ref", description: "DataStar element reference" },
+		{ name: "data-signals", description: "DataStar signals" },
+		{ name: "data-computed", description: "DataStar computed signal" },
+		{ name: "data-effect", description: "DataStar effect" },
+		{ name: "data-indicator", description: "DataStar loading indicator" },
+		{ name: "data-persist", description: "DataStar persist" },
+		{ name: "data-rocket", description: "DataStar rocket function" },
+	],
+});
+htmlLS.setDataProviders(true, [datastarProvider, htmlService.getDefaultHTMLDataProvider()]);
+
 type CompletionContext =
 	| { kind: "table" }
 	| { kind: "column"; tables: string[] }
@@ -482,6 +511,49 @@ function inSqlString(text: string, offset: number): boolean {
 	// ensure there's a closing quote after offset
 	const close = text.indexOf(quote, offset);
 	return close !== -1;
+}
+
+function findHtmlTemplateRange(
+	text: string,
+	offset: number,
+): { start: number; end: number; contentStart: number } | null {
+	// find the nearest html` before offset
+	const re = /\bhtml\s*`/g;
+	let m: RegExpExecArray | null;
+	let last: RegExpExecArray | null = null;
+	while ((m = re.exec(text)) !== null) {
+		if (m.index < offset) last = m;
+		else break;
+	}
+	if (!last) return null;
+	const contentStart = last.index + last[0].length;
+	// find closing backtick
+	let i = contentStart;
+	let depth = 0;
+	while (i < text.length) {
+		const ch = text[i];
+		if (ch === "`" && depth === 0) {
+			// ensure not escaped
+			if (i > 0 && text[i - 1] === "\\") {
+				i++;
+				continue;
+			}
+			return { start: last.index, end: i, contentStart };
+		}
+		if (ch === "$" && text[i + 1] === "{") {
+			// skip ${...} by tracking braces
+			let d = 1;
+			i += 2;
+			while (i < text.length && d > 0) {
+				if (text[i] === "{") d++;
+				else if (text[i] === "}") d--;
+				i++;
+			}
+			continue;
+		}
+		i++;
+	}
+	return null;
 }
 
 function detectContext(before: string, fullText: string): CompletionContext {
@@ -550,9 +622,43 @@ connection.onCompletion(async (params) => {
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
-	const isSqlFile = filePath.endsWith(".sql");
+	const isJsTs =
+		filePath.endsWith(".js") ||
+		filePath.endsWith(".ts") ||
+		filePath.endsWith(".jsx") ||
+		filePath.endsWith(".tsx");
 	const offset = doc.offsetAt(params.position);
-	if (!isSqlFile && !inSqlString(doc.getText(), offset)) return null;
+	const text = doc.getText();
+	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
+	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
+		// build HTML document with placeholders for ${...}
+		let htmlText = text.slice(tpl.contentStart, tpl.end);
+		// replace ${...} with spaces to keep offsets
+		let masked = "";
+		let i = 0;
+		while (i < htmlText.length) {
+			if (htmlText[i] === "$" && htmlText[i + 1] === "{") {
+				let d = 1;
+				let j = i + 2;
+				while (j < htmlText.length && d > 0) {
+					if (htmlText[j] === "{") d++;
+					else if (htmlText[j] === "}") d--;
+					j++;
+				}
+				masked += " ".repeat(j - i);
+				i = j;
+			} else {
+				masked += htmlText[i];
+				i++;
+			}
+		}
+		const htmlDoc = htmlService.TextDocument.create("file:///embedded.html", "html", 1, masked);
+		const pos = htmlDoc.positionAt(offset - tpl.contentStart);
+		const list = htmlLS.doComplete(htmlDoc, pos, htmlLS.parseHTMLDocument(htmlDoc));
+		return list ? list.items : [];
+	}
+	const isSqlFile = filePath.endsWith(".sql");
+	if (!isSqlFile && !inSqlString(text, offset)) return null;
 	const resolved = resolveDbDir(filePath);
 	if (!resolved) return null;
 	let schema: SchemaInfo;
@@ -561,7 +667,6 @@ connection.onCompletion(async (params) => {
 	} catch {
 		return null;
 	}
-	const text = doc.getText();
 	const before = text.slice(0, offset);
 	const items: CompletionItem[] = [];
 	const aliasMap = resolveAliases(text);
@@ -620,9 +725,42 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
-	const isSqlFile = filePath.endsWith(".sql");
+	const isJsTs =
+		filePath.endsWith(".js") ||
+		filePath.endsWith(".ts") ||
+		filePath.endsWith(".jsx") ||
+		filePath.endsWith(".tsx");
 	const offset = doc.offsetAt(params.position);
-	if (!isSqlFile && !inSqlString(doc.getText(), offset)) return null;
+	const text = doc.getText();
+	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
+	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
+		let htmlText = text.slice(tpl.contentStart, tpl.end);
+		let masked = "";
+		let i = 0;
+		while (i < htmlText.length) {
+			if (htmlText[i] === "$" && htmlText[i + 1] === "{") {
+				let d = 1;
+				let j = i + 2;
+				while (j < htmlText.length && d > 0) {
+					if (htmlText[j] === "{") d++;
+					else if (htmlText[j] === "}") d--;
+					j++;
+				}
+				masked += " ".repeat(j - i);
+				i = j;
+			} else {
+				masked += htmlText[i];
+				i++;
+			}
+		}
+		const htmlDoc = htmlService.TextDocument.create("file:///embedded.html", "html", 1, masked);
+		const pos = htmlDoc.positionAt(offset - tpl.contentStart);
+		const htmlDocParsed = htmlLS.parseHTMLDocument(htmlDoc);
+		const hover = htmlLS.doHover(htmlDoc, pos, htmlDocParsed);
+		return hover as any;
+	}
+	const isSqlFile = filePath.endsWith(".sql");
+	if (!isSqlFile && !inSqlString(text, offset)) return null;
 	const resolved = resolveDbDir(filePath);
 	if (!resolved) return null;
 	let schema: SchemaInfo;
