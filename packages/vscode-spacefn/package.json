@@ -44,17 +44,6 @@
 				"scopeName": "source.sql.spacefn.injection",
 				"path": "./src/grammars/sql.injection.tmLanguage.json"
 			}
-		],
-		"languages": [
-			{
-				"id": "spacefn-sql",
-				"aliases": [
-					"Spacefn SQL"
-				],
-				"extensions": [
-					".sql"
-				]
-			}
 		]
 	},
 	"activationEvents": [
@@ -62,9 +51,6 @@
 		"onLanguage:sql",
 		"onLanguage:typescript",
 		"workspaceContains:app/db"
-	],
-	"extensionDependencies": [
-		"starfederation.datastar-vscode"
 	],
 	"engines": {
 		"vscode": "^1.63.0"

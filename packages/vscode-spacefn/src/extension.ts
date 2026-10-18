@@ -11,7 +11,13 @@ export function activate(context: vscode.ExtensionContext): void {
 		run: { module: serverModule, transport: TransportKind.ipc },
 		debug: { module: serverModule, transport: TransportKind.ipc },
 	};
-	const clientOptions = { documentSelector: [{ scheme: "file", language: "sql" }] };
+	const clientOptions = {
+		documentSelector: [
+			{ scheme: "file", language: "sql" },
+			{ scheme: "file", language: "typescript" },
+			{ scheme: "file", language: "javascript" },
+		],
+	};
 	client = new LanguageClient("spacefn", "spacefn SQL", serverOptions, clientOptions);
 	const disposable = client.start();
 	context.subscriptions.push({
