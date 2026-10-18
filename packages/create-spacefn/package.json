@@ -8,7 +8,8 @@
 		"create-spacefn": "./dist/index.js"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"template"
 	],
 	"type": "module",
 	"main": "./dist/index.js",

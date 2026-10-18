@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "ES2023",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"skipLibCheck": true,
+		"verbatimModuleSyntax": true,
+		"noEmit": true,
+		"paths": {
+			"@space/*": ["./.space/*"],
+			"@app/*": ["./app/*"],
+			"@modules/*": ["./modules/*"],
+			"@utils/*": ["./utils/*"],
+			"@lib/*": ["./lib/*"]
+		}
+	},
+	"include": [
+		"app",
+		".space/**/*",
+		"cloudflare.config.ts"
+	]
+}

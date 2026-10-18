@@ -1,0 +1,22 @@
+{
+	"name": "spacefn-app",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "space dev",
+		"build": "space build",
+		"gen": "space gen",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"spacefn": "latest"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "latest",
+		"space": "latest",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.4",
+		"vitest": "^5.0.5"
+	}
+}

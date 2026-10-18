@@ -70,6 +70,10 @@
 		"./workflows": {
 			"types": "./dist/workflows.d.ts",
 			"import": "./dist/workflows.js"
+		},
+		"./testing": {
+			"types": "./dist/testing/index.d.ts",
+			"import": "./dist/testing/index.js"
 		}
 	},
 	"scripts": {
