@@ -56,6 +56,29 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 			.join("\n")
 			.trim();
 		console.error("[spacefn] sql:", JSON.stringify(sql));
+		// validate -- name: directive
+		const nameLine = text.split("\n").find((l) => l.trim().startsWith("-- name:"));
+		if (nameLine) {
+			const m = nameLine.match(/--\s*name:\s*(\S+)/);
+			if (!m) {
+				diagnostics.push({
+					severity: 1,
+					range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+					message: "Invalid -- name: directive",
+					source: "spacefn",
+				});
+			} else {
+				const mode = m[1].match(/:(one|many|exec)$/);
+				if (!mode) {
+					diagnostics.push({
+						severity: 1,
+						range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+						message: "Query mode must be :one, :many, or :exec",
+						source: "spacefn",
+					});
+				}
+			}
+		}
 		if (sql) {
 			const stmt = await scratch.prepare(sql);
 			const cols = await stmt.columns();
@@ -88,6 +111,8 @@ function extractBadIdentifier(message: string): string | null {
 		/column ["']([A-Za-z_][A-Za-z0-9_]*)["'] does not exist/i,
 		/Unknown column ['"]([A-Za-z_][A-Za-z0-9_]*)['"]/i,
 		/relation .* has no column named ["']?([A-Za-z_][A-Za-z0-9_]*)["']?/i,
+		/no such table: ["']?([A-Za-z_][A-Za-z0-9_]*)["']?/i,
+		/relation ["']?([A-Za-z_][A-Za-z0-9_]*)["']? does not exist/i,
 	];
 	for (const p of patterns) {
 		const m = message.match(p);
