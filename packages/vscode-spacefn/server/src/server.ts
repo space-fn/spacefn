@@ -511,6 +511,10 @@ connection.onInitialized(async () => {
 
 connection.onDidChangeWatchedFiles(() => {
 	schemaCache.clear();
+	for (const doc of documents.all()) {
+		if (doc.uri.endsWith(".sql")) void validateSqlFile(doc);
+		else void validateEmbedded(doc);
+	}
 });
 
 connection.onInitialize(() => ({
