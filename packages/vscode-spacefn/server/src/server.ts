@@ -255,7 +255,7 @@ type CompletionContext =
 	| { kind: "column"; tables: string[] }
 	| { kind: "keyword" };
 
-function detectContext(before: string): CompletionContext {
+function detectContext(before: string, fullText: string): CompletionContext {
 	// table context: last keyword before cursor is a table-introducing keyword
 	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
 	// column context after dot
@@ -267,7 +267,7 @@ function detectContext(before: string): CompletionContext {
 		!/\b(FROM|JOIN)\s+\w*$/i.test(before)
 	) {
 		// try to extract tables from FROM clause in the statement
-		const tables = extractTables(before);
+		const tables = extractTables(fullText);
 		if (tables.length) return { kind: "column", tables };
 	}
 	return { kind: "keyword" };
@@ -313,7 +313,7 @@ connection.onCompletion(async (params) => {
 	const offset = doc.offsetAt(params.position);
 	const before = text.slice(0, offset);
 	const items: CompletionItem[] = [];
-	const ctx = detectContext(before);
+	const ctx = detectContext(before, text);
 	const prefix = (before.match(/(\w*)$/) || ["", ""])[1]!.toLowerCase();
 
 	if (ctx.kind === "table") {
