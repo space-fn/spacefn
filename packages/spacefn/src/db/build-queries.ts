@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { generateQueriesSource, type GeneratedQuery } from "./generate-queries";
-import { inferQuery, scratchDatabase } from "./infer";
+import { inferQuery, scratchDatabase, type Dialect } from "./infer";
 import type { Migration } from "./migrate";
 import { namedParams } from "./params";
 import { parseQueryFile } from "./query-file";
@@ -14,6 +14,7 @@ import { parseQueryFile } from "./query-file";
 export async function analyzeQueries(
 	dir: string,
 	migrations: Migration[],
+	dialect: Dialect = "sqlite",
 ): Promise<GeneratedQuery[]> {
 	const files = await readdir(dir)
 		.then((names) => names.filter((name) => name.endsWith(".sql") && !name.startsWith("_")).sort())
@@ -23,7 +24,7 @@ export async function analyzeQueries(
 		});
 	if (files.length === 0) return [];
 
-	const scratch = scratchDatabase(migrations);
+	const scratch = await scratchDatabase(migrations, dialect);
 	const seen = new Set<string>();
 	const queries: GeneratedQuery[] = [];
 
@@ -33,7 +34,7 @@ export async function analyzeQueries(
 		seen.add(parsed.name);
 
 		const { sql, names } = namedParams(parsed.sql);
-		const inferred = inferQuery(scratch, { ...parsed, sql });
+		const inferred = await inferQuery(scratch, { ...parsed, sql }, dialect);
 		queries.push({
 			...inferred,
 			sql: parsed.sql,
@@ -46,6 +47,6 @@ export async function analyzeQueries(
 }
 
 /** Reads `db/queries/*.sql` and returns the source of `.space/queries.ts`. */
-export async function buildQueries(dir: string, migrations: Migration[]): Promise<string> {
-	return generateQueriesSource(await analyzeQueries(dir, migrations));
+export async function buildQueries(dir: string, migrations: Migration[], dialect: Dialect = "sqlite"): Promise<string> {
+	return generateQueriesSource(await analyzeQueries(dir, migrations, dialect));
 }

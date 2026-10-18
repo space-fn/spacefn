@@ -1,4 +1,4 @@
-export type Dialect = "sqlite" | "mysql" | "postgres";
+export type Dialect = "sqlite" | "postgres";
 
 export interface DatabaseConfig {
 	dialect?: Dialect;

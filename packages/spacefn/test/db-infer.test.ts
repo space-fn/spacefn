@@ -12,23 +12,24 @@ const migrations: Migration[] = [
 	},
 ];
 
-const scratch = scratchDatabase(migrations);
+let scratch: Awaited<ReturnType<typeof scratchDatabase>>;
+beforeAll(async () => { scratch = await scratchDatabase(migrations); });
 
-function infer(text: string) {
+async function infer(text: string) {
 	return inferQuery(scratch, parseQueryFile("q.sql", text));
 }
 
-test("parses the name header and the mode", () => {
+test("parses the name header and the mode", async () => {
 	const query = parseQueryFile("q.sql", "-- name: findUser :one\nSELECT 1");
 	expect(query).toMatchObject({ name: "findUser", mode: "one", sql: "SELECT 1" });
 });
 
-test("rejects a file without a name header", () => {
+test("rejects a file without a name header", async () => {
 	expect(() => parseQueryFile("q.sql", "SELECT 1")).toThrow('must start with "-- name:');
 });
 
-test("takes types and nullability from the schema for column references", () => {
-	const result = infer(
+test("takes types and nullability from the schema for column references", async () => {
+	const result = await infer(
 		"-- name: todo :one\nSELECT todos.id AS id, title, bio, score FROM todos JOIN users ON users.id = todos.user_id",
 	);
 	expect(result.columns).toEqual([
@@ -39,13 +40,13 @@ test("takes types and nullability from the schema for column references", () => 
 	]);
 });
 
-test("maps BLOB columns to bytes", () => {
-	const result = infer("-- name: avatarOf :one\nSELECT avatar FROM users");
+test("maps BLOB columns to bytes", async () => {
+	const result = await infer("-- name: avatarOf :one\nSELECT avatar FROM users");
 	expect(result.columns[0]).toMatchObject({ name: "avatar", type: "bytes", nullable: true });
 });
 
-test("columns on the nullable side of a LEFT JOIN are nullable even when NOT NULL", () => {
-	const result = infer(
+test("columns on the nullable side of a LEFT JOIN are nullable even when NOT NULL", async () => {
+	const result = await infer(
 		"-- name: todosWithOwner :many\nSELECT todos.title AS title, users.email AS owner FROM todos LEFT JOIN users ON users.id = todos.user_id",
 	);
 	expect(result.columns).toEqual([
@@ -54,49 +55,49 @@ test("columns on the nullable side of a LEFT JOIN are nullable even when NOT NUL
 	]);
 });
 
-test("expressions need an annotation", () => {
-	expect(() => infer("-- name: count :one\nSELECT count(*) AS n FROM todos")).toThrow(
+test("expressions need an annotation", async () => {
+	expect(async () => await infer("-- name: count :one\nSELECT count(*) AS n FROM todos")).toThrow(
 		'column "n" is an expression',
 	);
 });
 
-test("an annotation supplies the type of an expression", () => {
-	const result = infer("-- name: count :one\n-- @column n number\nSELECT count(*) AS n FROM todos");
+test("an annotation supplies the type of an expression", async () => {
+	const result = await infer("-- name: count :one\n-- @column n number\nSELECT count(*) AS n FROM todos");
 	expect(result.columns).toEqual([
 		{ name: "n", type: "number", nullable: false, source: "annotation" },
 	]);
 });
 
-test("an annotation can mark a column nullable", () => {
-	const result = infer(
+test("an annotation can mark a column nullable", async () => {
+	const result = await infer(
 		"-- name: shout :one\n-- @column shout string?\nSELECT upper(title) AS shout FROM todos",
 	);
 	expect(result.columns[0]).toMatchObject({ name: "shout", type: "string", nullable: true });
 });
 
-test("annotations can overrule the schema, e.g. to type a flag as boolean", () => {
-	const result = infer("-- name: flags :many\n-- @column done boolean\nSELECT done FROM todos");
+test("annotations can overrule the schema, e.g. to type a flag as boolean", async () => {
+	const result = await infer("-- name: flags :many\n-- @column done boolean\nSELECT done FROM todos");
 	expect(result.columns[0]).toMatchObject({ type: "boolean", source: "annotation" });
 });
 
-test("rejects an unknown annotation type", () => {
-	expect(() => infer("-- name: x :one\n-- @column id date\nSELECT id FROM todos")).toThrow(
+test("rejects an unknown annotation type", async () => {
+	expect(async () => await infer("-- name: x :one\n-- @column id date\nSELECT id FROM todos")).toThrow(
 		'unknown type "date"',
 	);
 });
 
-test("rejects duplicate result names", () => {
-	expect(() =>
-		infer("-- name: dup :many\nSELECT t.id, u.id FROM todos t JOIN users u ON u.id = t.user_id"),
-	).toThrow('returns "id" twice');
+test("rejects duplicate result names", async () => {
+	expect(async () =>
+		await infer("-- name: dup :many\nSELECT t.id, u.id FROM todos t JOIN users u ON u.id = t.user_id"),
+	).rejects.toThrow('returns "id" twice');
 });
 
-test("a query that does not match the schema fails with the database's message", () => {
-	expect(() => infer("-- name: bad :many\nSELECT nope FROM todos")).toThrow(/no such column/);
+test("a query that does not match the schema fails with the database's message", async () => {
+	expect(async () => await infer("-- name: bad :many\nSELECT nope FROM todos")).toThrow(/no such column/);
 });
 
-test("a RIGHT JOIN makes every column nullable", () => {
-	const result = infer(
+test("a RIGHT JOIN makes every column nullable", async () => {
+	const result = await infer(
 		"-- name: r :many\nSELECT todos.title AS title, users.email AS owner FROM todos RIGHT JOIN users ON users.id = todos.user_id",
 	);
 	expect(result.columns.every((c) => c.nullable)).toBe(true);

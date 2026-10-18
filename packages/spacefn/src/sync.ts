@@ -122,7 +122,14 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	for (const name of databases) {
 		const dir = join(app, "db", name);
 		const migrations = await scanMigrations(join(dir, "migrations"));
-		const queries = await analyzeQueries(join(dir, "queries"), migrations);
+		let dialect: "sqlite" | "postgres" = "sqlite";
+		try {
+			const cfg = await import(join(dir, "config.ts"));
+			dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
+		} catch {
+			dialect = "sqlite";
+		}
+		const queries = await analyzeQueries(join(dir, "queries"), migrations, dialect);
 		results.push(
 			await writeIfChanged(
 				join(root, ".space", "db", `${name}.ts`),
