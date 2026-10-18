@@ -17,6 +17,9 @@
 	},
 	"include": [
 		"app",
+		"modules",
+		"utils",
+		"lib",
 		".space/**/*",
 		"cloudflare.config.ts"
 	]
