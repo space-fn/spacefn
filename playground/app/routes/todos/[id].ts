@@ -1,7 +1,7 @@
 import { defineHandler } from "spacefn";
 
 import { findTodo } from "@space/db/main_db";
-import { migrated } from "@app/db/main_db/migrate";
+import { migrated } from "@space/db/main_db";
 
 export const GET = defineHandler(async (c) => {
 	await migrated(c.env.DB);

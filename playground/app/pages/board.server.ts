@@ -1,7 +1,7 @@
 import { defineActions, defineLoader } from "spacefn/pages";
 
 import { addTodo, listTodos } from "@space/db/main_db";
-import { migrated } from "@app/db/main_db/migrate";
+import { migrated } from "@space/db/main_db";
 
 export const loader = defineLoader(async (c) => {
 	await migrated(c.env.DB);

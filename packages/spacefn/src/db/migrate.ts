@@ -3,7 +3,10 @@ import { splitStatements } from "./split";
 export interface Migration {
 	/** File name without extension, e.g. `0001_create_todos`. */
 	id: string;
+	/** The "up" SQL. */
 	sql: string;
+	/** The "down" SQL (optional). */
+	down?: string;
 }
 
 /** What the runner needs from a database. D1 and Durable Object adapters implement this. */
@@ -33,6 +36,22 @@ export async function checksum(sql: string): Promise<string> {
  * ledger row. A migration whose file changed after it was applied is an error.
  * Returns the ids applied by this call.
  */
+export async function rollbackMigrations(
+	db: MigrationExecutor,
+	migrations: Migration[],
+): Promise<string[]> {
+	const applied = new Set(
+		(await db.query<{ id: string }>(`SELECT id FROM ${LEDGER}`)).map((r) => r.id),
+	);
+	const toRoll = migrations.filter((m) => applied.has(m.id)).reverse();
+	const ran: string[] = [];
+	for (const migration of toRoll) {
+		await db.transaction([...splitStatements(migration.sql), `DELETE FROM ${LEDGER} WHERE id = '${migration.id}'`]);
+		ran.push(migration.id);
+	}
+	return ran;
+}
+
 export async function applyMigrations(
 	db: MigrationExecutor,
 	migrations: Migration[],

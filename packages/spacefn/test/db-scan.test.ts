@@ -21,8 +21,8 @@ beforeEach(async () => {
 afterEach(() => rm(root, { recursive: true, force: true }));
 
 test("reads migrations in numeric order and ignores other files", async () => {
-	await writeFile(join(dir, "0002_done.sql"), "ALTER TABLE t ADD c;");
-	await writeFile(join(dir, "0001_create.sql"), "CREATE TABLE t (id);");
+	await writeFile(join(dir, "0002_done.sql"), "-- up\nALTER TABLE t ADD c;");
+	await writeFile(join(dir, "0001_create.sql"), "-- up\nCREATE TABLE t (id);");
 	await writeFile(join(dir, "notes.md"), "");
 	await writeFile(join(dir, "_draft.sql"), "");
 	expect(await scanMigrations(dir)).toEqual([
@@ -53,7 +53,7 @@ test("generated source inlines the SQL", () => {
 });
 
 test("sync writes .space/db/main_db.ts", async () => {
-	await writeFile(join(dir, "0001_a.sql"), "CREATE TABLE a (id);");
+	await writeFile(join(dir, "0001_a.sql"), "-- up\nCREATE TABLE a (id);");
 	await sync(root, "dev");
 	expect(await readFile(join(root, ".space", "db", "main_db.ts"), "utf8")).toContain(
 		'id: "0001_a"',

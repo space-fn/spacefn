@@ -59,15 +59,17 @@ program
 
 program
 	.command("migrate")
-	.description("Apply pending migrations to the shared database")
+	.description("Apply pending migrations to a database")
+	.option("--db <name>", "Database name under app/db/", "main")
 	.option("--binding <name>", "The D1 binding name", "DB")
+	.option("--down", "Roll back instead of applying")
 	.option("--dry-run", "List pending migrations without applying them")
-	.action(async (options: { binding: string; dryRun?: boolean }) => {
-		const migrations = await import(`${resolve(process.cwd(), ".space/migrations.js")}`).catch(
+	.action(async (options: { db: string; binding: string; down?: boolean; dryRun?: boolean }) => {
+		const mod = await import(`${resolve(process.cwd(), ".space", "db", `${options.db}.js`)}`).catch(
 			() => undefined,
 		);
-		if (!migrations) {
-			console.error("Run `space gen` first: .space/migrations.js is missing.");
+		if (!mod) {
+			console.error("Run `space gen` first: .space/db is missing.");
 			process.exit(1);
 		}
 		const binding = process.env[options.binding];
@@ -77,14 +79,13 @@ program
 			);
 			process.exit(1);
 		}
-		const { d1Executor, runMigrations } = await import("./db");
+		const { d1Executor } = await import("./db");
+		const db = d1Executor(binding);
 		if (options.dryRun) {
-			console.log(
-				`Pending migrations: ${migrations.migrations.map((m: { name: string }) => m.name).join(", ") || "(none)"}`,
-			);
+			console.log(`Migrations: ${mod.migrations.map((m: { id: string }) => m.id).join(", ") || "(none)"}`);
 			return;
 		}
-		const applied = await runMigrations(d1Executor(binding), migrations.migrations);
+		const applied = await mod.migrate(db, options.down ? "down" : "up");
 		console.log(applied.length === 0 ? "No pending migrations" : `Applied: ${applied.join(", ")}`);
 	});
 

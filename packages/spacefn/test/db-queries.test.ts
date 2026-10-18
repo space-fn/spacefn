@@ -109,7 +109,7 @@ test("sync writes .space/queries.ts from db/queries", async () => {
 		await mkdir(join(root, "app", "db", "main_db", "queries"), { recursive: true });
 		await writeFile(
 			join(root, "app", "db", "main_db", "migrations", "0001_init.sql"),
-			migrations[0]?.sql ?? "",
+			"-- up\n" + (migrations[0]?.sql ?? ""),
 		);
 		await writeFile(
 			join(root, "app", "db", "main_db", "queries", "find.sql"),

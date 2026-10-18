@@ -36,9 +36,32 @@ export async function scanMigrations(dir: string): Promise<Migration[]> {
 	}
 
 	return Promise.all(
-		files.map(async ({ name }) => ({
-			id: name.replace(/\.sql$/, ""),
-			sql: await readFile(join(dir, name), "utf8"),
-		})),
+		files.map(async ({ name }) => {
+			const raw = await readFile(join(dir, name), "utf8");
+			const { up, down } = splitUpDown(raw);
+			if (!up) throw new Error(`Migration ${name} is missing a "-- up" section.`);
+			return { id: name.replace(/\.sql$/, ""), sql: up, down };
+		}),
 	);
+
+function splitUpDown(raw: string): { up: string; down?: string } {
+	const lines = raw.split(/\r?\n/);
+	let section: "up" | "down" | null = null;
+	const up: string[] = [];
+	const down: string[] = [];
+	for (const line of lines) {
+		const trimmed = line.trim().toLowerCase();
+		if (trimmed === "-- up") {
+			section = "up";
+			continue;
+		}
+		if (trimmed === "-- down") {
+			section = "down";
+			continue;
+		}
+		if (section === "up") up.push(line);
+		else if (section === "down") down.push(line);
+	}
+	return { up: up.join("\n").trim(), down: down.join("\n").trim() || undefined };
+}
 }
