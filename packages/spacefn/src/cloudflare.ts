@@ -26,6 +26,14 @@ export function envBindings(schema: Schema): EnvBindings {
 	return result;
 }
 
+/**
+ * Today's date as `YYYY-MM-DD`, for use as a `compatibilityDate`.
+ * Cloudflare recommends keeping this current.
+ */
+export function compatibilityDate(date: Date = new Date()): string {
+	return date.toISOString().slice(0, 10);
+}
+
 /** Builds the default export of `cloudflare.config.ts` for a spacefn app. */
 export function defineSpace(
 	worker: SpaceWorkerConfig,
