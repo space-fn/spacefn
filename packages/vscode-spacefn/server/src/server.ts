@@ -1051,6 +1051,360 @@ connection.onCompletion(async (params) => {
 	return items;
 });
 
+// DataStar attribute documentation lookup
+const datastarDocs: Record<
+	string,
+	{ syntax: string; description: string; modifiers: string[]; example: string }
+> = {
+	"data-attr": {
+		syntax: 'data-attr[:key]="expression"',
+		description:
+			"Sets HTML attribute value from expression and keeps in sync. Supports object syntax for multiple attributes.",
+		modifiers: ["__case"],
+		example: '<div data-attr:aria-label="$foo"></div>\n<div data-attr="{disabled: $bar}"></div>',
+	},
+	"data-bind": {
+		syntax: 'data-bind[:key]="signalName"',
+		description: "Creates signal and sets up two-way data binding with element value.",
+		modifiers: ["__case", "__prop", "__event"],
+		example: '<input data-bind:foo />\n<input data-bind="foo" />',
+	},
+	"data-class": {
+		syntax: 'data-class[:key]="expression"',
+		description:
+			"Adds/removes class based on expression. Supports object syntax for multiple classes.",
+		modifiers: ["__case"],
+		example: "<div data-class:font-bold=$foo></div>",
+	},
+	"data-computed": {
+		syntax: 'data-computed[:key]="expression"',
+		description: "Creates read-only computed signal. Updates when dependencies change.",
+		modifiers: ["__case"],
+		example: '<div data-computed:foo="$bar + $baz"></div>',
+	},
+	"data-effect": {
+		syntax: 'data-effect="expression"',
+		description: "Runs expression on page load and when signals in expression change.",
+		modifiers: [],
+		example: '<div data-effect="$foo = $bar + $baz"></div>',
+	},
+	"data-ignore": {
+		syntax: "data-ignore",
+		description: "Tells DataStar to skip this element and descendants.",
+		modifiers: ["__self"],
+		example: "<div data-ignore>...</div>",
+	},
+	"data-indicator": {
+		syntax: 'data-indicator[:key]="signalName"',
+		description: "Creates signal that is true during fetch requests, false otherwise.",
+		modifiers: ["__case"],
+		example: "<button data-on:click=@get() data-indicator:fetching></button>",
+	},
+	"data-init": {
+		syntax: 'data-init="expression"',
+		description: "Runs expression when attribute is initialized.",
+		modifiers: ["__delay", "__viewtransition"],
+		example: '<div data-init="$count = 1"></div>',
+	},
+	"data-json-signals": {
+		syntax: 'data-json-signals="filterObject"',
+		description: "Displays reactive JSON stringified signals. Useful for debugging.",
+		modifiers: ["__terse"],
+		example: "<pre data-json-signals></pre>",
+	},
+	"data-on": {
+		syntax: 'data-on:event="expression"',
+		description: "Attaches event listener. Executes expression on event trigger.",
+		modifiers: [
+			"__once",
+			"__passive",
+			"__capture",
+			"__case",
+			"__delay",
+			"__debounce",
+			"__throttle",
+			"__viewtransition",
+			"__window",
+			"__document",
+			"__outside",
+			"__prevent",
+			"__stop",
+		],
+		example: '<button data-on:click="$foo = 1">Reset</button>',
+	},
+	"data-on-intersect": {
+		syntax: 'data-on-intersect="expression"',
+		description: "Runs expression when element intersects viewport.",
+		modifiers: [
+			"__once",
+			"__exit",
+			"__half",
+			"__full",
+			"__threshold",
+			"__delay",
+			"__debounce",
+			"__throttle",
+			"__viewtransition",
+		],
+		example: '<div data-on-intersect="$intersected = true"></div>',
+	},
+	"data-on-interval": {
+		syntax: 'data-on-interval="expression"',
+		description: "Runs expression at regular interval. Default: 1 second.",
+		modifiers: ["__duration", "__viewtransition"],
+		example: '<div data-on-interval="$count++"></div>',
+	},
+	"data-on-signal-patch": {
+		syntax: 'data-on-signal-patch="expression"',
+		description: "Runs expression when any signals are patched.",
+		modifiers: ["__delay", "__debounce", "__throttle"],
+		example: '<div data-on-signal-patch="console.log(1)"></div>',
+	},
+	"data-ref": {
+		syntax: 'data-ref[:key]="signalName"',
+		description: "Creates signal that references the element.",
+		modifiers: ["__case"],
+		example: "<div data-ref:foo></div>",
+	},
+	"data-show": {
+		syntax: 'data-show="expression"',
+		description: "Shows/hides element based on expression truthiness.",
+		modifiers: [],
+		example: '<div data-show="$foo"></div>',
+	},
+	"data-signals": {
+		syntax: 'data-signals[:key]="expression"',
+		description: "Patches signals. Supports dot-notation for nested signals and object syntax.",
+		modifiers: ["__case", "__ifmissing"],
+		example: '<div data-signals:foo="1"></div>',
+	},
+	"data-style": {
+		syntax: 'data-style[:key]="expression"',
+		description:
+			"Sets inline CSS style from expression. Supports object syntax for multiple properties.",
+		modifiers: [],
+		example: '<div data-style:display="$hiding && 1"></div>',
+	},
+	"data-text": {
+		syntax: 'data-text="expression"',
+		description: "Binds text content of element to expression.",
+		modifiers: [],
+		example: '<div data-text="$foo"></div>',
+	},
+	"data-preserve-attr": {
+		syntax: 'data-preserve-attr="attr1 attr2"',
+		description: "Preserves attribute values when morphing DOM elements.",
+		modifiers: [],
+		example: '<details open data-preserve-attr="open">...</details>',
+	},
+	"data-animate": {
+		syntax: 'data-animate="expression"',
+		description: "[Pro] Animates element attributes over time. Updates reactively.",
+		modifiers: [],
+		example: "",
+	},
+	"data-custom-validity": {
+		syntax: 'data-custom-validity="expression"',
+		description: "[Pro] Adds custom validity. Expression must return string (empty = valid).",
+		modifiers: [],
+		example: "<input data-bind:foo />",
+	},
+	"data-match-media": {
+		syntax: 'data-match-media[:key]="mediaQuery"',
+		description: "[Pro] Sets signal to media query match state and keeps in sync.",
+		modifiers: ["__case"],
+		example: "<div data-match-media:is-dark=dark></div>",
+	},
+	"data-persist": {
+		syntax: 'data-persist[:key]="filterObject"',
+		description: "[Pro] Persists signals to local/session storage.",
+		modifiers: ["__session"],
+		example: "<div data-persist></div>",
+	},
+	"data-query-string": {
+		syntax: 'data-query-string="filterObject"',
+		description: "[Pro] Syncs signals to query string params on load and change.",
+		modifiers: ["__filter", "__history"],
+		example: "<div data-query-string></div>",
+	},
+	"data-replace-url": {
+		syntax: 'data-replace-url="expression"',
+		description: "[Pro] Replaces browser URL without reloading page.",
+		modifiers: [],
+		example: "<div data-replace-url=1></div>",
+	},
+	"data-scroll-into-view": {
+		syntax: "data-scroll-into-view",
+		description: "[Pro] Scrolls element into view.",
+		modifiers: [
+			"__smooth",
+			"__instant",
+			"__auto",
+			"__hstart",
+			"__hcenter",
+			"__hend",
+			"__hnearest",
+			"__vstart",
+			"__vcenter",
+			"__vend",
+			"__vnearest",
+			"__focus",
+		],
+		example: "<div data-scroll-into-view></div>",
+	},
+	"data-view-transition": {
+		syntax: 'data-view-transition="expression"',
+		description: "[Pro] Sets view-transition-name style attribute.",
+		modifiers: [],
+		example: '<div data-view-transition="$foo"></div>',
+	},
+};
+
+// DataStar action documentation
+const datastarActionDocs: Record<
+	string,
+	{ syntax: string; description: string; options: string[] }
+> = {
+	"@peek": {
+		syntax: "@peek(callable)",
+		description: "Access signals without subscribing to changes.",
+		options: [],
+	},
+	"@setAll": {
+		syntax: "@setAll(value, filter?)",
+		description: "Set value of all matching signals.",
+		options: ["include: RegExp", "exclude?: RegExp"],
+	},
+	"@toggleAll": {
+		syntax: "@toggleAll(filter?)",
+		description: "Toggle boolean value of all matching signals.",
+		options: ["include: RegExp", "exclude?: RegExp"],
+	},
+	"@get": {
+		syntax: "@get(uri, options?)",
+		description: "Send GET request to backend via Fetch API.",
+		options: [
+			"contentType",
+			"filterSignals",
+			"selector",
+			"headers",
+			"openWhenHidden",
+			"payload",
+			"retry",
+			"retryInterval",
+			"retryScaler",
+			"retryMaxWait",
+			"retryMaxCount",
+			"requestCancellation",
+		],
+	},
+	"@post": {
+		syntax: "@post(uri, options?)",
+		description: "Send POST request to backend via Fetch API.",
+		options: [
+			"contentType",
+			"filterSignals",
+			"selector",
+			"headers",
+			"openWhenHidden",
+			"payload",
+			"retry",
+			"retryInterval",
+			"retryScaler",
+			"retryMaxWait",
+			"retryMaxCount",
+			"requestCancellation",
+		],
+	},
+	"@put": {
+		syntax: "@put(uri, options?)",
+		description: "Send PUT request to backend via Fetch API.",
+		options: [
+			"contentType",
+			"filterSignals",
+			"selector",
+			"headers",
+			"openWhenHidden",
+			"payload",
+			"retry",
+			"retryInterval",
+			"retryScaler",
+			"retryMaxWait",
+			"retryMaxCount",
+			"requestCancellation",
+		],
+	},
+	"@patch": {
+		syntax: "@patch(uri, options?)",
+		description: "Send PATCH request to backend via Fetch API.",
+		options: [
+			"contentType",
+			"filterSignals",
+			"selector",
+			"headers",
+			"openWhenHidden",
+			"payload",
+			"retry",
+			"retryInterval",
+			"retryScaler",
+			"retryMaxWait",
+			"retryMaxCount",
+			"requestCancellation",
+		],
+	},
+	"@query": {
+		syntax: "@query(uri, options?)",
+		description: "Send QUERY request to backend via Fetch API.",
+		options: [
+			"contentType",
+			"filterSignals",
+			"selector",
+			"headers",
+			"openWhenHidden",
+			"payload",
+			"retry",
+			"retryInterval",
+			"retryScaler",
+			"retryMaxWait",
+			"retryMaxCount",
+			"requestCancellation",
+		],
+	},
+	"@delete": {
+		syntax: "@delete(uri, options?)",
+		description: "Send DELETE request to backend via Fetch API.",
+		options: [
+			"contentType",
+			"filterSignals",
+			"selector",
+			"headers",
+			"openWhenHidden",
+			"payload",
+			"retry",
+			"retryInterval",
+			"retryScaler",
+			"retryMaxWait",
+			"retryMaxCount",
+			"requestCancellation",
+		],
+	},
+	"@clipboard": {
+		syntax: "@clipboard(text, isBase64?)",
+		description: "[Pro] Copy text to clipboard.",
+		options: [],
+	},
+	"@fit": {
+		syntax: "@fit(v, oldMin, oldMax, newMin, newMax, shouldClamp?, shouldRound?)",
+		description: "[Pro] Linear interpolation between ranges.",
+		options: [],
+	},
+	"@intl": {
+		syntax: "@intl(type, value, options?, locale?)",
+		description: "[Pro] Intl formatting for dates, numbers, and more.",
+		options: [],
+	},
+};
+
 connection.onHover(async (params): Promise<Hover | null> => {
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) return null;
@@ -1089,6 +1443,38 @@ connection.onHover(async (params): Promise<Hover | null> => {
 		const pos = htmlDoc.positionAt(offset - tpl.contentStart);
 		const htmlDocParsed = htmlLS.parseHTMLDocument(htmlDoc);
 		const hover = htmlLS.doHover(htmlDoc, pos, htmlDocParsed);
+		if (hover) return hover as any;
+		// fallback: check if word is a DataStar attribute or action
+		const wordRange2 = wordRangeAt(doc, params.position, /[a-zA-Z0-9_@:.-]+/);
+		if (wordRange2) {
+			const word2 = doc.getText(wordRange2);
+			// check data-* attributes
+			for (const [attr, info] of Object.entries(datastarDocs)) {
+				if (word2.startsWith(attr)) {
+					const modList = info.modifiers.length ? info.modifiers.join(", ") : "none";
+					return {
+						contents: {
+							kind: "markdown",
+							value: `**${attr}**\n\n${info.description}\n\n**Syntax:** \`${info.syntax}\`\n\n**Modifiers:** ${modList}`,
+						},
+						range: wordRange2,
+					};
+				}
+			}
+			// check @actions
+			for (const [action, info] of Object.entries(datastarActionDocs)) {
+				if (word2.startsWith(action)) {
+					const optList = info.options.length ? info.options.join(", ") : "none";
+					return {
+						contents: {
+							kind: "markdown",
+							value: `**${action}**\n\n${info.description}\n\n**Syntax:** \`${info.syntax}\`\n\n**Options:** ${optList}`,
+						},
+						range: wordRange2,
+					};
+				}
+			}
+		}
 		return hover as any;
 	}
 	const isSqlFile = filePath.endsWith(".sql");
