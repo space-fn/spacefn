@@ -594,6 +594,7 @@ function extractTables(sql: string): string[] {
 }
 
 connection.onCompletion(async (params) => {
+	console.error("[spacefn] onCompletion CALLED");
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) return null;
 	const filePath = params.textDocument.uri.startsWith("file://")
@@ -607,6 +608,7 @@ connection.onCompletion(async (params) => {
 	const offset = doc.offsetAt(params.position);
 	const text = doc.getText();
 	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
+	console.error("[spacefn] onCompletion isJsTs:", isJsTs, "tpl:", !!tpl);
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
 		// build HTML document with placeholders for ${...}
 		let htmlText = text.slice(tpl.contentStart, tpl.end);
@@ -632,6 +634,12 @@ connection.onCompletion(async (params) => {
 		const htmlDoc = htmlService.TextDocument.create("file:///embedded.html", "html", 1, masked);
 		const pos = htmlDoc.positionAt(offset - tpl.contentStart);
 		const list = htmlLS.doComplete(htmlDoc, pos, htmlLS.parseHTMLDocument(htmlDoc));
+		console.error(
+			"[spacefn] HTML completion called, pos:",
+			pos,
+			"items:",
+			list ? list.items.length : 0,
+		);
 		return list ? list.items : [];
 	}
 	const isSqlFile = filePath.endsWith(".sql");
@@ -909,7 +917,7 @@ connection.onDidChangeWatchedFiles(() => {
 connection.onInitialize(() => ({
 	capabilities: {
 		textDocumentSync: 1,
-		completionProvider: { triggerCharacters: [".", " "] },
+		completionProvider: { triggerCharacters: ["<", "/", " ", "=", '"', "'", ":", "-"] },
 		hoverProvider: true,
 		definitionProvider: true,
 	},
