@@ -456,7 +456,30 @@ const parser = new Parser();
 const htmlLS = htmlService.getLanguageService();
 
 // DataStar attribute provider
-htmlLS.setDataProviders(true, [htmlService.getDefaultHTMLDataProvider()]);
+const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
+	version: 1,
+	tags: [],
+	globalAttributes: [
+		{ name: "data-on-click", description: "DataStar click handler" },
+		{ name: "data-on-input", description: "DataStar input handler" },
+		{ name: "data-on-change", description: "DataStar change handler" },
+		{ name: "data-on-submit", description: "DataStar submit handler" },
+		{ name: "data-on-load", description: "DataStar load handler" },
+		{ name: "data-bind", description: "DataStar two-way binding" },
+		{ name: "data-text", description: "DataStar text binding" },
+		{ name: "data-show", description: "DataStar conditional show" },
+		{ name: "data-class", description: "DataStar class binding" },
+		{ name: "data-attr", description: "DataStar attribute binding" },
+		{ name: "data-ref", description: "DataStar element reference" },
+		{ name: "data-signals", description: "DataStar signals" },
+		{ name: "data-computed", description: "DataStar computed signal" },
+		{ name: "data-effect", description: "DataStar effect" },
+		{ name: "data-indicator", description: "DataStar loading indicator" },
+		{ name: "data-persist", description: "DataStar persist" },
+		{ name: "data-rocket", description: "DataStar rocket function" },
+	],
+});
+htmlLS.setDataProviders(true, [datastarProvider, htmlService.getDefaultHTMLDataProvider()]);
 
 type CompletionContext =
 	| { kind: "table" }
@@ -645,7 +668,14 @@ connection.onCompletion(async (params) => {
 			}
 			return item;
 		});
-		return adjusted;
+		// dedup by label
+		const seen = new Set<string>();
+		const deduped = adjusted.filter((item: any) => {
+			if (seen.has(item.label)) return false;
+			seen.add(item.label);
+			return true;
+		});
+		return deduped;
 	}
 	const isSqlFile = filePath.endsWith(".sql");
 	if (!isSqlFile && !inSqlString(text, offset)) return null;
