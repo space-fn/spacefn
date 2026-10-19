@@ -1190,6 +1190,59 @@ connection.onCompletion(async (params) => {
 				}));
 			return items;
 		}
+		// check if cursor is in @action() context
+		const actionMatch = beforeCursor.match(/@([a-zA-Z_][a-zA-Z0-9_]*)?$/);
+		if (actionMatch) {
+			const prefix = actionMatch[1] || "";
+			const actions = [
+				{
+					name: "@peek",
+					detail: "Access signals without subscribing",
+					insert: "peek(${1:() => $signal})",
+				},
+				{
+					name: "@setAll",
+					detail: "Set value of matching signals",
+					insert: "setAll(${1:value}, ${2:{include: /^${3:pattern}$/}})",
+				},
+				{
+					name: "@toggleAll",
+					detail: "Toggle boolean value of matching signals",
+					insert: "toggleAll(${1:{include: /^${2:pattern}$/}})",
+				},
+				{ name: "@get", detail: "Send GET request", insert: "get(${1:'/endpoint'})" },
+				{ name: "@post", detail: "Send POST request", insert: "post(${1:'/endpoint'})" },
+				{ name: "@put", detail: "Send PUT request", insert: "put(${1:'/endpoint'})" },
+				{ name: "@patch", detail: "Send PATCH request", insert: "patch(${1:'/endpoint'})" },
+				{ name: "@query", detail: "Send QUERY request", insert: "query(${1:'/endpoint'})" },
+				{ name: "@delete", detail: "Send DELETE request", insert: "delete(${1:'/endpoint'})" },
+				{
+					name: "@clipboard",
+					detail: "[Pro] Copy text to clipboard",
+					insert: "clipboard(${1:'text'})",
+				},
+				{
+					name: "@fit",
+					detail: "[Pro] Linear interpolation",
+					insert: "fit(${1:v}, ${2:oldMin}, ${3:oldMax}, ${4:newMin}, ${5:newMax})",
+				},
+				{
+					name: "@intl",
+					detail: "[Pro] Intl formatting",
+					insert: "intl(${1:'number'}, ${2:value}, ${3:{}})",
+				},
+			];
+			const items = actions
+				.filter((a) => a.name.toLowerCase().startsWith(`@${prefix}`.toLowerCase()))
+				.map((a) => ({
+					label: a.name,
+					kind: htmlService.CompletionItemKind.Function,
+					insertText: a.insert,
+					insertTextFormat: 2,
+					detail: a.detail,
+				}));
+			return items;
+		}
 		// replace ${...} with spaces to keep offsets
 		let masked = "";
 		let i = 0;
