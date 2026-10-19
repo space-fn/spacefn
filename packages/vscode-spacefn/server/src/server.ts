@@ -928,6 +928,54 @@ function extractTables(sql: string): string[] {
 	}
 }
 
+// Extract signals from data-signals:* attributes in HTML
+function extractSignals(htmlText: string): string[] {
+	const signals = new Set<string>();
+	// match data-signals:signalName="..."
+	const re1 = /data-signals:([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+	let m;
+	while ((m = re1.exec(htmlText)) !== null) {
+		// convert kebab to camelCase
+		const name = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+		signals.add(name);
+	}
+	// match data-signals="{signalName: ...}"
+	const re2 = /data-signals="\{([^}]+)\}"/g;
+	while ((m = re2.exec(htmlText)) !== null) {
+		const content = m[1];
+		const keyRe = /([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g;
+		let km;
+		while ((km = keyRe.exec(content)) !== null) {
+			signals.add(km[1]);
+		}
+	}
+	// match data-bind:signalName
+	const re3 = /data-bind:([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+	while ((m = re3.exec(htmlText)) !== null) {
+		const name = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+		signals.add(name);
+	}
+	// match data-ref:signalName
+	const re4 = /data-ref:([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+	while ((m = re4.exec(htmlText)) !== null) {
+		const name = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+		signals.add(name);
+	}
+	// match data-computed:signalName
+	const re5 = /data-computed:([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+	while ((m = re5.exec(htmlText)) !== null) {
+		const name = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+		signals.add(name);
+	}
+	// match data-indicator:signalName
+	const re6 = /data-indicator:([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+	while ((m = re6.exec(htmlText)) !== null) {
+		const name = m[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+		signals.add(name);
+	}
+	return [...signals];
+}
+
 connection.onCompletion(async (params) => {
 	console.error("[spacefn] onCompletion CALLED");
 	const doc = documents.get(params.textDocument.uri);
@@ -947,6 +995,22 @@ connection.onCompletion(async (params) => {
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
 		// build HTML document with placeholders for ${...}
 		let htmlText = text.slice(tpl.contentStart, tpl.end);
+		// check if cursor is in $signal reference context
+		const beforeCursor = text.slice(tpl.contentStart, offset);
+		const dollarMatch = beforeCursor.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)?$/);
+		if (dollarMatch) {
+			const prefix = dollarMatch[1] || "";
+			const signals = extractSignals(htmlText);
+			const items = signals
+				.filter((s) => s.toLowerCase().startsWith(prefix.toLowerCase()))
+				.map((s) => ({
+					label: `$${s}`,
+					kind: htmlService.CompletionItemKind.Variable,
+					insertText: s,
+					detail: "DataStar signal",
+				}));
+			return items;
+		}
 		// replace ${...} with spaces to keep offsets
 		let masked = "";
 		let i = 0;
