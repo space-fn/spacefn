@@ -1191,6 +1191,117 @@ connection.onCompletion(async (params) => {
 				}));
 			return items;
 		}
+		// check if cursor is in __modifier context (after attribute name)
+		const modMatch = beforeCursor.match(/data-[a-z-]+:[a-zA-Z0-9_-]*(__[a-z]*)?$/);
+		const modMatch2 = beforeCursor.match(/data-[a-z-]+(__[a-z]*)?$/);
+		if ((modMatch && modMatch[1] !== undefined) || (modMatch2 && modMatch2[1] !== undefined)) {
+			const modPrefix = (modMatch?.[1] || modMatch2?.[1] || "").replace(/^__/, "");
+			const modifiers = [
+				"once",
+				"passive",
+				"capture",
+				"case",
+				"delay",
+				"debounce",
+				"throttle",
+				"viewtransition",
+				"window",
+				"document",
+				"outside",
+				"prevent",
+				"stop",
+				"duration",
+				"exit",
+				"half",
+				"full",
+				"threshold",
+				"leading",
+				"notrailing",
+				"noleading",
+				"trailing",
+				"self",
+				"terse",
+				"session",
+				"filter",
+				"history",
+				"smooth",
+				"instant",
+				"auto",
+				"hstart",
+				"hcenter",
+				"hend",
+				"hnearest",
+				"vstart",
+				"vcenter",
+				"vend",
+				"vnearest",
+				"focus",
+				"ifmissing",
+				"prop",
+				"event",
+			];
+			const items = modifiers
+				.filter((m) => m.toLowerCase().startsWith(modPrefix.toLowerCase()))
+				.map((m) => ({
+					label: `__${m}`,
+					kind: htmlService.CompletionItemKind.Keyword,
+					insertText: `__${m}`,
+					detail: `DataStar modifier: ${m}`,
+					filterText: `__${m}`,
+					sortText: `__${m}`,
+				}));
+			console.error(
+				"[spacefn] modifier items:",
+				items.length,
+				"prefix:",
+				JSON.stringify(modPrefix),
+			);
+			if (items.length) return items;
+		}
+		// check if cursor is in .modifierArg context (after __modifier)
+		const argMatch = beforeCursor.match(/__[a-z]+(\.[a-z0-9]*)?$/);
+		if (argMatch && argMatch[1] !== undefined) {
+			const argPrefix = argMatch[1].replace(/^\./, "");
+			const args = [
+				"camel",
+				"kebab",
+				"snake",
+				"pascal",
+				"leading",
+				"notrailing",
+				"trailing",
+				"noleading",
+				"500ms",
+				"100ms",
+				"1s",
+				"2s",
+				"300ms",
+				"750ms",
+				"1000ms",
+				"0.25",
+				"0.5",
+				"0.75",
+				"0.1",
+				"0.9",
+			];
+			const items = args
+				.filter((a) => a.toLowerCase().startsWith(argPrefix.toLowerCase()))
+				.map((a) => ({
+					label: `.${a}`,
+					kind: htmlService.CompletionItemKind.Value,
+					insertText: `.${a}`,
+					detail: `DataStar modifier arg: ${a}`,
+					filterText: `.${a}`,
+					sortText: `.${a}`,
+				}));
+			console.error(
+				"[spacefn] modifierArg items:",
+				items.length,
+				"prefix:",
+				JSON.stringify(argPrefix),
+			);
+			if (items.length) return items;
+		}
 		// check if cursor is in @action() context
 		const actionMatch = beforeCursor.match(/@([a-zA-Z_][a-zA-Z0-9_]*)?$/);
 		console.error(
@@ -1247,6 +1358,8 @@ connection.onCompletion(async (params) => {
 					insertText: a.insert,
 					insertTextFormat: 2,
 					detail: a.detail,
+					filterText: a.name,
+					sortText: a.name,
 				}));
 			console.error("[spacefn] action items:", items.length, "prefix:", JSON.stringify(prefix));
 			return items;
