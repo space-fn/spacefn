@@ -1200,7 +1200,7 @@ connection.onCompletion(async (params) => {
 			JSON.stringify(beforeCursor.slice(-30)),
 		);
 		if (actionMatch) {
-			const prefix = actionMatch[1] || "";
+			const prefix = actionMatch[1] ?? "";
 			const actions = [
 				{
 					name: "@peek",
@@ -1248,6 +1248,7 @@ connection.onCompletion(async (params) => {
 					insertTextFormat: 2,
 					detail: a.detail,
 				}));
+			console.error("[spacefn] action items:", items.length, "prefix:", JSON.stringify(prefix));
 			return items;
 		}
 		// replace ${...} with spaces to keep offsets
