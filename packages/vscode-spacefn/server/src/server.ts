@@ -460,25 +460,30 @@ const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
 	version: 1,
 	tags: [],
 	globalAttributes: [
-		// data-on variants (event handlers)
+		// data-on: event handlers
 		...[
 			"click",
+			"dblclick",
+			"mousedown",
+			"mouseup",
+			"mouseover",
+			"mouseout",
+			"mousemove",
+			"mouseenter",
+			"mouseleave",
+			"keydown",
+			"keyup",
+			"keypress",
+			"focus",
+			"blur",
+			"focusin",
+			"focusout",
 			"input",
 			"change",
 			"submit",
-			"load",
+			"reset",
 			"scroll",
 			"resize",
-			"focus",
-			"blur",
-			"keydown",
-			"keyup",
-			"mouseover",
-			"mouseout",
-			"mousedown",
-			"mouseup",
-			"dblclick",
-			"contextmenu",
 			"wheel",
 			"touchstart",
 			"touchend",
@@ -486,43 +491,156 @@ const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
 			"pointerdown",
 			"pointerup",
 			"pointermove",
+			"pointerenter",
+			"pointerleave",
+			"contextmenu",
+			"drag",
+			"dragstart",
+			"dragend",
+			"dragover",
+			"dragenter",
+			"dragleave",
+			"drop",
+			"copy",
+			"cut",
+			"paste",
+			"select",
+			"invalid",
+			"search",
+			"toggle",
+			"playing",
+			"pause",
+			"ended",
+			"loadeddata",
+			"canplay",
+			"progress",
+			"durationchange",
+			"ratechange",
+			"volumechange",
+			"timeupdate",
+			"waiting",
+			"playing",
+			"canplaythrough",
+			"emptied",
+			"abort",
+			"error",
+			"load",
+			"unload",
+			"beforeunload",
+			"hashchange",
+			"popstate",
+			"storage",
+			"online",
+			"offline",
+			"message",
+			"open",
+			"close",
+			"send",
+			"error",
 		].map((e) => ({
-			name: `data-on-${e}`,
+			name: `data-on:${e}`,
 			description: `DataStar event handler for ${e}`,
 		})),
-		// data-on-intersect, data-on-interval, data-on-raf, data-on-resize, data-on-signal-patch, data-on-signal-patch-filter
+		// data-on:* special plugins
 		{ name: "data-on-intersect", description: "DataStar intersection observer" },
 		{ name: "data-on-interval", description: "DataStar interval handler" },
 		{ name: "data-on-raf", description: "DataStar requestAnimationFrame handler" },
 		{ name: "data-on-resize", description: "DataStar resize handler" },
 		{ name: "data-on-signal-patch", description: "DataStar signal patch handler" },
 		{ name: "data-on-signal-patch-filter", description: "DataStar signal patch filter" },
-		// other plugins
-		{ name: "data-animate", description: "DataStar animation" },
+		// data-attr
 		{ name: "data-attr", description: "DataStar attribute binding" },
+		// data-bind
 		{ name: "data-bind", description: "DataStar two-way binding" },
+		// data-class
 		{ name: "data-class", description: "DataStar class binding" },
+		// data-computed
 		{ name: "data-computed", description: "DataStar computed signal" },
+		// data-custom-validity
 		{ name: "data-custom-validity", description: "DataStar custom validity" },
+		// data-effect
 		{ name: "data-effect", description: "DataStar effect" },
+		// data-ignore
 		{ name: "data-ignore", description: "DataStar ignore" },
 		{ name: "data-ignore-morph", description: "DataStar ignore morph" },
+		// data-indicator
 		{ name: "data-indicator", description: "DataStar loading indicator" },
+		// data-init
 		{ name: "data-init", description: "DataStar init" },
+		// data-json-signals
 		{ name: "data-json-signals", description: "DataStar JSON signals" },
+		// data-match-media
 		{ name: "data-match-media", description: "DataStar match media" },
+		// data-nonce
 		{ name: "data-nonce", description: "DataStar nonce" },
+		// data-persist
 		{ name: "data-persist", description: "DataStar persist" },
+		// data-preserve-attr
 		{ name: "data-preserve-attr", description: "DataStar preserve attr" },
+		// data-query-string
 		{ name: "data-query-string", description: "DataStar query string" },
+		// data-ref
 		{ name: "data-ref", description: "DataStar element reference" },
+		// data-replace-url
 		{ name: "data-replace-url", description: "DataStar replace URL" },
+		// data-scroll-into-view
 		{ name: "data-scroll-into-view", description: "DataStar scroll into view" },
+		// data-show
 		{ name: "data-show", description: "DataStar conditional show" },
+		// data-signals
 		{ name: "data-signals", description: "DataStar signals" },
+		// data-style
 		{ name: "data-style", description: "DataStar style binding" },
+		// data-text
 		{ name: "data-text", description: "DataStar text binding" },
+		// data-view-transition
 		{ name: "data-view-transition", description: "DataStar view transition" },
+		// Modifiers
+		...[
+			"once",
+			"passive",
+			"capture",
+			"case",
+			"delay",
+			"debounce",
+			"throttle",
+			"viewtransition",
+			"window",
+			"document",
+			"outside",
+			"prevent",
+			"stop",
+			"duration",
+			"exit",
+			"half",
+			"full",
+			"threshold",
+			"leading",
+			"notrailing",
+			"noleading",
+			"trailing",
+			"self",
+		].map((m) => ({
+			name: `__${m}`,
+			description: `DataStar modifier: ${m}`,
+		})),
+		// Modifier arguments
+		...["camel", "kebab", "snake", "pascal", "leading", "notrailing", "trailing", "noleading"].map(
+			(a) => ({
+				name: `.${a}`,
+				description: `DataStar modifier arg: ${a}`,
+			}),
+		),
+		// Timing arguments
+		...["500ms", "100ms", "1s", "2s", "300ms", "750ms", "1000ms"].map((t) => ({
+			name: `.${t}`,
+			description: `DataStar timing: ${t}`,
+		})),
+		// Threshold arguments
+		...["0.25", "0.5", "0.75", "0.1", "0.9"].map((t) => ({
+			name: `.${t}`,
+			description: `DataStar threshold: ${t}`,
+		})),
 	],
 });
 htmlLS.setDataProviders(true, [datastarProvider, htmlService.getDefaultHTMLDataProvider()]);
