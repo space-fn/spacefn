@@ -1177,6 +1177,7 @@ connection.onCompletion(async (params) => {
 		// check if cursor is in $signal reference context
 		const beforeCursor = text.slice(tpl.contentStart, offset);
 		const dollarMatch = beforeCursor.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)?$/);
+		console.error("[spacefn] dollarMatch:", dollarMatch ? dollarMatch[1] : null);
 		if (dollarMatch) {
 			const prefix = dollarMatch[1] || "";
 			const signals = extractSignals(htmlText);
@@ -1192,6 +1193,12 @@ connection.onCompletion(async (params) => {
 		}
 		// check if cursor is in @action() context
 		const actionMatch = beforeCursor.match(/@([a-zA-Z_][a-zA-Z0-9_]*)?$/);
+		console.error(
+			"[spacefn] actionMatch:",
+			actionMatch ? actionMatch[1] : null,
+			"beforeCursor:",
+			JSON.stringify(beforeCursor.slice(-30)),
+		);
 		if (actionMatch) {
 			const prefix = actionMatch[1] || "";
 			const actions = [
@@ -1946,7 +1953,9 @@ connection.onDidChangeWatchedFiles(() => {
 connection.onInitialize(() => ({
 	capabilities: {
 		textDocumentSync: 1,
-		completionProvider: { triggerCharacters: ["<", "/", " ", "=", '"', "'", ":", "-"] },
+		completionProvider: {
+			triggerCharacters: ["<", "/", " ", "=", '"', "'", ":", "-", "@", "_", "$"],
+		},
 		hoverProvider: true,
 		definitionProvider: true,
 	},
