@@ -460,7 +460,7 @@ const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
 	version: 1,
 	tags: [],
 	globalAttributes: [
-		// data-on: event handlers
+		// ===== data-on: event handlers =====
 		...[
 			"click",
 			"dblclick",
@@ -519,7 +519,6 @@ const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
 			"volumechange",
 			"timeupdate",
 			"waiting",
-			"playing",
 			"canplaythrough",
 			"emptied",
 			"abort",
@@ -536,66 +535,142 @@ const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
 			"open",
 			"close",
 			"send",
-			"error",
 		].map((e) => ({
 			name: `data-on:${e}`,
-			description: `DataStar event handler for ${e}`,
+			description: `Attaches an event listener for ${e}. Executes expression on trigger.`,
 		})),
-		// data-on:* special plugins
-		{ name: "data-on-intersect", description: "DataStar intersection observer" },
-		{ name: "data-on-interval", description: "DataStar interval handler" },
-		{ name: "data-on-raf", description: "DataStar requestAnimationFrame handler" },
-		{ name: "data-on-resize", description: "DataStar resize handler" },
-		{ name: "data-on-signal-patch", description: "DataStar signal patch handler" },
-		{ name: "data-on-signal-patch-filter", description: "DataStar signal patch filter" },
-		// data-attr
-		{ name: "data-attr", description: "DataStar attribute binding" },
-		// data-bind
-		{ name: "data-bind", description: "DataStar two-way binding" },
-		// data-class
-		{ name: "data-class", description: "DataStar class binding" },
-		// data-computed
-		{ name: "data-computed", description: "DataStar computed signal" },
-		// data-custom-validity
-		{ name: "data-custom-validity", description: "DataStar custom validity" },
-		// data-effect
-		{ name: "data-effect", description: "DataStar effect" },
-		// data-ignore
-		{ name: "data-ignore", description: "DataStar ignore" },
-		{ name: "data-ignore-morph", description: "DataStar ignore morph" },
-		// data-indicator
-		{ name: "data-indicator", description: "DataStar loading indicator" },
-		// data-init
-		{ name: "data-init", description: "DataStar init" },
-		// data-json-signals
-		{ name: "data-json-signals", description: "DataStar JSON signals" },
-		// data-match-media
-		{ name: "data-match-media", description: "DataStar match media" },
-		// data-nonce
-		{ name: "data-nonce", description: "DataStar nonce" },
-		// data-persist
-		{ name: "data-persist", description: "DataStar persist" },
-		// data-preserve-attr
-		{ name: "data-preserve-attr", description: "DataStar preserve attr" },
-		// data-query-string
-		{ name: "data-query-string", description: "DataStar query string" },
-		// data-ref
-		{ name: "data-ref", description: "DataStar element reference" },
-		// data-replace-url
-		{ name: "data-replace-url", description: "DataStar replace URL" },
-		// data-scroll-into-view
-		{ name: "data-scroll-into-view", description: "DataStar scroll into view" },
-		// data-show
-		{ name: "data-show", description: "DataStar conditional show" },
-		// data-signals
-		{ name: "data-signals", description: "DataStar signals" },
-		// data-style
-		{ name: "data-style", description: "DataStar style binding" },
-		// data-text
-		{ name: "data-text", description: "DataStar text binding" },
-		// data-view-transition
-		{ name: "data-view-transition", description: "DataStar view transition" },
-		// Modifiers
+		// ===== data-on special plugins =====
+		{
+			name: "data-on-intersect",
+			description:
+				"Runs expression when element intersects viewport. Modifiers: __once, __exit, __half, __full, __threshold",
+		},
+		{
+			name: "data-on-interval",
+			description: "Runs expression at regular interval. Modifiers: __duration",
+		},
+		{
+			name: "data-on-raf",
+			description: "[Pro] Runs expression on requestAnimationFrame. Modifiers: __throttle",
+		},
+		{
+			name: "data-on-resize",
+			description: "[Pro] Runs expression on element resize. Modifiers: __debounce, __throttle",
+		},
+		{
+			name: "data-on-signal-patch",
+			description:
+				"Runs expression when signals change. Modifiers: __delay, __debounce, __throttle",
+		},
+		{
+			name: "data-on-signal-patch-filter",
+			description: "Filters which signals to watch for data-on-signal-patch",
+		},
+		// ===== Core attributes =====
+		{
+			name: "data-attr",
+			description:
+				"Sets HTML attribute value from expression and keeps in sync. Key: attribute name. Value: expression or object",
+		},
+		{
+			name: "data-bind",
+			description:
+				"Two-way data binding between signal and element value. Key: signal name. Modifiers: __case, __prop, __event",
+		},
+		{
+			name: "data-class",
+			description:
+				"Adds/removes class based on expression. Key: class name. Value: expression or object. Modifiers: __case",
+		},
+		{
+			name: "data-computed",
+			description: "Creates computed signal from expression. Key: signal name. Modifiers: __case",
+		},
+		{ name: "data-effect", description: "Runs expression on load and when signals change" },
+		{
+			name: "data-ignore",
+			description: "Tells DataStar to skip this element and descendants. Modifiers: __self",
+		},
+		{
+			name: "data-ignore-morph",
+			description: "Tells PatchElements to skip this element when morphing",
+		},
+		{
+			name: "data-indicator",
+			description:
+				"Creates signal that is true during fetch requests. Key: signal name. Modifiers: __case",
+		},
+		{
+			name: "data-init",
+			description:
+				"Runs expression when attribute is initialized. Modifiers: __delay, __viewtransition",
+		},
+		{
+			name: "data-json-signals",
+			description: "Displays reactive JSON of signals. Value: filter object. Modifiers: __terse",
+		},
+		{
+			name: "data-on",
+			description:
+				"Attaches event listener. Key: event name. Modifiers: __once, __passive, __capture, __case, __delay, __debounce, __throttle, __viewtransition, __window, __document, __outside, __prevent, __stop",
+		},
+		{
+			name: "data-preserve-attr",
+			description:
+				"Preserves attribute value when morphing. Value: space-separated attribute names",
+		},
+		{
+			name: "data-ref",
+			description:
+				"Creates signal that references the element. Key: signal name. Modifiers: __case",
+		},
+		{ name: "data-show", description: "Shows/hides element based on expression" },
+		{
+			name: "data-signals",
+			description:
+				"Patches signals. Key: signal name. Value: expression or object. Modifiers: __case, __ifmissing",
+		},
+		{
+			name: "data-style",
+			description:
+				"Sets inline CSS style from expression. Key: CSS property. Value: expression or object",
+		},
+		{ name: "data-text", description: "Binds text content to expression" },
+		// ===== Pro attributes =====
+		{ name: "data-animate", description: "[Pro] Animates element attributes over time" },
+		{
+			name: "data-custom-validity",
+			description: "[Pro] Adds custom validity to element. Value: expression returning string",
+		},
+		{
+			name: "data-match-media",
+			description:
+				"[Pro] Sets signal to media query match state. Key: signal name. Modifiers: __case",
+		},
+		{
+			name: "data-persist",
+			description:
+				"[Pro] Persists signals to local/session storage. Key: storage key. Modifiers: __session",
+		},
+		{
+			name: "data-query-string",
+			description:
+				"[Pro] Syncs signals to query string params. Value: filter object. Modifiers: __filter, __history",
+		},
+		{
+			name: "data-replace-url",
+			description: "[Pro] Replaces browser URL. Value: expression returning URL string",
+		},
+		{
+			name: "data-scroll-into-view",
+			description:
+				"[Pro] Scrolls element into view. Modifiers: __smooth, __instant, __auto, __hstart, __hcenter, __hend, __hnearest, __vstart, __vcenter, __vend, __vnearest, __focus",
+		},
+		{
+			name: "data-view-transition",
+			description: "[Pro] Sets view-transition-name style. Value: expression",
+		},
+		// ===== Modifiers =====
 		...[
 			"once",
 			"passive",
@@ -620,29 +695,102 @@ const datastarProvider = htmlService.newHTMLDataProvider("datastar", {
 			"noleading",
 			"trailing",
 			"self",
+			"terse",
+			"session",
+			"filter",
+			"history",
+			"smooth",
+			"instant",
+			"auto",
+			"hstart",
+			"hcenter",
+			"hend",
+			"hnearest",
+			"vstart",
+			"vcenter",
+			"vend",
+			"vnearest",
+			"focus",
+			"ifmissing",
+			"prop",
+			"event",
 		].map((m) => ({
 			name: `__${m}`,
 			description: `DataStar modifier: ${m}`,
 		})),
-		// Modifier arguments
-		...["camel", "kebab", "snake", "pascal", "leading", "notrailing", "trailing", "noleading"].map(
-			(a) => ({
-				name: `.${a}`,
-				description: `DataStar modifier arg: ${a}`,
-			}),
-		),
-		// Timing arguments
+		// ===== Modifier arguments =====
+		...["camel", "kebab", "snake", "pascal"].map((a) => ({
+			name: `.${a}`,
+			description: `Case modifier: ${a}`,
+		})),
+		...["leading", "notrailing", "trailing", "noleading"].map((a) => ({
+			name: `.${a}`,
+			description: `Timing modifier: ${a}`,
+		})),
 		...["500ms", "100ms", "1s", "2s", "300ms", "750ms", "1000ms"].map((t) => ({
 			name: `.${t}`,
-			description: `DataStar timing: ${t}`,
+			description: `Timing: ${t}`,
 		})),
-		// Threshold arguments
 		...["0.25", "0.5", "0.75", "0.1", "0.9"].map((t) => ({
 			name: `.${t}`,
-			description: `DataStar threshold: ${t}`,
+			description: `Threshold: ${t}`,
 		})),
 	],
 });
+
+// Action completion for @action() calls in expressions
+const datastarActions = htmlService.newHTMLDataProvider("datastar-actions", {
+	version: 1,
+	tags: [],
+	globalAttributes: [
+		{
+			name: "@peek",
+			description: "Access signals without subscribing to changes. @peek(() => $signal)",
+		},
+		{ name: "@setAll", description: "Set value of matching signals. @setAll(value, filter?)" },
+		{
+			name: "@toggleAll",
+			description: "Toggle boolean value of matching signals. @toggleAll(filter?)",
+		},
+		{ name: "@get", description: "Send GET request. @get(uri, options?)" },
+		{ name: "@post", description: "Send POST request. @post(uri, options?)" },
+		{ name: "@put", description: "Send PUT request. @put(uri, options?)" },
+		{ name: "@patch", description: "Send PATCH request. @patch(uri, options?)" },
+		{ name: "@query", description: "Send QUERY request. @query(uri, options?)" },
+		{ name: "@delete", description: "Send DELETE request. @delete(uri, options?)" },
+		{
+			name: "@clipboard",
+			description: "[Pro] Copy text to clipboard. @clipboard(text, isBase64?)",
+		},
+		{
+			name: "@fit",
+			description:
+				"[Pro] Linear interpolation. @fit(v, oldMin, oldMax, newMin, newMax, clamped?, rounded?)",
+		},
+		{ name: "@intl", description: "[Pro] Intl formatting. @intl(type, value, options?, locale?)" },
+		// Action options
+		{ name: "contentType", description: "Request content type: 'json' or 'form'" },
+		{ name: "filterSignals", description: "Filter object: {include: RegExp, exclude?: RegExp}" },
+		{ name: "selector", description: "CSS selector for form when contentType='form'" },
+		{ name: "headers", description: "Request headers object" },
+		{ name: "openWhenHidden", description: "Keep SSE connection open when page hidden" },
+		{ name: "payload", description: "Override fetch payload with custom object" },
+		{ name: "retry", description: "Retry behavior: 'auto', 'error', 'always', 'never'" },
+		{ name: "retryInterval", description: "Retry interval in milliseconds" },
+		{ name: "retryScaler", description: "Multiplier for retry wait times" },
+		{ name: "retryMaxWait", description: "Maximum wait time between retries (ms)" },
+		{ name: "retryMaxCount", description: "Maximum retry attempts" },
+		{
+			name: "requestCancellation",
+			description: "Cancellation behavior: 'auto', 'cleanup', 'disabled', or AbortController",
+		},
+	],
+});
+htmlLS.setDataProviders(true, [
+	datastarProvider,
+	datastarActions,
+	htmlService.getDefaultHTMLDataProvider(),
+]);
 htmlLS.setDataProviders(true, [datastarProvider, htmlService.getDefaultHTMLDataProvider()]);
 
 type CompletionContext =
