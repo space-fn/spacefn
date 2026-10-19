@@ -633,14 +633,19 @@ connection.onCompletion(async (params) => {
 		}
 		const htmlDoc = htmlService.TextDocument.create("file:///embedded.html", "html", 1, masked);
 		const pos = htmlDoc.positionAt(offset - tpl.contentStart);
-		const list = htmlLS.doComplete(htmlDoc, pos, htmlLS.parseHTMLDocument(htmlDoc));
-		console.error(
-			"[spacefn] HTML completion called, pos:",
-			pos,
-			"items:",
-			list ? list.items.length : 0,
-		);
-		return list ? list.items : [];
+		const htmlDocParsed = htmlLS.parseHTMLDocument(htmlDoc);
+		const list = htmlLS.doComplete(htmlDoc, pos, htmlDocParsed);
+		if (!list) return null;
+		const adjusted = list.items.map((item: any) => {
+			if (item.textEdit && item.textEdit.range) {
+				item.textEdit.range = {
+					start: doc.positionAt(tpl.contentStart + htmlDoc.offsetAt(item.textEdit.range.start)),
+					end: doc.positionAt(tpl.contentStart + htmlDoc.offsetAt(item.textEdit.range.end)),
+				};
+			}
+			return item;
+		});
+		return adjusted;
 	}
 	const isSqlFile = filePath.endsWith(".sql");
 	if (!isSqlFile && !inSqlString(text, offset)) return null;
