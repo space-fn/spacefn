@@ -6,7 +6,6 @@ import { LanguageClient, TransportKind } from "vscode-languageclient/node";
 let client: LanguageClient | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
-	console.log("[spacefn] activate called");
 	const serverModule = context.asAbsolutePath(path.join("server-out", "server.js"));
 	const serverOptions = {
 		run: { module: serverModule, transport: TransportKind.ipc },

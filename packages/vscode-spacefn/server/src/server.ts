@@ -38,12 +38,8 @@ async function loadDialectAndMigrations(dbDir: string) {
 async function validateSqlFile(doc: TextDocument): Promise<void> {
 	const uri = doc.uri;
 	const filePath = uri.startsWith("file://") ? decodeURIComponent(uri.replace("file://", "")) : uri;
-	console.error("[spacefn] validateSqlFile:", filePath);
 	const m = filePath.match(/[/\\]app[/\\]db[/\\]([^/\\]+)[/\\]queries[/\\]/);
-	if (!m) {
-		console.error("[spacefn] no match, return");
-		return;
-	}
+	if (!m) return;
 	const dbDir = filePath.replace(/[/\\]queries[/\\].*/, "");
 	const diagnostics: Diagnostic[] = [];
 	try {
@@ -56,7 +52,6 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 			.filter((l) => !l.trim().startsWith("--"))
 			.join("\n")
 			.trim();
-		console.error("[spacefn] sql:", JSON.stringify(sql));
 		// validate -- name: directive
 		const nameLine = text.split("\n").find((l) => l.trim().startsWith("-- name:"));
 		if (nameLine) {
@@ -79,11 +74,7 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 		}
 		if (sql) {
 			const stmt = await scratch.prepare(sql);
-			const cols = await stmt.columns();
-			console.error(
-				"[spacefn] prepared OK, cols:",
-				cols.map((c: any) => c.name),
-			);
+			await stmt.columns();
 		}
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
@@ -435,7 +426,6 @@ function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | n
 }
 
 documents.onDidChangeContent((change) => {
-	console.error("[spacefn] didChange:", change.document.uri);
 	if (change.document.uri.includes("/migrations/")) schemaCache.clear();
 	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
 	else if (
@@ -1156,7 +1146,6 @@ function extractSignals(htmlText: string): string[] {
 }
 
 connection.onCompletion(async (params) => {
-	console.error("[spacefn] onCompletion CALLED");
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) return null;
 	const filePath = params.textDocument.uri.startsWith("file://")
@@ -1170,14 +1159,12 @@ connection.onCompletion(async (params) => {
 	const offset = doc.offsetAt(params.position);
 	const text = doc.getText();
 	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
-	console.error("[spacefn] onCompletion isJsTs:", isJsTs, "tpl:", !!tpl);
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
 		// build HTML document with placeholders for ${...}
 		let htmlText = text.slice(tpl.contentStart, tpl.end);
 		// check if cursor is in $signal reference context
 		const beforeCursor = text.slice(tpl.contentStart, offset);
 		const dollarMatch = beforeCursor.match(/\$([a-zA-Z_][a-zA-Z0-9_]*)?$/);
-		console.error("[spacefn] dollarMatch:", dollarMatch ? dollarMatch[1] : null);
 		if (dollarMatch) {
 			const prefix = dollarMatch[1] || "";
 			const signals = extractSignals(htmlText);
@@ -1250,12 +1237,6 @@ connection.onCompletion(async (params) => {
 					filterText: `__${m}`,
 					sortText: `__${m}`,
 				}));
-			console.error(
-				"[spacefn] modifier items:",
-				items.length,
-				"prefix:",
-				JSON.stringify(modPrefix),
-			);
 			if (items.length) return items;
 		}
 		// check if cursor is in .modifierArg context (after __modifier)
@@ -1294,22 +1275,10 @@ connection.onCompletion(async (params) => {
 					filterText: `.${a}`,
 					sortText: `.${a}`,
 				}));
-			console.error(
-				"[spacefn] modifierArg items:",
-				items.length,
-				"prefix:",
-				JSON.stringify(argPrefix),
-			);
 			if (items.length) return items;
 		}
 		// check if cursor is in @action() context
 		const actionMatch = beforeCursor.match(/@([a-zA-Z_][a-zA-Z0-9_]*)?$/);
-		console.error(
-			"[spacefn] actionMatch:",
-			actionMatch ? actionMatch[1] : null,
-			"beforeCursor:",
-			JSON.stringify(beforeCursor.slice(-30)),
-		);
 		if (actionMatch) {
 			const prefix = actionMatch[1] ?? "";
 			const actions = [
@@ -1361,7 +1330,6 @@ connection.onCompletion(async (params) => {
 					filterText: a.name,
 					sortText: a.name,
 				}));
-			console.error("[spacefn] action items:", items.length, "prefix:", JSON.stringify(prefix));
 			return items;
 		}
 		// replace ${...} with spaces to keep offsets
