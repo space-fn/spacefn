@@ -1,7 +1,7 @@
 {
 	"name": "vscode-spacefn",
 	"displayName": "spacefn",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "spacefn support for VS Code: HTML injection for html tagged templates (Datastar) + SQL diagnostics for db queries.",
 	"categories": [
 		"Programming Languages"
