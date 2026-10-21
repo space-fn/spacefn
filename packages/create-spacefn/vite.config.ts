@@ -1,7 +1,14 @@
 import { defineConfig } from "vite-plus";
 
-import tsdownConfig from "./tsdown.config.js";
-
 export default defineConfig({
-	pack: tsdownConfig,
+	test: {
+		include: ["test/**/*.test.ts"],
+	},
+	pack: {
+		entry: ["src/index.ts", "src/scaffold.ts"],
+		format: "esm",
+		dts: true,
+		clean: true,
+		fixedExtension: false,
+	},
 });
