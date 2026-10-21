@@ -1,6 +1,7 @@
 import type { Context, Hono } from "hono";
 
 import type { PageAction, PageRender, ServerModule } from "./define";
+import { escapeHtml, Html, Raw } from "./html";
 
 /** Registers a page: GET renders it, and POST runs the action named in `?_action=`. */
 /**
@@ -28,7 +29,11 @@ export function mountPage(
 		try {
 			const props = server?.loader ? await server.loader(c) : {};
 			if (props instanceof Response) return props;
-			return c.html(String(await page(props as never, c)));
+			const output = await page(props as never, c);
+			// Pages are typed to return `Html` or `Raw`; escape anything a cast smuggles in.
+			const markup =
+				output instanceof Raw || output instanceof Html ? output.value : escapeHtml(String(output));
+			return c.html(markup);
 		} catch (error) {
 			return handleError(error, c);
 		}

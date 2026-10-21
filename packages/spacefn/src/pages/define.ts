@@ -1,9 +1,13 @@
 import type { Context } from "hono";
 
 import type { AppBindings } from "../env";
-import type { Html } from "./html";
+import type { Html, Raw } from "./html";
 
-export type PageOutput = Html | string;
+/**
+ * What a page renders: `html` output, or `raw()` markup you made safe yourself.
+ * A plain string is a type error, and is escaped at runtime if one slips through.
+ */
+export type PageOutput = Html | Raw;
 
 /** The default export of `pages/<path>.page.ts`. Receives the loader's data as `props`. */
 export type PageRender<P = unknown> = (

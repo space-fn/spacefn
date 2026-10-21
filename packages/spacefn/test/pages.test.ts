@@ -142,3 +142,19 @@ test("an unknown action is refused, including prototype names", async () => {
 	expect((await app().request("/board?_action=constructor", { method: "POST" })).status).toBe(404);
 	expect((await app().request("/board?_action=__proto__", { method: "POST" })).status).toBe(404);
 });
+
+test("a plain string smuggled past the types is escaped", async () => {
+	const server = new Hono();
+	const name = "<img src=x onerror=alert(1)>";
+	mountPage(server, "/p", (() => `<p>${name}</p>`) as never);
+	const body = await (await server.request("/p")).text();
+	expect(body).not.toContain(name);
+	expect(body).toContain("&lt;img src=x onerror=alert(1)&gt;");
+});
+
+test("html output and raw() pass through unescaped", async () => {
+	const server = new Hono();
+	mountPage(server, "/p", (() => html`<b>${"<script>"}</b>${raw("<i>ok</i>")}`) as never);
+	const body = await (await server.request("/p")).text();
+	expect(body).toBe("<b>&lt;script&gt;</b><i>ok</i>");
+});
