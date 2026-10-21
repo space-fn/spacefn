@@ -49,7 +49,7 @@ test("without an Origin, Sec-Fetch-Site decides", async () => {
 	expect([ok.status, bad.status, none.status]).toEqual([200, 403, 403]);
 });
 
-test("safe methods and requests without a session are not checked", async () => {
+test("safe methods are not checked", async () => {
 	expect(
 		(
 			await app().request(origin + "/", {
@@ -58,14 +58,24 @@ test("safe methods and requests without a session are not checked", async () => 
 			})
 		).status,
 	).toBe(200);
-	expect(
-		(
-			await app().request(origin + "/", {
-				method: "POST",
-				headers: { origin: "https://evil.test" },
-			})
-		).status,
-	).toBe(200);
+});
+
+test("a cross-site post without a session is refused, so login cannot be forged", async () => {
+	const res = await app().request(origin + "/", {
+		method: "POST",
+		headers: { origin: "https://evil.test" },
+	});
+	expect(res.status).toBe(403);
+});
+
+test("a same-origin post without a session goes through, so login works", async () => {
+	const res = await app().request(origin + "/", { method: "POST", headers: { origin } });
+	expect(res.status).toBe(200);
+});
+
+test("a post with no browser signals and no session goes through, for API clients", async () => {
+	const res = await app().request(origin + "/", { method: "POST" });
+	expect(res.status).toBe(200);
 });
 
 test("isSameSiteRequest prefers the Origin header", () => {

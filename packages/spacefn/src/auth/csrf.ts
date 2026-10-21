@@ -7,7 +7,7 @@ const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
 export interface CsrfOptions {
 	/** Other origins allowed to make changes, e.g. `https://app.example.com`. This app's own origin is always allowed. */
 	origins?: string[];
-	/** The session cookie name. A request without it carries no session, so it is not checked. */
+	/** The session cookie name. A request carrying it with no browser signals is refused. */
 	cookie?: string;
 }
 
@@ -23,23 +23,23 @@ export function isSameSiteRequest(
 }
 
 /**
- * Refuses a cross-site state change that carries a session. Requests without a
- * session cookie are not browser sessions and are not checked. A browser always
- * sends `Origin` or `Sec-Fetch-Site`; a request with neither is refused.
+ * Refuses a cross-site state change. A request that carries browser signals
+ * (`Origin` or `Sec-Fetch-Site`) must look same-site, with or without a session:
+ * that is what stops login CSRF. A request with neither signal is refused when it
+ * carries a session cookie, and passed through otherwise, so non-browser API
+ * clients still work. A browser always sends `Origin` or `Sec-Fetch-Site`.
  */
 export function csrfGuard(options: CsrfOptions = {}): MiddlewareHandler {
 	return async (c, next) => {
-		if (
-			SAFE.has(c.req.method) ||
-			readCookie(c.req.header("cookie"), options.cookie) === undefined
-		) {
-			return next();
-		}
-		const allowed = isSameSiteRequest(
-			{ origin: c.req.header("origin"), secFetchSite: c.req.header("sec-fetch-site") },
-			new URL(c.req.url).origin,
-			options.origins ?? [],
-		);
+		if (SAFE.has(c.req.method)) return next();
+		const headers = {
+			origin: c.req.header("origin"),
+			secFetchSite: c.req.header("sec-fetch-site"),
+		};
+		const hasSession = readCookie(c.req.header("cookie"), options.cookie) !== undefined;
+		const hasBrowserSignals = headers.origin !== undefined || headers.secFetchSite !== undefined;
+		if (!hasSession && !hasBrowserSignals) return next();
+		const allowed = isSameSiteRequest(headers, new URL(c.req.url).origin, options.origins ?? []);
 		if (!allowed) return c.json({ error: "forbidden", message: "Cross-site request refused" }, 403);
 		return next();
 	};
