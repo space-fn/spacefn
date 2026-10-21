@@ -14,7 +14,9 @@ export const POST = defineHandler(async (c) => {
 	await migrated(c.env.DB);
 	const user = await findUser(d1Executor(c.env.DB), { email });
 	decoy ??= hashPassword("decoy-password-never-matches");
-	const checked = await verifyPassword(password || "x", user?.passwordHash ?? (await decoy));
+	const checked = await verifyPassword(password || "x", user?.passwordHash ?? (await decoy), {
+		pepper: c.env.PASSWORD_PEPPER,
+	});
 	if (!user || !checked.valid)
 		return c.json({ error: "unauthorized", message: "Wrong email or password" }, 401);
 
