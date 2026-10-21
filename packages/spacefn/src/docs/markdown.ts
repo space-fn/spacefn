@@ -1,7 +1,4 @@
-function escapeHtml(s: string): string {
-	return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-const esc = escapeHtml;
+import { escapeHtml } from "../pages/html";
 
 async function loadMarked(): Promise<((md: string) => string) | null> {
 	try {
@@ -55,7 +52,7 @@ function fallbackRender(md: string): string {
 	for (const line of lines) {
 		if (line.startsWith("```")) {
 			if (inCode) {
-				out.push(`<pre><code>${esc(codeBuf.join("\n"))}</code></pre>`);
+				out.push(`<pre><code>${escapeHtml(codeBuf.join("\n"))}</code></pre>`);
 				codeBuf = [];
 				inCode = false;
 			} else {
@@ -69,11 +66,11 @@ function fallbackRender(md: string): string {
 		}
 		const h = /^(#{1,6})\s+(.*)$/.exec(line);
 		if (h) {
-			out.push(`<h${h[1]!.length}>${esc(h[2]!)}</h${h[1]!.length}>`);
+			out.push(`<h${h[1]!.length}>${escapeHtml(h[2]!)}</h${h[1]!.length}>`);
 			continue;
 		}
 		if (line.trim() === "") continue;
-		out.push(`<p>${esc(line)}</p>`);
+		out.push(`<p>${escapeHtml(line)}</p>`);
 	}
 	return out.join("\n");
 }

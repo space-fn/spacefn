@@ -1,11 +1,8 @@
 import { resolve, sep } from "node:path";
 
+import { escapeHtml } from "../pages/html";
 import { DOCS_CSS } from "./css";
 import { renderMarkdown } from "./markdown";
-
-export function escapeHtml(s: string): string {
-	return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
 
 export function createDocsReader(root: string) {
 	const docsRoot = resolve(root, "docs");
