@@ -1,6 +1,6 @@
 # Environment
 
-`env.ts` at the project root declares what the app reads. Spacefn checks it on every request, types it, and declares the matching Cloudflare bindings.
+`app/env.ts` declares what the app reads. Spacefn checks it on every request, types it, and declares the matching Cloudflare bindings. A root-level `env.ts` is ignored; `space doctor` flags it.
 
 ```ts
 import { boolean, defineEnv, number, secret, string } from "spacefn/env";
