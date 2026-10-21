@@ -40,21 +40,26 @@ program
 	.action(async () => {
 		const buildCode = await run("vite", ["build"]);
 		if (buildCode !== 0) process.exit(buildCode);
-		const { existsSync } = await import("node:fs");
-		const cfCandidates = [
-			resolve(process.cwd(), "node_modules", ".pnpm", "node_modules", ".bin", "cf"),
-			resolve(process.cwd(), "..", "node_modules", ".pnpm", "node_modules", ".bin", "cf"),
-			resolve(process.cwd(), "..", "packages", "spacefn", "node_modules", "cf", "bin", "cf"),
-		];
-		const cfBin = cfCandidates.find((p) => existsSync(p)) ?? "cf";
-		if (existsSync(cfBin)) {
-			const code = await new Promise<number>((done) => {
-				const child = spawn(cfBin, ["deploy"], { stdio: "inherit" });
-				child.on("exit", (c) => done(c ?? 0));
-			});
-			process.exit(code);
+		// `cf`, the Cloudflare CLI, ships with spacefn as a dependency. Resolve its
+		// bin from this package: a dependency's bin is not on the app's PATH.
+		const { readFileSync } = await import("node:fs");
+		const { createRequire } = await import("node:module");
+		const { dirname, join } = await import("node:path");
+		const nodeRequire = createRequire(import.meta.url);
+		const cfPkgPath = nodeRequire.resolve("cf/package.json");
+		const cfPkg = JSON.parse(readFileSync(cfPkgPath, "utf8")) as {
+			bin?: string | Record<string, string>;
+		};
+		const entry = typeof cfPkg.bin === "string" ? cfPkg.bin : cfPkg.bin?.cf;
+		if (!entry) {
+			console.error("The cf package declares no bin. Reinstall dependencies.");
+			process.exit(1);
 		}
-		process.exit(await run("cf", ["deploy"]));
+		const code = await new Promise<number>((done) => {
+			const child = spawn(join(dirname(cfPkgPath), entry), ["deploy"], { stdio: "inherit" });
+			child.on("exit", (c) => done(c ?? 0));
+		});
+		process.exit(code);
 	});
 
 program
