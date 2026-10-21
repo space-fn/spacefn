@@ -9,13 +9,15 @@ export interface RoutePath {
 
 const EXTENSION = /\.(?:[cm]?[jt]s|[jt]sx)$/;
 const ENV_SUFFIX = /\.(dev|prod)$/;
-const CATCH_ALL = /^\[\.\.\.(\w+)\]$/;
-const DYNAMIC = /^\[(\w+)\]$/;
+const CATCH_ALL = /^\[\.\.\.([\w-]+)\]$/;
+const DYNAMIC = /^\[([\w-]+)\]$/;
 const GROUP = /^\(.+\)$/;
+const BRACKETED = /^\[.*\]$/;
 
 /**
  * Converts a file path relative to `routes/` into a Hono path.
  * Returns `null` for files that are not routes (any segment starting with `_`).
+ * A bracket segment that is not a valid parameter is an error, never a literal path.
  */
 export function parseRoutePath(file: string): RoutePath | null {
 	const withoutExt = file.replace(EXTENSION, "");
@@ -35,7 +37,11 @@ export function parseRoutePath(file: string): RoutePath | null {
 		const dynamic = DYNAMIC.exec(segment)?.[1];
 		if (catchAll) parts.push(`:${catchAll}{.+}`);
 		else if (dynamic) parts.push(`:${dynamic}`);
-		else parts.push(segment);
+		else if (BRACKETED.test(segment)) {
+			throw new Error(
+				`Route segment "${segment}" is not a valid parameter. Use [name] or [...name] with letters, digits, _ and -.`,
+			);
+		} else parts.push(segment);
 	}
 
 	const route: RoutePath = { path: `/${parts.join("/")}` };
