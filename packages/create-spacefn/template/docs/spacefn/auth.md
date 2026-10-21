@@ -7,17 +7,24 @@ Import from `spacefn/auth`.
 ## Password hashing
 
 ```ts
-import { hashPassword, verifyPassword } from "spacefn/auth";
+import { hashPassword, hibpBreachCheck, verifyPassword } from "spacefn/auth";
 
-const stored = await hashPassword("correct horse battery staple");
-const { valid, needsRehash } = await verifyPassword(input, stored);
+const stored = await hashPassword(password, {
+	pepper: c.env.PASSWORD_PEPPER,
+	breachCheck: hibpBreachCheck(),
+});
+const { valid, needsRehash } = await verifyPassword(input, stored, {
+	pepper: c.env.PASSWORD_PEPPER,
+});
 ```
 
 - PBKDF2-HMAC-SHA256 through Web Crypto, 16-byte random salt, 32-byte key.
 - The hash records its own parameters: `pbkdf2-sha256$<iterations>$<salt>$<hash>`. Old hashes keep working when the count changes.
 - `verifyPassword` compares in constant time. A malformed stored hash throws, so a corrupted row cannot pass as a wrong password.
 - `needsRehash` is true when a hash used fewer iterations than the target. Re-hash it on the next successful sign-in.
-- Passwords are limited to 1024 characters.
+- Passwords must be 12 to 1024 characters. `hashPassword` refuses shorter ones; `verifyPassword` does not, so passwords set before a policy change still sign in.
+- A `pepper` is a server-side secret mixed into the derivation before PBKDF2. Keep it outside the database, as an env secret: a stolen database alone then cannot be brute-forced. Hash and verify must use the same value, so changing it makes every stored hash unverifiable.
+- A `breachCheck` refuses passwords found in a breach corpus. `hibpBreachCheck()` uses the Have I Been Pwned range API with k-anonymity: only the first five hex characters of the password's SHA-1 leave the Worker. A failed request lets the password through, so the API being down does not block sign-ups.
 
 ### The iteration limit
 
@@ -25,7 +32,7 @@ const { valid, needsRehash } = await verifyPassword(input, stored);
 
 - The library refuses any count above 100,000, so a hash that production cannot verify is never written.
 - Local `workerd` (`vite dev`) does not enforce the limit. A count of 600,000 works in development and fails in production. The library's check is what stops that mismatch.
-- A Cloudflare workerd change that would raise the limit to 1,000,000 was proposed in September 2026. It is not in production. When it ships, raise `MAX_ITERATIONS` and existing hashes will re-hash on sign-in.
+- The pepper is what closes the gap: it is a second secret no database dump contains. With a 12-character minimum and a breached-password check on top, the capped iteration count matters far less.
 - If your threat model needs more than 100,000 iterations, PBKDF2 on Workers cannot give it today. Options are an external service, or a memory-hard algorithm in pure JavaScript, which needs a paid CPU budget. Decide this before storing real passwords.
 
 ## Sessions
