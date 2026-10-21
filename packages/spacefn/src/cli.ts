@@ -58,40 +58,6 @@ program
 	});
 
 program
-	.command("migrate")
-	.description("Apply pending migrations to a database")
-	.option("--db <name>", "Database name under app/db/", "main")
-	.option("--binding <name>", "The D1 binding name", "DB")
-	.option("--down", "Roll back instead of applying")
-	.option("--dry-run", "List pending migrations without applying them")
-	.action(async (options: { db: string; binding: string; down?: boolean; dryRun?: boolean }) => {
-		const mod = await import(`${resolve(process.cwd(), ".space", "db", `${options.db}.js`)}`).catch(
-			() => undefined,
-		);
-		if (!mod) {
-			console.error("Run `space gen` first: .space/db is missing.");
-			process.exit(1);
-		}
-		const binding = process.env[options.binding];
-		if (!binding) {
-			console.error(
-				`The ${options.binding} binding is not available. Run this through cf or wrangler with the right env.`,
-			);
-			process.exit(1);
-		}
-		const { d1Executor } = await import("./db");
-		const db = d1Executor(binding);
-		if (options.dryRun) {
-			console.log(
-				`Migrations: ${mod.migrations.map((m: { id: string }) => m.id).join(", ") || "(none)"}`,
-			);
-			return;
-		}
-		const applied = await mod.migrate(db, options.down ? "down" : "up");
-		console.log(applied.length === 0 ? "No pending migrations" : `Applied: ${applied.join(", ")}`);
-	});
-
-program
 	.command("db")
 	.description("Database tools")
 	.command("doctor")

@@ -19,13 +19,11 @@ space dev              # vite dev
 space build            # vite build
 space gen              # regenerate .space/ without starting Vite
 space deploy           # vite build && cf deploy
-space migrate          # apply pending migrations to the shared D1 database
 ```
 
 - `space dev` and `space build` run Vite, which runs the `space()` plugin. The plugin scans folders, writes `.space/`, and starts the Cloudflare Vite plugin.
 - `space gen` is useful in CI, where you want the generated files without a dev server.
 - `space deploy` builds and deploys. It needs `cf` installed and authenticated.
-- `space migrate` reads `.space/migrations.ts` and applies it to the `DB` binding. Run it through `cf` or `wrangler` so the binding is present.
 
 ## Scaffold
 

@@ -113,7 +113,7 @@ Errors stop the build with a message that names the query:
 - A CTE or subquery column that SQLite cannot trace to a table needs `@column`.
 - Parameter types are not inferred from comparisons. Annotate them when they matter.
 - One query per file.
-- The library does not run migrations for you. Call `runMigrations` yourself, for example once per isolate as the playground does. Two isolates that start together can race on D1, so a deploy step is safer. The `space migrate` command will provide it.
+- The library does not run migrations for you. Call `runMigrations` yourself, for example once per isolate as the playground does. Two isolates that start together can race on D1, so a deploy step is safer. There is no `space migrate` command: `process.env` in Node is not a D1 binding, so the Worker is where migrations run.
 
 ## Tracing
 
