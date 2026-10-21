@@ -44,3 +44,47 @@ test("does not treat identifiers containing END as block ends", () => {
 		"SELECT 2",
 	]);
 });
+
+test("keeps a trigger together when its body uses CASE ... END", () => {
+	const trigger = `CREATE TRIGGER trg AFTER INSERT ON a BEGIN
+  UPDATE b SET x = CASE WHEN NEW.id > 0 THEN 1 ELSE 0 END WHERE id = NEW.id;
+END;
+SELECT 1;`;
+	const parts = splitStatements(trigger);
+	expect(parts).toHaveLength(2);
+	expect(parts[0]).toContain("CREATE TRIGGER");
+	expect(parts[0]).toContain("END");
+});
+
+test("splits top-level CASE ... END on its own", () => {
+	expect(splitStatements("UPDATE t SET x = CASE WHEN a THEN 1 ELSE 2 END; SELECT 1")).toEqual([
+		"UPDATE t SET x = CASE WHEN a THEN 1 ELSE 2 END",
+		"SELECT 1",
+	]);
+});
+
+test("refuses transaction statements with a clear error", () => {
+	for (const script of [
+		"BEGIN TRANSACTION; CREATE TABLE a (x INT);",
+		"BEGIN;",
+		"COMMIT;",
+		"ROLLBACK;",
+		"UPDATE t SET x = 1; END;",
+	]) {
+		expect(() => splitStatements(script), script).toThrow(/not allowed in migrations/);
+	}
+});
+
+test("a minus operator before a semicolon is not a comment", () => {
+	expect(splitStatements("UPDATE t SET x = x - 1; SELECT 1")).toEqual([
+		"UPDATE t SET x = x - 1",
+		"SELECT 1",
+	]);
+});
+
+test("block comments hide their contents", () => {
+	expect(splitStatements("SELECT 1 /* BEGIN; END; */; SELECT 2")).toEqual([
+		"SELECT 1 /* BEGIN; END; */",
+		"SELECT 2",
+	]);
+});
