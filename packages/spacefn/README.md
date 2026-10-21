@@ -6,8 +6,7 @@ observability (OTLP), hand-rolled auth primitives, multi-database support.
 ## Install
 
 ```bash
-pnpm add spacefn
-pnpm add -D space   # CLI (optional, provides the `space` binary)
+pnpm add spacefn       # the `space` CLI binary comes with it
 ```
 
 ## Quickstart

@@ -10,7 +10,7 @@ Declare the variables in `env.ts`. The endpoint is a secret binding, so it can c
 
 ```ts
 export default defineEnv({
-	OTLP_ENDPOINT: string({ optional: true }),
+	OTLP_ENDPOINT: secret({ optional: true }),
 	OTLP_HEADERS: secret({ optional: true }),
 	OTLP_SERVICE_NAME: string({ optional: true }),
 });

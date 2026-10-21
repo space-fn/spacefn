@@ -13,10 +13,10 @@ pnpm space dev
 
 The generated project includes:
 
-- `app/` layout with `routes/`, `pages/`, `db/`, `durable-objects/`, `workflows/`.
+- `app/` layout with `routes/`, plus `pages/`, `db/`, `durable-objects/`, `workflows/` when you need them.
 - `app/entry.ts` — the Worker entry you can customize.
 - Path aliases (`@space/*`, `@app/*`, `@modules/*`, `@utils/*`, `@lib/*`).
-- Vitest setup with a smoke test.
+- vite-plus test setup with scaffold tests.
 - `docs/spacefn/` — bundled framework docs.
 - `.gitignore` with OS/env/log/coverage ignores.
 

@@ -23,7 +23,7 @@ space deploy           # vite build && cf deploy
 
 - `space dev` and `space build` run Vite, which runs the `space()` plugin. The plugin scans folders, writes `.space/`, and starts the Cloudflare Vite plugin.
 - `space gen` is useful in CI, where you want the generated files without a dev server.
-- `space deploy` builds and deploys. It needs `cf` installed and authenticated.
+- `space deploy` builds and deploys through `cf`, the Cloudflare CLI that ships with `spacefn` as a dependency. Apps do not install it; it needs an authenticated Cloudflare session.
 
 ## Scaffold
 
