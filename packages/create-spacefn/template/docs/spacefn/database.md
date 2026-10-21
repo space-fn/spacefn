@@ -7,50 +7,77 @@ SQL stays SQL. You write migrations and queries as `.sql` files. spacefn checks 
 ```txt
 app/db/
 ├── main_db/
+│   ├── config.ts
 │   ├── migrations/
 │   │   ├── 0001_create_todos.sql
 │   │   └── 0002_add_owner.sql
-│   ├── queries/
-│   │   ├── list-todos.sql
-│   │   └── find-todo.sql
-│   └── migrate.ts
+│   └── queries/
+│       ├── list-todos.sql
+│       └── find-todo.sql
 └── analytics_db/
+    ├── config.ts
     ├── migrations/
-    ├── queries/
-    └── migrate.ts
+    └── queries/
 ```
+
+`config.ts` is optional and picks the dialect, `sqlite` by default:
+
+```ts
+import { defineDatabase } from "spacefn/db";
+
+export default defineDatabase({ dialect: "sqlite" });
+```
+
+`space gen` writes one generated module per database: `.space/db/<name>.ts`. It holds the migrations, `migrated`, `migrate`, and one typed function per query file. Import it as `@space/db/<name>`.
 
 ## Migrations
 
-Each database folder holds its own `migrate.ts`, which imports its migrations and calls `runMigrations` with the right executor. Routes import `migrated` from `../db/<name>/migrate`.
-
 `NNNN_name.sql`, applied in number order. Two files with the same number are an error.
 
+A migration has an `-- up` section and may have a `-- down` section. A file with no `-- up` is refused:
+
 ```sql
--- db/migrations/0001_create_todos.sql
+-- app/db/main_db/migrations/0001_create_todos.sql
+-- up
 CREATE TABLE todos (
 	id INTEGER PRIMARY KEY,
 	title TEXT NOT NULL,
 	done INTEGER NOT NULL DEFAULT 0
 );
+
+-- down
+DROP TABLE todos;
 ```
 
 - Each migration runs atomically with its ledger row. A failure leaves nothing behind.
 - The ledger is the `space_migrations` table. It stores a checksum of each applied file.
 - Editing a migration after it has run is an error. Add a new migration instead.
-- The SQL is inlined into `.space/migrations.ts`, so the Worker bundle needs no `.sql` loader.
+- Transaction statements (`BEGIN`, `COMMIT`, `ROLLBACK`, `END`) are refused: each statement runs in the runner's own transaction.
+- The SQL is inlined into the generated module, so the Worker bundle needs no `.sql` loader.
 
-Apply them with `runMigrations`:
+### Applying and rolling back
+
+The generated `migrated(db)` applies what is missing and caches the result per database object. Call it before queries that need the schema, once per isolate as the playground does. A failed run is retried on the next call:
 
 ```ts
-import { d1Executor, runMigrations } from "spacefn/db";
+import { migrated } from "@space/db/main_db";
 
-import { migrations } from "../.space/migrations";
-
-await runMigrations(d1Executor(c.env.DB), migrations);
+await migrated(c.env.DB);
 ```
 
-A D1 batch is one transaction, so `d1Executor` is atomic. Durable Object storage uses `transactionSync`, through `durableObjectExecutor`.
+To drive migrations yourself, use the generated `migrate`, or `runMigrations` when you want the traced variant:
+
+```ts
+import { migrate, migrations } from "@space/db/main_db";
+import { d1Executor } from "spacefn/db";
+
+await migrate(d1Executor(c.env.DB)); // apply what is missing
+await migrate(d1Executor(c.env.DB), "down", 1); // roll back one step
+```
+
+- Rolling back goes newest first and stops after one step unless you pass a count.
+- A rollback refuses to run when a step has no `-- down` section, or when its file changed after it was applied. The schema and the ledger never disagree partway.
+- A D1 batch is one transaction, so `d1Executor` is atomic. Durable Object storage uses `transactionSync`, through `durableObjectExecutor`.
 
 ## Queries
 
@@ -71,10 +98,10 @@ SELECT id, title, done FROM todos WHERE id = :id;
 
 Parameters are named (`:id`). Positional `?` is refused, so every value has a name in the generated type. A repeated name is bound once per use.
 
-Generated code (`.space/queries.ts`):
+Generated code (`.space/db/<name>.ts`):
 
 ```ts
-const row = await findTodo(c.env.DB, { id: 2 }); // FindTodoRow | undefined
+const row = await findTodo(d1Executor(c.env.DB), { id: 2 }); // FindTodoRow | undefined
 ```
 
 ## How types are found
@@ -113,7 +140,7 @@ Errors stop the build with a message that names the query:
 - A CTE or subquery column that SQLite cannot trace to a table needs `@column`.
 - Parameter types are not inferred from comparisons. Annotate them when they matter.
 - One query per file.
-- The library does not run migrations for you. Call `runMigrations` yourself, for example once per isolate as the playground does. Two isolates that start together can race on D1, so a deploy step is safer. There is no `space migrate` command: `process.env` in Node is not a D1 binding, so the Worker is where migrations run.
+- The library does not run migrations for you. Call the generated `migrated` yourself, for example before queries that need the schema, as the playground does. Two isolates that start together can race on D1, so a deploy step is safer. There is no `space migrate` command: `process.env` in Node is not a D1 binding, so the Worker is where migrations run.
 
 ## Tracing
 
