@@ -1,6 +1,18 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
+	test: {
+		include: ["test/**/*.test.ts"],
+		coverage: {
+			provider: "v8",
+			thresholds: {
+				statements: 80,
+				branches: 79,
+				functions: 79,
+				lines: 80,
+			},
+		},
+	},
 	pack: {
 		entry: [
 			"src/index.ts",
