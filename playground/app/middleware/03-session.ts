@@ -1,4 +1,4 @@
-import { findSession } from "@space/db/main_db";
+import { findSession, touchSession } from "@space/db/main_db";
 import { migrated } from "@space/db/main_db";
 import { defineMiddleware } from "spacefn";
 import { sessionResolver } from "spacefn/auth";
@@ -17,6 +17,9 @@ const resolve = sessionResolver<AppBindings, { id: number; email: string }>({
 				lastSeenAt: row.lastSeenAt,
 			}
 		);
+	},
+	touch: async (env, tokenHash, lastSeenAt) => {
+		await touchSession(d1Executor(env.DB), { tokenHash, lastSeenAt });
 	},
 });
 

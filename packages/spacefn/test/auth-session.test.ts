@@ -77,6 +77,86 @@ test("the resolver attaches the user for a valid session and leaves it unset oth
 	expect(await (await app.request("/")).json()).toEqual({ user: null });
 });
 
+test("the resolver slides the idle clock when it is stale", async () => {
+	const token = (await newSession()).token;
+	const tokenHash = await hashSessionToken(token);
+	const now = Date.now();
+	const touched: number[] = [];
+	const app = new Hono<{ Bindings: object; Variables: { user?: { name: string } } }>();
+	app.use(
+		sessionResolver<object, { name: string }>({
+			lookup: async (_env, hash) =>
+				hash === tokenHash
+					? {
+							user: { name: "ada" },
+							expiresAt: now + day,
+							lastSeenAt: now - 2 * 60 * 60 * 1000,
+						}
+					: undefined,
+			touch: async (_env, _hash, lastSeenAt) => {
+				touched.push(lastSeenAt);
+			},
+		}),
+	);
+	app.get("/", (c) => c.json({ user: c.get("user")?.name ?? null }));
+	await app.request("/", { headers: { cookie: `session=${token}` } });
+	expect(touched).toHaveLength(1);
+	expect(touched[0]).toBeGreaterThanOrEqual(now);
+});
+
+test("the resolver does not write on every request", async () => {
+	const token = (await newSession()).token;
+	const tokenHash = await hashSessionToken(token);
+	const now = Date.now();
+	const touched: number[] = [];
+	const app = new Hono<{ Bindings: object; Variables: { user?: { name: string } } }>();
+	app.use(
+		sessionResolver<object, { name: string }>({
+			lookup: async (_env, hash) =>
+				hash === tokenHash
+					? {
+							user: { name: "ada" },
+							expiresAt: now + day,
+							lastSeenAt: now - 5 * 60 * 1000,
+						}
+					: undefined,
+			touch: async (_env, _hash, lastSeenAt) => {
+				touched.push(lastSeenAt);
+			},
+		}),
+	);
+	app.get("/", (c) => c.json({ user: c.get("user")?.name ?? null }));
+	await app.request("/", { headers: { cookie: `session=${token}` } });
+	expect(touched).toHaveLength(0);
+});
+
+test("the resolver never touches an expired session", async () => {
+	const token = (await newSession()).token;
+	const tokenHash = await hashSessionToken(token);
+	const now = Date.now();
+	const touched: number[] = [];
+	const app = new Hono<{ Bindings: object; Variables: { user?: { name: string } } }>();
+	app.use(
+		sessionResolver<object, { name: string }>({
+			lookup: async (_env, hash) =>
+				hash === tokenHash
+					? {
+							user: { name: "ada" },
+							expiresAt: now - day,
+							lastSeenAt: now - 2 * day,
+						}
+					: undefined,
+			touch: async (_env, _hash, lastSeenAt) => {
+				touched.push(lastSeenAt);
+			},
+		}),
+	);
+	app.get("/", (c) => c.json({ user: c.get("user")?.name ?? null }));
+	const body = await (await app.request("/", { headers: { cookie: `session=${token}` } })).json();
+	expect(body).toEqual({ user: null });
+	expect(touched).toHaveLength(0);
+});
+
 test("requireSession refuses a request with no user", async () => {
 	const app = new Hono();
 	app.get("/private", requireSession(), (c) => c.text("secret"));
