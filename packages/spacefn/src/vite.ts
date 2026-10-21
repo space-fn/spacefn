@@ -16,6 +16,9 @@ import { scanCodeFiles } from "./scan";
 import { sync } from "./sync";
 import { workflowsConfig } from "./workflows/config";
 
+/** The partial Worker config the plugin's `config` callback may return. */
+type WorkerConfigPatch = ReturnType<Extract<NonNullable<PluginConfig["config"]>, Function>>;
+
 export interface SpaceState {
 	/** The schema from `env.ts`, loaded when Vite resolves its config. */
 	envSchema?: Schema;
@@ -137,6 +140,9 @@ export function space(options: SpaceOptions = {}): PluginOption[] {
 			...options.cloudflare,
 			// `env.ts` cannot be imported by `cloudflare.config.ts`: the plugin makes
 			// every file the config imports unreadable to the Worker.
+			// The plugin's `config` type names its parsed (output) binding forms, while
+			// the helpers below build the input forms the plugin also accepts at run
+			// time. One cast at this beta boundary, typed to the expected patch.
 			config: (worker) => {
 				const queues = queueConfig(state.queueFiles ?? []);
 				const crons = cronConfig(state.cronSchedules ?? []);
@@ -150,10 +156,10 @@ export function space(options: SpaceOptions = {}): PluginOption[] {
 						...dos.env,
 						...wfs.env,
 						...worker.env,
-					} as never,
-					exports: { ...worker.exports, ...dos.exports, ...wfs.exports } as never,
-					...(scheduled.length > 0 ? { triggers: scheduled as never } : {}),
-				};
+					},
+					exports: { ...worker.exports, ...dos.exports, ...wfs.exports },
+					...(scheduled.length > 0 ? { triggers: scheduled } : {}),
+				} as WorkerConfigPatch;
 			},
 		}),
 	];

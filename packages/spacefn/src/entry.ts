@@ -1,6 +1,4 @@
 export interface WorkerSourceOptions {
-	/** The project has an `env.ts` to validate on each request. (unused now, kept for compat) */
-	hasEnv?: boolean;
 	/** Files in `middleware/`, already in run order, e.g. `["01-auth.ts"]`. */
 	middleware?: string[];
 	/** Files in `queues/`, e.g. `["emails.ts"]`. Each is a consumer named after the file. */
@@ -33,6 +31,7 @@ export function generateWorkerSource({
 		"traceConfig",
 		"traceRequest",
 		"envMiddleware",
+		"type Schema",
 		...(queues.length > 0 ? ["dispatchQueue", "type QueueBatch"] : []),
 		...(crons.length > 0 ? ["dispatchScheduled"] : []),
 	];
@@ -55,11 +54,11 @@ export function generateWorkerSource({
 	lines.push("");
 
 	// createApp
-	lines.push("export function createApp(options?: { env?: unknown }) {");
+	lines.push("export function createApp(options?: { env?: Schema }) {");
 	lines.push("\tconst app = new Hono();");
 	lines.push("\tapp.use(traceConfig());");
 	lines.push("\tapp.use(traceRequest());");
-	lines.push("\tif (options?.env) app.use(envMiddleware(options.env as never));");
+	lines.push("\tif (options?.env) app.use(envMiddleware(options.env));");
 	for (const [i] of middleware.entries()) {
 		lines.push(`\tapp.use(middleware${i});`);
 	}

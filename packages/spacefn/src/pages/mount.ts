@@ -3,19 +3,19 @@ import type { Context, Hono } from "hono";
 import type { PageAction, PageRender, ServerModule } from "./define";
 import { escapeHtml, Html, Raw } from "./html";
 
-/** Registers a page: GET renders it, and POST runs the action named in `?_action=`. */
 /**
- * The loader's data reaches the page unchecked. `definePage` and `defineLoader`
- * keep the two types in step within a page's own files.
+ * Registers a page: GET renders it, and POST runs the action named in `?_action=`.
+ * The loader's data reaches the page unchecked at run time. `definePage` and
+ * `defineLoader` keep the two types in step within a page's own files.
  */
 export interface MountPageOptions {
 	onError?: (error: unknown, c: Context) => Response | Promise<Response>;
 }
 
-export function mountPage(
+export function mountPage<P>(
 	app: Hono,
 	path: string,
-	page: PageRender<never>,
+	page: PageRender<P>,
 	server?: ServerModule,
 	options: MountPageOptions = {},
 ): void {
@@ -29,7 +29,7 @@ export function mountPage(
 		try {
 			const props = server?.loader ? await server.loader(c) : {};
 			if (props instanceof Response) return props;
-			const output = await page(props as never, c);
+			const output = await page(props as P, c);
 			// Pages are typed to return `Html` or `Raw`; escape anything a cast smuggles in.
 			const markup =
 				output instanceof Raw || output instanceof Html ? output.value : escapeHtml(String(output));
