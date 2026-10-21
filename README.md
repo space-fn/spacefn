@@ -64,6 +64,3 @@ pnpm lint
 cd packages/spacefn && pnpm test
 cd playground && pnpm dev
 ```
-
-EOF
-cd /Users/wailinaung/Develop/TheAnka/space && vpr fmt >/dev/null 2>&1; vpr fmt:check > /tmp/fc.txt 2>&1; echo fmt=$?; vpr lint > /tmp/lint.txt 2>&1; echo lint=$?; git add README.md && git commit -q -m "docs: rewrite README for the new spacefn" && git status --short
