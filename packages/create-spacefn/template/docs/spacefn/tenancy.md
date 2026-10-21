@@ -1,6 +1,6 @@
 # Tenancy
 
-One app serves many tenants. Each tenant's data lives in its own SQLite database, a `Tenant` Durable Object. A shared D1 database holds the registry: which tenants exist and whether they may be served.
+One app serves many tenants. Each tenant's data lives in its own Durable Object with SQLite storage. A shared D1 database holds the registry: which tenants exist and whether they may be served.
 
 ```txt
 request → resolve tenant (registry in D1) → its Tenant Durable Object → its own SQLite
@@ -68,21 +68,6 @@ export const GET = defineHandler((c) => {
 - Use the tenant's internal id for the Durable Object name, never the slug. The slug can change; the internal id must not.
 - `currentTenant` throws when no resolver ran first, so a route cannot silently run without a tenant.
 
-## The Tenant class
-
-Generated from `tenant/`. Each query becomes a method on it:
-
-```ts
-const stub = c.env.TENANTS.getByName(internalId);
-await stub.addTodo({ title: "write docs" });
-await stub.listTodos({});
-```
-
-- The class applies its migrations before it serves anything. It uses `blockConcurrencyWhile`, so a request never sees a half-migrated database. The ledger makes the step idempotent.
-- The binding is `TENANTS`. The config declares the class and the binding when a `tenant/` folder exists.
-- The entry must export the class. The generated `.space/worker.ts` does; a hand-written entry must re-export `Tenant` as well. A missing export fails at startup with `Class extends value undefined`.
-- Query names may not match a Durable Object method (`fetch`, `alarm`, and so on).
-
 ## Tracing
 
 Each stub call is a `do.call` span with the binding and the method name. Migrations are a `db.migrate` span.
@@ -91,29 +76,18 @@ Each stub call is a `do.call` span with the binding and the method name. Migrati
 
 Actions on a tenant follow fixed rules, enforced by `transition` in `spacefn/tenancy`:
 
-| From                     | Action  | To        | Notes                                       |
-| ------------------------ | ------- | --------- | ------------------------------------------- |
-| active                   | suspend | suspended | Requests get 403                            |
-| suspended                | resume  | active    |                                             |
-| active, suspended        | delete  | deleted   | Requests get 404. Data is kept for 30 days. |
-| deleted                  | restore | active    | Only within the 30 days. Data is intact.    |
-| deleted (30 days passed) | purge   | purged    | Done by the daily cron. Final.              |
+| From              | Action  | To        | Notes                                       |
+| ----------------- | ------- | --------- | ------------------------------------------- |
+| active            | suspend | suspended | Requests get 403                            |
+| suspended         | resume  | active    |                                             |
+| active, suspended | delete  | deleted   | Requests get 404. Data is kept for 30 days. |
+| deleted           | restore | active    | Only within the 30 days. Data is intact.    |
 
-An action that breaks a rule gets 409 and changes nothing.
-
-## Backups and purge
-
-The playground's `app/crons/tenant-backups.ts` runs daily at 02:00:
-
-- Every active and suspended tenant is exported to R2 as `daily/<date>/<internal-id>.json`.
-- A deleted tenant whose 30 days have passed is purged. Its export goes to `purged/<internal-id>.json`, and the cron checks that the object exists in R2 before it does anything else. Only then does it wipe the Durable Object and mark the tenant `purged`.
-- A failure for one tenant is reported at the end, and the other tenants still run. A failed tenant is never wiped.
-
-Each export is a JSON document of every table, including the migration ledger. A `Tenant` exposes `exportData()` and `wipe()`.
-
-The bucket is declared in `cloudflare.config.ts` as `BACKUPS`. The cron needs it, and so does the purge.
+An action that breaks a rule throws `TenantTransitionError` and changes nothing. Map it to a response in your route, for example 409.
 
 ## Not yet
 
-- Restoring a backup into a new tenant. The export format is in place; the import is not.
-- Admin authentication. The playground's `/admin/` routes are open, for development only.
+- The generated `Tenant` class. Today the Durable Object is yours to write. Apply its migrations before it serves anything, so a request never sees a half-migrated database, and keep the ledger so the step is idempotent.
+- Purge after the grace period. `transition` has no `purge` action yet; the `purged` status is reserved for it.
+- Backups. The playground declares a `BACKUPS` R2 bucket in `cloudflare.config.ts`, but no export or restore code exists. The planned shape: a daily cron exports each tenant to R2, and a purge wipes the Durable Object only after its export is in the bucket.
+- Admin routes. There are no `/admin/` routes yet. When they land they need their own authentication first.
