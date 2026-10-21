@@ -51,7 +51,7 @@ c.header("Set-Cookie", sessionCookie(session.token));
 - `sessionResolver({ lookup })` reads the cookie and sets `c.get("user")`. An unknown or expired session leaves the user unset and does not refuse the request.
 - `requireSession()` refuses requests without a user, with 401.
 - `clearSessionCookie()` for sign-out. Also delete the session row.
-- Sessions are not refreshed on every request, to avoid a write per request. Update `lastSeenAt` on a schedule if you need idle timeouts to slide.
+- The idle clock slides through `touch`: when `lastSeenAt` is over an hour old, `sessionResolver({ lookup, touch })` calls `touch` to write a fresh one. That is one write per hour at most, not one per request. Without `touch`, the idle clock runs from the last write, which is usually the sign-in.
 
 ## Cross-site request guard
 
@@ -61,9 +61,9 @@ import { csrfGuard } from "spacefn/auth";
 app.use(csrfGuard({ cookie: "session", origins: ["https://app.example.com"] }));
 ```
 
-- For `POST`, `PUT`, `PATCH` and `DELETE` with a session cookie, the `Origin` header must be this app's own origin or one you list.
+- For `POST`, `PUT`, `PATCH` and `DELETE`, the `Origin` header must be this app's own origin or one you list — with or without a session cookie. Checking cookie-less requests too is what stops a forged login.
 - Without an `Origin`, `Sec-Fetch-Site` must be `same-origin` or `none`.
-- Requests without a session cookie are not checked. They carry no browser session to forge.
+- A request with neither header is refused when it carries a session cookie, and allowed when it does not, so non-browser API clients keep working.
 
 ## Rate limiting
 
