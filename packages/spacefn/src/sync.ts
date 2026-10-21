@@ -49,27 +49,38 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const durableObjects = await scanCodeFiles(join(app, "durable-objects"));
 	const workflows = await scanCodeFiles(join(app, "workflows"));
 
-	// Read env schema (best effort)
+	// Read env schema. A broken env.ts must fail loudly: empty bindings would
+	// hide the error until a request hits the app.
 	let envFields: Array<{ name: string }> = [];
 	if (hasEnv) {
 		try {
 			const mod = await import(join(app, "env.ts"));
 			const schema = mod.default ?? mod;
 			envFields = Object.keys(schema ?? {}).map((name) => ({ name }));
-		} catch {
-			envFields = [];
+		} catch (error) {
+			throw new Error(
+				`app/env.ts failed to load: ${error instanceof Error ? error.message : String(error)}`,
+			);
 		}
 	}
 
-	// Read cloudflare config (best effort)
+	// Read cloudflare config. A missing config is fine; a broken one is not.
 	let cloudflareBindings: Record<string, { type?: string }> = {};
-	try {
-		const cfg = await import(join(root, "cloudflare.config.ts"));
-		const config = cfg.default ?? cfg;
-		const env = config?.worker?.env ?? config?.env ?? {};
-		cloudflareBindings = env;
-	} catch {
-		cloudflareBindings = {};
+	const hasCloudflareConfig = await access(join(root, "cloudflare.config.ts")).then(
+		() => true,
+		() => false,
+	);
+	if (hasCloudflareConfig) {
+		try {
+			const cfg = await import(join(root, "cloudflare.config.ts"));
+			const config = cfg.default ?? cfg;
+			const env = config?.worker?.env ?? config?.env ?? {};
+			cloudflareBindings = env;
+		} catch (error) {
+			throw new Error(
+				`cloudflare.config.ts failed to load: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
 	}
 	const pages = await scanPages(join(app, "pages"));
 	if (pages.length > 0) {
@@ -123,11 +134,20 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		const dir = join(app, "db", name);
 		const migrations = await scanMigrations(join(dir, "migrations"));
 		let dialect: "sqlite" | "postgres" = "sqlite";
-		try {
-			const cfg = await import(join(dir, "config.ts"));
-			dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
-		} catch {
-			dialect = "sqlite";
+		const configPath = join(dir, "config.ts");
+		const hasConfig = await access(configPath).then(
+			() => true,
+			() => false,
+		);
+		if (hasConfig) {
+			try {
+				const cfg = await import(configPath);
+				dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
+			} catch (error) {
+				throw new Error(
+					`app/db/${name}/config.ts failed to load: ${error instanceof Error ? error.message : String(error)}`,
+				);
+			}
 		}
 		const queries = await analyzeQueries(join(dir, "queries"), migrations, dialect);
 		results.push(

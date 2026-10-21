@@ -73,3 +73,13 @@ test("registers middleware files in order, after the built-ins", async () => {
 	expect(positions.every((p) => p >= 0)).toBe(true);
 	expect([...positions].sort((a, b) => a - b)).toEqual(positions);
 });
+
+test("a broken env.ts fails the sync instead of hiding it", async () => {
+	await writeFile(join(root, "app", "env.ts"), "export default { X: ((( ");
+	await expect(sync(root, "dev")).rejects.toThrow(/app\/env\.ts failed to load/);
+});
+
+test("a broken cloudflare.config.ts fails the sync instead of hiding it", async () => {
+	await writeFile(join(root, "cloudflare.config.ts"), "export default { X: ((( ");
+	await expect(sync(root, "dev")).rejects.toThrow(/cloudflare\.config\.ts failed to load/);
+});

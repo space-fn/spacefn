@@ -89,11 +89,19 @@ program
 			const dir = join(appDb, name);
 			try {
 				let dialect: "sqlite" | "postgres" = "sqlite";
+				let dialectNote = "dialect=sqlite (default: no config.ts)";
+				const configPath = join(dir, "config.ts");
 				try {
-					const cfg = await import(join(dir, "config.ts"));
+					const cfg = await import(configPath);
 					dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
-				} catch {
-					// config optional
+					dialectNote = `dialect=${dialect}`;
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error);
+					if (!/Cannot find module|ERR_MODULE_NOT_FOUND|ENOENT/.test(message)) {
+						throw new Error(`config.ts failed to load: ${message}`);
+					}
+					// No config.ts: sqlite is the documented default, and the
+					// fallback is reported in the result line.
 				}
 				const { scanMigrations, analyzeQueries } = await import("./db");
 				const migrations = await scanMigrations(join(dir, "migrations"));
@@ -101,10 +109,10 @@ program
 				results.push({
 					db: name,
 					ok: true,
-					message: `${migrations.length} migrations, dialect=${dialect}`,
+					message: `${migrations.length} migrations, ${dialectNote}`,
 				});
 				if (!options.json)
-					console.log(`OK  ${name} (${migrations.length} migrations, dialect=${dialect})`);
+					console.log(`OK  ${name} (${migrations.length} migrations, ${dialectNote})`);
 			} catch (error) {
 				ok = false;
 				const msg = error instanceof Error ? error.message : String(error);
@@ -141,6 +149,9 @@ program
 		if (!existsSync(resolve(root, "app"))) checks.push("missing app/ folder");
 		if (!existsSync(resolve(root, ".space"))) checks.push("missing .space/ (run `space gen`)");
 		if (!existsSync(resolve(root, "tsconfig.json"))) checks.push("missing tsconfig.json");
+		if (existsSync(resolve(root, "env.ts"))) {
+			checks.push("env.ts at the project root is ignored; it must live at app/env.ts");
+		}
 		const tsconfig = existsSync(resolve(root, "tsconfig.json"))
 			? JSON.parse((await import("node:fs")).readFileSync(resolve(root, "tsconfig.json"), "utf8"))
 			: null;
