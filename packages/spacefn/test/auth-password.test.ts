@@ -182,6 +182,9 @@ test("the HIBP check sends only a hash prefix and fails open", async () => {
 	);
 	expect(await clean.isBreached(password)).toBe(false);
 
+	const unavailable = hibpBreachCheck(async () => new Response("busy", { status: 503 }));
+	expect(await unavailable.isBreached(password)).toBe(false);
+
 	const down = hibpBreachCheck(async () => {
 		throw new Error("network down");
 	});

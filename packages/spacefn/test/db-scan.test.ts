@@ -39,7 +39,13 @@ test("rejects names without a number", async () => {
 test("rejects two migrations with the same number", async () => {
 	await writeFile(join(dir, "0001_a.sql"), "");
 	await writeFile(join(dir, "0001_b.sql"), "");
-	await expect(scanMigrations(dir)).rejects.toThrow("share the number 1");
+	const error = await scanMigrations(dir).then(
+		() => undefined,
+		(e: Error) => e,
+	);
+	expect(error?.message).toMatch(/share the number 1/);
+	expect(error?.message).toContain("0001_a");
+	expect(error?.message).toContain("0001_b");
 });
 
 test("returns nothing without a migrations folder", async () => {
