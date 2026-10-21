@@ -31,6 +31,11 @@ test("orders static before dynamic before catch-all", async () => {
 	expect(paths).toEqual(["/", "/users/me", "/users/:id", "/:rest{.+}"]);
 });
 
+test("skips test and spec files", async () => {
+	await touch("a.ts", "a.test.ts", "b.spec.ts", "c.e2e.ts");
+	expect((await scanRoutes(dir, "dev")).map((route) => route.file)).toEqual(["a.ts", "c.e2e.ts"]);
+});
+
 test("skips ignored files and other environments", async () => {
 	await touch("a.ts", "_skip.ts", "dev-only.dev.ts", "prod-only.prod.ts", "notes.md");
 	expect((await scanRoutes(dir, "dev")).map((route) => route.file)).toEqual([

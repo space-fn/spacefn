@@ -77,6 +77,28 @@ test("refuses iteration counts the runtime does not accept", async () => {
 test("refuses empty and oversized passwords", async () => {
 	await expect(hashPassword("")).rejects.toThrow("must not be empty");
 	await expect(hashPassword("x".repeat(1025))).rejects.toThrow("at most 1024");
+	await expect(hashPassword("x".repeat(1024), { iterations: 1000 })).resolves.toBeDefined();
+});
+
+test("accepts the lowest iteration count and refuses below it", async () => {
+	await expect(hashPassword("pw-long-enough", { iterations: 1 })).resolves.toBeDefined();
+	await expect(hashPassword("pw-long-enough", { iterations: 0 })).rejects.toThrow(
+		"from 1 to 100000",
+	);
+});
+
+test("every missing field in a stored hash is malformed", async () => {
+	for (const stored of [
+		"",
+		"pbkdf2-sha256",
+		"pbkdf2-sha256$1000",
+		"pbkdf2-sha256$1000$AAAAAAAAAAAAAAAAAAAAAA",
+		"pbkdf2-sha256$$AAAAAAAAAAAAAAAAAAAAAA$AAAA",
+		"pbkdf2-sha256$1000$$AAAA",
+		"pbkdf2-sha256$1000$AAAAAAAAAAAAAAAAAAAAAA$",
+	]) {
+		await expect(verifyPassword("pw-long-enough", stored), stored).rejects.toThrow(/malformed/);
+	}
 });
 
 test("a malformed stored hash is an error, never a quiet failure", async () => {

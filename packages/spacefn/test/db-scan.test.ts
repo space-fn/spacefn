@@ -46,6 +46,19 @@ test("returns nothing without a migrations folder", async () => {
 	expect(await scanMigrations(join(root, "nope"))).toEqual([]);
 });
 
+test("refuses a migration with no -- up section", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "CREATE TABLE a (id);");
+	await expect(scanMigrations(dir)).rejects.toThrow(/-- up/);
+});
+
+test("separates the up and down sections in either order", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "-- down\nDROP TABLE a;\n-- up\nCREATE TABLE a;\n");
+	await writeFile(join(dir, "0002_b.sql"), "-- up\nCREATE TABLE b;\n-- down\nDROP TABLE b;\n");
+	const [first, second] = await scanMigrations(dir);
+	expect(first).toEqual({ id: "0001_a", sql: "CREATE TABLE a;", down: "DROP TABLE a;" });
+	expect(second).toEqual({ id: "0002_b", sql: "CREATE TABLE b;", down: "DROP TABLE b;" });
+});
+
 test("generated source inlines the SQL", () => {
 	const source = generateMigrationsSource([{ id: "0001_a", sql: 'CREATE TABLE "x" (y);' }]);
 	expect(source).toContain('{ id: "0001_a", sql: "CREATE TABLE \\"x\\" (y);" },');

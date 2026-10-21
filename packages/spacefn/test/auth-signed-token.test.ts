@@ -67,6 +67,12 @@ test("refuses a short signing key", async () => {
 	);
 });
 
+test("accepts a key of exactly the minimum length", async () => {
+	const key32 = "k".repeat(32);
+	const token = await signToken({ purpose: "p", subject: "s" }, key32, hour, t0);
+	expect((await verifyToken(token, key32, "p", t0)).purpose).toBe("p");
+});
+
 test("refuses a signed token with no expiry field", async () => {
 	const body = toBase64Url(
 		new TextEncoder().encode(JSON.stringify({ purpose: "invite", subject: "t", jti: "1" })),

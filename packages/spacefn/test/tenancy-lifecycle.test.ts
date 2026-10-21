@@ -37,6 +37,10 @@ test("restore is refused once the grace period has ended", () => {
 	expect(() => transition(deleted, "restore", t0 + GRACE_MS)).toThrow("grace period has ended");
 });
 
+test("restore is refused when the delete time is missing", () => {
+	expect(() => transition({ status: "deleted" }, "restore", t0)).toThrow(TenantTransitionError);
+});
+
 test("purged tenants cannot be changed", () => {
 	expect(() => transition({ status: "purged" }, "restore", t0)).toThrow(TenantTransitionError);
 	expect(() => transition({ status: "purged" }, "delete", t0)).toThrow("cannot be deleted");

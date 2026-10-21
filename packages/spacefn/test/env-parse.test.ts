@@ -28,6 +28,8 @@ describe("parseEnv", () => {
 		const env = parseEnv(schema, { ...valid, LIMIT: "42", DEBUG: "TRUE", NOTE: "x" });
 		expect(env).toMatchObject({ LIMIT: 42, DEBUG: true, NOTE: "x" });
 		expect(parseEnv(schema, { ...valid, DEBUG: "0" }).DEBUG).toBe(false);
+		expect(parseEnv(schema, { ...valid, DEBUG: "false" }).DEBUG).toBe(false);
+		expect(parseEnv(schema, { ...valid, DEBUG: "False" }).DEBUG).toBe(false);
 	});
 
 	test("keeps an empty string as a value", () => {

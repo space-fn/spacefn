@@ -34,6 +34,11 @@ test("refuses positional parameters", () => {
 	expect(() => namedParams("SELECT * FROM t WHERE id = ?")).toThrow("Use named parameters");
 });
 
+test("a minus operator before a parameter is not a comment", () => {
+	expect(namedParams("SELECT 1 - 1 AS d, :a FROM t").names).toEqual(["a"]);
+	expect(namedParams("SELECT :a FROM t WHERE x = y -").names).toEqual(["a"]);
+});
+
 let dir: string;
 
 beforeEach(async () => {

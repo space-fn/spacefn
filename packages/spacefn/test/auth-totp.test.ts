@@ -18,6 +18,15 @@ test("base32 round-trips and matches RFC 4648", () => {
 	expect(base32Decode("mzxw6ytboi")).toEqual(base32Decode("MZXW6YTBOI"));
 });
 
+test("base32 decodes every chunk length, dropping the leftover bits", () => {
+	expect(Array.from(base32Decode("M"))).toEqual([]);
+	expect(Array.from(base32Decode("MY"))).toEqual([0x66]);
+	expect(Array.from(base32Decode("MZX"))).toEqual([0x66]);
+	expect(Array.from(base32Decode("MZXW"))).toEqual([0x66, 0x6f]);
+	expect(new TextDecoder().decode(base32Decode("MZXW6YTB"))).toBe("fooba");
+	expect(new TextDecoder().decode(base32Decode("MZXW6YTBOI"))).toBe("foobar");
+});
+
 test("matches the RFC 6238 SHA-1 test vectors, to six digits", async () => {
 	expect(await totpAt(rfcSecret, 59_000)).toBe("287082");
 	expect(await totpAt(rfcSecret, 1_111_111_109_000)).toBe("081804");
@@ -43,8 +52,12 @@ test("accepts one step of clock drift either way, but not two", async () => {
 	const at = 1_234_567_890_000;
 	const previous = await totpAt(rfcSecret, at - 30_000);
 	const twoBack = await totpAt(rfcSecret, at - 60_000);
+	const next = await totpAt(rfcSecret, at + 30_000);
+	const twoAhead = await totpAt(rfcSecret, at + 60_000);
 	expect((await verifyTotp(previous, rfcSecret, at)).valid).toBe(true);
+	expect((await verifyTotp(next, rfcSecret, at)).valid).toBe(true);
 	expect((await verifyTotp(twoBack, rfcSecret, at)).valid).toBe(false);
+	expect((await verifyTotp(twoAhead, rfcSecret, at)).valid).toBe(false);
 });
 
 test("refuses a code whose step was already used", async () => {

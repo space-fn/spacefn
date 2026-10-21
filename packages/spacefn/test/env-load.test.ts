@@ -19,6 +19,13 @@ test("returns undefined without env.ts", async () => {
 	expect(await loadEnvSchema(root)).toBeUndefined();
 });
 
+test("reads app/env.ts and ignores a root-level env.ts", async () => {
+	await writeFile(join(root, "env.ts"), "export default { ROOT: 1 };\n");
+	expect(await loadEnvSchema(root)).toBeUndefined();
+	await writeFile(join(root, "app", "env.ts"), "export default { APP: 1 };\n");
+	expect(await loadEnvSchema(root)).toEqual({ APP: 1 });
+});
+
 test("loads the default export", async () => {
 	await writeFile(join(root, "app", "env.ts"), "export default { A: { kind: 'string' } };\n");
 	expect(await loadEnvSchema(root)).toEqual({ A: { kind: "string" } });
