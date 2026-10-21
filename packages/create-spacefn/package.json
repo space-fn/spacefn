@@ -9,7 +9,9 @@
 	},
 	"files": [
 		"dist",
-		"template"
+		"template",
+		"!template/.space",
+		"!template/.cloudflare"
 	],
 	"type": "module",
 	"main": "./dist/index.js",
