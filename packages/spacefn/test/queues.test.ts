@@ -65,6 +65,21 @@ test("dispatch flushes spans through waitUntil when export is on", async () => {
 	expect(flush).toHaveBeenCalledTimes(1);
 });
 
+test("dispatch flushes spans even when the consumer fails", async () => {
+	const flush = vi.fn(async () => undefined);
+	setTracer({ onEnd: () => undefined, flush });
+	const context = ctx();
+	await expect(
+		dispatchQueue(batchOf("emails", [{}]), {}, context, {
+			emails: defineQueue(async () => {
+				throw new Error("consumer failed");
+			}),
+		} as never),
+	).rejects.toThrow("consumer failed");
+	expect(context.waitUntil).toHaveBeenCalledTimes(1);
+	expect(flush).toHaveBeenCalledTimes(1);
+});
+
 test("dispatch fails loudly and retries when no consumer exists", async () => {
 	const batch = batchOf("orphans", [{}]);
 	await expect(dispatchQueue(batch, {}, ctx(), {})).rejects.toThrow(

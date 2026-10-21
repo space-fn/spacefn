@@ -51,22 +51,25 @@ export async function dispatchQueue(
 
 	const bindings = traceBindings(env);
 	const unwrapped = unwrapBatch(batch);
-	await runWithBindings(bindings, () =>
-		withSpan(
-			"queue.process",
-			async (span) => {
-				span.setAttributes({
-					"messaging.system": "cloudflare_queues",
-					"messaging.destination.name": batch.queue,
-					"messaging.batch.message_count": batch.messages.length,
-				});
-				await handler(unwrapped.batch, bindings, ctx);
-			},
-			{ kind: "consumer", parent: unwrapped.parent },
-		),
-	);
-
-	const tracer = getTracer();
-	const flush = tracer?.flush?.bind(tracer);
-	if (flush) ctx.waitUntil(flush());
+	try {
+		await runWithBindings(bindings, () =>
+			withSpan(
+				"queue.process",
+				async (span) => {
+					span.setAttributes({
+						"messaging.system": "cloudflare_queues",
+						"messaging.destination.name": batch.queue,
+						"messaging.batch.message_count": batch.messages.length,
+					});
+					await handler(unwrapped.batch, bindings, ctx);
+				},
+				{ kind: "consumer", parent: unwrapped.parent },
+			),
+		);
+	} finally {
+		// Flush even when the consumer fails, so the error span is still exported.
+		const tracer = getTracer();
+		const flush = tracer?.flush?.bind(tracer);
+		if (flush) ctx.waitUntil(flush());
+	}
 }

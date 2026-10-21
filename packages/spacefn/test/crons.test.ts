@@ -68,6 +68,21 @@ test("a failing job does not stop the others and is rethrown", async () => {
 	expect(healthy).toHaveBeenCalledTimes(1);
 });
 
+test("dispatch flushes spans even when a job fails", async () => {
+	const flush = vi.fn(async () => undefined);
+	setTracer({ onEnd: () => undefined, flush });
+	const context = ctx();
+	await expect(
+		dispatchScheduled(event("0 3 * * *"), {}, context, {
+			nightly: defineCron("0 3 * * *", async () => {
+				throw new Error("job failed");
+			}),
+		}),
+	).rejects.toThrow("1 scheduled job(s) failed");
+	expect(context.waitUntil).toHaveBeenCalledTimes(1);
+	expect(flush).toHaveBeenCalledTimes(1);
+});
+
 test("traces the run under a cron span with the job name", async () => {
 	setTracer({ onEnd: (record) => records.push(record) });
 	await dispatchScheduled(event("0 3 * * *"), {}, ctx(), {

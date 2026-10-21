@@ -17,30 +17,33 @@ export async function dispatchScheduled(
 	const bindings = traceBindings(env);
 	const due = Object.entries(jobs).filter(([, job]) => job.schedule === event.cron);
 
-	await runWithBindings(bindings, () =>
-		withSpan(
-			"cron",
-			async (span) => {
-				span.setAttributes({ "cron.schedule": event.cron, "cron.jobs": due.length });
-				const results = await Promise.allSettled(
-					due.map(([name, job]) =>
-						withSpan("cron.run", () => job.run(event, bindings, ctx), {
-							attributes: { "cron.job": name },
-						}),
-					),
-				);
-				const failures = results.flatMap((result) =>
-					result.status === "rejected" ? [result.reason] : [],
-				);
-				if (failures.length > 0) {
-					throw new AggregateError(failures, `${failures.length} scheduled job(s) failed`);
-				}
-			},
-			{ kind: "internal" },
-		),
-	);
-
-	const tracer = getTracer();
-	const flush = tracer?.flush?.bind(tracer);
-	if (flush) ctx.waitUntil(flush());
+	try {
+		await runWithBindings(bindings, () =>
+			withSpan(
+				"cron",
+				async (span) => {
+					span.setAttributes({ "cron.schedule": event.cron, "cron.jobs": due.length });
+					const results = await Promise.allSettled(
+						due.map(([name, job]) =>
+							withSpan("cron.run", () => job.run(event, bindings, ctx), {
+								attributes: { "cron.job": name },
+							}),
+						),
+					);
+					const failures = results.flatMap((result) =>
+						result.status === "rejected" ? [result.reason] : [],
+					);
+					if (failures.length > 0) {
+						throw new AggregateError(failures, `${failures.length} scheduled job(s) failed`);
+					}
+				},
+				{ kind: "internal" },
+			),
+		);
+	} finally {
+		// Flush even when a job fails, so the error span is still exported.
+		const tracer = getTracer();
+		const flush = tracer?.flush?.bind(tracer);
+		if (flush) ctx.waitUntil(flush());
+	}
 }
