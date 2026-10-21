@@ -82,6 +82,7 @@ export async function verifyToken(
 		throw new TokenError("Token is malformed");
 	}
 	if (payload.purpose !== purpose) throw new TokenError("Token is for a different purpose");
+	if (typeof payload.expiresAt !== "number") throw new TokenError("Token has no expiry");
 	if (now >= payload.expiresAt) throw new TokenError("Token has expired");
 	return payload;
 }

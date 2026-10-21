@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 
-import { signToken, TokenError, verifyToken } from "../src/auth";
+import { signToken, toBase64Url, TokenError, verifyToken } from "../src/auth";
 
 const key = "a-signing-key-that-is-long-enough-0123";
 const hour = 60 * 60 * 1000;
@@ -64,5 +64,26 @@ test("refuses a short signing key", async () => {
 	);
 	await expect(signToken({ purpose: "p", subject: "s" }, "short", hour, t0)).rejects.toThrow(
 		"at least 32",
+	);
+});
+
+test("refuses a signed token with no expiry field", async () => {
+	const body = toBase64Url(
+		new TextEncoder().encode(JSON.stringify({ purpose: "invite", subject: "t", jti: "1" })),
+	);
+	const imported = await crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(key),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	const sig = new Uint8Array(
+		await crypto.subtle.sign("HMAC", imported, new TextEncoder().encode(body)),
+	);
+	const token = `${body}.${toBase64Url(sig)}`;
+	// Even at the end of time such a token must not be accepted.
+	await expect(verifyToken(token, key, "invite", Number.MAX_SAFE_INTEGER)).rejects.toThrow(
+		/no expiry/,
 	);
 });
