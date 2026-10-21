@@ -25,7 +25,9 @@ function fakeD1(db: DatabaseSync) {
 		batch: async (statements: unknown[]) => {
 			db.exec("BEGIN");
 			try {
-				for (const statement of statements as { sql: string }[]) db.exec(statement.sql);
+				for (const statement of statements as { sql: string; values: unknown[] }[]) {
+					db.prepare(statement.sql).run(...(statement.values as never[]));
+				}
 				db.exec("COMMIT");
 			} catch (error) {
 				db.exec("ROLLBACK");

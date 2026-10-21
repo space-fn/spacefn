@@ -1,4 +1,11 @@
-import type { MigrationExecutor } from "./migrate";
+import type { MigrationExecutor, MigrationStatement } from "./migrate";
+
+/** Normalizes a statement to SQL plus bound parameters. */
+function parts(statement: MigrationStatement): { sql: string; params: unknown[] } {
+	return typeof statement === "string"
+		? { sql: statement, params: [] }
+		: { sql: statement.sql, params: statement.params ?? [] };
+}
 
 /** The part of a D1 database the executor uses. */
 export type D1Database = globalThis.D1Database;
@@ -29,7 +36,12 @@ export function d1Executor(db: unknown): MigrationExecutor {
 			return results;
 		},
 		transaction: async (statements) => {
-			await d.batch(statements.map((sql) => d.prepare(sql).bind()));
+			await d.batch(
+				statements.map((statement) => {
+					const { sql, params } = parts(statement);
+					return d.prepare(sql).bind(...params);
+				}),
+			);
 		},
 	};
 }
@@ -48,7 +60,12 @@ export function libsqlExecutor(db: LibSqlClientLike): MigrationExecutor {
 			return res.rows as T[];
 		},
 		transaction: async (statements) => {
-			await db.batch(statements.map((sql) => ({ sql })));
+			await db.batch(
+				statements.map((statement) => {
+					const { sql, params } = parts(statement);
+					return { sql, args: params };
+				}),
+			);
 		},
 	};
 }
@@ -59,7 +76,10 @@ export function durableObjectExecutor(storage: DurableStorageLike): MigrationExe
 			storage.sql.exec(sql, ...params).toArray() as T[],
 		transaction: async (statements) => {
 			storage.transactionSync(() => {
-				for (const statement of statements) storage.sql.exec(statement);
+				for (const statement of statements) {
+					const { sql, params } = parts(statement);
+					storage.sql.exec(sql, ...params);
+				}
 			});
 		},
 	};

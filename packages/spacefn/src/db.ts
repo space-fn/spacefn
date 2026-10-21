@@ -5,7 +5,7 @@ export {
 	MigrationError,
 	LEDGER,
 } from "./db/migrate";
-export type { Migration, MigrationExecutor } from "./db/migrate";
+export type { Migration, MigrationExecutor, MigrationStatement } from "./db/migrate";
 export { splitStatements } from "./db/split";
 export { generateMigrationsSource } from "./db/generate";
 export { d1Executor, durableObjectExecutor, libsqlExecutor } from "./db/executors";

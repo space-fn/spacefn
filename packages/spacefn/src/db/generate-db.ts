@@ -18,20 +18,10 @@ export function generateDbSource(
 
 	blocks.push("export const migrations: Migration[] = [");
 	for (const migration of migrations) {
+		const down = migration.down ? `, down: ${JSON.stringify(migration.down)}` : "";
 		blocks.push(
-			`\t{ id: ${JSON.stringify(migration.id)}, sql: ${JSON.stringify(migration.sql)} },`,
+			`\t{ id: ${JSON.stringify(migration.id)}, sql: ${JSON.stringify(migration.sql)}${down} },`,
 		);
-	}
-	blocks.push("];");
-	blocks.push("");
-
-	blocks.push("export const downMigrations: Migration[] = [");
-	for (const migration of migrations) {
-		if (migration.down) {
-			blocks.push(
-				`\t{ id: ${JSON.stringify(migration.id)}, sql: ${JSON.stringify(migration.down)} },`,
-			);
-		}
 	}
 	blocks.push("];");
 	blocks.push("");
@@ -41,10 +31,10 @@ export function generateDbSource(
 	);
 	blocks.push("");
 	blocks.push(
-		'export async function migrate(db: MigrationExecutor, action: "up" | "down" = "up"): Promise<string[]> {',
+		'export async function migrate(db: MigrationExecutor, action: "up" | "down" = "up", steps = 1): Promise<string[]> {',
 	);
 	blocks.push('\tif (action === "up") return applyMigrations(db, migrations);');
-	blocks.push("\treturn rollbackMigrations(db, downMigrations);");
+	blocks.push("\treturn rollbackMigrations(db, migrations, { steps });");
 	blocks.push("}");
 	blocks.push("");
 	blocks.push("const ready = new WeakMap<WeakKey, Promise<string[]>>();");
