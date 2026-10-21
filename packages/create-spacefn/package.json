@@ -21,11 +21,9 @@
 		"typecheck": "vp check",
 		"test": "vp test"
 	},
-	"dependencies": {
-		"spacefn": "^0.1.1"
-	},
 	"devDependencies": {
 		"@types/node": "^26.6.5",
+		"spacefn": "workspace:*",
 		"typescript": "^7.0.2",
 		"vite-plus": "latest"
 	}
