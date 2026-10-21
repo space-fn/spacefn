@@ -53,6 +53,9 @@ export function generateDbSource(
 	blocks.push("\tlet pending = ready.get(db as WeakKey);");
 	blocks.push("\tif (!pending) {");
 	blocks.push("\t\tpending = applyMigrations(d1Executor(db as never), migrations);");
+	blocks.push("\t\tpending.catch(() => {");
+	blocks.push("\t\t\tready.delete(db as WeakKey);");
+	blocks.push("\t\t});");
 	blocks.push("\t\tready.set(db as WeakKey, pending);");
 	blocks.push("\t}");
 	blocks.push("\treturn pending;");
