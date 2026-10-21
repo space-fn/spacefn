@@ -30,7 +30,7 @@ Export happens after the response, through `waitUntil`. A failed export is logge
 
 | Span                                       | Kind     | Created by                                                          | Attributes                                                                                            |
 | ------------------------------------------ | -------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `METHOD /route`                            | server   | Every request, named after the matched route, e.g. `GET /users/:id` | `http.request.method`, `url.path`, `http.response.status_code`                                        |
+| `METHOD /route`                            | server   | Every request, named after the matched route, e.g. `GET /users/:id` | `http.request.method`, `http.route`, `http.response.status_code`                                      |
 | `HTTP METHOD host`                         | client   | `tracedFetch`                                                       | `http.request.method`, `server.address`, `http.response.status_code`                                  |
 | `db.query`                                 | internal | D1 `prepare`, `exec`, `batch`                                       | `db.system`, `db.operation.name`, `db.query.text`, `db.rows_read`, `db.rows_written`, `db.batch.size` |
 | `kv.get`, `kv.put`, `kv.delete`, `kv.list` | internal | KV bindings                                                         | `db.system` (`kv`), `db.operation.name`                                                               |
@@ -41,6 +41,8 @@ Export happens after the response, through `waitUntil`. A failed export is logge
 | `do.call`                                  | client   | Each Durable Object stub method call                                | `do.binding`, `rpc.method`                                                                            |
 
 Queries made through `tracedFetch` or bindings nest under the span that was active when they ran, so a request trace shows its database work in place.
+
+Server spans record the matched route pattern (`http.route`), never the raw inbound path. A raw path can carry secrets in its parameters, such as `/invite/:token`, and must not reach the trace backend.
 
 ## Trace context
 

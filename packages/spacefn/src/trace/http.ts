@@ -15,9 +15,13 @@ export function traceRequest(): MiddlewareHandler {
 		await withSpan(
 			c.req.method,
 			async (span) => {
-				span.setAttributes({ "http.request.method": c.req.method, "url.path": c.req.path });
+				// Record the matched route pattern only. The raw path can carry secrets
+				// in parameters (e.g. /invite/:token) and must not reach the exporter.
+				span.setAttributes({ "http.request.method": c.req.method });
 				await next();
-				span.setName(`${c.req.method} ${routePath(c)}`);
+				const route = routePath(c);
+				span.setName(`${c.req.method} ${route}`);
+				if (route) span.setAttributes({ "http.route": route });
 				span.setAttributes({ "http.response.status_code": c.res.status });
 				if (c.res.status >= 500) span.setError(`HTTP ${c.res.status}`);
 			},

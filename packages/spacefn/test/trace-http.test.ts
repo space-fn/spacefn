@@ -42,10 +42,16 @@ test("names the span after the matched route", async () => {
 		kind: "server",
 		attributes: {
 			"http.request.method": "GET",
-			"url.path": "/users/42",
+			"http.route": "/users/:id",
 			"http.response.status_code": 200,
 		},
 	});
+});
+
+test("never records the raw inbound path", async () => {
+	setTracer(tracer);
+	await appWith().request("/users/SECRET-123");
+	expect(JSON.stringify(records)).not.toContain("SECRET-123");
 });
 
 test("continues the trace from an incoming traceparent", async () => {
