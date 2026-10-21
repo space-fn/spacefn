@@ -1,6 +1,6 @@
 {
 	"name": "create-spacefn",
-	"version": "0.3.3",
+	"version": "0.4.0",
 	"description": "Scaffold a spacefn project",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
