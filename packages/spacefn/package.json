@@ -99,6 +99,9 @@
 		"typescript": "^7.0.2"
 	},
 	"peerDependencies": {
+		"@electric-sql/pglite": ">=0.2",
+		"marked": ">=9",
+		"shiki": ">=1",
 		"vite": ">=8",
 		"vite-plus": ">=1"
 	},
