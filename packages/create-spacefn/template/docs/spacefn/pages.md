@@ -77,6 +77,7 @@ html`<p>${userComment}</p>`; // <script> in the comment is shown as text
 - Arrays are joined, so `${items.map(...)}` works.
 - `null`, `undefined` and `false` render nothing, so `${cond ? html`...` : null}` works.
 - `raw(markup)` places markup unchanged. Use it only for markup you built yourself.
+- The render returns `html` output or `raw()` markup. Returning a plain string is a type error, and is escaped at run time if one slips through a cast.
 
 **Formatters rewrite the markup.** An `html` template is HTML to Prettier-style formatters, which reflow its whitespace and indentation. The browser ignores most of that, but whitespace inside `<pre>`, or between inline elements, can change what the user sees. Keep those spans out of templates the formatter touches, or put them in `raw()` strings.
 
