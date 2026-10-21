@@ -8,8 +8,23 @@ published=0
 skipped=0
 failed=0
 
+echo "🔎 Checks"
+vp check
+
+# The template pins the spacefn version being released.
+spacefn_version=$(node -p "require('./packages/spacefn/package.json').version")
+node -e '
+const fs = require("node:fs");
+const path = "packages/create-spacefn/template/package.json";
+const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+pkg.dependencies.spacefn = "^" + process.argv[1];
+fs.writeFileSync(path, JSON.stringify(pkg, null, "\t") + "\n");
+' "$spacefn_version"
+echo "📌 template pins spacefn ^$spacefn_version"
+
 publish_one() {
   local dir="$1"
+  local test_cmd="$2"
   local name version
   name=$(cd "$dir" && node -p "require('./package.json').name")
   version=$(cd "$dir" && node -p "require('./package.json').version")
@@ -19,6 +34,9 @@ publish_one() {
     skipped=$((skipped + 1))
     return
   fi
+
+  echo "🔎 Testing $name@$version"
+  (cd "$dir" && eval "$test_cmd")
 
   echo "📦 Building $name@$version"
   (cd "$dir" && npm run build)
@@ -33,8 +51,8 @@ publish_one() {
 }
 
 # Order matters: spacefn first, then create-spacefn.
-publish_one "packages/spacefn"
-publish_one "packages/create-spacefn"
+publish_one "packages/spacefn" "pnpm test -- --coverage"
+publish_one "packages/create-spacefn" "pnpm test"
 
 # vscode-spacefn is a VS Code extension (publish via `vsce publish`), not npm.
 # echo ""
@@ -42,3 +60,4 @@ publish_one "packages/create-spacefn"
 
 echo ""
 echo "Done: $published published, $skipped skipped, $failed failed"
+[ "$failed" -eq 0 ] || exit 1
