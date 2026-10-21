@@ -1,8 +1,8 @@
-import { compatibilityDate, defineSpace, exports, bindings } from "spacefn/cloudflare";
+import { defineSpace, exports, bindings } from "spacefn/cloudflare";
 
 export default defineSpace({
 	name: "playground",
-	compatibilityDate: compatibilityDate(),
+	compatibilityDate: "2026-10-01",
 	exports: {
 		Counter: exports.durableObject({ storage: "sqlite" }),
 	},

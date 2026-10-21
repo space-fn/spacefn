@@ -27,8 +27,9 @@ export function envBindings(schema: Schema): EnvBindings {
 }
 
 /**
- * Today's date as `YYYY-MM-DD`, for use as a `compatibilityDate`.
- * Cloudflare recommends keeping this current.
+ * A date as `YYYY-MM-DD`, for use as a `compatibilityDate`. Prefer a pinned date
+ * literal in `cloudflare.config.ts`: a date that floats to today breaks against a
+ * runtime that does not know it yet, and makes builds unreproducible.
  */
 export function compatibilityDate(date: Date = new Date()): string {
 	return date.toISOString().slice(0, 10);
