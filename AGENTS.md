@@ -2,8 +2,8 @@
 
 ## Check list after each development
 
-- [ ] `vpr fmt:check`
-- [ ] `vpr lint`
+- [ ] `vp check`
+- [ ] `vp test run`
 
 ## Commit convention
 
