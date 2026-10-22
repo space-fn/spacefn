@@ -1,6 +1,6 @@
-import { defineSpace } from "spacefn/cloudflare";
+import { defineSpace, compatibilityDate } from "spacefn/cloudflare";
 
 export default defineSpace({
 	name: "spacefn-app",
-	compatibilityDate: "2026-10-01",
+	compatibilityDate: compatibilityDate(),
 });
