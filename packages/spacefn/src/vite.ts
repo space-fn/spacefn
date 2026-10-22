@@ -81,6 +81,25 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("addDir", onPageChange);
 			server.watcher.on("unlinkDir", onPageChange);
 
+			// Client: codegen regenerates .space/client*.ts (typed entry names).
+			const clientDir = resolve(root, "app", "client");
+			server.watcher.add(clientDir);
+			const onClientChange = (file: string) => {
+				if (!file.startsWith(clientDir + sep)) return;
+				sync(root, mode).catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+			const onClientRestart = (file: string) => {
+				if (!file.startsWith(clientDir + sep)) return;
+				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));
+			};
+			server.watcher.on("add", onClientChange);
+			server.watcher.on("change", onClientChange);
+			server.watcher.on("unlink", onClientChange);
+			server.watcher.on("addDir", onClientChange);
+			server.watcher.on("unlinkDir", onClientChange);
+			server.watcher.on("add", onClientRestart);
+			server.watcher.on("unlink", onClientRestart);
+
 			// DB: sql files regenerate typed queries; migrate.ts/queries changes too.
 			const dbDir = resolve(root, "app", "db");
 			const onDbChange = (file: string) => {

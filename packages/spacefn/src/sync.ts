@@ -2,6 +2,8 @@ import { access, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { generateBindingsSource } from "./bindings/generate";
+import { generateClientManifestSource, generateClientSource } from "./client/generate";
+import { scanClientFiles } from "./client/scan";
 import { analyzeQueries } from "./db/build-queries";
 import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
@@ -48,6 +50,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	const crons = await scanCodeFiles(join(app, "crons"));
 	const durableObjects = await scanCodeFiles(join(app, "durable-objects"));
 	const workflows = await scanCodeFiles(join(app, "workflows"));
+	const clientFiles = await scanClientFiles(join(app, "client"));
 
 	// Read env schema. A broken env.ts must fail loudly: empty bindings would
 	// hide the error until a request hits the app.
@@ -128,6 +131,11 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		),
 		await writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
 		await writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),
+		await writeIfChanged(join(root, ".space", "client.ts"), generateClientSource(clientFiles)),
+		await writeIfChanged(
+			join(root, ".space", "client-manifest.ts"),
+			generateClientManifestSource(clientFiles),
+		),
 	];
 
 	for (const name of databases) {
