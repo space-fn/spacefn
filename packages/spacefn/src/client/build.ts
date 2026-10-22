@@ -37,7 +37,7 @@ export async function runClientBuild(
 		...clientConfig,
 		resolve: {
 			alias: builder.config.resolve?.alias as never,
-			...((clientConfig.resolve as Record<string, unknown>) ?? {}),
+			...(clientConfig.resolve as Record<string, unknown>),
 		},
 		plugins: [...((clientConfig.plugins as any[]) ?? []), clientAllowlistPlugin(root)],
 		build: {
