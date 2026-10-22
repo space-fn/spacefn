@@ -15,5 +15,6 @@
 			"@lib/*": ["./lib/*"]
 		}
 	},
-	"include": ["app", "modules", "utils", "lib", ".space/**/*", "cloudflare.config.ts"]
+	"include": ["app", "modules", "utils", "lib", ".space/**/*", "cloudflare.config.ts"],
+	"exclude": ["app/client"]
 }
