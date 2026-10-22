@@ -5,6 +5,7 @@ import type { Plugin, PluginOption } from "vite";
 
 import { runClientBuild } from "./client/build";
 import { generateClientManifestSource } from "./client/generate";
+import { scanClientFiles } from "./client/scan";
 import { envBindings } from "./cloudflare";
 import { cronConfig } from "./crons/config";
 import { loadCronJobs } from "./crons/load";
@@ -52,9 +53,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			state.cronSchedules = Object.values(await loadCronJobs(root)).map((job) => job.schedule);
 			state.durableObjectFiles = await scanCodeFiles(join(root, "app", "durable-objects"));
 			state.workflowFiles = await scanCodeFiles(join(root, "app", "workflows"));
-			clientFiles = await (
-				await import("./client/scan")
-			).scanClientFiles(join(root, "app", "client"));
+			clientFiles = await scanClientFiles(join(root, "app", "client"));
 			await sync(root, mode);
 			return {
 				environments: {
