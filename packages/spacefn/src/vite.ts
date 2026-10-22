@@ -3,6 +3,8 @@ import { join, resolve, sep } from "node:path";
 import { cloudflare, type PluginConfig } from "@cloudflare/vite-plugin";
 import type { Plugin, PluginOption } from "vite";
 
+import { runClientBuild } from "./client/build";
+import { generateClientManifestSource } from "./client/generate";
 import { envBindings } from "./cloudflare";
 import { cronConfig } from "./crons/config";
 import { loadCronJobs } from "./crons/load";
@@ -15,6 +17,7 @@ import type { Mode } from "./routes/scan";
 import { scanCodeFiles } from "./scan";
 import { sync } from "./sync";
 import { workflowsConfig } from "./workflows/config";
+import { writeIfChanged } from "./write";
 
 /** The partial Worker config the plugin's `config` callback may return. */
 type WorkerConfigPatch = ReturnType<Extract<NonNullable<PluginConfig["config"]>, Function>>;
@@ -36,6 +39,7 @@ export interface SpaceState {
 export function spaceSync(state: SpaceState = {}): Plugin {
 	let root = process.cwd();
 	let mode: Mode = "dev";
+	let clientFiles: string[] = [];
 
 	return {
 		name: "space",
@@ -48,7 +52,15 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			state.cronSchedules = Object.values(await loadCronJobs(root)).map((job) => job.schedule);
 			state.durableObjectFiles = await scanCodeFiles(join(root, "app", "durable-objects"));
 			state.workflowFiles = await scanCodeFiles(join(root, "app", "workflows"));
+			clientFiles = await (
+				await import("./client/scan")
+			).scanClientFiles(join(root, "app", "client"));
 			await sync(root, mode);
+			return {
+				environments: {
+					client: { build: { emptyOutDir: false } },
+				},
+			};
 		},
 
 		configureServer(server) {
@@ -141,6 +153,17 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("unlink", onConfigFileChange);
 			server.watcher.on("addDir", onConfigFileChange);
 			server.watcher.on("unlinkDir", onConfigFileChange);
+		},
+		buildApp: {
+			order: "pre",
+			async handler(builder: any) {
+				if (clientFiles.length === 0) return;
+				const manifest = await runClientBuild(root, clientFiles, builder);
+				await writeIfChanged(
+					join(root, ".space", "client-manifest.ts"),
+					generateClientManifestSource(clientFiles, manifest),
+				);
+			},
 		},
 	};
 }

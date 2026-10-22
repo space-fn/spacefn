@@ -35,9 +35,19 @@ export function generateClientSource(entries: string[]): string {
 	return lines.join("\n");
 }
 
-/** Builds the `.space/client-manifest.ts` source with dev-time (unhashed) URLs. */
-export function generateClientManifestSource(entries: string[]): string {
+/** Builds the `.space/client-manifest.ts` source. `urls` overrides the dev URLs. */
+export function generateClientManifestSource(
+	entries: string[],
+	urls?: Record<string, { js?: string; css?: string[] }>,
+): string {
 	const rows = entries.map((entry) => {
+		const u = urls?.[entry];
+		if (u?.css?.length) {
+			return `\t${JSON.stringify(entry)}: { css: [${u.css.map((x) => JSON.stringify(x)).join(", ")}] },`;
+		}
+		if (u?.js) {
+			return `\t${JSON.stringify(entry)}: { js: ${JSON.stringify(u.js)} },`;
+		}
 		if (entry.endsWith(".css")) {
 			return `\t${JSON.stringify(entry)}: { css: [${JSON.stringify(`/_client/${entry}`)}] },`;
 		}
