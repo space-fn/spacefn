@@ -51,7 +51,7 @@ export async function runClientBuild(
 					entryFileNames: "[name]-[hash].js",
 					chunkFileNames: "chunks/[name]-[hash].js",
 					assetFileNames: "[name]-[hash][extname]",
-					...((userRolldown.output as Record<string, unknown>) ?? {}),
+					...(userRolldown.output as Record<string, unknown>),
 				},
 			},
 			manifest: false,
