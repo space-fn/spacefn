@@ -58,3 +58,23 @@ test("runClientBuild emits hashed files and a manifest map", async () => {
 	expect(manifest["counter.ts"]?.js).toMatch(/^\/_client\/counter-.+\.js$/);
 	expect(manifest["site.css"]?.css?.[0]).toMatch(/^\/_client\/site-.+\.css$/);
 });
+
+test("runClientBuild captures CSS imported by a JS entry", async () => {
+	await writeFile(join(root, "app", "client", "style.css"), "body { color: blue; }\n");
+	await writeFile(
+		join(root, "app", "client", "counter.ts"),
+		'import "./style.css";\nexport const n = 1;\n',
+	);
+	const assetsDir = join(root, "assets-css");
+	await mkdir(assetsDir, { recursive: true });
+	const builder = {
+		config: {
+			root,
+			resolve: { alias: {} },
+			environments: { client: { build: { outDir: assetsDir } } },
+		},
+	};
+	const manifest = await runClientBuild(root, ["counter.ts"], builder);
+	expect(manifest["counter.ts"]?.js).toMatch(/^\/_client\/counter-.+\.js$/);
+	expect(manifest["counter.ts"]?.css?.[0]).toMatch(/^\/_client\/.+\.css$/);
+});

@@ -65,7 +65,7 @@ export async function runClientBuild(
 		viteMetadata?: { importedCss?: Set<string> };
 	}>) {
 		if (!o.name) continue;
-		const entry = keyToEntry[o.name];
+		const entry = keyToEntry[o.name] ?? (entries.includes(o.name) ? o.name : undefined);
 		if (!entry || !manifest[entry]) continue;
 		if (o.type === "chunk" && o.isEntry) {
 			manifest[entry]!.js = `/_client/${o.fileName}`;
@@ -77,17 +77,9 @@ export async function runClientBuild(
 		}
 	}
 
-	// Fallback for CSS-only entries that Vite emitted as assets keyed by name.
 	for (const entry of entries) {
 		if (!manifest[entry]?.js && !manifest[entry]?.css?.length) {
-			const asset = (outputs as Array<{ type: string; fileName?: string }>).find(
-				(o) =>
-					o.type === "asset" && !!o.fileName && o.fileName.includes(entry.replace(/\.[^.]+$/, "")),
-			);
-			if (asset?.fileName) {
-				if (!manifest[entry]) manifest[entry] = {};
-				manifest[entry]!.css = [`/_client/${asset.fileName}`];
-			}
+			throw new Error(`Client build produced no output for entry "${entry}".`);
 		}
 	}
 
