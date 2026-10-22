@@ -2,7 +2,7 @@
 
 When DataStar is not enough, put browser code in `app/client/`.
 
-- Files not starting with `_` are entries; JS/TS and CSS are both supported.
+- Only files directly in `app/client/` are entries (nested folders are not scanned). Files not starting with `_` are entries; JS/TS and CSS are both supported.
 - Import allowlist (checked transitively): `app/client/`, `modules/`, `utils/`, `lib/`, npm packages. `app/env.ts` and other server code are rejected.
 - Serving prefix is `/_client/`. Dev: unhashed, transformed on request. Build: content-hashed, CDN-cacheable.
 
@@ -21,6 +21,6 @@ c.html(
 
 - `script("counter.ts")` emits a `<script type="module">` tag (plus `<link>` tags for any CSS the entry imports).
 - `styles("site.css")` emits a `<link rel="stylesheet">` tag.
-- Typos in entry names fail `vp check` (typed `ClientEntry` union).
+- Entry names are typed as a `ClientEntry` union in `.space/client.ts`, so a typo is a TypeScript error.
 
 `app/client/` has its own `tsconfig.json` with the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
