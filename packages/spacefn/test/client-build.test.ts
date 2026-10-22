@@ -30,6 +30,20 @@ test("sync generates client.ts and client-manifest.ts", async () => {
 	expect(manifest).toContain('"/_client/site.css"');
 });
 
+test("runClientBuild rejects cloudflare scheme imports", async () => {
+	await writeFile(join(root, "app", "client", "bad.ts"), 'import "cloudflare:workers";\n');
+	const assetsDir = join(root, "assets-out3");
+	await mkdir(assetsDir, { recursive: true });
+	const builder = {
+		config: {
+			root,
+			resolve: { alias: {} },
+			environments: { client: { build: { outDir: assetsDir } } },
+		},
+	};
+	await expect(runClientBuild(root, ["bad.ts"], builder)).rejects.toThrow();
+});
+
 test("runClientBuild rejects out-of-allowlist imports", async () => {
 	await writeFile(join(root, "app", "client", "bad.ts"), 'import "../env";\n');
 	const assetsDir = join(root, "assets-out2");
