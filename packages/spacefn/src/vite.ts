@@ -38,10 +38,14 @@ export interface SpaceState {
 }
 
 /** Keeps `.space/` in step with the project's convention folders. */
-export function spaceSync(state: SpaceState = {}): Plugin {
+export function spaceSync(
+	state: SpaceState = {},
+	clientConfig: Record<string, unknown> = {},
+): Plugin {
 	let root = process.cwd();
 	let mode: Mode = "dev";
 	let clientFiles: string[] = [];
+	const userClientConfig = clientConfig;
 
 	return {
 		name: "space",
@@ -216,7 +220,7 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			order: "pre",
 			async handler(builder: any) {
 				if (clientFiles.length === 0) return;
-				const manifest = await runClientBuild(root, clientFiles, builder);
+				const manifest = await runClientBuild(root, clientFiles, builder, userClientConfig);
 				await writeIfChanged(
 					join(root, ".space", "client-manifest.ts"),
 					generateClientManifestSource(clientFiles, manifest),
@@ -229,13 +233,15 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 export interface SpaceOptions {
 	/** Passed through to the Cloudflare Vite plugin. */
 	cloudflare?: Omit<PluginConfig, "config">;
+	/** Vite config fragment merged into the `app/client/` bundle build. */
+	client?: Record<string, unknown>;
 }
 
 /** The one Vite plugin a spacefn app needs: folder sync plus the Cloudflare runtime. */
 export function space(options: SpaceOptions = {}): PluginOption[] {
 	const state: SpaceState = {};
 	return [
-		spaceSync(state),
+		spaceSync(state, options.client ?? {}),
 		cloudflare({
 			...options.cloudflare,
 			// `env.ts` cannot be imported by `cloudflare.config.ts`: the plugin makes

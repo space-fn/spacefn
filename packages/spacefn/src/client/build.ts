@@ -15,6 +15,7 @@ export async function runClientBuild(
 	root: string,
 	entries: string[],
 	builder: any,
+	clientConfig: Record<string, unknown> = {},
 ): Promise<ClientManifestMap> {
 	const assetsDir = resolve(builder.config.root, builder.config.environments.client.build.outDir);
 	const outDir = join(assetsDir, "_client");
@@ -28,20 +29,29 @@ export async function runClientBuild(
 		keyToEntry[key] = entry;
 	}
 
+	const userBuild = (clientConfig.build as Record<string, unknown>) ?? {};
+	const userRolldown = (userBuild.rolldownOptions as Record<string, unknown>) ?? {};
 	const result = await build({
 		configFile: false,
 		root,
-		resolve: { alias: builder.config.resolve?.alias as never },
-		plugins: [clientAllowlistPlugin(root)],
+		...clientConfig,
+		resolve: {
+			alias: builder.config.resolve?.alias as never,
+			...((clientConfig.resolve as Record<string, unknown>) ?? {}),
+		},
+		plugins: [...((clientConfig.plugins as any[]) ?? []), clientAllowlistPlugin(root)],
 		build: {
 			outDir,
 			emptyOutDir: true,
+			...userBuild,
 			rolldownOptions: {
+				...userRolldown,
 				input,
 				output: {
 					entryFileNames: "[name]-[hash].js",
 					chunkFileNames: "chunks/[name]-[hash].js",
 					assetFileNames: "[name]-[hash][extname]",
+					...((userRolldown.output as Record<string, unknown>) ?? {}),
 				},
 			},
 			manifest: false,
