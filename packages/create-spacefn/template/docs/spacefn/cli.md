@@ -8,7 +8,7 @@ In dev mode, visit `http://localhost:5173/__space_docs` to browse the project's
 `docs/` folder rendered as HTML. The whole `docs/` tree is served, including
 `docs/spacefn/`.
 
-Markdown is rendered with `marked` when installed, and code blocks are
+See [docs-reader.md](docs-reader.md) for the full behavior. Markdown is rendered with `marked` when installed, and code blocks are
 highlighted with `shiki` when installed. Both are optional peer dependencies;
 without them a built-in minimal renderer is used.
 

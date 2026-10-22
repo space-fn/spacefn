@@ -10,4 +10,5 @@ export const DOCS_CSS =
 	"th,td{border:1px solid #e5e7eb;padding:.4rem .6rem}th{background:#f4f4f5}" +
 	"blockquote{border-left:3px solid #e5e7eb;margin:1rem 0;padding:.2rem 1rem;color:#555}" +
 	"img{max-width:100%}" +
-	"@media (max-width:600px){body{margin:1rem auto;padding:0 .75rem}pre{padding:.75rem;font-size:.85em}table{font-size:.85em}}";
+	"@media (max-width:600px){body{margin:1rem auto;padding:0 .75rem}pre{padding:.75rem;font-size:.85em}table{font-size:.85em}}" +
+	"@media (prefers-color-scheme:dark){body{color:#e5e7eb;background:#0f172a}a{color:#60a5fa}pre,code{background:#1e293b}th{background:#1e293b}td,th{border-color:#334155}hr{border-top-color:#334155}blockquote{border-left-color:#334155;color:#94a3b8}}";
