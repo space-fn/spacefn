@@ -93,6 +93,24 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("addDir", onPageChange);
 			server.watcher.on("unlinkDir", onPageChange);
 
+			// Client: serve /_client/* in dev through Vite's transform pipeline.
+			server.middlewares.use("/_client", (req, res, next) => {
+				const url = (req.url ?? "").split("?")[0] ?? "";
+				const query = (req.url ?? "").includes("?direct") ? "?direct" : "";
+				const target = "/app/client" + url + query;
+				server.environments.client
+					.transformRequest(target)
+					.then((result) => {
+						if (!result) return next();
+						res.setHeader(
+							"Content-Type",
+							url.endsWith(".css") ? "text/css" : "application/javascript",
+						);
+						res.end(result.code);
+					})
+					.catch(() => next());
+			});
+
 			// Client: codegen regenerates .space/client*.ts (typed entry names).
 			const clientDir = resolve(root, "app", "client");
 			server.watcher.add(clientDir);
