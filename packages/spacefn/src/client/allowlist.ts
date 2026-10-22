@@ -9,7 +9,18 @@ import type { Plugin } from "vite";
  * pulled into a client bundle. Everything else (including `app/env.ts`) fails
  * the build.
  */
-export function clientAllowlistPlugin(root: string): Plugin {
+const BANNED_SCHEMES = ["node:", "cloudflare:"];
+
+export function isAllowedClientImport(root: string, id: string): { ok: boolean; reason?: string } {
+	let realId = id;
+	try {
+		realId = realpathSync(id);
+	} catch {
+		realId = resolve(id);
+	}
+	if (BANNED_SCHEMES.some((s) => realId.startsWith(s) || id.startsWith(s))) {
+		return { ok: false, reason: `banned scheme in "${id}"` };
+	}
 	const realRoot = (() => {
 		try {
 			return realpathSync(root);
@@ -23,6 +34,13 @@ export function clientAllowlistPlugin(root: string): Plugin {
 		join(realRoot, "utils"),
 		join(realRoot, "lib"),
 	];
+	if (realId.includes("node_modules")) return { ok: true };
+	const ok = allowed.some((r) => realId === r || realId.startsWith(r + "/"));
+	if (!ok) return { ok: false, reason: `not in allowed roots: ${id}` };
+	return { ok: true };
+}
+
+export function clientAllowlistPlugin(root: string): Plugin {
 	return {
 		name: "space-client-allowlist",
 		enforce: "pre",
@@ -32,20 +50,12 @@ export function clientAllowlistPlugin(root: string): Plugin {
 			const id = resolved.id;
 			if (id.startsWith("\0")) return resolved;
 			if (id.includes("node_modules")) return resolved;
-			if (id.startsWith("node:")) {
-				this.error(`Node built-in "${source}" is not allowed in app/client code.`);
-			}
-			let realId = id;
-			try {
-				realId = realpathSync(id);
-			} catch {
-				realId = resolve(id);
-			}
-			const ok = allowed.some((root) => realId === root || realId.startsWith(root + "/"));
-			if (!ok) {
+			const check = isAllowedClientImport(root, id);
+			if (!check.ok) {
 				this.error(
 					`Import not allowed in app/client code: "${source}" resolved to "${id}". ` +
-						"Allowed roots: app/client/, modules/, utils/, lib/, npm packages.",
+						(check.reason ?? "") +
+						" Allowed roots: app/client/, modules/, utils/, lib/, npm packages.",
 				);
 			}
 			return resolved;

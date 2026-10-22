@@ -3,6 +3,7 @@ import { join, resolve, sep } from "node:path";
 import { cloudflare, type PluginConfig } from "@cloudflare/vite-plugin";
 import type { Plugin, PluginOption } from "vite";
 
+import { isAllowedClientImport } from "./client/allowlist";
 import { runClientBuild } from "./client/build";
 import { generateClientManifestSource } from "./client/generate";
 import { scanClientFiles } from "./client/scan";
@@ -93,21 +94,57 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 			server.watcher.on("unlinkDir", onPageChange);
 
 			// Client: serve /_client/* in dev through Vite's transform pipeline.
-			server.middlewares.use("/_client", (req, res, next) => {
-				const url = (req.url ?? "").split("?")[0] ?? "";
-				const query = (req.url ?? "").includes("?direct") ? "?direct" : "";
-				const target = "/app/client" + url + query;
+			server.middlewares.use("/_client", (req, res, _next) => {
+				let parsed: URL;
+				try {
+					parsed = new URL(req.url ?? "/", "http://localhost");
+				} catch {
+					res.statusCode = 400;
+					res.end("bad request");
+					return;
+				}
+				const rawPath = parsed.pathname;
+				const clientRoot = resolve(root, "app", "client");
+				const under = resolve(clientRoot, "." + rawPath);
+				if (!under.startsWith(clientRoot + sep)) {
+					res.statusCode = 403;
+					res.end("forbidden");
+					return;
+				}
+				const isCss = rawPath.endsWith(".css");
+				const target = "/app/client" + rawPath + (isCss ? "?direct" : "");
 				server.environments.client
 					.transformRequest(target)
 					.then((result) => {
-						if (!result) return next();
-						res.setHeader(
-							"Content-Type",
-							url.endsWith(".css") ? "text/css" : "application/javascript",
-						);
+						if (!result) {
+							res.statusCode = 404;
+							res.end("not found");
+							return;
+						}
+						const visited = new Set<string>();
+						const check = (id: string | null | undefined) => {
+							if (!id || visited.has(id)) return;
+							visited.add(id);
+							const verdict = isAllowedClientImport(root, id);
+							if (!verdict.ok) {
+								throw new Error(`Import not allowed in app/client code: ${verdict.reason}`);
+							}
+						};
+						const mod = server.environments.client.moduleGraph.getModuleById(target);
+						const walk = (node: any) => {
+							if (!node) return;
+							check(node.id ?? undefined);
+							for (const dep of node.importedModules ?? []) walk(dep);
+						};
+						walk(mod);
+						res.setHeader("Content-Type", isCss ? "text/css" : "application/javascript");
 						res.end(result.code);
 					})
-					.catch(() => next());
+					.catch((error: unknown) => {
+						server.config.logger.error(String(error));
+						res.statusCode = 500;
+						res.end(String(error));
+					});
 			});
 
 			// Client: codegen regenerates .space/client*.ts (typed entry names).
@@ -121,13 +158,17 @@ export function spaceSync(state: SpaceState = {}): Plugin {
 				if (!file.startsWith(clientDir + sep)) return;
 				server.restart().catch((error: unknown) => server.config.logger.error(String(error)));
 			};
-			server.watcher.on("add", onClientChange);
+			server.watcher.on("add", (f) => {
+				onClientChange(f);
+				onClientRestart(f);
+			});
 			server.watcher.on("change", onClientChange);
-			server.watcher.on("unlink", onClientChange);
+			server.watcher.on("unlink", (f) => {
+				onClientChange(f);
+				onClientRestart(f);
+			});
 			server.watcher.on("addDir", onClientChange);
 			server.watcher.on("unlinkDir", onClientChange);
-			server.watcher.on("add", onClientRestart);
-			server.watcher.on("unlink", onClientRestart);
 
 			// DB: sql files regenerate typed queries; migrate.ts/queries changes too.
 			const dbDir = resolve(root, "app", "db");
