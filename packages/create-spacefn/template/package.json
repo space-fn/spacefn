@@ -10,7 +10,7 @@
 		"test": "vp test"
 	},
 	"dependencies": {
-		"spacefn": "^0.3.1"
+		"spacefn": "^0.3.2"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20261021.1",
