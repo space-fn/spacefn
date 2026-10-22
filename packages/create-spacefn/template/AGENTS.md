@@ -5,6 +5,7 @@ Read the framework docs in `docs/spacefn/` before making changes.
 ## Doc index
 
 - [auth.md](docs/spacefn/auth.md) — auth primitives (PBKDF2, sessions, CSRF, TOTP).
+- [client.md](docs/spacefn/client.md) — bundling browser TS/CSS from `app/client/`.
 - [cli.md](docs/spacefn/cli.md) — `space` CLI commands and dev docs reader.
 - [cloudflare-v2.md](docs/spacefn/cloudflare-v2.md) — Cloudflare v2 config.
 - [conventions.md](docs/spacefn/conventions.md) — folder conventions, `app/` layout, `modules/`.

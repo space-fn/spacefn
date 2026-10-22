@@ -8,7 +8,6 @@
 		"verbatimModuleSyntax": true,
 		"noEmit": true,
 		"lib": ["ES2023", "DOM", "DOM.Iterable"],
-		"types": ["vite/client"],
 		"paths": {
 			"@space/*": ["../../.space/*"],
 			"@app/*": ["../*"],
