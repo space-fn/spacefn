@@ -8,6 +8,8 @@ export interface GeneratedQuery extends InferredQuery {
 	paramTypes: Record<string, string>;
 	/** The SQL with `?` placeholders, as sent to the database. */
 	boundSql: string;
+	/** Ordered parts; `gate` null means always included. */
+	parts: { sql: string; paramNames: string[]; gate: string[] | null }[];
 }
 
 /** The return type of a query function, by mode. */
@@ -17,9 +19,17 @@ export const RESULT = (mode: QueryMode, row: string) =>
 /** The TypeScript type of a query's parameter object. */
 export function paramsType(query: GeneratedQuery): string {
 	if (query.paramNames.length === 0) return "Record<string, never>";
-	const fields = [...new Set(query.paramNames)].map(
-		(name) => `${name}: ${query.paramTypes[name] ?? "SqlValue"}`,
-	);
+	const conditional = new Set<string>();
+	for (const part of query.parts ?? []) {
+		if (part.gate) {
+			for (const g of part.gate) conditional.add(g);
+			for (const n of part.paramNames) conditional.add(n);
+		}
+	}
+	const fields = [...new Set(query.paramNames)].map((name) => {
+		const optional = conditional.has(name) ? "?" : "";
+		return `${name}${optional}: ${query.paramTypes[name] ?? "SqlValue"}`;
+	});
 	return `{ ${fields.join("; ")} }`;
 }
 
@@ -45,12 +55,40 @@ export function generateQueriesSource(queries: GeneratedQuery[]): string {
 		const hasRows = query.mode !== "exec";
 		const rows = query.columns.length ? [`export interface ${row} {`, ...fields, "}", ""] : [];
 		const resultType = hasRows ? RESULT(query.mode, row) : "void";
-		const body =
-			query.mode === "exec"
-				? `\tawait queryD1(db, ${JSON.stringify(query.boundSql)}, [${values}]);`
-				: query.mode === "one"
-					? `\treturn (await queryD1<${row}>(db, ${JSON.stringify(query.boundSql)}, [${values}]))[0];`
-					: `\treturn queryD1<${row}>(db, ${JSON.stringify(query.boundSql)}, [${values}]);`;
+		const isDynamic = (query.parts ?? []).some((p) => p.gate !== null);
+		let body: string;
+		if (!isDynamic) {
+			body =
+				query.mode === "exec"
+					? `\tawait queryD1(db, ${JSON.stringify(query.boundSql)}, [${values}]);`
+					: query.mode === "one"
+						? `\treturn (await queryD1<${row}>(db, ${JSON.stringify(query.boundSql)}, [${values}]))[0];`
+						: `\treturn queryD1<${row}>(db, ${JSON.stringify(query.boundSql)}, [${values}]);`;
+		} else {
+			const lines: string[] = [];
+			lines.push("\tconst __sql: string[] = [];");
+			lines.push("\tconst __values: SqlValue[] = [];");
+			for (const part of query.parts) {
+				if (part.gate === null) {
+					lines.push(`\t__sql.push(${JSON.stringify(part.sql)});`);
+					for (const n of part.paramNames) lines.push(`\t__values.push(params.${n});`);
+				} else {
+					const cond = part.gate.map((g) => `params.${g} !== undefined`).join(" && ");
+					lines.push(`\tif (${cond}) {`);
+					lines.push(`\t\t__sql.push(${JSON.stringify(part.sql)});`);
+					for (const n of part.paramNames) lines.push(`\t\t__values.push(params.${n}!);`);
+					lines.push("\t}");
+				}
+			}
+			const call =
+				query.mode === "exec"
+					? '\tawait queryD1(db, __sql.join(""), __values);'
+					: query.mode === "one"
+						? `\treturn (await queryD1<${row}>(db, __sql.join(""), __values))[0];`
+						: `\treturn queryD1<${row}>(db, __sql.join(""), __values);`;
+			lines.push(call);
+			body = lines.join("\n");
+		}
 		return [
 			...(hasRows ? rows : []),
 			`/** ${query.sql.replace(/\*\//g, "* /")} */`,

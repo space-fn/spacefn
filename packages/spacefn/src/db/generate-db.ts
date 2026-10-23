@@ -69,12 +69,40 @@ export function generateDbSource(
 				? `${row}[]`
 				: `${row} | undefined`
 			: "void";
-		const body =
-			query.mode === "exec"
-				? `\tawait db.query(${JSON.stringify(query.boundSql)}, [${values}]);`
-				: query.mode === "one"
-					? `\treturn (await db.query<${row}>(${JSON.stringify(query.boundSql)}, [${values}]))[0];`
-					: `\treturn db.query<${row}>(${JSON.stringify(query.boundSql)}, [${values}]);`;
+		const isDynamic = (query.parts ?? []).some((p) => p.gate !== null);
+		let body: string;
+		if (!isDynamic) {
+			body =
+				query.mode === "exec"
+					? `\tawait db.query(${JSON.stringify(query.boundSql)}, [${values}]);`
+					: query.mode === "one"
+						? `\treturn (await db.query<${row}>(${JSON.stringify(query.boundSql)}, [${values}]))[0];`
+						: `\treturn db.query<${row}>(${JSON.stringify(query.boundSql)}, [${values}]);`;
+		} else {
+			const lines: string[] = [];
+			lines.push("\tconst __sql: string[] = [];");
+			lines.push("\tconst __values: unknown[] = [];");
+			for (const part of query.parts) {
+				if (part.gate === null) {
+					lines.push(`\t__sql.push(${JSON.stringify(part.sql)});`);
+					for (const n of part.paramNames) lines.push(`\t__values.push(params.${n});`);
+				} else {
+					const cond = part.gate.map((g) => `params.${g} !== undefined`).join(" && ");
+					lines.push(`\tif (${cond}) {`);
+					lines.push(`\t\t__sql.push(${JSON.stringify(part.sql)});`);
+					for (const n of part.paramNames) lines.push(`\t\t__values.push(params.${n}!);`);
+					lines.push("\t}");
+				}
+			}
+			const call =
+				query.mode === "exec"
+					? '\tawait db.query(__sql.join(""), __values);'
+					: query.mode === "one"
+						? `\treturn (await db.query<${row}>(__sql.join(""), __values))[0];`
+						: `\treturn db.query<${row}>(__sql.join(""), __values);`;
+			lines.push(call);
+			body = lines.join("\n");
+		}
 		blocks.push(`/** ${query.sql.replace(/\*\//g, "* /")} */`);
 		blocks.push(
 			`export async function ${query.name}(db: DbReader, params: ${paramType}): Promise<${resultType}> {`,

@@ -35,12 +35,30 @@ export async function analyzeQueries(
 
 		const { sql, names } = namedParams(parsed.sql);
 		const inferred = await inferQuery(scratch, { ...parsed, sql }, dialect);
+		// validate the all-excluded variant too
+		const excludedRaw = parsed.parts
+			.filter((p) => p.gate === null)
+			.map((p) => p.sql)
+			.join("\\n");
+		const { sql: excludedBound } = namedParams(excludedRaw);
+		try {
+			await scratch.prepare(excludedBound);
+		} catch (e) {
+			throw new Error(
+				`${parsed.name}: base (all conditionals excluded) SQL is invalid: ${(e as Error).message}`,
+			);
+		}
+		const parts = parsed.parts.map((p) => {
+			const r = namedParams(p.sql);
+			return { sql: r.sql, paramNames: r.names, gate: p.gate };
+		});
 		queries.push({
 			...inferred,
 			sql: parsed.sql,
 			boundSql: sql,
 			paramNames: names,
 			paramTypes: parsed.params,
+			parts,
 		});
 	}
 	return queries;
