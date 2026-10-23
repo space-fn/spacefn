@@ -56,6 +56,13 @@ describe("scaffold", () => {
 			"cloudflare.config.ts",
 			"docs/spacefn/pages.md",
 			"docs/spacefn/database.md",
+			"docs/spacefn/routes.md",
+			"docs/spacefn/middleware.md",
+			"docs/spacefn/queues.md",
+			"docs/spacefn/crons.md",
+			"docs/spacefn/durable-objects.md",
+			"docs/spacefn/workflows.md",
+			"docs/spacefn/modules.md",
 		]) {
 			expect(existsSync(join(target, file)), file).toBe(true);
 		}
