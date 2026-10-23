@@ -14,6 +14,7 @@
 		"bundle": "esbuild server/src/server.ts --bundle --platform=node --outfile=server-out/server.js --external:vscode --external:vscode-languageserver --external:vscode-languageserver-textdocument --external:vscode-html-languageservice"
 	},
 	"dependencies": {
+		"vscode-css-languageservice": "^6.3.10",
 		"vscode-html-languageservice": "^5.6.2",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",

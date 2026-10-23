@@ -1,4 +1,5 @@
-import * as fs from "node:fs/promises";
+import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 
 import { Parser } from "node-sql-parser";
@@ -1037,6 +1038,76 @@ function findHtmlTemplateRange(
 	return null;
 }
 
+const customProps = new Map<string, string>();
+
+function scanCustomProps(root: string) {
+	customProps.clear();
+	function walk(dir: string) {
+		let entries: fs.Dirent[];
+		try {
+			entries = fs.readdirSync(dir, { withFileTypes: true });
+		} catch {
+			return;
+		}
+		for (const e of entries) {
+			const full = path.join(dir, e.name);
+			if (e.isDirectory()) {
+				if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+				walk(full);
+			} else if (e.name === "variables.css") {
+				try {
+					const text = fs.readFileSync(full, "utf8");
+					for (const m of text.matchAll(/(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+);/g)) {
+						customProps.set(m[1]!, m[2]!.trim());
+					}
+				} catch {
+					/* ignore */
+				}
+			}
+		}
+	}
+	walk(root);
+}
+
+function findCssTemplateRange(
+	text: string,
+	offset: number,
+): { start: number; end: number; contentStart: number } | null {
+	const re = /\\bcss\\s*`/g;
+	let m: RegExpExecArray | null;
+	let last: RegExpExecArray | null = null;
+	while ((m = re.exec(text)) !== null) {
+		if (m.index < offset) last = m;
+		else break;
+	}
+	if (!last) return null;
+	const contentStart = last.index + last[0].length;
+	let i = contentStart;
+	let depth = 0;
+	while (i < text.length) {
+		const ch = text[i];
+		if (ch === "`" && depth === 0) {
+			if (i > 0 && text[i - 1] === "\\\\") {
+				i++;
+				continue;
+			}
+			return { start: last.index, end: i, contentStart };
+		}
+		if (ch === "$" && text[i + 1] === "{") {
+			let d = 1;
+			i += 2;
+			while (i < text.length && d > 0) {
+				if (text[i] === "{") d++;
+				else if (text[i] === "}") d--;
+				i++;
+			}
+			continue;
+		}
+		i++;
+	}
+	return null;
+}
+
 function detectContext(before: string, fullText: string): CompletionContext {
 	// table context: last keyword before cursor is a table-introducing keyword
 	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
@@ -1159,6 +1230,23 @@ connection.onCompletion(async (params) => {
 	const offset = doc.offsetAt(params.position);
 	const text = doc.getText();
 	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
+	const cssTpl = isJsTs ? findCssTemplateRange(text, offset) : null;
+	if (cssTpl && offset >= cssTpl.contentStart && offset <= cssTpl.end) {
+		const beforeCursor = text.slice(cssTpl.contentStart, offset);
+		const m = beforeCursor.match(/--[a-zA-Z0-9_-]*$/);
+		const prefix = m ? m[0] : "";
+		if (prefix.startsWith("--") || beforeCursor.endsWith("-")) {
+			const items = [...customProps.entries()]
+				.filter(([name]) => name.toLowerCase().startsWith(prefix.toLowerCase()))
+				.map(([name, value]) => ({
+					label: name,
+					kind: 6,
+					insertText: name,
+					detail: value,
+				}));
+			if (items.length) return items;
+		}
+	}
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
 		// build HTML document with placeholders for ${...}
 		let htmlText = text.slice(tpl.contentStart, tpl.end);
@@ -1946,14 +2034,14 @@ connection.onDefinition(async (params): Promise<Location[] | null> => {
 	const migrationsDir = path.join(resolved.targetDb, "migrations");
 	let files: string[] = [];
 	try {
-		files = await fs.readdir(migrationsDir);
+		files = await fsp.readdir(migrationsDir);
 	} catch {
 		return null;
 	}
 	for (const f of files) {
 		if (!f.endsWith(".sql")) continue;
 		const full = path.join(migrationsDir, f);
-		const content = await fs.readFile(full, "utf8");
+		const content = await fsp.readFile(full, "utf8");
 		const re = new RegExp(
 			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${searchName}["'\`]?`,
 			"i",
@@ -2014,34 +2102,43 @@ function offsetToPosition(text: string, offset: number): Position {
 	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };
 }
 
+let workspaceRoot = process.cwd();
 connection.onInitialized(async () => {
 	try {
 		await connection.client.register(DidChangeWatchedFilesNotification.type, {
-			watchers: [{ globPattern: "**/migrations/*" }],
+			watchers: [{ globPattern: "**/migrations/*" }, { globPattern: "**/variables.css" }],
 		});
 	} catch {
 		// ignore
 	}
+	scanCustomProps(workspaceRoot);
 });
 
-connection.onDidChangeWatchedFiles(() => {
+connection.onDidChangeWatchedFiles((params) => {
 	schemaCache.clear();
 	for (const doc of documents.all()) {
 		if (doc.uri.endsWith(".sql")) void validateSqlFile(doc);
 		else void validateEmbedded(doc);
 	}
+	if (params.changes.some((c) => c.uri.endsWith("variables.css"))) {
+		scanCustomProps(workspaceRoot);
+	}
 });
 
-connection.onInitialize(() => ({
-	capabilities: {
-		textDocumentSync: 1,
-		completionProvider: {
-			triggerCharacters: ["<", "/", " ", "=", '"', "'", ":", "-", "@", "_", "$"],
+connection.onInitialize((params) => {
+	if (params.workspaceFolders && params.workspaceFolders.length) {
+		workspaceRoot = decodeURIComponent(params.workspaceFolders[0]!.uri.replace("file://", ""));
+	}
+	return {
+		capabilities: {
+			textDocumentSync: 1,
+			completionProvider: {
+				triggerCharacters: ["<", "/", " ", "=", '"', "'", ":", "-", "@", "_", "$"],
+			},
+			hoverProvider: true,
+			definitionProvider: true,
 		},
-		hoverProvider: true,
-		definitionProvider: true,
-	},
-}));
-
+	};
+});
 documents.listen(connection);
 connection.listen();
