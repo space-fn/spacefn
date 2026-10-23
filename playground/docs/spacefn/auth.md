@@ -113,15 +113,6 @@ const claims = await verifyToken(token, env.TOKEN_KEY, "invite", Date.now());
 - `verifyToken` checks the signature first, then the purpose and expiry.
 - **A signed token is reusable until it expires.** To make it single-use (for password reset, for example), record `claims.jti` when you use it, and refuse a `jti` you have seen. The library does not store used ids.
 
-## Playground
-
-The template runs these together: sign-up, sign-in with rate limiting, a session cookie, `/auth/me`, sign-out, and a cross-site guard on writes. It is verified in `workerd` through `vite dev`.
-
-- `app/middleware/03-session.ts` attaches the user to every request.
-- `app/middleware/04-csrf.ts` guards writes that carry a session.
-- `app/middleware/05-login-limit.ts` limits sign-in attempts.
-- `app/routes/auth/*` are the handlers.
-
 The template does not use TOTP or signed tokens, and the library tests cover them.
 
 ## Not built

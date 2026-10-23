@@ -87,7 +87,3 @@ html`<p>${userComment}</p>`; // <script> in the comment is shown as text
 - Pages do not support environment suffixes such as `.dev`.
 - No layouts yet. Share a head or a shell with a function that returns `html`.
 - No client-side interactivity yet. Forms and redirects are the only interaction. Datastar's TypeScript SDK can be added later.
-
-## Playground
-
-`app/pages/board.page.ts` and `app/pages/board.server.ts` list the todos from D1 and add one through a form. Verified in `vite dev`: the page renders, a form post redirects back, an empty title gets 400, an unknown action gets 404, and a script in a title is shown as text.
