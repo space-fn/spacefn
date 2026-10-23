@@ -1,1 +1,39 @@
-.vitest/
+# Dependencies
+node_modules
+
+# Generated
+.space
+.cloudflare
+dist
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+.idea
+.vscode
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test coverage
+coverage
+
+# Caches
+.cache
+.turbo
+*.tsbuildinfo

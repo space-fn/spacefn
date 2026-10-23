@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
 
 import { space } from "spacefn/vite";
-import { defineConfig, lazyPlugins } from "vite-plus";
+import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-	plugins: lazyPlugins(() => [space()]),
+	plugins: [space()],
 	resolve: {
 		alias: {
 			"@space": resolve(process.cwd(), ".space"),
