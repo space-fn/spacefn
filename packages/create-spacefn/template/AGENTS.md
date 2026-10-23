@@ -12,7 +12,7 @@ Read the framework docs in `docs/spacefn/` before making changes.
 - [conventions.md](docs/spacefn/conventions.md) — folder conventions, `app/` layout, `modules/`.
 - [database.md](docs/spacefn/database.md) — multi-database, migrations, typed queries.
 - [env.md](docs/spacefn/env.md) — environment variables and validation.
-- [handlers.md](docs/spacefn/handlers.md) — route handlers and `onError`.
+- [routes.md](docs/spacefn/routes.md) — route handlers and `onError`.
 - [pages.md](docs/spacefn/pages.md) — pages, loaders, actions.
 - [tenancy.md](docs/spacefn/tenancy.md) — multi-tenancy via Durable Objects.
 - [tracing.md](docs/spacefn/tracing.md) — OTLP tracing.
