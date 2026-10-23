@@ -3,7 +3,7 @@ import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 
 import { Parser } from "node-sql-parser";
-import { scanMigrations, scratchDatabase } from "spacefn/db";
+import { scanMigrations, scratchDatabase, parseQueryFile } from "spacefn/db";
 import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -49,6 +49,18 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 		const scratch = await scratchDatabase(migrations, dialect);
 		// strip leading -- comment lines to get the SQL
 		const text = doc.getText();
+		// structural validation of directive comments (case/when/end, undeclared params)
+		try {
+			parseQueryFile(filePath, text);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			diagnostics.push({
+				severity: DiagnosticSeverity.Error,
+				range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
+				message,
+				source: "spacefn",
+			});
+		}
 		const sql = text
 			.split("\n")
 			.filter((l) => !l.trim().startsWith("--"))
@@ -1161,6 +1173,45 @@ function findCssTemplateRange(
 	return null;
 }
 
+function findSqlTemplateRange(
+	text: string,
+	offset: number,
+): { start: number; end: number; contentStart: number } | null {
+	const re = /\b(?:sql|db)\s*`/g;
+	let m: RegExpExecArray | null;
+	let last: RegExpExecArray | null = null;
+	while ((m = re.exec(text)) !== null) {
+		if (m.index < offset) last = m;
+		else break;
+	}
+	if (!last) return null;
+	const contentStart = last.index + last[0].length;
+	let i = contentStart;
+	let depth = 0;
+	while (i < text.length) {
+		const ch = text[i];
+		if (ch === "`" && depth === 0) {
+			if (i > 0 && text[i - 1] === "\\") {
+				i++;
+				continue;
+			}
+			return { start: last.index, end: i, contentStart };
+		}
+		if (ch === "$" && text[i + 1] === "{") {
+			let d = 1;
+			i += 2;
+			while (i < text.length && d > 0) {
+				if (text[i] === "{") d++;
+				else if (text[i] === "}") d--;
+				i++;
+			}
+			continue;
+		}
+		i++;
+	}
+	return null;
+}
+
 function detectContext(before: string, fullText: string): CompletionContext {
 	// table context: last keyword before cursor is a table-introducing keyword
 	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
@@ -1313,6 +1364,49 @@ connection.onCompletion(async (params) => {
 				insertText: it.insertText ?? it.label,
 				detail: it.detail,
 			}));
+		}
+	}
+	// --- sql directive comment completion ---
+	let sqlRange: { start: number; end: number; contentStart: number } | null = null;
+	if (filePath.endsWith(".sql")) {
+		sqlRange = { start: 0, end: text.length, contentStart: 0 };
+	} else if (isJsTs) {
+		sqlRange = findSqlTemplateRange(text, offset);
+	}
+	if (sqlRange && offset >= sqlRange.contentStart && offset <= sqlRange.end) {
+		const beforeCursor = text.slice(sqlRange.contentStart, offset);
+		const lines = beforeCursor.split("\n");
+		const currentLine = lines[lines.length - 1] ?? "";
+		const trimmed = currentLine.trimStart();
+		if (trimmed.startsWith("--")) {
+			const afterDashes = trimmed.replace(/^--\s*/, "");
+			// declared params in this file
+			const paramNames = [...text.matchAll(/--\s*@param\s+([A-Za-z_]\w*)/g)].map((m) => m[1]!);
+			const directives = ["name:", "@param", "@column", "case", "when", "end"];
+			let items: { label: string; kind: number; insertText: string; detail?: string }[] = [];
+			if (afterDashes === "" || !afterDashes.includes(" ")) {
+				// offer directive keywords
+				items = directives
+					.filter((d) => d.startsWith(afterDashes))
+					.map((d) => ({ label: "-- " + d, kind: 14, insertText: d, detail: "sql directive" }));
+			} else if (afterDashes.startsWith("when")) {
+				const rest = afterDashes.slice(4).trim();
+				const prefix = rest.split(/\s*,\s*/).pop() ?? "";
+				items = paramNames
+					.filter((n) => n.toLowerCase().startsWith(prefix.toLowerCase()))
+					.map((n) => ({ label: n, kind: 6, insertText: n, detail: "param" }));
+			} else if (afterDashes.startsWith("name:")) {
+				items = [":one", ":many", ":exec"]
+					.filter((m) => m.startsWith(afterDashes.slice(5).trim()))
+					.map((m) => ({ label: m, kind: 14, insertText: m, detail: "query mode" }));
+			} else if (afterDashes.startsWith("@param") || afterDashes.startsWith("@column")) {
+				const sqlTypes = ["integer", "text", "real", "boolean", "timestamp", "uuid", "json"];
+				const rest = afterDashes.replace(/^@(param|column)\s+\w*\s*/, "");
+				items = sqlTypes
+					.filter((t) => t.startsWith(rest))
+					.map((t) => ({ label: t, kind: 14, insertText: t, detail: "sql type" }));
+			}
+			if (items.length) return items;
 		}
 	}
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
