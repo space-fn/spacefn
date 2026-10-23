@@ -35,7 +35,10 @@ const SHIKI_LANGS = [
 ];
 
 async function loadShiki(): Promise<{
-	codeToHtml: (code: string, opts: { lang: string; theme: string }) => string;
+	codeToHtml: (
+		code: string,
+		opts: { lang: string; theme?: string; themes?: { light: string; dark: string } },
+	) => string;
 } | null> {
 	try {
 		// @ts-ignore - optional peer dependency
@@ -49,15 +52,21 @@ async function loadShiki(): Promise<{
 			}
 		).createHighlighter;
 		if (!createHighlighter) return null;
-		const highlighter = await createHighlighter({ themes: ["github-light"], langs: SHIKI_LANGS });
-		return highlighter;
+		const highlighter = await createHighlighter({
+			themes: ["github-light", "github-dark"],
+			langs: SHIKI_LANGS,
+		});
+		return highlighter as any;
 	} catch {
 		return null;
 	}
 }
 
 let shikiPromise: Promise<{
-	codeToHtml: (code: string, opts: { lang: string; theme: string }) => string;
+	codeToHtml: (
+		code: string,
+		opts: { lang: string; theme?: string; themes?: { light: string; dark: string } },
+	) => string;
 } | null> | null = null;
 function getShiki() {
 	if (!shikiPromise) {
@@ -131,7 +140,10 @@ export async function renderMarkdown(md: string): Promise<string> {
 			/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
 			(_m, lang, code) => {
 				try {
-					return shiki.codeToHtml(decodeHtml(code), { lang, theme: "github-light" });
+					return shiki.codeToHtml(decodeHtml(code), {
+						lang,
+						themes: { light: "github-light", dark: "github-dark" },
+					});
 				} catch {
 					return _m;
 				}
