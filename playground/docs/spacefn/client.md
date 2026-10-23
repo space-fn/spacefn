@@ -6,6 +6,17 @@ When DataStar is not enough, put browser code in `app/client/`.
 - Import allowlist (checked transitively): `app/client/`, `modules/`, `utils/`, `lib/`, npm packages. `app/env.ts` and other server code are rejected.
 - Serving prefix is `/_client/`. Dev: unhashed, transformed on request. Build: content-hashed, CDN-cacheable.
 
+## Bundling
+
+Entries are built with Vite. Each top-level file in `app/client/` (not `_`-prefixed) becomes an entry point; nested folders are shared modules, not entries.
+
+- **Dev.** Files are served unhashed at `/_client/<name>` and transformed on request (TypeScript, CSS). The import allowlist is checked on the dev graph walk too.
+- **Build.** A Vite build emits content-hashed files into `_client/` (e.g. `counter-a1b2c3.js`, `site-d4e5f6.css`). `script()` emits `<script type="module">` plus `<link>` tags for any CSS the entry imports; `styles()` emits a `<link rel="stylesheet">`.
+- **Import allowlist.** Checked transitively: `app/client/`, `modules/`, `utils/`, `lib/`, and npm packages. `app/env.ts` and other server code are rejected. The same predicate runs in dev and build.
+- **CSS.** A CSS entry is served as a stylesheet; CSS imported from a TS entry is collected into the entry's `css` list and emitted by `script()`.
+- **TypeScript.** `app/client/` has its own `tsconfig.json` with the DOM lib. Worker code keeps `@cloudflare/workers-types`.
+- **Customization.** Pass Vite plugins, CSS tooling, etc. through `SpaceOptions.client` (the `client` field of the space config).
+
 Use the generated helpers in `.space/client.ts`:
 
 ```ts
