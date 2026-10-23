@@ -134,6 +134,31 @@ Errors stop the build with a message that names the query:
 - A result column name used twice. Alias one with `AS`.
 - Two query files with the same function name.
 
+## Dynamic queries
+
+Optional fragments use `-- case`, `-- when <params>` and `-- end`. Fragments are independent: each is included when all of its listed parameters are defined. The result column set must stay the same across all combinations.
+
+```sql
+-- name: getProducts :many
+-- @param tag string
+-- @param minPrice number
+-- @param maxPrice number
+SELECT id, slug, name, thumbnail_img
+FROM products
+WHERE deleted_at IS NULL
+-- case
+-- when tag
+AND tag = :tag
+-- when minPrice
+AND price >= :minPrice
+-- when maxPrice
+AND price <= :maxPrice
+-- end
+ORDER BY name;
+```
+
+Parameters used only in conditional fragments become optional in the generated function, and the SQL is assembled at run time.
+
 ## Limits
 
 - A `RIGHT JOIN` or `FULL JOIN` makes every column nullable, because the check is conservative.
