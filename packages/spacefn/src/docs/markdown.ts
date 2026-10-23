@@ -140,7 +140,7 @@ export async function renderMarkdown(md: string): Promise<string> {
 			/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
 			(_m, lang, code) => {
 				try {
-					return shiki.codeToHtml(decodeHtml(code), {
+					return shiki.codeToHtml(decodeHtml(code).replace(/\t/g, "   "), {
 						lang,
 						themes: { light: "github-light", dark: "github-dark" },
 					});
