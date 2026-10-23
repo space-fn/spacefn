@@ -31,4 +31,4 @@ space deploy           # vite build && cf deploy
 npm create spacefn@latest my-app
 ```
 
-The scaffold is minimal today: it copies the playground template and installs dependencies. The template includes all of the features shown in the docs.
+The scaffold is minimal today: it copies the template and installs dependencies. The template includes all of the features shown in the docs.

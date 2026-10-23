@@ -90,5 +90,5 @@ An action that breaks a rule throws `TenantTransitionError` and changes nothing.
 
 - The generated `Tenant` class. Today the Durable Object is yours to write. Apply its migrations before it serves anything, so a request never sees a half-migrated database, and keep the ledger so the step is idempotent.
 - Purge after the grace period. `transition` has no `purge` action yet; the `purged` status is reserved for it.
-- Backups. The playground declares a `BACKUPS` R2 bucket in `cloudflare.config.ts`, but no export or restore code exists. The planned shape: a daily cron exports each tenant to R2, and a purge wipes the Durable Object only after its export is in the bucket.
+- Backups. No export or restore code exists yet. The planned shape: a daily cron exports each tenant to R2, and a purge wipes the Durable Object only after its export is in the bucket. Declare an R2 bucket (for example `BACKUPS`) in `cloudflare.config.ts` when you add this.
 - Admin routes. There are no `/admin/` routes yet. When they land they need their own authentication first.

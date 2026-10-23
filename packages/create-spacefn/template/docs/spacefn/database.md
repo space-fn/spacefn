@@ -57,7 +57,7 @@ DROP TABLE todos;
 
 ### Applying and rolling back
 
-The generated `migrated(db)` applies what is missing and caches the result per database object. Call it before queries that need the schema, once per isolate as the playground does. A failed run is retried on the next call:
+The generated `migrated(db)` applies what is missing and caches the result per database object. Call it before queries that need the schema, once per isolate. A failed run is retried on the next call:
 
 ```ts
 import { migrated } from "@space/db/main_db";
@@ -165,7 +165,7 @@ Parameters used only in conditional fragments become optional in the generated f
 - A CTE or subquery column that SQLite cannot trace to a table needs `@column`.
 - Parameter types are not inferred from comparisons. Annotate them when they matter.
 - One query per file.
-- The library does not run migrations for you. Call the generated `migrated` yourself, for example before queries that need the schema, as the playground does. Two isolates that start together can race on D1, so a deploy step is safer. There is no `space migrate` command: `process.env` in Node is not a D1 binding, so the Worker is where migrations run.
+- The library does not run migrations for you. Call the generated `migrated` yourself, for example before queries that need the schema, Two isolates that start together can race on D1, so a deploy step is safer. There is no `space migrate` command: `process.env` in Node is not a D1 binding, so the Worker is where migrations run.
 
 ## Tracing
 
