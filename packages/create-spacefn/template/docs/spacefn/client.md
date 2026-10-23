@@ -24,3 +24,28 @@ c.html(
 - Entry names are typed as a `ClientEntry` union in `.space/client.ts`, so a typo is a TypeScript error.
 
 `app/client/` has its own `tsconfig.json` with the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
+
+## Example
+
+```ts
+// app/client/counter.ts
+import { greet } from "@modules/greet";
+
+const button = document.querySelector<HTMLButtonElement>("#inc")!;
+let count = 0;
+button.addEventListener("click", () => {
+	count += 1;
+	button.textContent = `Clicked ${count}`;
+	greet();
+});
+```
+
+```css
+/* app/client/site.css */
+body {
+	font-family: system-ui, sans-serif;
+}
+#inc {
+	padding: 0.5rem 1rem;
+}
+```
