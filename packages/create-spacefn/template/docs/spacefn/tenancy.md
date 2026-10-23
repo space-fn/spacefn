@@ -56,6 +56,7 @@ const resolve = tenantResolver<{ DB: object }>({
 
 ```ts
 // app/routes/t/todos.ts
+import { defineHandler } from "spacefn/pages";
 import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler((c) => {

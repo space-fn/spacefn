@@ -102,7 +102,7 @@ import { signToken, verifyToken } from "spacefn/auth";
 const token = await signToken(
 	{ purpose: "invite", subject: tenantId },
 	env.TOKEN_KEY,
-	7 * day,
+	7 * 24 * 60 * 60 * 1000, // 7 days, in milliseconds
 	Date.now(),
 );
 const claims = await verifyToken(token, env.TOKEN_KEY, "invite", Date.now());

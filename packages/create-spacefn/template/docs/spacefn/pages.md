@@ -83,7 +83,7 @@ html`<p>${userComment}</p>`; // <script> in the comment is shown as text
 
 ## Limits
 
-- The loader's data reaches the page unchecked at run time. `definePage` and `defineLoader` keep the two types in step inside a page's own files. Changing one without the other is not caught across files.
+- The loader's data reaches the page unchecked at run time. Use `definePage<typeof loader>` to keep the page's props in step with its loader; the two are fully decoupled with `definePage<{ ... }>` and mismatched types are not caught across files.
 - Pages do not support environment suffixes such as `.dev`.
 - No layouts yet. Share a head or a shell with a function that returns `html`.
 - No client-side interactivity yet. Forms and redirects are the only interaction. Datastar's TypeScript SDK can be added later.
