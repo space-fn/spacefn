@@ -1,0 +1,45 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"scopeName": "source.sql.spacefn.directives.injection",
+	"injectionSelector": "L:source.sql",
+	"patterns": [{ "include": "#directive" }],
+	"repository": {
+		"directive": {
+			"patterns": [
+				{
+					"match": "--\\s*(case|end)\\b",
+					"name": "keyword.control.directive.spacefn.sql"
+				},
+				{
+					"match": "--\\s*(when)\\b",
+					"name": "keyword.control.directive.spacefn.sql",
+					"captures": { "1": { "name": "keyword.control.directive.spacefn.sql" } }
+				},
+				{
+					"match": "--\\s*name:\\s*([A-Za-z_]\\w*)\\s*(:one|:many|:exec)?",
+					"captures": {
+						"1": { "name": "entity.name.function.spacefn.sql" },
+						"2": { "name": "constant.language.spacefn.sql" }
+					},
+					"name": "keyword.other.directive.spacefn.sql"
+				},
+				{
+					"match": "--\\s*@(param|column)\\s+([A-Za-z_]\\w*)\\s*(\\S+)?",
+					"captures": {
+						"1": { "name": "storage.type.annotation.spacefn.sql" },
+						"2": { "name": "variable.other.spacefn.sql" },
+						"3": { "name": "storage.type.spacefn.sql" }
+					},
+					"name": "keyword.other.directive.spacefn.sql"
+				},
+				{
+					"match": "--\\s*when\\s+([A-Za-z_]\\w*(?:\\s*,\\s*[A-Za-z_]\\w*)*)",
+					"captures": {
+						"1": { "name": "variable.other.spacefn.sql" }
+					},
+					"name": "keyword.control.directive.spacefn.sql"
+				}
+			]
+		}
+	}
+}
