@@ -45,6 +45,16 @@
 				],
 				"scopeName": "source.sql.spacefn.injection",
 				"path": "./src/grammars/sql.injection.tmLanguage.json"
+			},
+			{
+				"injectTo": [
+					"source.js",
+					"source.ts",
+					"source.jsx",
+					"source.tsx"
+				],
+				"scopeName": "source.css.spacefn.injection",
+				"path": "./src/grammars/css.injection.tmLanguage.json"
 			}
 		]
 	},

@@ -16,6 +16,8 @@ export function activate(context: vscode.ExtensionContext): void {
 			{ scheme: "file", language: "sql" },
 			{ scheme: "file", language: "typescript" },
 			{ scheme: "file", language: "javascript" },
+			{ scheme: "file", language: "typescriptreact" },
+			{ scheme: "file", language: "javascriptreact" },
 		],
 	};
 	client = new LanguageClient("spacefn", "spacefn SQL", serverOptions, clientOptions);

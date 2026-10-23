@@ -1,7 +1,7 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"scopeName": "source.datastar.spacefn.injection",
-	"injectionSelector": "L:source.js -comment, L:source.ts -comment",
+	"injectionSelector": "L:source.js -comment, L:source.ts -comment, L:source.jsx -comment, L:source.tsx -comment",
 	"patterns": [{ "include": "#html-template" }],
 	"repository": {
 		"html-template": {
