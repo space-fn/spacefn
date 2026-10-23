@@ -1,5 +1,6 @@
 export const DOCS_CSS =
 	"body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:2rem auto;padding:0 1.25rem;line-height:1.65;color:#222}" +
+	".shiki{background:#f4f4f5!important;border-radius:6px;padding:1rem;overflow:auto;margin:1rem 0}" +
 	"a{color:#2563eb;text-decoration:none}a:hover{text-decoration:underline}" +
 	"pre{background:#f4f4f5;padding:1rem;overflow:auto;border-radius:6px;margin:1rem 0}" +
 	"code{background:#f4f4f5;padding:.1rem .3rem;border-radius:3px;font-size:.9em}" +
