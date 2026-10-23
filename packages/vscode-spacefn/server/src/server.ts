@@ -4,6 +4,7 @@ import * as path from "node:path";
 
 import { Parser } from "node-sql-parser";
 import { scanMigrations, scratchDatabase } from "spacefn/db";
+import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import {
@@ -356,6 +357,56 @@ async function validateEmbedded(doc: TextDocument): Promise<void> {
 	void connection.sendDiagnostics({ uri, diagnostics });
 }
 
+async function validateCssTemplates(doc: TextDocument): Promise<void> {
+	const uri = doc.uri;
+	const text = doc.getText();
+	const diagnostics: Diagnostic[] = [];
+	const re = /\\bcss\\s*`/g;
+	let m: RegExpExecArray | null;
+	while ((m = re.exec(text)) !== null) {
+		const contentStart = m.index + m[0].length;
+		let i = contentStart;
+		let end = -1;
+		let depth = 0;
+		while (i < text.length) {
+			const ch = text[i];
+			if (ch === "`" && depth === 0) {
+				end = i;
+				break;
+			}
+			if (ch === "$" && text[i + 1] === "{") {
+				let d = 1;
+				i += 2;
+				while (i < text.length && d > 0) {
+					if (text[i] === "{") d++;
+					else if (text[i] === "}") d--;
+					i++;
+				}
+				continue;
+			}
+			i++;
+		}
+		if (end === -1) continue;
+		const content = text.slice(contentStart, end);
+		const safe = content.replace(/\\$\\{[\\s\\S]*?\\}/g, (s) => " ".repeat(s.length));
+		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
+		const stylesheet = cssLS.parseStylesheet(cssDoc);
+		const cssDiags = cssLS.doValidation(cssDoc, stylesheet);
+		for (const d of cssDiags) {
+			const startOff = contentStart + cssDoc.offsetAt(d.range.start);
+			const endOff = contentStart + cssDoc.offsetAt(d.range.end);
+			diagnostics.push({
+				severity: d.severity === 1 ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
+				range: { start: doc.positionAt(startOff), end: doc.positionAt(endOff) },
+				message: d.message,
+				source: "spacefn-css",
+			});
+		}
+		re.lastIndex = end + 1;
+	}
+	if (diagnostics.length) void connection.sendDiagnostics({ uri, diagnostics });
+}
+
 interface ColumnInfo {
 	name: string;
 	type: string;
@@ -434,9 +485,10 @@ documents.onDidChangeContent((change) => {
 		change.document.uri.endsWith(".ts") ||
 		change.document.uri.endsWith(".jsx") ||
 		change.document.uri.endsWith(".tsx")
-	)
+	) {
 		void validateHtmlDatastar(change.document);
-	else void validateEmbedded(change.document);
+		void validateCssTemplates(change.document);
+	} else void validateEmbedded(change.document);
 });
 documents.onDidOpen((e) => {
 	if (e.document.uri.endsWith(".sql")) void validateSqlFile(e.document);
@@ -1039,6 +1091,7 @@ function findHtmlTemplateRange(
 }
 
 const customProps = new Map<string, string>();
+const cssLS = cssService.getCSSLanguageService();
 
 function scanCustomProps(root: string) {
 	customProps.clear();
@@ -1245,6 +1298,21 @@ connection.onCompletion(async (params) => {
 					detail: value,
 				}));
 			if (items.length) return items;
+		}
+		// css-language-service completions
+		const cssContent = text.slice(cssTpl.contentStart, cssTpl.end);
+		const safe = cssContent.replace(/\\$\\{[\\s\\S]*?\\}/g, (s) => " ".repeat(s.length));
+		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
+		const cssPos = cssDoc.positionAt(offset - cssTpl.contentStart);
+		const stylesheet = cssLS.parseStylesheet(cssDoc);
+		const cssCompletions = cssLS.doComplete(cssDoc, cssPos, stylesheet);
+		if (cssCompletions && cssCompletions.items && cssCompletions.items.length) {
+			return cssCompletions.items.map((it: any) => ({
+				label: it.label,
+				kind: it.kind,
+				insertText: it.insertText ?? it.label,
+				detail: it.detail,
+			}));
 		}
 	}
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
@@ -1892,6 +1960,16 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const offset = doc.offsetAt(params.position);
 	const text = doc.getText();
 	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
+	const cssTpl = isJsTs ? findCssTemplateRange(text, offset) : null;
+	if (cssTpl && offset >= cssTpl.contentStart && offset <= cssTpl.end) {
+		const cssContent = text.slice(cssTpl.contentStart, cssTpl.end);
+		const safe = cssContent.replace(/\\$\\{[\\s\\S]*?\\}/g, (s) => " ".repeat(s.length));
+		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
+		const cssPos = cssDoc.positionAt(offset - cssTpl.contentStart);
+		const stylesheet = cssLS.parseStylesheet(cssDoc);
+		const h = cssLS.doHover(cssDoc, cssPos, stylesheet);
+		if (h) return h as any;
+	}
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
 		let htmlText = text.slice(tpl.contentStart, tpl.end);
 		let masked = "";
