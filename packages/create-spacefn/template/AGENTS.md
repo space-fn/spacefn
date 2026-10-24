@@ -8,7 +8,7 @@ Read the framework docs in `docs/spacefn/` before making changes.
 
 - [index.md](docs/spacefn/index.md) - what spacefn is and how it works.
 - [getting-started/](docs/spacefn/getting-started/) - install, run, first route and page.
-- [concepts/](docs/spacefn/concepts/) - how it works, conventions.
+- [concepts/](docs/spacefn/concepts/) - how it works, conventions, import aliases.
 
 ### Directory structure
 
