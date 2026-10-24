@@ -12,8 +12,8 @@ spacefn builds on three ideas:
 
 ## How it works (the short version)
 
-1. You write code in `app/`, `modules/`, `utils/`, `lib/`.
-2. Spacefn scans those folders and generates `.space/`.
+1. You write code in `app/`. Spacefn scans `app/` and generates `.space/`.
+2. Keep shared logic in `modules/`, `utils/`, `lib/` and import it from `app/`. Spacefn does not scan those folders.
 3. Vite serves it in dev; builds it for production.
 
 That's the whole loop. The rest of these docs fills in the details.

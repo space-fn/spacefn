@@ -4,18 +4,29 @@ Read the framework docs in `docs/spacefn/` before making changes.
 
 ## Doc index
 
-- [auth.md](docs/spacefn/auth.md) — auth primitives (PBKDF2, sessions, CSRF, TOTP).
-- [client.md](docs/spacefn/client.md) — bundling browser TS/CSS from `app/client/`.
-- [cli.md](docs/spacefn/cli.md) — `space` CLI commands and dev docs reader.
-- [docs-reader.md](docs/spacefn/docs-reader.md) — dev docs reader (`/__space_docs`).
-- [cloudflare-v2.md](docs/spacefn/cloudflare-v2.md) — Cloudflare v2 config.
-- [conventions.md](docs/spacefn/conventions.md) — folder conventions, `app/` layout, `modules/`.
-- [database.md](docs/spacefn/database.md) — multi-database, migrations, typed queries.
-- [env.md](docs/spacefn/env.md) — environment variables and validation.
-- [routes.md](docs/spacefn/routes.md) — route handlers and `onError`.
-- [pages.md](docs/spacefn/pages.md) — pages, loaders, actions.
-- [tenancy.md](docs/spacefn/tenancy.md) — multi-tenancy via Durable Objects.
-- [tracing.md](docs/spacefn/tracing.md) — OTLP tracing.
+### Getting started
+
+- [index.md](docs/spacefn/index.md) - what spacefn is and how it works.
+- [getting-started/](docs/spacefn/getting-started/) - install, run, first route and page.
+- [concepts/](docs/spacefn/concepts/) - how it works, conventions.
+
+### Directory structure
+
+- [directory-structure/](docs/spacefn/directory-structure/) - one page per convention folder: routes, middleware, queues, crons, durable-objects, workflows, pages, client, database, env, modules.
+
+### Guides
+
+- [auth.md](docs/spacefn/guides/auth.md) - auth primitives (PBKDF2, sessions, CSRF, TOTP).
+- [client.md](docs/spacefn/directory-structure/client.md) - bundling browser TS/CSS from `app/client/`.
+- [cli.md](docs/spacefn/api-reference/cli.md) - `space` CLI commands and dev docs reader.
+- [cloudflare-v2.md](docs/spacefn/guides/cloudflare-v2.md) - Cloudflare v2 config.
+- [docs-reader.md](docs/spacefn/guides/docs-reader.md) - dev docs reader (`/__space_docs`).
+- [tenancy.md](docs/spacefn/guides/tenancy.md) - multi-tenancy via Durable Objects.
+- [tracing.md](docs/spacefn/guides/tracing.md) - OTLP tracing.
+
+### API reference
+
+- [api-reference/](docs/spacefn/api-reference/) - handlers, env, config, generated code, pages, cli.
 
 ## Conventions
 
