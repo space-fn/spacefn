@@ -86,7 +86,7 @@ export async function scratchDatabase(
 	dialect: Dialect = "sqlite",
 ): Promise<ScratchDb> {
 	if (dialect === "postgres") {
-		const { PGlite } = await import("@electric-sql/pglite");
+		const { PGlite } = await import(/* @vite-ignore */ "@electric-sql/pglite");
 		const db = new PGlite();
 		for (const migration of migrations) {
 			for (const statement of splitStatements(migration.sql)) await db.exec(statement);
