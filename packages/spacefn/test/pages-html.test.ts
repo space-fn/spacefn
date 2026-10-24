@@ -1,6 +1,6 @@
 import { expect, test } from "vite-plus/test";
 
-import { escapeHtml, html, raw } from "../src/pages";
+import { css, escapeHtml, html, minifyHtml, raw } from "../src/pages";
 
 test("escapes interpolated text", () => {
 	const name = `<script>alert("x")</script> & 'friends'`;
@@ -40,4 +40,36 @@ test("numbers render as text", () => {
 
 test("escapeHtml escapes the five characters that matter", () => {
 	expect(escapeHtml(`&<>"'`)).toBe("&amp;&lt;&gt;&quot;&#39;");
+});
+
+test("minifyHtml collapses whitespace between tags", () => {
+	const out = minifyHtml(
+		html`<div>
+			<p>hello</p>
+			<p>world</p>
+		</div>`,
+	);
+	expect(out).toBe("<div><p>hello</p><p>world</p></div>");
+});
+
+test("minifyHtml preserves pre content", () => {
+	const out = minifyHtml(html`<pre>  keep   spaces  </pre>`);
+	expect(out).toContain("  keep   spaces  ");
+});
+
+test("css tagged template splices values", () => {
+	const color = "red";
+	expect(css`
+		.box {
+			color: ${color};
+		}
+	`).toBe(".box { color: red; }");
+});
+
+test("css escapes style breakout", () => {
+	const evil = "</style><script>alert(1)</script>";
+	const out = css`
+		${evil}
+	`;
+	expect(out).not.toContain("</style><script>");
 });

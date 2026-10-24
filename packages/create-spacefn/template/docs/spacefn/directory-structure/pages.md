@@ -106,6 +106,31 @@ html`<p>${userComment}</p>`; // <script> in the comment is shown as text
 
 **Formatters rewrite the markup.** An `html` template is HTML to Prettier-style formatters, which reflow its whitespace and indentation. The browser ignores most of that, but whitespace inside `<pre>`, or between inline elements, can change what the user sees. Keep those spans out of templates the formatter touches, or put them in `raw()` strings.
 
+## HTML helpers
+
+`html` is the only escaping template tag. Two helpers ship alongside it:
+
+- `raw(markup)` places markup unchanged.
+- `minifyHtml(input)` collapses whitespace between tags and trims, while preserving content inside `<pre>`, `<code>`, `<textarea>`, `<script>` and `<style>`. Opt-in; `html` itself keeps whitespace.
+- `css` is a tagged template for CSS text. It splices values in and prevents `</style>` breakout.
+
+```ts
+import { css, html, minifyHtml } from "spacefn/pages";
+
+const color = "red";
+const sheet = css`
+	.box {
+		color: ${color};
+	}
+`;
+
+const markup = minifyHtml(
+	html`<div>
+		<p>hello</p>
+	</div>`,
+);
+```
+
 ## Limits
 
 - The loader's data reaches the page unchecked at run time. Use `definePage<typeof loader>` to keep the page's props in step with its loader; the two are fully decoupled with `definePage<{ ... }>` and mismatched types are not caught across files.
