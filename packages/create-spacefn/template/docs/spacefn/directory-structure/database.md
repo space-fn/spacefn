@@ -104,6 +104,57 @@ Generated code (`.space/db/<name>.ts`):
 const row = await findTodo(d1Executor(c.env.DB), { id: 2 }); // FindTodoRow | undefined
 ```
 
+### What the generated TypeScript looks like
+
+For `find-todo.sql` (`:one`), spacefn writes:
+
+```ts
+export interface FindTodoRow {
+	id: number;
+	title: string;
+	done: number;
+}
+
+/** SELECT id, title, done FROM todos WHERE id = :id; */
+export async function findTodo(
+	db: DbReader,
+	params: { id: number },
+): Promise<FindTodoRow | undefined> {
+	return (
+		await db.query<FindTodoRow>("SELECT id, title, done FROM todos WHERE id = ?", [params.id])
+	)[0];
+}
+```
+
+- Modes: `:one` → `Row | undefined`, `:many` → `Row[]`, `:exec` → `void` (no `Row` interface).
+- Parameters with no `@param` annotation take `SqlValue` (`string | number | bigint | Uint8Array | null`). With no parameters at all, the type is `Record<string, never>` and you pass `{}`.
+- A repeated parameter name is bound once per use, in placeholder order.
+- The SQL text is in a doc comment above the function.
+
+For a dynamic query (`getProducts` above), only the fragments whose parameters are defined get assembled:
+
+```ts
+export async function getProducts(
+	db: DbReader,
+	params: { tag?: string; minPrice?: number; maxPrice?: number },
+): Promise<GetProductsRow[]> {
+	const __sql: string[] = [];
+	const __values: unknown[] = [];
+	__sql.push("SELECT id, slug, name, thumbnail_img\nFROM products\nWHERE deleted_at IS NULL\n");
+	if (params.tag !== undefined) {
+		__sql.push("\nAND tag = ?\n");
+		__values.push(params.tag!);
+	}
+	// ... minPrice, maxPrice ...
+	__sql.push("\nORDER BY name;\n");
+	return db.query<GetProductsRow>(__sql.join(""), __values);
+}
+```
+
+Parameters used only inside conditional fragments become optional (`?`), and parameters that are undefined drop their fragment. The all-fragments-excluded SQL is validated against the schema at build time.
+
+`DbReader` is `{ query<T>(sql: string, params?: unknown[]): Promise<T[]> }`. Any executor that satisfies it works, including `durableObjectExecutor` for a Durable Object's SQLite storage.
+
 ## How types are found
 
 Each query runs against an in-memory SQLite that has every migration applied. That gives the database's own answer:

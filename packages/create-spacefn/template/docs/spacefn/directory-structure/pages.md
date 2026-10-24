@@ -66,6 +66,31 @@ export const actions = defineActions({
 - A loader can return a `Response`, for example a redirect for a page the user may not see.
 - A `POST` with no action name gets 400. An unknown action gets 404, including names such as `constructor`.
 
+## Form actions and `.path()`
+
+`defineActions` returns each action with a `.path()` method. `path()` returns the query string `?_action=<name>`, which is the value a form posts to. You can build the action string in the page instead of hard-coding it:
+
+```ts
+import { defineActions } from "spacefn/pages";
+
+export const actions = defineActions({
+	add: async (c) => {
+		/* ... */
+	},
+	remove: async (c) => {
+		/* ... */
+	},
+});
+
+// in the page:
+html`<form method="post" action="${actions.add.path()}">
+	<input name="title" required />
+	<button>Add</button>
+</form>`;
+```
+
+`defineLoader` runs on `GET`. `defineActions` returns `{ [name]: action & { path(): string } }`: the action stays callable, and `path()` gives the query string for that action.
+
 ## Escaping
 
 `html` escapes every interpolated value. Strings, numbers and nested templates are safe by default:
