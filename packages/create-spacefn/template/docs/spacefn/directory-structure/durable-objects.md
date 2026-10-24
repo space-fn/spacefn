@@ -171,6 +171,8 @@ env: {
 
 `worker.name` comes from your `cloudflare.config.ts` (`defineConfig({ worker: { name: "..." } })`). The class itself reaches Cloudflare through `app/entry.ts`, which re-exports it via `export * from "@space/exports"` (`.space/exports.ts` is generated). Remove that re-export and the binding points at a class the Worker no longer exports.
 
+This injection is not dev-only. The `space()` Vite plugin's `config` callback runs whenever Vite resolves the Worker config — both `vp dev` and `vp build`. In production the same entries land in `.cloudflare/output/v0/workers/default/worker.config.json` (the `DO_COUNTER` binding and the `Counter` export), so the deployed Worker is wired identically to local dev. Adding or removing a file under `app/durable-objects/` changes the deployed config on the next build.
+
 If you need a Durable Object that the convention does not cover (renamed, transferred, or deleted lifecycle states), declare it directly with `bindings.durableObject` / `exports.durableObject` in `cloudflare.config.ts`.
 
 ## Notes

@@ -39,6 +39,8 @@ All run under `vite dev` with local state in `.cloudflare/state/`.
 ## Effect on the plan
 
 - No generated `wrangler.jsonc`. Config is `cloudflare.config.ts`.
+
+- Convention folders (`app/durable-objects/`, `app/workflows/`, `app/queues/`, `app/crons/`) are scanned by the `space()` Vite plugin, and their bindings/exports/triggers are injected into the Worker config at Vite config-resolution time — both `vp dev` and `vp build`. The deployed Worker (`.cloudflare/output/v0/workers/default/worker.config.json`) carries the same entries as local dev.
 - Queues, crons, Durable Objects and Workflows map from folders to config entries. The generated worker entry must export the classes.
 - Removed Durable Object classes need a user-declared `deleted` entry.
 - `space dev` and `space build` wrap Vite. `space deploy` wraps `cf deploy`.

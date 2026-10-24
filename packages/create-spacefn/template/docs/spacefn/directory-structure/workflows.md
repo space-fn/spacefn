@@ -149,4 +149,6 @@ env: {
 
 `worker.name` comes from `cloudflare.config.ts` (`defineConfig({ worker: { name: "..." } })`). The class reaches Cloudflare through `app/entry.ts` via `export * from "@space/exports"`. Remove that re-export and the binding breaks.
 
+This injection runs in both dev and production. The `space()` Vite plugin's `config` callback runs whenever Vite resolves the Worker config — `vp dev` and `vp build` alike — so the same `WF_*` binding and `OrderFulfillment` export land in `.cloudflare/output/v0/workers/default/worker.config.json` and are deployed with the Worker. Adding or removing a file under `app/workflows/` changes the deployed config on the next build.
+
 `limits`, `concurrency`, `schedules` and `defaultRetention` are Cloudflare Workflow options, but the folder convention does not expose them. Set them in `cloudflare.config.ts` directly if you need them.
