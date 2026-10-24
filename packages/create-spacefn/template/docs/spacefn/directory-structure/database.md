@@ -35,13 +35,16 @@ export default defineDatabase({ dialect: "sqlite" });
 The `db/` folder generates the query module, but it does **not** declare the Cloudflare binding. Declare the D1 binding yourself in `cloudflare.config.ts` so `c.env.DB` (and `bindings.d.ts`) are typed:
 
 ```ts
-import { defineSpace, compatibilityDate, bindings } from "spacefn/cloudflare";
+import { defineConfig, bindings } from "cf/config";
 
-export default defineSpace({
-	name: "my-app",
-	compatibilityDate: compatibilityDate(),
-	env: {
-		DB: bindings.d1({ name: "my-app-db" }),
+export default defineConfig({
+	worker: {
+		entrypoint: "./app/entry.ts",
+		name: "my-app",
+		compatibilityDate: "2026-10-19",
+		env: {
+			DB: bindings.d1({ name: "my-app-db" }),
+		},
 	},
 });
 ```

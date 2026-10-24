@@ -169,7 +169,7 @@ env: {
 },
 ```
 
-`worker.name` comes from your `cloudflare.config.ts` (`defineSpace({ name: "..." })`). The class itself reaches Cloudflare through `app/entry.ts`, which re-exports it via `export * from "@space/exports"` (`.space/exports.ts` is generated). Remove that re-export and the binding points at a class the Worker no longer exports.
+`worker.name` comes from your `cloudflare.config.ts` (`defineConfig({ worker: { name: "..." } })`). The class itself reaches Cloudflare through `app/entry.ts`, which re-exports it via `export * from "@space/exports"` (`.space/exports.ts` is generated). Remove that re-export and the binding points at a class the Worker no longer exports.
 
 If you need a Durable Object that the convention does not cover (renamed, transferred, or deleted lifecycle states), declare it directly with `bindings.durableObject` / `exports.durableObject` in `cloudflare.config.ts`.
 

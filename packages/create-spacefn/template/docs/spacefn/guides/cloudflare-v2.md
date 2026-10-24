@@ -7,7 +7,7 @@ Spike notes for building spacefn on `@cloudflare/vite-plugin@2.0.0-beta.v.1` and
 | Piece         | Choice                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------- |
 | Vite plugin   | `space()` from `spacefn/vite` returns the folder sync plugin plus the Cloudflare plugin |
-| Worker config | Root `cloudflare.config.ts` using `defineSpace()` from `spacefn/cloudflare`             |
+| Worker config | Root `cloudflare.config.ts` using `defineConfig()` from `cf/config`                     |
 | Builders      | `bindings`, `exports`, `triggers` are re-exported from `spacefn/cloudflare`             |
 | `cf` CLI      | Comes with `spacefn` as a dependency. Apps do not install it.                           |
 | Wrangler      | Not used                                                                                |

@@ -119,19 +119,19 @@ Line by line:
 
 ## Convention folder to generated file to wiring
 
-| Folder                                | Generated file                                               | Wired by                                          |
-| ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------- |
-| `app/routes/**`                       | `.space/routes.ts`                                           | `registerRoutes(app)`                             |
-| `app/pages/*.page.ts` + `*.server.ts` | `.space/pages.ts`                                            | `registerPages(app)`                              |
-| `app/middleware/*`                    | imported into `.space/worker.ts`                             | `createApp`                                       |
-| `app/env.ts`                          | `.space/env.d.ts`, names in `.space/bindings.d.ts`           | `createApp({ env: schema })`                      |
-| `app/queues/*`                        | `.space/queues.ts`, consumer in `.space/worker.ts`           | `mountApp` → `queue`                              |
-| `app/crons/*`                         | consumer in `.space/worker.ts`                               | `mountApp` → `scheduled`                          |
-| `app/durable-objects/*`               | `.space/exports.ts`, typed binding in `.space/bindings.d.ts` | `export * from "@space/exports"`                  |
-| `app/workflows/*`                     | `.space/exports.ts`, typed binding in `.space/bindings.d.ts` | `export * from "@space/exports"`                  |
-| `app/db/<name>/...`                   | `.space/db/<name>.ts`                                        | imported directly (`@space/db/<name>`)            |
-| `app/client/*`                        | `.space/client.ts`, `.space/client-manifest.ts`              | imported in pages                                 |
-| `cloudflare.config.ts` (root)         | typed bindings                                               | `defineSpace` sets `entrypoint: "./app/entry.ts"` |
+| Folder                                | Generated file                                               | Wired by                                                             |
+| ------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
+| `app/routes/**`                       | `.space/routes.ts`                                           | `registerRoutes(app)`                                                |
+| `app/pages/*.page.ts` + `*.server.ts` | `.space/pages.ts`                                            | `registerPages(app)`                                                 |
+| `app/middleware/*`                    | imported into `.space/worker.ts`                             | `createApp`                                                          |
+| `app/env.ts`                          | `.space/env.d.ts`, names in `.space/bindings.d.ts`           | `createApp({ env: schema })`                                         |
+| `app/queues/*`                        | `.space/queues.ts`, consumer in `.space/worker.ts`           | `mountApp` → `queue`                                                 |
+| `app/crons/*`                         | consumer in `.space/worker.ts`                               | `mountApp` → `scheduled`                                             |
+| `app/durable-objects/*`               | `.space/exports.ts`, typed binding in `.space/bindings.d.ts` | `export * from "@space/exports"`                                     |
+| `app/workflows/*`                     | `.space/exports.ts`, typed binding in `.space/bindings.d.ts` | `export * from "@space/exports"`                                     |
+| `app/db/<name>/...`                   | `.space/db/<name>.ts`                                        | imported directly (`@space/db/<name>`)                               |
+| `app/client/*`                        | `.space/client.ts`, `.space/client-manifest.ts`              | imported in pages                                                    |
+| `cloudflare.config.ts` (root)         | typed bindings                                               | native Cloudflare config; `entrypoint: "./app/entry.ts"` must be set |
 
 ## Generated vs hand-written
 

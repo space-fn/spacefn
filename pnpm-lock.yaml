@@ -184,6 +184,9 @@ importers:
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
+      cf:
+        specifier: 1.0.0-beta.18
+        version: 1.0.0-beta.18(@types/node@26.6.5)
       spacefn:
         specifier: workspace:*
         version: link:../spacefn

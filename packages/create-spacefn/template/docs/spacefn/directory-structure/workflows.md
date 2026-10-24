@@ -147,6 +147,6 @@ env: {
 },
 ```
 
-`worker.name` comes from `cloudflare.config.ts` (`defineSpace({ name: "..." })`). The class reaches Cloudflare through `app/entry.ts` via `export * from "@space/exports"`. Remove that re-export and the binding breaks.
+`worker.name` comes from `cloudflare.config.ts` (`defineConfig({ worker: { name: "..." } })`). The class reaches Cloudflare through `app/entry.ts` via `export * from "@space/exports"`. Remove that re-export and the binding breaks.
 
 `limits`, `concurrency`, `schedules` and `defaultRetention` are Cloudflare Workflow options, but the folder convention does not expose them. Set them in `cloudflare.config.ts` directly if you need them.

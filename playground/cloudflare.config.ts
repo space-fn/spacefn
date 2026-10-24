@@ -1,9 +1,12 @@
-import { defineSpace, compatibilityDate, bindings } from "spacefn/cloudflare";
+import { defineConfig, bindings } from "cf/config";
 
-export default defineSpace({
-	name: "spacefn-app",
-	compatibilityDate: compatibilityDate(new Date("2026-10-19")),
-	env: {
-		DB: bindings.d1({ name: "spacefn-app-db" }),
+export default defineConfig({
+	worker: {
+		entrypoint: "./app/entry.ts",
+		name: "spacefn-app",
+		compatibilityDate: "2026-10-19",
+		env: {
+			DB: bindings.d1({ name: "spacefn-app-db" }),
+		},
 	},
 });

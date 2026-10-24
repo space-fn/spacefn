@@ -39,7 +39,7 @@ barrel export.
 | `spacefn/middleware`                            | `defineMiddleware`                                                                |
 | `spacefn/pages` / `spacefn/html`                | `definePage`, `defineLoader`, `defineActions`, `html`, `raw`, `css`, `minifyHtml` |
 | `spacefn/runtime`                               | request context, env                                                              |
-| `spacefn/cloudflare`                            | `defineSpace`, `compatibilityDate`, bindings/exports/triggers                     |
+| `spacefn/cloudflare`                            | `envBindings` (derived bindings from an `env.ts` schema)                          |
 | `spacefn/env`                                   | `defineEnv`, field helpers                                                        |
 | `spacefn/db`                                    | `d1Executor`, migration helpers                                                   |
 | `spacefn/auth`                                  | password hashing, sessions, CSRF, TOTP                                            |
