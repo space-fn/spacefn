@@ -11,4 +11,4 @@ Spacefn generates `.space/` from your folders. You import from it; never edit it
 | `env`                                     | `spacefn/env`          | Typed environment                          |
 | `db/*`                                    | `@space/db/<name>`     | Typed query functions and migration runner |
 
-`.space/` is regenerated on every dev start and build. Commit it or not — it's deterministic.
+`.space/` is regenerated on every dev start and build. Commit it or not - it's deterministic.

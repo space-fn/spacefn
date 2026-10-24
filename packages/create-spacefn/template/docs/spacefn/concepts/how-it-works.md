@@ -27,5 +27,5 @@ Spacefn scans your folders and writes `.space/`. That folder holds typed helpers
 
 ## Next steps
 
-- [Conventions](./conventions.md) — why the folder layout matters.
-- [Directory structure](../directory-structure/) — each folder in detail.
+- [Conventions](./conventions.md) - why the folder layout matters.
+- [Directory structure](../directory-structure/) - each folder in detail.

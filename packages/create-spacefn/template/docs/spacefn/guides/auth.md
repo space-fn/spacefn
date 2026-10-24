@@ -61,7 +61,7 @@ import { csrfGuard } from "spacefn/auth";
 app.use(csrfGuard({ cookie: "session", origins: ["https://app.example.com"] }));
 ```
 
-- For `POST`, `PUT`, `PATCH` and `DELETE`, the `Origin` header must be this app's own origin or one you list — with or without a session cookie. Checking cookie-less requests too is what stops a forged login.
+- For `POST`, `PUT`, `PATCH` and `DELETE`, the `Origin` header must be this app's own origin or one you list - with or without a session cookie. Checking cookie-less requests too is what stops a forged login.
 - Without an `Origin`, `Sec-Fetch-Site` must be `same-origin` or `none`.
 - A request with neither header is refused when it carries a session cookie, and allowed when it does not, so non-browser API clients keep working.
 

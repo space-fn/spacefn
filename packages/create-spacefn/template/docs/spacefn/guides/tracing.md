@@ -84,4 +84,4 @@ export async function charge(orderId: string) {
 - Durable Object code runs in its own isolate, so its internal queries are not linked to the caller's trace yet. The `do.call` span on the caller side is recorded.
 - Logs go to the console only, not to the OTLP endpoint.
 - Queue messages carry a `$spacefn` envelope with the trace context. A Worker that is not built with spacefn sees that envelope around the body.
-- Export happens once per request, queue batch, or cron dispatch — including when the handler fails, so error spans are exported too. Work outside those, such as a long-running background job, has no flush point.
+- Export happens once per request, queue batch, or cron dispatch - including when the handler fails, so error spans are exported too. Work outside those, such as a long-running background job, has no flush point.
