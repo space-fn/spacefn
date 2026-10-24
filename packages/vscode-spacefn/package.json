@@ -30,6 +30,13 @@
 		"vsce": "^2.15.0"
 	},
 	"contributes": {
+		"commands": [
+			{
+				"command": "spacefn.dbDoctor",
+				"title": "space: DB Doctor",
+				"category": "spacefn"
+			}
+		],
 		"grammars": [
 			{
 				"injectTo": [

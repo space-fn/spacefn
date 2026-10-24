@@ -126,7 +126,7 @@ function extractBadIdentifier(message: string): string | null {
 
 function rangeForIdentifier(doc: TextDocument, ident: string): Range | null {
 	const text = doc.getText();
-	const re = new RegExp("\\\\b" + ident + "\\\\b");
+	const re = new RegExp("\\b" + ident + "\\b");
 	const m = re.exec(text);
 	if (!m) return null;
 	const start = doc.positionAt(m.index);
@@ -278,7 +278,7 @@ async function validateDatastarAttributes(
 	return diagnostics;
 }
 
-async function validateHtmlDatastar(doc: TextDocument): Promise<void> {
+async function validateHtmlDatastar(doc: TextDocument): Promise<Diagnostic[]> {
 	const uri = doc.uri;
 	const text = doc.getText();
 	const diagnostics: any[] = [];
@@ -314,28 +314,16 @@ async function validateHtmlDatastar(doc: TextDocument): Promise<void> {
 		diagnostics.push(...htmlDiags);
 		re.lastIndex = end + 1;
 	}
-	void connection.sendDiagnostics({ uri, diagnostics });
+	return diagnostics;
 }
 
-async function validateEmbedded(doc: TextDocument): Promise<void> {
+async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]> {
 	const uri = doc.uri;
 	const filePath = uri.startsWith("file://") ? decodeURIComponent(uri.replace("file://", "")) : uri;
-	if (!filePath.endsWith(".ts") && !filePath.endsWith(".js")) return;
-	const dbDir = findDbDir(filePath);
-	if (!dbDir) return;
-	let targetDb: string | null = null;
-	try {
-		const entries = await (
-			await import("node:fs/promises")
-		).readdir(dbDir, {
-			withFileTypes: true,
-		});
-		const dbs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
-		if (dbs.length > 0) targetDb = path.join(dbDir, dbs[0]!);
-	} catch {
-		return;
-	}
-	if (!targetDb) return;
+	if (!filePath.endsWith(".ts") && !filePath.endsWith(".js")) return [];
+	const resolved = resolveDbDir(filePath);
+	if (!resolved) return [];
+	const targetDb = resolved.targetDb;
 
 	const text = doc.getText();
 	const regex = /\b(?:sql|db)\s*`([\s\S]*?)`/g;
@@ -366,14 +354,14 @@ async function validateEmbedded(doc: TextDocument): Promise<void> {
 			});
 		}
 	}
-	void connection.sendDiagnostics({ uri, diagnostics });
+	return diagnostics;
 }
 
-async function validateCssTemplates(doc: TextDocument): Promise<void> {
+async function validateCssTemplates(doc: TextDocument): Promise<Diagnostic[]> {
 	const uri = doc.uri;
 	const text = doc.getText();
 	const diagnostics: Diagnostic[] = [];
-	const re = /\\bcss\\s*`/g;
+	const re = /\bcss\s*`/g;
 	let m: RegExpExecArray | null;
 	while ((m = re.exec(text)) !== null) {
 		const contentStart = m.index + m[0].length;
@@ -400,7 +388,7 @@ async function validateCssTemplates(doc: TextDocument): Promise<void> {
 		}
 		if (end === -1) continue;
 		const content = text.slice(contentStart, end);
-		const safe = content.replace(/\\$\\{[\\s\\S]*?\\}/g, (s) => " ".repeat(s.length));
+		const safe = content.replace(/\${[\s\S]*?}/g, (s) => " ".repeat(s.length));
 		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
 		const stylesheet = cssLS.parseStylesheet(cssDoc);
 		const cssDiags = cssLS.doValidation(cssDoc, stylesheet);
@@ -416,7 +404,16 @@ async function validateCssTemplates(doc: TextDocument): Promise<void> {
 		}
 		re.lastIndex = end + 1;
 	}
-	if (diagnostics.length) void connection.sendDiagnostics({ uri, diagnostics });
+	return diagnostics;
+}
+
+async function validateJsTs(doc: TextDocument): Promise<void> {
+	const uri = doc.uri;
+	const all: Diagnostic[] = [];
+	all.push(...(await validateHtmlDatastar(doc)));
+	all.push(...(await validateCssTemplates(doc)));
+	all.push(...(await validateEmbedded(doc)));
+	void connection.sendDiagnostics({ uri, diagnostics: all });
 }
 
 interface ColumnInfo {
@@ -490,7 +487,7 @@ function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | n
 }
 
 documents.onDidChangeContent((change) => {
-	if (change.document.uri.includes("/migrations/")) schemaCache.clear();
+	if (change.document.uri.includes("/migrations/") || change.document.uri.includes("/db/")) schemaCache.clear();
 	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
 	else if (
 		change.document.uri.endsWith(".js") ||
@@ -498,13 +495,23 @@ documents.onDidChangeContent((change) => {
 		change.document.uri.endsWith(".jsx") ||
 		change.document.uri.endsWith(".tsx")
 	) {
-		void validateHtmlDatastar(change.document);
-		void validateCssTemplates(change.document);
-	} else void validateEmbedded(change.document);
+		void validateJsTs(change.document);
+	} else void validateEmbedded(change.document).then((d) => {
+		void connection.sendDiagnostics({ uri: change.document.uri, diagnostics: d });
+	});
 });
 documents.onDidOpen((e) => {
 	if (e.document.uri.endsWith(".sql")) void validateSqlFile(e.document);
-	else void validateEmbedded(e.document);
+	else if (
+		e.document.uri.endsWith(".js") ||
+		e.document.uri.endsWith(".ts") ||
+		e.document.uri.endsWith(".jsx") ||
+		e.document.uri.endsWith(".tsx")
+	) {
+		void validateJsTs(e.document);
+	} else void validateEmbedded(e.document).then((d) => {
+		void connection.sendDiagnostics({ uri: e.document.uri, diagnostics: d });
+	});
 });
 
 const SQL_KEYWORDS = [
@@ -1138,7 +1145,7 @@ function findCssTemplateRange(
 	text: string,
 	offset: number,
 ): { start: number; end: number; contentStart: number } | null {
-	const re = /\\bcss\\s*`/g;
+	const re = /\bcss\s*`/g;
 	let m: RegExpExecArray | null;
 	let last: RegExpExecArray | null = null;
 	while ((m = re.exec(text)) !== null) {
@@ -1352,7 +1359,7 @@ connection.onCompletion(async (params) => {
 		}
 		// css-language-service completions
 		const cssContent = text.slice(cssTpl.contentStart, cssTpl.end);
-		const safe = cssContent.replace(/\\$\\{[\\s\\S]*?\\}/g, (s) => " ".repeat(s.length));
+		const safe = cssContent.replace(/\${[\s\S]*?}/g, (s) => " ".repeat(s.length));
 		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
 		const cssPos = cssDoc.positionAt(offset - cssTpl.contentStart);
 		const stylesheet = cssLS.parseStylesheet(cssDoc);
@@ -2057,7 +2064,7 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const cssTpl = isJsTs ? findCssTemplateRange(text, offset) : null;
 	if (cssTpl && offset >= cssTpl.contentStart && offset <= cssTpl.end) {
 		const cssContent = text.slice(cssTpl.contentStart, cssTpl.end);
-		const safe = cssContent.replace(/\\$\\{[\\s\\S]*?\\}/g, (s) => " ".repeat(s.length));
+		const safe = cssContent.replace(/\${[\s\S]*?}/g, (s) => " ".repeat(s.length));
 		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
 		const cssPos = cssDoc.positionAt(offset - cssTpl.contentStart);
 		const stylesheet = cssLS.parseStylesheet(cssDoc);
@@ -2290,7 +2297,9 @@ connection.onDidChangeWatchedFiles((params) => {
 	schemaCache.clear();
 	for (const doc of documents.all()) {
 		if (doc.uri.endsWith(".sql")) void validateSqlFile(doc);
-		else void validateEmbedded(doc);
+		else void validateEmbedded(doc).then((d) => {
+			void connection.sendDiagnostics({ uri: doc.uri, diagnostics: d });
+		});
 	}
 	if (params.changes.some((c) => c.uri.endsWith("variables.css"))) {
 		scanCustomProps(workspaceRoot);
