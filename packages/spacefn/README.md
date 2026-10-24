@@ -29,24 +29,24 @@ pnpm dev          # `vp dev` under the hood
 Import from the subpath that owns the thing you need. There is no root
 barrel export.
 
-| Subpath | Purpose |
-| --- | --- |
-| `spacefn/handler` | `defineHandler` |
-| `spacefn/middleware` | `defineMiddleware` |
-| `spacefn/pages` / `spacefn/html` | `definePage`, `defineLoader`, `defineActions`, `html`, `raw`, `css`, `minifyHtml` |
-| `spacefn/runtime` | request context, env |
-| `spacefn/cloudflare` | `defineSpace`, `compatibilityDate`, bindings/exports/triggers |
-| `spacefn/env` | `defineEnv`, field helpers |
-| `spacefn/db` | `d1Executor`, migration helpers |
-| `spacefn/auth` | password hashing, sessions, CSRF, TOTP |
-| `spacefn/tenancy` | multi-tenant DO helpers |
-| `spacefn/queues` / `spacefn/crons` | queue/cron definitions |
-| `spacefn/durable-objects` / `spacefn/workflows` | DO/workflow helpers |
-| `spacefn/trace` | OTLP tracing |
-| `spacefn/sync` | codegen entry point |
-| `spacefn/vite` | Vite plugin |
-| `spacefn/testing` | test helpers |
-| `spacefn/cli` | `space` CLI (internal) |
+| Subpath                                         | Purpose                                                                           |
+| ----------------------------------------------- | --------------------------------------------------------------------------------- |
+| `spacefn/handler`                               | `defineHandler`                                                                   |
+| `spacefn/middleware`                            | `defineMiddleware`                                                                |
+| `spacefn/pages` / `spacefn/html`                | `definePage`, `defineLoader`, `defineActions`, `html`, `raw`, `css`, `minifyHtml` |
+| `spacefn/runtime`                               | request context, env                                                              |
+| `spacefn/cloudflare`                            | `defineSpace`, `compatibilityDate`, bindings/exports/triggers                     |
+| `spacefn/env`                                   | `defineEnv`, field helpers                                                        |
+| `spacefn/db`                                    | `d1Executor`, migration helpers                                                   |
+| `spacefn/auth`                                  | password hashing, sessions, CSRF, TOTP                                            |
+| `spacefn/tenancy`                               | multi-tenant DO helpers                                                           |
+| `spacefn/queues` / `spacefn/crons`              | queue/cron definitions                                                            |
+| `spacefn/durable-objects` / `spacefn/workflows` | DO/workflow helpers                                                               |
+| `spacefn/trace`                                 | OTLP tracing                                                                      |
+| `spacefn/sync`                                  | codegen entry point                                                               |
+| `spacefn/vite`                                  | Vite plugin                                                                       |
+| `spacefn/testing`                               | test helpers                                                                      |
+| `spacefn/cli`                                   | `space` CLI (internal)                                                            |
 
 ## Conventions
 

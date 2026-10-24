@@ -23,6 +23,7 @@ Read the framework docs in `docs/spacefn/` before making changes.
 - [docs-reader.md](docs/spacefn/guides/docs-reader.md) - dev docs reader (`/__space_docs`).
 - [tenancy.md](docs/spacefn/guides/tenancy.md) - multi-tenancy via Durable Objects.
 - [tracing.md](docs/spacefn/guides/tracing.md) - OTLP tracing.
+- [testing.md](docs/spacefn/guides/testing.md) - testing routes, DB, and Workers.
 
 ### API reference
 

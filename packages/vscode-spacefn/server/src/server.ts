@@ -279,7 +279,6 @@ async function validateDatastarAttributes(
 }
 
 async function validateHtmlDatastar(doc: TextDocument): Promise<Diagnostic[]> {
-	const uri = doc.uri;
 	const text = doc.getText();
 	const diagnostics: any[] = [];
 	const re = /\bhtml\s*`/g;
@@ -358,7 +357,6 @@ async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]> {
 }
 
 async function validateCssTemplates(doc: TextDocument): Promise<Diagnostic[]> {
-	const uri = doc.uri;
 	const text = doc.getText();
 	const diagnostics: Diagnostic[] = [];
 	const re = /\bcss\s*`/g;
@@ -487,7 +485,8 @@ function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | n
 }
 
 documents.onDidChangeContent((change) => {
-	if (change.document.uri.includes("/migrations/") || change.document.uri.includes("/db/")) schemaCache.clear();
+	if (change.document.uri.includes("/migrations/") || change.document.uri.includes("/db/"))
+		schemaCache.clear();
 	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
 	else if (
 		change.document.uri.endsWith(".js") ||
@@ -496,9 +495,10 @@ documents.onDidChangeContent((change) => {
 		change.document.uri.endsWith(".tsx")
 	) {
 		void validateJsTs(change.document);
-	} else void validateEmbedded(change.document).then((d) => {
-		void connection.sendDiagnostics({ uri: change.document.uri, diagnostics: d });
-	});
+	} else
+		void validateEmbedded(change.document).then((d) => {
+			void connection.sendDiagnostics({ uri: change.document.uri, diagnostics: d });
+		});
 });
 documents.onDidOpen((e) => {
 	if (e.document.uri.endsWith(".sql")) void validateSqlFile(e.document);
@@ -509,9 +509,10 @@ documents.onDidOpen((e) => {
 		e.document.uri.endsWith(".tsx")
 	) {
 		void validateJsTs(e.document);
-	} else void validateEmbedded(e.document).then((d) => {
-		void connection.sendDiagnostics({ uri: e.document.uri, diagnostics: d });
-	});
+	} else
+		void validateEmbedded(e.document).then((d) => {
+			void connection.sendDiagnostics({ uri: e.document.uri, diagnostics: d });
+		});
 });
 
 const SQL_KEYWORDS = [
@@ -2297,9 +2298,10 @@ connection.onDidChangeWatchedFiles((params) => {
 	schemaCache.clear();
 	for (const doc of documents.all()) {
 		if (doc.uri.endsWith(".sql")) void validateSqlFile(doc);
-		else void validateEmbedded(doc).then((d) => {
-			void connection.sendDiagnostics({ uri: doc.uri, diagnostics: d });
-		});
+		else
+			void validateEmbedded(doc).then((d) => {
+				void connection.sendDiagnostics({ uri: doc.uri, diagnostics: d });
+			});
 	}
 	if (params.changes.some((c) => c.uri.endsWith("variables.css"))) {
 		scanCustomProps(workspaceRoot);
