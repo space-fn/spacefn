@@ -4,6 +4,17 @@ spacefn is a full-stack framework for Cloudflare Workers. You write files in fol
 
 ## What is spacefn?
 
+spacefn is a full-stack framework for Cloudflare Workers. You write files in folders; the framework finds them by name and wires them together. No registry, no config files listing your routes.
+
+spacefn is not a new runtime or a new language. It is an opinionated convention layer on top of tools you already know:
+
+- **Vite** serves and bundles the app in dev and production.
+- **Hono** is the HTTP router underneath `app/routes/` and `app/pages/`.
+- **Cloudflare `workerd`** runs the Worker, with D1, KV, R2, Durable Objects, Workflows, queues and crons.
+- **TypeScript** is the only language. Generated code in `.space/` is plain TypeScript you can read and import.
+
+What spacefn actually does is the wiring work: it scans `app/`, generates typed helpers, merges bindings into the Cloudflare config, and mounts everything in `app/entry.ts`. You still write ordinary TypeScript against ordinary libraries. The payoff is that the project stays organized by folder, and adding a route, a queue, or a Durable Object is just adding a file. Everything is extensible: the generated code is plain TypeScript, the config is a normal `cloudflare.config.ts`, and you can add bindings, middleware, or whole libraries on top without fighting the framework.
+
 spacefn builds on three ideas:
 
 - **Conventions over configuration.** A file in `app/routes/` becomes a route. A file in `app/queues/` becomes a queue. The name and location do the work.
