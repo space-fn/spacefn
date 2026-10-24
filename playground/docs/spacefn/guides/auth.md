@@ -24,6 +24,53 @@ const { valid, needsRehash } = await verifyPassword(input, stored, {
 - `needsRehash` is true when a hash used fewer iterations than the target. Re-hash it on the next successful sign-in.
 - Passwords must be 12 to 1024 characters. `hashPassword` refuses shorter ones; `verifyPassword` does not, so passwords set before a policy change still sign in.
 - A `pepper` is a server-side secret mixed into the derivation before PBKDF2. Keep it outside the database, as an env secret: a stolen database alone then cannot be brute-forced. Hash and verify must use the same value, so changing it makes every stored hash unverifiable.
+
+## Password pepper in detail
+
+### What it does
+
+The pepper is mixed in **before** PBKDF2, as an HMAC-SHA256 keyed by the pepper:
+
+```ts
+// inside derive()
+let input = new TextEncoder().encode(password);
+if (pepper !== undefined) {
+	const pepperKey = await crypto.subtle.importKey(
+		"raw",
+		new TextEncoder().encode(pepper),
+		{ name: "HMAC", hash: "SHA-256" },
+		false,
+		["sign"],
+	);
+	input = await crypto.subtle.sign("HMAC", pepperKey, input); // 32 bytes
+}
+// PBKDF2 then runs on `input`, not on the raw password
+```
+
+So the value fed to PBKDF2 is `HMAC-SHA256(pepper, password)`. The salt and iteration count stay the same; only the input changes. The stored hash format (`pbkdf2-sha256$<iterations>$<salt>$<hash>`) does **not** record whether a pepper was used or which one. The pepper lives only in the Worker's environment.
+
+### Why it helps
+
+PBKDF2 on Workers is capped at 100,000 iterations, well below OWASP's 600,000 recommendation. The pepper is the compensating control:
+
+- A stolen database gives an attacker salt, iteration count and hash, but not the pepper. Without the pepper they cannot run PBKDF2 at all, so no offline brute force is possible.
+- The pepper is a single high-entropy secret (not a per-user value), so it adds a global barrier rather than per-row work.
+- It is independent of the iteration cap: it protects even if the cap drops further.
+
+It does not replace iterations. Keep both: a high-entropy pepper plus the maximum allowed iteration count.
+
+### Operational rules
+
+- **Same value everywhere.** `hashPassword` and `verifyPassword` must receive the same `pepper`. In practice, read it once from `c.env.PASSWORD_PEPPER` and pass it to both calls. A mismatch silently makes every password verify as wrong.
+- **Keep it out of the database.** Store it as a Cloudflare secret (`wrangler secret put PASSWORD_PEPPER`), never in D1, KV, or source. A `secret()` field in `app/env.ts` is the right shape.
+- **Rotate with a plan.** Changing the pepper invalidates every stored hash, because the input to PBKDF2 changes. There is no migration path: either re-hash on next sign-in (you cannot, because verification fails first) or force a password reset for all users. Pick the pepper before storing real passwords, and treat rotation as an incident, not a routine.
+- **Length.** Any string works (it is UTF-8 encoded into the HMAC key), but use a long random value, for example 32 bytes base64-encoded. Short or guessable peppers defeat the purpose.
+- **Do not reuse it.** Generate a pepper dedicated to password hashing. Do not reuse the session cookie secret, the token signing key, or the CSRF key.
+
+### Verifying a pepper is wired correctly
+
+A quick check: hash a password with the pepper, then verify it with the same pepper and confirm `valid` is true; verify the same stored hash with a different pepper and confirm `valid` is false. If both pass with the wrong pepper, the pepper is not actually being applied.
+
 - A `breachCheck` refuses passwords found in a breach corpus. `hibpBreachCheck()` uses the Have I Been Pwned range API with k-anonymity: only the first five hex characters of the password's SHA-1 leave the Worker. A failed request lets the password through, so the API being down does not block sign-ups.
 
 ### The iteration limit
