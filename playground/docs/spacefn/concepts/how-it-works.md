@@ -64,7 +64,7 @@ import type { Counter } from "../app/durable-objects/counter";
 declare module "spacefn/env" {
 	interface CloudflareBindings {
 		DO_COUNTER: DurableObjectNamespace<Counter>;
-		WF_ORDER_FULFILMENT: Workflow;
+		WF_ORDER_FULFILLMENT: Workflow;
 		QUEUE_EMAILS: Queue<unknown>;
 	}
 }

@@ -9,7 +9,7 @@ app/workflows/
 └── order-fulfillment.ts
 ```
 
-Files starting with `_` and `*.test.*` files are ignored. The exported class name must match the file name in PascalCase (`order-fulfillment.ts` → `OrderFulfillment`). The binding name is `WF_` plus the uppercased snake-case of the class name, for example `OrderFulfilment` becomes `WF_ORDER_FULFILMENT`.
+Files starting with `_` and `*.test.*` files are ignored. The exported class name must match the file name in PascalCase (`order-fulfillment.ts` → `OrderFulfillment`). The binding name is `WF_` plus the uppercased snake-case of the class name, for example `OrderFulfillment` becomes `WF_ORDER_FULFILLMENT`.
 
 ## A Workflow
 
@@ -116,7 +116,7 @@ import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ orderId: string }>();
-	const binding = c.env.WF_ORDER_FULFILMENT;
+	const binding = c.env.WF_ORDER_FULFILLMENT;
 	const instance = await binding.create({ params: { orderId: body.orderId } });
 	await new Promise((r) => setTimeout(r, 500));
 	const status = await instance.status();
@@ -143,7 +143,7 @@ exports: {
 	OrderFulfillment: exports.workflow({ name: "order-fulfillment" }),
 },
 env: {
-	WF_ORDER_FULFILMENT: bindings.workflow({ name: "order-fulfillment", worker: worker.name, exportName: "OrderFulfillment" }),
+	WF_ORDER_FULFILLMENT: bindings.workflow({ name: "order-fulfillment", worker: worker.name, exportName: "OrderFulfillment" }),
 },
 ```
 

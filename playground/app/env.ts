@@ -6,7 +6,7 @@ export default defineEnv({
 	VERBOSE: boolean({ default: false }),
 	API_KEY: secret(),
 	WEBHOOK_URL: secret({ optional: true }),
-	PASSWORD_PEPPER: secret({ optional: true }),
+	PASSWORD_PEPPER: secret(),
 	OTLP_ENDPOINT: string({ optional: true }),
 	OTLP_HEADERS: secret({ optional: true }),
 });

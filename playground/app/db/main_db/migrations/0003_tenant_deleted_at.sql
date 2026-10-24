@@ -1,2 +1,0 @@
--- up
-ALTER TABLE tenants ADD COLUMN deleted_at INTEGER;
