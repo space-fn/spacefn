@@ -59,7 +59,11 @@ test("minifyHtml preserves pre content", () => {
 
 test("css tagged template splices values", () => {
 	const color = "red";
-	expect(css`.box { color: ${color}; }`).toBe(".box { color: red; }");
+	expect(css`
+		.box {
+			color: ${color};
+		}
+	`).toBe(".box { color: red; }");
 });
 
 test("css escapes style breakout", () => {
