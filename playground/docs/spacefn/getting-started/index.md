@@ -9,7 +9,9 @@ npm create spacefn my-app
 cd my-app
 ```
 
-This copies the template and installs dependencies.
+This copies the template and installs dependencies. The template declares its own
+`hono`, `cf` and `@cloudflare/vite-plugin` versions — they are yours to upgrade
+directly for security patches without waiting for a `spacefn` release.
 
 ## 2. Run it
 

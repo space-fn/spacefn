@@ -39,8 +39,13 @@ describe("scaffold", () => {
 		const target = scaffoldProject("my-app");
 		const pkg = JSON.parse(readFileSync(join(target, "package.json"), "utf8")) as {
 			name: string;
+			dependencies: Record<string, string>;
+			devDependencies: Record<string, string>;
 		};
 		expect(pkg.name).toBe("my-app");
+		expect(pkg.dependencies.hono).toBeDefined();
+		expect(pkg.dependencies.cf).toBeDefined();
+		expect(pkg.devDependencies["@cloudflare/vite-plugin"]).toBeDefined();
 	});
 
 	test("copies the expected template files", () => {

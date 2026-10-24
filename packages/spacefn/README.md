@@ -10,10 +10,14 @@ observability (OTLP), hand-rolled auth primitives, multi-database support.
 pnpm create spacefn my-app
 
 # Or add to an existing project
-pnpm add spacefn
+pnpm add spacefn hono cf
+pnpm add -D @cloudflare/vite-plugin
 ```
 
-The `space` CLI binary ships with the `spacefn` package.
+`hono`, `cf` and `@cloudflare/vite-plugin` are app-owned dependencies. The
+template pins them; you can bump them directly for security patches without
+waiting for a `spacefn` release. The `space` CLI binary ships with the
+`spacefn` package.
 
 ## Quickstart
 
