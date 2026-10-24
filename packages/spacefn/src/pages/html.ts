@@ -50,15 +50,70 @@ export function css(strings: TemplateStringsArray, ...values: Array<string | num
  * `<style>` is preserved byte-for-byte. Opt-in; the `html` tag itself keeps
  * whitespace so formatters and inline content are not surprised.
  */
-const PRESERVE_BLOCKS = /<(pre|code|textarea|script|style)\b[^>]*>[\s\S]*?<\/\1>/gi;
+/**
+ * Replaces every (possibly nested) preserved block with a NUL-delimited
+ * placeholder so its inner whitespace survives minification. Handles nesting
+ * by tracking open/close depth instead of a single non-greedy regex match.
+ */
+function protectPreserved(value: string, placeholders: string[]): string {
+	let out = "";
+	let i = 0;
+	const n = value.length;
+	while (i < n) {
+		const lt = value.indexOf("<", i);
+		if (lt === -1) {
+			out += value.slice(i);
+			break;
+		}
+		out += value.slice(i, lt);
+		const tagMatch = value.slice(lt).match(/^<(pre|code|textarea|script|style)\b/i);
+		if (!tagMatch) {
+			out += value[lt];
+			i = lt + 1;
+			continue;
+		}
+		const tag = (tagMatch[1] as string).toLowerCase();
+		const openEnd = value.indexOf(">", lt);
+		if (openEnd === -1) {
+			out += value.slice(lt);
+			break;
+		}
+		let depth = 1;
+		let pos = openEnd + 1;
+		const openRe = new RegExp(`<${tag}\\b`, "gi");
+		const closeRe = new RegExp(`</${tag}\\s*>`, "gi");
+		while (depth > 0 && pos < n) {
+			openRe.lastIndex = pos;
+			closeRe.lastIndex = pos;
+			const nextOpen = openRe.exec(value);
+			const nextClose = closeRe.exec(value);
+			const openIdx = nextOpen ? nextOpen.index : Infinity;
+			const closeIdx = nextClose ? nextClose.index : Infinity;
+			if (closeIdx === Infinity) {
+				pos = n;
+				depth = 0;
+				break;
+			}
+			if (openIdx < closeIdx) {
+				depth++;
+				pos = openIdx + (nextOpen as RegExpExecArray)[0].length;
+			} else {
+				depth--;
+				pos = closeIdx + (nextClose as RegExpExecArray)[0].length;
+			}
+		}
+		const block = value.slice(lt, pos);
+		placeholders.push(block);
+		out += `\u0000${placeholders.length - 1}\u0000`;
+		i = pos;
+	}
+	return out;
+}
 
 export function minifyHtml(input: Html | string): string {
 	const value = input instanceof Html ? input.value : input;
 	const placeholders: string[] = [];
-	let s = value.replace(PRESERVE_BLOCKS, (match) => {
-		placeholders.push(match);
-		return `\u0000${placeholders.length - 1}\u0000`;
-	});
+	let s = protectPreserved(value, placeholders);
 	s = s.replace(/>\s+</g, "><");
 	s = s.replace(/^\s+|\s+$/g, "");
 	// oxlint-disable-next-line no-control-regex

@@ -1,16 +1,25 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
 import { resolve } from "node:path";
 
 import { Command } from "commander";
 
+const require = createRequire(import.meta.url);
+let CLI_VERSION = "0.0.0";
+try {
+	CLI_VERSION = (require("../package.json") as { version?: string }).version ?? "0.0.0";
+} catch {
+	// Fall back to the hardcoded version if package.json cannot be resolved.
+}
+
 const program = new Command();
 
-program.name("space").description("CLI for spacefn projects").version("0.0.0");
+program.name("space").description("CLI for spacefn projects").version(CLI_VERSION);
 
 function run(command: string, args: string[]): Promise<number> {
 	return new Promise((resolveExit) => {
-		const child = spawn("pnpm", ["exec", command, ...args], { stdio: "inherit", shell: true });
+		const child = spawn("pnpm", ["exec", command, ...args], { stdio: "inherit" });
 		child.on("exit", (code) => resolveExit(code ?? 0));
 	});
 }
@@ -73,6 +82,10 @@ program
 		const { readdir } = await import("node:fs/promises");
 		const { join, resolve } = await import("node:path");
 		const appDb = resolve(process.cwd(), "app", "db");
+		if (options.db && !/^[a-zA-Z0-9_-]+$/.test(options.db)) {
+			console.error(`Invalid database name: ${options.db}`);
+			process.exit(1);
+		}
 		let names: string[] = [];
 		if (options.db) {
 			names = [options.db];
