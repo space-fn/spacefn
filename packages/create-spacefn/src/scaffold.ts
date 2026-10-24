@@ -1,5 +1,5 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const template = resolve(fileURLToPath(new URL(".", import.meta.url)), "..", "template");
@@ -15,14 +15,26 @@ export function scaffold(target: string, name: string): void {
 	mkdirSync(target, { recursive: true });
 	cpSync(template, target, {
 		recursive: true,
-		filter: (src) => !residue.has(basename(src)),
+		// Only skip residue at the template root; nested folders named the same
+		// (e.g. a user's own `dist/`) must survive.
+		filter: (src) => !(dirname(src) === template && residue.has(basename(src))),
 	});
 	// npm strips `.gitignore` files from published packages, so the template
 	// ships it as `gitignore` and we rename it back here.
-	renameSync(resolve(target, "gitignore"), resolve(target, ".gitignore"));
+	const gitignoreSrc = resolve(target, "gitignore");
+	if (existsSync(gitignoreSrc)) {
+		renameSync(gitignoreSrc, resolve(target, ".gitignore"));
+	}
 
 	const pkgPath = resolve(target, "package.json");
 	const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { name: string };
 	pkg.name = name;
 	writeFileSync(pkgPath, `${JSON.stringify(pkg, null, "\t")}\n`);
+
+	// Personalize the Cloudflare worker name too.
+	const cfPath = resolve(target, "cloudflare.config.ts");
+	if (existsSync(cfPath)) {
+		const cf = readFileSync(cfPath, "utf8");
+		writeFileSync(cfPath, cf.replace(/name:\s*"spacefn-app"/, `name: "${name}"`));
+	}
 }
