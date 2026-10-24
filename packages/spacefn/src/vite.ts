@@ -70,6 +70,11 @@ export function spaceSync(
 		configureServer(server) {
 			// Dev-only: render the project's docs/ folder as HTML at /__space_docs.
 			server.middlewares.use("/__space_docs", createDocsReader(root));
+			server.httpServer?.once("listening", () => {
+				const address = server.httpServer?.address();
+				const port = typeof address === "object" && address ? address.port : 5173;
+				server.config.logger.info(`  ➜  Docs:     http://localhost:${port}/__space_docs/`);
+			});
 
 			// Routes: sync on add/change/unlink.
 			const routesDir = resolve(root, "app", "routes");
