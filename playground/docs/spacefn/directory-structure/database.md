@@ -210,6 +210,59 @@ ORDER BY name;
 
 Parameters used only in conditional fragments become optional in the generated function, and the SQL is assembled at run time.
 
+## Executors and dialects
+
+Spacefn is not tied to D1. The generated query functions take a `DbReader` (`{ query<T>(sql, params?) }`), and migrations take a `MigrationExecutor`. Plug in whichever client matches your database.
+
+### Dialects
+
+Set the dialect in `app/db/<name>/config.ts`:
+
+```ts
+import { defineDatabase } from "spacefn/db";
+
+export default defineDatabase({ dialect: "sqlite" }); // or "postgres"
+```
+
+- `sqlite` (default) — inferred against an in-memory SQLite.
+- `postgres` — inferred against PGlite. Type inference differs (for example `SERIAL`); `@column` annotations still apply.
+
+### Drivers and executors
+
+| Backend               | Executor                                   | Use when                                |
+| --------------------- | ------------------------------------------ | --------------------------------------- |
+| Cloudflare D1         | `d1Executor(c.env.DB)`                     | Default. D1 `batch` is one transaction. |
+| Turso / libSQL        | `libsqlExecutor(client)`                   | `@libsql/client/web` client.            |
+| Durable Object SQLite | `durableObjectExecutor(this.ctx.storage)`  | Per-tenant or per-object storage.       |
+| Any other client      | Implement `DbReader` + `MigrationExecutor` | Postgres, Neon, Hyperdrive, etc.        |
+
+```ts
+import { createClient } from "@libsql/client/web";
+import { libsqlExecutor } from "spacefn/db";
+
+const client = createClient({ url: env.TURSO_URL, authToken: env.TURSO_TOKEN });
+const rows = await listTodos(libsqlExecutor(client), {});
+```
+
+For a Postgres (or any non-built-in) client, implement the two interfaces:
+
+```ts
+import type { DbReader, MigrationExecutor } from "spacefn/db";
+
+const pg: DbReader & MigrationExecutor = {
+	query: async (sql, params) => (await pool.query(sql, params)).rows,
+	transaction: async (statements) => {
+		/* run in one transaction */
+	},
+};
+```
+
+The `driver` field in `config.ts` (`"d1"` or `"libsql"`) only affects how `space gen` validates migrations; the executor you pass at run time is independent.
+
+### Multi-database
+
+Each subdirectory of `app/db/` becomes its own module: `@space/db/<name>`. A project can mix backends freely — D1 for the shared data, a Durable Object per tenant, Turso for analytics.
+
 ## Limits
 
 - A `RIGHT JOIN` or `FULL JOIN` makes every column nullable, because the check is conservative.

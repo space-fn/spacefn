@@ -153,6 +153,17 @@ export class Feed extends DurableObject {
 }
 ```
 
+## How the binding is wired
+
+You never declare a Durable Object in `cloudflare.config.ts` by hand. The `space()` Vite plugin's `config` callback scans `app/durable-objects/` and calls `durableObjectsConfig(files, worker.name)`, which adds two entries to the Worker config:
+
+- `exports`: `{ Counter: exports.durableObject({ storage: "sqlite" }) }` (from `cf/config`).
+- `env`: `{ COUNTER: bindings.durableObject({ worker: worker.name, exportName: "Counter" }) }`.
+
+`worker.name` comes from your `cloudflare.config.ts` (`defineSpace({ name: "..." })`). The class itself reaches Cloudflare through `app/entry.ts`, which re-exports it via `export * from "@space/exports"` (`.space/exports.ts` is generated). Remove that re-export and the binding points at a class the Worker no longer exports.
+
+If you need a Durable Object that the convention does not cover (renamed, transferred, or deleted lifecycle states), declare it directly with `bindings.durableObject` / `exports.durableObject` in `cloudflare.config.ts`.
+
 ## Notes
 
 - Durable Objects here are always SQLite-backed (`storage: "sqlite"`). There is no KV-only variant in the convention.

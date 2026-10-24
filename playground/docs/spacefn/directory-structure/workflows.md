@@ -131,3 +131,14 @@ export const POST = defineHandler(async (c) => {
 - The workflow class must be exported from the Worker module. `app/entry.ts` already does this via `export * from "@space/exports"`. Removing that line breaks the binding.
 - `limits`, `concurrency`, `schedules` and `defaultRetention` are Cloudflare Workflow options, but spacefn's folder convention does not expose them. Set them in `cloudflare.config.ts` directly if you need them.
 - The binding type in `.space/bindings.d.ts` is the plain `Workflow` (params typed as `unknown`) because bindings are added through the Vite plugin's runtime config. For typed params, declare the binding in `cloudflare.config.ts` and let `cf/config` infer them.
+
+## How the binding is wired
+
+You never declare a Workflow in `cloudflare.config.ts` by hand. The `space()` Vite plugin's `config` callback scans `app/workflows/` and calls `workflowsConfig(files, worker.name)`, which adds two entries to the Worker config:
+
+- `exports`: `{ OrderFulfillment: exports.workflow({ name: "order-fulfillment" }) }`.
+- `env`: `{ WORKFLOW_ORDERFULFILLMENT: bindings.workflow({ name: "order-fulfillment", worker: worker.name, exportName: "OrderFulfillment" }) }`.
+
+`worker.name` comes from `cloudflare.config.ts` (`defineSpace({ name: "..." })`). The class reaches Cloudflare through `app/entry.ts` via `export * from "@space/exports"`. Remove that re-export and the binding breaks.
+
+`limits`, `concurrency`, `schedules` and `defaultRetention` are Cloudflare Workflow options, but the folder convention does not expose them. Set them in `cloudflare.config.ts` directly if you need them.
