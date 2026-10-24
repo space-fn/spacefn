@@ -4,6 +4,41 @@ import { escapeHtml } from "../pages/html";
 import { DOCS_CSS } from "./css";
 import { renderMarkdown } from "./markdown";
 
+async function buildNav(docsRoot: string, currentRel: string): Promise<string> {
+	const { readdir } = await import("node:fs/promises");
+	async function walk(dir: string, prefix: string): Promise<string> {
+		let entries: import("node:fs").Dirent[];
+		try {
+			entries = await readdir(dir, { withFileTypes: true });
+		} catch {
+			return "";
+		}
+		const dirs = entries
+			.filter((e) => e.isDirectory() && !e.name.startsWith("."))
+			.sort((a, b) => a.name.localeCompare(b.name));
+		const files = entries
+			.filter((e) => e.isFile() && !e.name.startsWith(".") && e.name.endsWith(".md"))
+			.sort((a, b) => a.name.localeCompare(b.name));
+		let html = "<ul>";
+		for (const f of files) {
+			const name = f.name.replace(/\\.md$/, "");
+			const rel = prefix ? prefix + "/" + f.name : f.name;
+			const href = "/__space_docs/" + rel.split("/").map(encodeURIComponent).join("/");
+			const active = rel === currentRel ? ' class="active"' : "";
+			html += `<li><a href="${href}"${active}>${escapeHtml(name === "index" ? prefix.split("/").pop() || "index" : name)}</a></li>`;
+		}
+		for (const d of dirs) {
+			const subPrefix = prefix ? prefix + "/" + d.name : d.name;
+			const sub = await walk(resolve(dir, d.name), subPrefix);
+			html += `<li><span class="nav-dir">${escapeHtml(d.name)}</span>${sub}</li>`;
+		}
+		html += "</ul>";
+		return html;
+	}
+	const nav = await walk(docsRoot, "");
+	return `<nav class="sidebar">${nav}</nav>`;
+}
+
 export function createDocsReader(root: string) {
 	const docsRoot = resolve(root, "docs");
 	const toggleScript =
@@ -53,9 +88,10 @@ export function createDocsReader(root: string) {
 					try {
 						const raw = await readFile(candidate, "utf8");
 						const body = await renderMarkdown(raw);
+						const sidebar = await buildNav(docsRoot, rel || ".");
 						res.setHeader("Content-Type", "text/html; charset=utf-8");
 						res.end(
-							`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel || "docs")}</title><style>${DOCS_CSS}</style></head><body>${toggle}${breadcrumb}${body}<hr><p><a href="/__space_docs/">← docs</a></p>${toggleScript}</body></html>`,
+							`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel || "docs")}</title><style>${DOCS_CSS}</style></head><body>${toggle}<div class="layout">${sidebar}<main>${breadcrumb}${body}<hr><p><a href="/__space_docs/">← docs</a></p></main></div>${toggleScript}</body></html>`,
 						);
 						return;
 					} catch {
@@ -75,9 +111,10 @@ export function createDocsReader(root: string) {
 					return `<li><a href="${href}">${escapeHtml(e.name)}${e.isDirectory() ? "/" : ""}</a></li>`;
 				})
 				.join("");
+			const sidebar = await buildNav(docsRoot, rel || ".");
 			res.setHeader("Content-Type", "text/html; charset=utf-8");
 			res.end(
-				`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel || "docs")}</title><style>${DOCS_CSS}</style></head><body>${toggle}${breadcrumb}<h1>/${escapeHtml(rel || "docs")}</h1><ul>${links}</ul>${toggleScript}</body></html>`,
+				`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel || "docs")}</title><style>${DOCS_CSS}</style></head><body>${toggle}<div class="layout">${sidebar}<main>${breadcrumb}<h1>/${escapeHtml(rel || "docs")}</h1><ul>${links}</ul></main></div>${toggleScript}</body></html>`,
 			);
 			return;
 		}
@@ -120,9 +157,10 @@ export function createDocsReader(root: string) {
 		const body = target.endsWith(".md")
 			? await renderMarkdown(raw)
 			: `<pre>${escapeHtml(raw)}</pre>`;
+		const sidebar = await buildNav(docsRoot, rel);
 		res.setHeader("Content-Type", "text/html; charset=utf-8");
 		res.end(
-			`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel)}</title><style>${DOCS_CSS}</style></head><body>${toggle}${breadcrumb}${body}${prevNext}<hr><p><a href="/__space_docs/">← docs</a></p>${toggleScript}</body></html>`,
+			`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(rel)}</title><style>${DOCS_CSS}</style></head><body>${toggle}<div class="layout">${sidebar}<main>${breadcrumb}${body}${prevNext}<hr><p><a href="/__space_docs/">← docs</a></p></main></div>${toggleScript}</body></html>`,
 		);
 	};
 }

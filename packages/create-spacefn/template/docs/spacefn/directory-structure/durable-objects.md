@@ -26,4 +26,4 @@ export class Counter extends DurableObject {
 
 - The class name becomes the binding name in camelCase form.
 - Files starting with `_` are ignored.
-- Migrations for a Durable Object's storage use `durableObjectExecutor`. See [tenancy.md](./tenancy.md) for a multi-tenant Durable Object pattern.
+- Migrations for a Durable Object's storage use `durableObjectExecutor`. See [tenancy](../guides/tenancy.md) for a multi-tenant Durable Object pattern.
