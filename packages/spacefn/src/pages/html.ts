@@ -60,7 +60,8 @@ export function minifyHtml(input: Html | string): string {
 		return `\u0000${placeholders.length - 1}\u0000`;
 	});
 	s = s.replace(/>\s+</g, "><");
-	s = s.replace(/^\\s+|\\s+$/g, "");
+	s = s.replace(/^\s+|\s+$/g, "");
+	// oxlint-disable-next-line no-control-regex
 	s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => placeholders[Number(i)] as string);
 	return s;
 }
