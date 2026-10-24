@@ -21,7 +21,7 @@ Nested folders become path segments. `[id]` is a dynamic segment.
 
 ```ts
 // app/routes/todos.ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler((c) => {
 	return { items: [] };
@@ -43,7 +43,7 @@ A returned `Response` passes through, a string becomes text, `undefined` becomes
 Each named export is wrapped with `defineHandler`:
 
 ```ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler((c) => {
 	return { ok: true };

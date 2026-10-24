@@ -1,4 +1,4 @@
-import { defineMiddleware } from "spacefn";
+import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware(async (c, next) => {
 	await next();

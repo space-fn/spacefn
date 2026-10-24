@@ -15,7 +15,8 @@ export default defineConfig({
 	},
 	pack: {
 		entry: [
-			"src/index.ts",
+			"src/handler.ts",
+			"src/middleware.ts",
 			"src/runtime.ts",
 			"src/vite.ts",
 			"src/cloudflare.ts",

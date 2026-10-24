@@ -1,4 +1,4 @@
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const ns = c.env.DO_COUNTER;

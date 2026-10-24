@@ -1,3 +1,3 @@
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler((c) => ({ id: c.req.param("id") }));

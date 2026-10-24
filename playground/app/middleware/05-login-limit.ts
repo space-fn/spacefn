@@ -1,5 +1,5 @@
-import { defineMiddleware } from "spacefn";
 import { clientKey, memoryRateStore, rateLimit } from "spacefn/auth";
+import { defineMiddleware } from "spacefn/middleware";
 
 /**
  * Five sign-in attempts a minute per client. The store is per isolate, which is

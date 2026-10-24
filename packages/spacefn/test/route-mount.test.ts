@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { expect, test } from "vite-plus/test";
 
-import { defineHandler } from "../src/index";
+import { defineHandler } from "../src/handler";
 import { mountRoute } from "../src/runtime";
 
 test("mounts each exported method", async () => {

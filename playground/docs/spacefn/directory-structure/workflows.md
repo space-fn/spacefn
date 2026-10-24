@@ -96,7 +96,7 @@ Send the signal from a route:
 
 ```ts
 // app/routes/approve.ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ instanceId: string; approved: boolean }>();
@@ -112,7 +112,7 @@ Create an instance from a route and read its result:
 
 ```ts
 // app/routes/workflow.ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ orderId: string }>();

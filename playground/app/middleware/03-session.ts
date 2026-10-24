@@ -1,9 +1,9 @@
 import { findSession, touchSession } from "@space/db/main_db";
 import { migrated } from "@space/db/main_db";
-import { defineMiddleware } from "spacefn";
 import { sessionResolver } from "spacefn/auth";
 import { d1Executor } from "spacefn/db";
 import type { AppBindings } from "spacefn/env";
+import { defineMiddleware } from "spacefn/middleware";
 
 /** Attaches the signed-in user, if any, to every request. */
 const resolve = sessionResolver<AppBindings, { id: number; email: string }>({

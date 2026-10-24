@@ -30,7 +30,7 @@ Call it from a route:
 
 ```ts
 // app/routes/counter.ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const ns = c.env.DO_COUNTER;
@@ -70,7 +70,7 @@ Wire it through the tenant resolver (see [tenancy](../guides/tenancy.md)):
 
 ```ts
 // app/routes/t/todos.ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler(async (c) => {
@@ -115,7 +115,7 @@ Reach it from a route the same way:
 
 ```ts
 // app/routes/room/[id].ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(async (c) => {
 	const id = c.req.param("id");

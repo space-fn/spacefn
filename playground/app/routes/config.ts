@@ -1,5 +1,5 @@
-import { defineHandler } from "spacefn";
 import { env } from "spacefn/env";
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(() => ({
 	greeting: env.GREETING,

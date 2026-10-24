@@ -15,7 +15,7 @@ app/middleware/
 
 ```ts
 // app/middleware/01-powered-by.ts
-import { defineMiddleware } from "spacefn";
+import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware(async (c, next) => {
 	await next();

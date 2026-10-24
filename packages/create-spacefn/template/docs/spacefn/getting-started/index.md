@@ -24,7 +24,7 @@ Open the URL it prints. You now have a working app on `workerd`.
 Create `app/routes/hello.ts`:
 
 ```ts
-import { defineHandler } from "spacefn";
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(() => {
 	return { message: "hello" };
