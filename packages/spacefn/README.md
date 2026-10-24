@@ -6,8 +6,14 @@ observability (OTLP), hand-rolled auth primitives, multi-database support.
 ## Install
 
 ```bash
-pnpm add spacefn       # the `space` CLI binary comes with it
+# Scaffold a new app (recommended)
+pnpm create spacefn my-app
+
+# Or add to an existing project
+pnpm add spacefn
 ```
+
+The `space` CLI binary ships with the `spacefn` package.
 
 ## Quickstart
 
@@ -15,8 +21,32 @@ pnpm add spacefn       # the `space` CLI binary comes with it
 pnpm create spacefn my-app
 cd my-app
 pnpm install
-pnpm space dev
+pnpm dev          # `vp dev` under the hood
 ```
+
+## Subpath exports
+
+Import from the subpath that owns the thing you need. There is no root
+barrel export.
+
+| Subpath | Purpose |
+| --- | --- |
+| `spacefn/handler` | `defineHandler` |
+| `spacefn/middleware` | `defineMiddleware` |
+| `spacefn/pages` / `spacefn/html` | `definePage`, `defineLoader`, `defineActions`, `html`, `raw`, `css`, `minifyHtml` |
+| `spacefn/runtime` | request context, env |
+| `spacefn/cloudflare` | `defineSpace`, `compatibilityDate`, bindings/exports/triggers |
+| `spacefn/env` | `defineEnv`, field helpers |
+| `spacefn/db` | `d1Executor`, migration helpers |
+| `spacefn/auth` | password hashing, sessions, CSRF, TOTP |
+| `spacefn/tenancy` | multi-tenant DO helpers |
+| `spacefn/queues` / `spacefn/crons` | queue/cron definitions |
+| `spacefn/durable-objects` / `spacefn/workflows` | DO/workflow helpers |
+| `spacefn/trace` | OTLP tracing |
+| `spacefn/sync` | codegen entry point |
+| `spacefn/vite` | Vite plugin |
+| `spacefn/testing` | test helpers |
+| `spacefn/cli` | `space` CLI (internal) |
 
 ## Conventions
 

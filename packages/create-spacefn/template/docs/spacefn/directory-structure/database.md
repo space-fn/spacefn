@@ -30,6 +30,24 @@ export default defineDatabase({ dialect: "sqlite" });
 
 `space gen` writes one generated module per database: `.space/db/<name>.ts`. It holds the migrations, `migrated`, `migrate`, and one typed function per query file. Import it as `@space/db/<name>`.
 
+## Binding
+
+The `db/` folder generates the query module, but it does **not** declare the Cloudflare binding. Declare the D1 binding yourself in `cloudflare.config.ts` so `c.env.DB` (and `bindings.d.ts`) are typed:
+
+```ts
+import { defineSpace, compatibilityDate, bindings } from "spacefn/cloudflare";
+
+export default defineSpace({
+	name: "my-app",
+	compatibilityDate: compatibilityDate(),
+	env: {
+		DB: bindings.d1({ name: "my-app-db" }),
+	},
+});
+```
+
+The key (`DB`) is the binding name you read as `c.env.DB`. `name` is the D1 database name. Add `database_id` (via `id`) once the database exists in production.
+
 ## Migrations
 
 `NNNN_name.sql`, applied in number order. Two files with the same number are an error.
