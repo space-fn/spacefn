@@ -8,7 +8,7 @@ spacefn is a full-stack framework for Cloudflare Workers. You write files in fol
 
 spacefn is not a new runtime or a new language. It is an opinionated convention layer on top of tools you already know:
 
-- **Vite** serves and bundles the app in dev and production.
+- **vite-plus (`vp`)** serves and bundles the app in dev and production, and also provides the formatter, linter, test runner (vitest), scripts and package management. Day to day you run `vp check`, `vp test run`, `vp dev`, `vp build`.
 - **Hono** is the HTTP router underneath `app/routes/` and `app/pages/`.
 - **Cloudflare `workerd`** runs the Worker, with D1, KV, R2, Durable Objects, Workflows, queues and crons.
 - **TypeScript** is the only language. Generated code in `.space/` is plain TypeScript you can read and import.

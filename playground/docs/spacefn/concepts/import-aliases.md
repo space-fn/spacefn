@@ -84,6 +84,21 @@ Add it in both places, for the root and the client:
 
 The client bundle picks up the Vite alias from the root config automatically.
 
+## `include` and `exclude`
+
+The root `tsconfig.json` also controls which files are type-checked:
+
+```json
+{
+	"include": ["app", "modules", "utils", "lib", ".space"],
+	"exclude": ["node_modules", "dist"]
+}
+```
+
+- `include` lists the folders TypeScript should check. Add a new top-level folder (for example `shared/`) to both `include` and the alias map, or type checking skips it.
+- `exclude` keeps generated/build output and dependencies out of the check.
+- The client bundle has its own `tsconfig.json` under `app/client/` with its own `include`/`exclude` for browser code.
+
 ## Notes
 
 - `@space/*` depends on `.space/` existing. Run `space gen` (or start dev) before type-checking a fresh clone.
