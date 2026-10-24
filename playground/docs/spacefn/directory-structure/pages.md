@@ -108,7 +108,7 @@ html`<p>${userComment}</p>`; // <script> in the comment is shown as text
 
 ## HTML helpers
 
-`html` is the only escaping template tag. Two helpers ship alongside it:
+`html` is the only escaping template tag. Two helpers ship alongside it. Import them from `spacefn/pages` or `spacefn/html`:
 
 - `raw(markup)` places markup unchanged.
 - `minifyHtml(input)` collapses whitespace between tags and trims, while preserving content inside `<pre>`, `<code>`, `<textarea>`, `<script>` and `<style>`. Opt-in; `html` itself keeps whitespace.
