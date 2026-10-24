@@ -1,6 +1,6 @@
 export const DOCS_CSS =
-	"body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;line-height:1.65;color:#222;height:100vh;overflow:hidden}" +
-	".layout{display:grid;grid-template-columns:220px 1fr;gap:2rem;height:100vh;overflow:hidden;width:clamp(320px, 90vw, 1100px);margin:0 auto}" +
+	"body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:0;line-height:1.65;color:#222;height:100vh;overflow:hidden;display:flex;justify-content:center}" +
+	".layout{display:grid;grid-template-columns:220px 1fr;gap:2rem;height:100vh;overflow:hidden;width:100%;max-width:1100px}" +
 	".sidebar{font-size:.9em;overflow-y:auto;max-height:100vh;padding:1rem 0}" +
 	".sidebar ul{list-style:none;padding-left:1rem;margin:.25rem 0}" +
 	".sidebar>ul{padding-left:0}" +
