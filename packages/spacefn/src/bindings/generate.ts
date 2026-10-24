@@ -7,6 +7,13 @@ function className(file: string): string {
 		.join("");
 }
 
+function snakeCase(name: string): string {
+	return name
+		.replace(/([A-Z])/g, "_$1")
+		.replace(/^_/, "")
+		.toUpperCase();
+}
+
 export function bindingType(descriptor: { type?: string }, durableObjectClass?: string): string {
 	const type = descriptor?.type ?? "text";
 	switch (type) {
@@ -46,8 +53,8 @@ export function generateBindingsSource(input: BindingsInput): string {
 	const doClassByBinding: Record<string, string> = {};
 	for (const file of durableObjectFiles) {
 		const cls = className(file);
-		// Binding name convention: class name uppercased
-		doClassByBinding[cls.toUpperCase()] = cls;
+		// Binding name convention: DO_<SNAKE_CASE>
+		doClassByBinding[`DO_${snakeCase(cls)}`] = cls;
 	}
 
 	const lines: string[] = [
@@ -72,16 +79,16 @@ export function generateBindingsSource(input: BindingsInput): string {
 		const t = bindingType(desc, cls);
 		body.push(`\t${name}: ${t};`);
 	}
-	// Durable Objects (convention: binding name = class name uppercased)
+	// Durable Objects (convention: binding name = DO_<SNAKE_CASE>)
 	for (const file of durableObjectFiles) {
 		const cls = className(file);
-		const binding = cls.toUpperCase();
+		const binding = `DO_${snakeCase(cls)}`;
 		if (!cloudflareBindings[binding]) body.push(`\t${binding}: DurableObjectNamespace<${cls}>;`);
 	}
-	// Workflows (convention: binding name = WORKFLOW_<CLASS>)
+	// Workflows (convention: binding name = WF_<SNAKE_CASE>)
 	for (const file of workflowFiles) {
 		const cls = className(file);
-		const binding = `WORKFLOW_${cls.toUpperCase()}`;
+		const binding = `WF_${snakeCase(cls)}`;
 		if (!cloudflareBindings[binding]) body.push(`\t${binding}: Workflow;`);
 	}
 	// Queues (convention: binding name = QUEUE_<NAME>)

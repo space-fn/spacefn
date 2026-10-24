@@ -10,9 +10,17 @@ export function className(file: string): string {
 		.join("");
 }
 
-/** The binding name for a Durable Object: `COUNTER`. */
+/** Splits a PascalCase class name into UPPER_SNAKE_CASE. */
+function snakeCase(name: string): string {
+	return name
+		.replace(/([A-Z])/g, "_$1")
+		.replace(/^_/, "")
+		.toUpperCase();
+}
+
+/** The binding name for a Durable Object: `DO_CHAT_ROOM` (from `ChatRoom`). */
 export function durableObjectBinding(file: string): string {
-	return className(file).toUpperCase();
+	return `DO_${snakeCase(className(file))}`;
 }
 
 /** Config entries a `durable-objects/` folder implies. */

@@ -9,7 +9,7 @@ app/durable-objects/
 └── counter.ts
 ```
 
-Files starting with `_` are ignored. One class per file, and the exported class name becomes the binding name (`counter.ts` → `Counter` → binding `COUNTER`).
+Files starting with `_` are ignored. One class per file. The binding name is `DO_` plus the uppercased snake-case of the class name, for example `ChatRoom` becomes `DO_CHAT_ROOM`.
 
 ## A Durable Object
 
@@ -33,12 +33,12 @@ Call it from a route:
 import { defineHandler } from "spacefn";
 
 export const POST = defineHandler(async (c) => {
-	const ns = c.env.COUNTER;
+	const ns = c.env.DO_COUNTER;
 	return { value: await ns.getByName("main").increment() };
 });
 ```
 
-`c.env.COUNTER` is typed as `DurableObjectNamespace<Counter>`, so `getByName` and `get` return a typed RPC stub. Every `get`/`getByName` call is traced as a `do.call` span.
+`c.env.DO_COUNTER` is typed as `DurableObjectNamespace<Counter>`, so `getByName` and `get` return a typed RPC stub. Every `get`/`getByName` call is traced as a `do.call` span.
 
 ## Multi-tenancy: a Durable Object per tenant
 
@@ -157,8 +157,17 @@ export class Feed extends DurableObject {
 
 You never declare a Durable Object in `cloudflare.config.ts` by hand. The `space()` Vite plugin's `config` callback scans `app/durable-objects/` and calls `durableObjectsConfig(files, worker.name)`, which adds two entries to the Worker config:
 
-- `exports`: `{ Counter: exports.durableObject({ storage: "sqlite" }) }` (from `cf/config`).
-- `env`: `{ COUNTER: bindings.durableObject({ worker: worker.name, exportName: "Counter" }) }`.
+The generated config looks like this:
+
+```ts
+// added by the space() Vite plugin, not by you
+exports: {
+	Counter: exports.durableObject({ storage: "sqlite" }),
+},
+env: {
+	DO_COUNTER: bindings.durableObject({ worker: worker.name, exportName: "Counter" }),
+},
+```
 
 `worker.name` comes from your `cloudflare.config.ts` (`defineSpace({ name: "..." })`). The class itself reaches Cloudflare through `app/entry.ts`, which re-exports it via `export * from "@space/exports"` (`.space/exports.ts` is generated). Remove that re-export and the binding points at a class the Worker no longer exports.
 

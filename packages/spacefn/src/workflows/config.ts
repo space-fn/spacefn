@@ -10,9 +10,17 @@ export function className(file: string): string {
 		.join("");
 }
 
-/** The binding name for a Workflow: `WORKFLOW_ORDER_FULFILLMENT`. */
+/** Splits a PascalCase class name into UPPER_SNAKE_CASE. */
+function snakeCase(name: string): string {
+	return name
+		.replace(/([A-Z])/g, "_$1")
+		.replace(/^_/, "")
+		.toUpperCase();
+}
+
+/** The binding name for a Workflow: `WF_ORDER_FULFILMENT` (from `OrderFulfilment`). */
 export function workflowBinding(file: string): string {
-	return `WORKFLOW_${className(file).toUpperCase()}`;
+	return `WF_${snakeCase(className(file))}`;
 }
 
 /** The workflow name used in config: `order-fulfillment`. */
