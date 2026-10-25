@@ -6,7 +6,6 @@ export const DOCS_CSS =
 	".sidebar>ul{padding-left:0}" +
 	".sidebar a{color:#555;display:block;padding:.15rem .25rem;border-radius:4px}" +
 	".sidebar a.active{background:#e5e7eb;color:#111;font-weight:600}" +
-	".sidebar summary::before{content:'>';display:inline-block;margin-right:.35rem;font-size:.75em;transition:transform .15s}" +
 	"main{min-width:0;max-width:900px;overflow-y:auto;padding:1rem 1.25rem}" +
 	"@media (max-width:768px){.layout{grid-template-columns:1fr}.sidebar{position:static;max-height:none;border-bottom:1px solid #e5e7eb;padding-bottom:1rem;margin-bottom:1rem}}" +
 	".shiki{background:#f4f4f5!important;border-radius:6px;padding:1rem;overflow:auto;margin:1rem 0}" +
