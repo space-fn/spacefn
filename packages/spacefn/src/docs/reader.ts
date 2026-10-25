@@ -30,7 +30,7 @@ async function buildNav(docsRoot: string, currentRel: string): Promise<string> {
 		for (const d of dirs) {
 			const subPrefix = prefix ? prefix + "/" + d.name : d.name;
 			const sub = await walk(resolve(dir, d.name), subPrefix);
-			html += `<li><span class="nav-dir">${escapeHtml(d.name)}</span>${sub}</li>`;
+			html += `<li><details open><summary class="nav-dir">${escapeHtml(d.name)}</summary>${sub}</details></li>`;
 		}
 		html += "</ul>";
 		return html;
