@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
+import { SpaceError } from "../errors";
 import type { Migration } from "./migrate";
 
 const FILE = /^(\d+)_([A-Za-z0-9_-]+)\.sql$/;
@@ -20,8 +21,10 @@ export async function scanMigrations(dir: string): Promise<Migration[]> {
 		.map((name) => {
 			const match = FILE.exec(name);
 			if (!match)
-				throw new Error(
+				throw new SpaceError(
+					"MIGRATION_NAME",
 					`Migration ${name} must be named NNNN_name.sql (e.g. 0001_create_todos.sql)`,
+					{ hint: "Rename the file to NNNN_snake_case.sql." },
 				);
 			return { name, number: Number(match[1]) };
 		})
@@ -29,8 +32,10 @@ export async function scanMigrations(dir: string): Promise<Migration[]> {
 
 	for (let i = 1; i < files.length; i++) {
 		if (files[i - 1]?.number === files[i]?.number) {
-			throw new Error(
+			throw new SpaceError(
+				"MIGRATION_DUP_NUMBER",
 				`Migrations ${files[i - 1]?.name} and ${files[i]?.name} share the number ${files[i]?.number}`,
+				{ hint: "Renumber one of them." },
 			);
 		}
 	}
@@ -39,7 +44,10 @@ export async function scanMigrations(dir: string): Promise<Migration[]> {
 		files.map(async ({ name }) => {
 			const raw = await readFile(join(dir, name), "utf8");
 			const { up, down } = splitUpDown(raw);
-			if (!up) throw new Error(`Migration ${name} is missing a "-- up" section.`);
+			if (!up)
+				throw new SpaceError("MIGRATION_NO_UP", `Migration ${name} is missing a "-- up" section.`, {
+					hint: "Add a `-- up` line before the SQL.",
+				});
 			return { id: name.replace(/\.sql$/, ""), sql: up, down };
 		}),
 	);
