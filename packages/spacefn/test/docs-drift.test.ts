@@ -6,11 +6,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 import { describe, expect, test } from "vite-plus/test";
 
 describe("docs examples drift", () => {
-	const examplesDir = resolve(
-		ROOT,
-		"packages/create-spacefn/template/docs/spacefn/examples",
-	);
-	const root = resolve(process.cwd());
+	const examplesDir = resolve(ROOT, "packages/create-spacefn/template/docs/spacefn/examples");
 
 	test("each fenced block appears verbatim in its declared source", () => {
 		for (const name of readdirSync(examplesDir)) {
