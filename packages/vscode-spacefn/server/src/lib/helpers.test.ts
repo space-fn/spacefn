@@ -127,9 +127,9 @@ describe("validateSqlDirectives", () => {
 	});
 });
 
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { extractTables, wordRangeAt } from "./helpers";
-import { TextDocument } from "vscode-languageserver-textdocument";
 
 describe("extractTables", () => {
 	test("extracts FROM table", () => {
@@ -144,8 +144,7 @@ describe("extractTables", () => {
 });
 
 describe("wordRangeAt", () => {
-	const mk = (text: string) =>
-		TextDocument.create("file:///t.ts", "typescript", 1, text);
+	const mk = (text: string) => TextDocument.create("file:///t.ts", "typescript", 1, text);
 	test("expands word at middle", () => {
 		const doc = mk("hello world");
 		const r = wordRangeAt(doc, { line: 0, character: 2 } as never, /\w/);
