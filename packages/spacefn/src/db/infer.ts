@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
+import { SpaceError } from "../errors";
 import type { Dialect } from "./config";
 import type { Migration } from "./migrate";
 import type { QueryFile } from "./query-file";
@@ -188,7 +189,9 @@ export async function inferQuery(
 	const columns: InferredColumn[] = [];
 	for (const meta of cols) {
 		if (seen.has(meta.name)) {
-			throw new Error(`${query.name} returns "${meta.name}" twice. Alias one of them with AS.`);
+			throw new SpaceError("INFER_DUP_COLUMN", `${query.name} returns "${meta.name}" twice`, {
+				hint: "Alias one of them with AS.",
+			});
 		}
 		seen.add(meta.name);
 
@@ -196,7 +199,11 @@ export async function inferQuery(
 		if (annotation !== undefined) {
 			const parsed = ANNOTATED.exec(annotation);
 			if (!parsed)
-				throw new Error(`${query.name}: @column ${meta.name} has unknown type "${annotation}"`);
+				throw new SpaceError(
+					"INFER_BAD_TYPE",
+					`${query.name}: @column ${meta.name} has unknown type "${annotation}"`,
+					{ hint: "Use a supported type." },
+				);
 			columns.push({
 				name: meta.name,
 				type: parsed[1] as ColumnType,
@@ -208,9 +215,9 @@ export async function inferQuery(
 
 		const type = fromType(meta.type);
 		if (type === undefined) {
-			throw new Error(
-				`${query.name}: column "${meta.name}" is an expression, so its type is unknown. Add "-- @column ${meta.name} <type>".`,
-			);
+			throw new SpaceError("INFER_EXPR", `${query.name}: column "${meta.name}" is an expression`, {
+				hint: `Add "-- @column ${meta.name} <type>".`,
+			});
 		}
 		let notNull = false;
 		let integerKey = false;

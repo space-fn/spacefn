@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 
 import { Command } from "commander";
 
+import { SpaceError } from "./errors";
+
 const require = createRequire(import.meta.url);
 let CLI_VERSION = "0.0.0";
 try {
@@ -116,7 +118,9 @@ program
 				} catch (error) {
 					const message = error instanceof Error ? error.message : String(error);
 					if (!/Cannot find module|ERR_MODULE_NOT_FOUND|ENOENT/.test(message)) {
-						throw new Error(`config.ts failed to load: ${message}`);
+						throw new SpaceError("CONFIG_LOAD", `config.ts failed to load: ${message}`, {
+							hint: "Fix the syntax error.",
+						});
 					}
 					// No config.ts: sqlite is the documented default, and the
 					// fallback is reported in the result line.

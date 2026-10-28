@@ -1,3 +1,13 @@
+/**
+ * When to use SpaceError vs a plain Error:
+ *
+ * - Use SpaceError for errors a user can act on: bad config, bad convention file,
+ *   failed validation of user input, missing binding, oversize upload. Give it a
+ *   stable code, a hint, and (for HTTP-facing code) a status.
+ * - Use a plain Error for internal/programmer errors and low-level validators
+ *   (password rules, slug rules, totp parsing, sql splitting, trace config) where
+ *   the caller already knows the context and a code adds no value.
+ */
 /** A structured error with a stable code, a human hint, and an optional file location. */
 export class SpaceError extends Error {
 	readonly code: string;

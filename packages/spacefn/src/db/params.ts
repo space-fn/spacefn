@@ -1,3 +1,4 @@
+import { SpaceError } from "../errors";
 export interface NamedSql {
 	/** The SQL with each `:name` replaced by `?`. */
 	sql: string;
@@ -30,8 +31,10 @@ export function namedParams(sql: string): NamedSql {
 			continue;
 		}
 		if (char === "?") {
-			throw new Error(
-				"Use named parameters (:name) instead of ? in queries, so every value has a name",
+			throw new SpaceError(
+				"PARAM_POSITIONAL",
+				"Use named parameters (:name) instead of ? in queries",
+				{ hint: "Give every value a name." },
 			);
 		}
 		if (char === ":" && /[A-Za-z_]/.test(sql[i + 1] ?? "") && sql[i - 1] !== ":") {
