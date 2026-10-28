@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vite-plus/test";
-import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { sqlDirectiveCompletions } from "./sqlDirectives";
 import type { CompletionDeps, SchemaInfo } from "./types";
