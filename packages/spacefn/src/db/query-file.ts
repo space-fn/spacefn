@@ -1,3 +1,4 @@
+import { SpaceError } from "../errors";
 export type QueryMode = "one" | "many" | "exec";
 
 export interface QueryPart {
@@ -32,7 +33,11 @@ export function parseQueryFile(file: string, text: string): QueryFile {
 	const header = lines.find((line) => line.trim() !== "");
 	const match = header ? HEADER.exec(header.trim()) : null;
 	if (!match) {
-		throw new Error(`${file} must start with "-- name: <function> :one|:many|:exec"`);
+		throw new SpaceError(
+			"QUERY_HEADER",
+			`${file} must start with "-- name: <function> :one|:many|:exec"`,
+			{ file, hint: "Add the header line as the first non-empty line." },
+		);
 	}
 
 	const columns: Record<string, string> = {};
@@ -136,8 +141,10 @@ export function parseQueryFile(file: string, text: string): QueryFile {
 		if (part.gate) {
 			for (const g of part.gate) {
 				if (!(g in params)) {
-					throw new Error(
-						`${file}: -- when references undeclared param "${g}" (add "-- @param ${g} <type>")`,
+					throw new SpaceError(
+						"QUERY_UNDECLARED_PARAM",
+						`${file}: -- when references undeclared param "${g}"`,
+						{ file, hint: `Add "-- @param ${g} <type>".` },
 					);
 				}
 			}

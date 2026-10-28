@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
+import { SpaceError } from "../errors";
 import { generateQueriesSource, type GeneratedQuery } from "./generate-queries";
 import { inferQuery, scratchDatabase, type Dialect } from "./infer";
 import type { Migration } from "./migrate";
@@ -30,7 +31,10 @@ export async function analyzeQueries(
 
 	for (const file of files) {
 		const parsed = parseQueryFile(file, await readFile(join(dir, file), "utf8"));
-		if (seen.has(parsed.name)) throw new Error(`Query name ${parsed.name} is used by two files`);
+		if (seen.has(parsed.name))
+			throw new SpaceError("QUERY_DUP", `Query name ${parsed.name} is used by two files`, {
+				hint: "Rename one query.",
+			});
 		seen.add(parsed.name);
 
 		const { sql, names } = namedParams(parsed.sql);
@@ -44,8 +48,10 @@ export async function analyzeQueries(
 		try {
 			await scratch.prepare(excludedBound);
 		} catch (e) {
-			throw new Error(
+			throw new SpaceError(
+				"QUERY_INVALID",
 				`${parsed.name}: base (all conditionals excluded) SQL is invalid: ${(e as Error).message}`,
+				{ hint: "Check the SQL in the query file." },
 			);
 		}
 		const parts = parsed.parts.map((p) => {

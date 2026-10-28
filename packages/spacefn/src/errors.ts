@@ -4,11 +4,12 @@ export class SpaceError extends Error {
 	readonly hint?: string;
 	readonly file?: string;
 	readonly line?: number;
+	readonly status?: number;
 
 	constructor(
 		code: string,
 		message: string,
-		options?: { hint?: string; file?: string; line?: number; cause?: unknown },
+		options?: { hint?: string; file?: string; line?: number; status?: number; cause?: unknown },
 	) {
 		super(message, options?.cause ? { cause: options.cause } : undefined);
 		this.name = "SpaceError";
@@ -16,6 +17,7 @@ export class SpaceError extends Error {
 		this.hint = options?.hint;
 		this.file = options?.file;
 		this.line = options?.line;
+		this.status = options?.status;
 	}
 
 	toString(): string {

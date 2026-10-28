@@ -34,3 +34,17 @@ export function defineHandler(handler: Handler, options: HandlerOptions = {}) {
 		}
 	};
 }
+
+import { SpaceError } from "./errors";
+
+/**
+ * Default error handler. Maps SpaceError (with a status) to a matching HTTP
+ * response and hides internals otherwise.
+ */
+export function onError(error: unknown, c: Context): Response {
+	if (error instanceof SpaceError && error.status && error.status >= 400 && error.status < 600) {
+		return c.json({ error: error.code, message: error.message }, error.status as never);
+	}
+	console.error("[spacefn] handler error", error);
+	return c.json({ error: "internal_error", message: "Something went wrong" }, 500);
+}
