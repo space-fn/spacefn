@@ -37,7 +37,11 @@ describe("readMessage", () => {
 	});
 
 	test("parse failure closes with 1008", () => {
-		const r = readMessage("bad", { parse: () => { throw new Error("nope"); } });
+		const r = readMessage("bad", {
+			parse: () => {
+				throw new Error("nope");
+			},
+		});
 		expect(r.ok).toBe(false);
 		if (!r.ok) {
 			expect(r.code).toBe(1008);
@@ -59,6 +63,6 @@ describe("broadcast", () => {
 		const b = { send: (m: string) => sent.push(`b:${m}`) } as unknown as WebSocket;
 		const ctx = { getWebSockets: () => [a, b] };
 		broadcast(ctx, { hi: 1 }, { except: a });
-		expect(sent).toEqual(["b:{\"hi\":1}"]);
+		expect(sent).toEqual(['b:{"hi":1}']);
 	});
 });

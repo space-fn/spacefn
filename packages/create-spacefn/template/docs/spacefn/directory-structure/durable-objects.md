@@ -91,22 +91,21 @@ spacefn does not wrap WebSockets. A Durable Object that holds connections is sta
 ```ts
 // app/durable-objects/room.ts
 import { DurableObject } from "cloudflare:workers";
+import { acceptSocket, broadcast, readMessage } from "spacefn/ws";
 
 export class Room extends DurableObject {
 	async fetch(request: Request) {
-		const pair = new WebSocketPair();
-		this.ctx.acceptWebSocket(pair[1]);
-		return new Response(null, { status: 101, webSocket: pair[0] });
+		return acceptSocket(this.ctx, request);
 	}
 
 	async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-		for (const client of this.ctx.getWebSockets()) {
-			if (client !== ws) client.send(message);
+		const raw = typeof message === "string" ? message : new TextDecoder().decode(message);
+		const r = readMessage(raw, { maxSize: 64 * 1024 });
+		if (!r.ok) {
+			ws.close(r.code, r.reason);
+			return;
 		}
-	}
-
-	async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
-		ws.close(code, reason);
+		broadcast(this.ctx, r.value, { except: ws });
 	}
 }
 ```
