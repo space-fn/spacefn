@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 import { describe, expect, test } from "vite-plus/test";
 
@@ -15,7 +17,7 @@ const RUNTIME_FILES = [
 describe("bundle guard", () => {
 	test("runtime modules do not import build-time modules", () => {
 		for (const f of RUNTIME_FILES) {
-			const src = readFileSync(resolve(process.cwd(), "packages/spacefn", f), "utf8");
+			const src = readFileSync(resolve(ROOT, "packages/spacefn", f), "utf8");
 			expect(src).not.toMatch(/from "\.\/(sync|vite|cli)"/);
 			expect(src).not.toMatch(/from "node:fs/);
 		}

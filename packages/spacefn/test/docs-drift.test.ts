@@ -1,11 +1,13 @@
 import { readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join, resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 import { describe, expect, test } from "vite-plus/test";
 
 describe("docs examples drift", () => {
 	const examplesDir = resolve(
-		process.cwd(),
+		ROOT,
 		"packages/create-spacefn/template/docs/spacefn/examples",
 	);
 	const root = resolve(process.cwd());
@@ -16,7 +18,7 @@ describe("docs examples drift", () => {
 			const md = readFileSync(join(examplesDir, name), "utf8");
 			const srcMatch = md.match(/<!-- source: (.+?) -->/);
 			if (!srcMatch) continue;
-			const src = readFileSync(resolve(root, srcMatch[1]!), "utf8");
+			const src = readFileSync(resolve(ROOT, srcMatch[1]!), "utf8");
 			const blocks = md.match(/```ts\n([\s\S]*?)```/g) ?? [];
 			for (const b of blocks) {
 				const code = b
