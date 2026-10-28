@@ -1,5 +1,4 @@
 out/
 server-out/
-out/
-server-out/
 *.js.map
+vite.config.js
