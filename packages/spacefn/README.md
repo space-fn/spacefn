@@ -35,7 +35,9 @@ barrel export.
 
 | Subpath                                         | Purpose                                                                           |
 | ----------------------------------------------- | --------------------------------------------------------------------------------- |
-| `spacefn/handler`                               | `defineHandler`                                                                   |
+| `spacefn/handler`                               | `defineHandler`, `onError`                                                        |
+| `spacefn/http`                                  | `readUploads`, `putUpload`                                                        |
+| `spacefn/ws`                                    | `acceptSocket`, `broadcast`, `readMessage`, `requireWebSocket`                    |
 | `spacefn/middleware`                            | `defineMiddleware`                                                                |
 | `spacefn/pages` / `spacefn/html`                | `definePage`, `defineLoader`, `defineActions`, `html`, `raw`, `css`, `minifyHtml` |
 | `spacefn/runtime`                               | request context, env                                                              |

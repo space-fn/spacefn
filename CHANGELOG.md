@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0 (unreleased)
+## 0.5.0
 
 ### Added
 
@@ -16,4 +16,6 @@
 
 ### Fixed
 
-- Upload type check now verifies file magic bytes instead of trusting `Content-Type`.
+- `defineHandler` now maps `SpaceError` to its HTTP status (was always 500).
+- Upload body cap enforced on chunked requests.
+- Upload type is verified from magic bytes, not the client's `Content-Type`.
