@@ -85,6 +85,10 @@
 		"./middleware": {
 			"types": "./dist/middleware.d.mts",
 			"import": "./dist/middleware.mjs"
+		},
+		"./http": {
+			"types": "./dist/http.d.mts",
+			"import": "./dist/http.mjs"
 		}
 	},
 	"scripts": {
