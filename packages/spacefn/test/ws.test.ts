@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
-import { broadcast, readMessage, requireWebSocket } from "../src/ws";
+import { acceptSocket, broadcast, readMessage, requireWebSocket } from "../src/ws";
 
 describe("requireWebSocket", () => {
 	test("rejects non-upgrade", () => {
@@ -64,5 +64,34 @@ describe("broadcast", () => {
 		const ctx = { getWebSockets: () => [a, b] };
 		broadcast(ctx, { hi: 1 }, { except: a });
 		expect(sent).toEqual(['b:{"hi":1}']);
+	});
+});
+
+describe("acceptSocket", () => {
+	test("validates upgrade (node cannot build 101 response)", () => {
+		const req = new Request("http://localhost/", { headers: { Upgrade: "websocket" } });
+		let accepted = false;
+		const ctx = {
+			acceptWebSocket: () => {
+				accepted = true;
+			},
+		};
+		(globalThis as { WebSocketPair?: unknown }).WebSocketPair = class {
+			0 = { send() {} } as unknown as WebSocket;
+			1 = { serializeAttachment() {}, accept() {} } as unknown as WebSocket;
+		};
+		try {
+			acceptSocket(ctx, req);
+		} catch {
+			// 101 response construction fails in node; acceptWebSocket was still called
+		}
+		expect(accepted).toBe(true);
+		delete (globalThis as { WebSocketPair?: unknown }).WebSocketPair;
+	});
+
+	test("rejects non-upgrade", () => {
+		const req = new Request("http://localhost/");
+		const ctx = { acceptWebSocket: () => {} };
+		expect(() => acceptSocket(ctx, req)).toThrow();
 	});
 });

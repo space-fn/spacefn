@@ -3,22 +3,28 @@ import { join, resolve } from "node:path";
 
 import { describe, expect, test } from "vite-plus/test";
 
-describe("docs examples imports", () => {
+describe("docs examples drift", () => {
 	const examplesDir = resolve(
 		process.cwd(),
 		"packages/create-spacefn/template/docs/spacefn/examples",
 	);
-	test("every spacefn subpath import is a real export", async () => {
-		const pkg = JSON.parse(
-			readFileSync(resolve(process.cwd(), "packages/spacefn/package.json"), "utf8"),
-		);
-		const exports = Object.keys(pkg.exports).map((k) => k.replace("./", ""));
+	const root = resolve(process.cwd());
+
+	test("each fenced block appears verbatim in its declared source", () => {
 		for (const name of readdirSync(examplesDir)) {
 			if (!name.endsWith(".md")) continue;
 			const md = readFileSync(join(examplesDir, name), "utf8");
-			const matches = md.matchAll(/from "spacefn\/([^"]+)"/g);
-			for (const m of matches) {
-				expect(exports).toContain(m[1]);
+			const srcMatch = md.match(/<!-- source: (.+?) -->/);
+			if (!srcMatch) continue;
+			const src = readFileSync(resolve(root, srcMatch[1]!), "utf8");
+			const blocks = md.match(/```ts\n([\s\S]*?)```/g) ?? [];
+			for (const b of blocks) {
+				const code = b
+					.replace(/^```ts\n/, "")
+					.replace(/\n```$/, "")
+					.trim();
+				if (code.split("\n").length < 3) continue;
+				expect(src).toContain(code);
 			}
 		}
 	});

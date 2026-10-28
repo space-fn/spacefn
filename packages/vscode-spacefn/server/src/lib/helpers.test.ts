@@ -94,3 +94,20 @@ describe("findHtmlTemplateRange extra", () => {
 		expect(r).toBeNull();
 	});
 });
+
+import { validateSqlDirectives } from "./helpers";
+
+describe("validateSqlDirectives", () => {
+	test("valid directive", () => {
+		const d = validateSqlDirectives("-- name: foo :one\nSELECT 1", "q.sql");
+		expect(d).toHaveLength(0);
+	});
+	test("missing mode", () => {
+		const d = validateSqlDirectives("-- name: foo\nSELECT 1", "q.sql");
+		expect(d.some((x) => x.message.includes("Query mode"))).toBe(true);
+	});
+	test("undeclared param in when", () => {
+		const d = validateSqlDirectives("-- name: foo :one\n-- @param x int\n-- case\n-- when y\nSELECT 1", "q.sql");
+		expect(d.length).toBeGreaterThan(0);
+	});
+});

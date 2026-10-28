@@ -1,3 +1,4 @@
+import { parseQueryFile } from "spacefn/db";
 import { Position } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 export type CompletionContext =
@@ -289,4 +290,26 @@ export function offsetToPosition(text: string, offset: number): Position {
 	const before = text.slice(0, offset);
 	const lines = before.split("\n");
 	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+}
+
+
+export interface SqlDiagnostic { severity: number; message: string; }
+
+export function validateSqlDirectives(text: string, file: string): SqlDiagnostic[] {
+	const out: SqlDiagnostic[] = [];
+	try {
+		parseQueryFile(file, text);
+	} catch (err) {
+		out.push({ severity: 1, message: err instanceof Error ? err.message : String(err) });
+	}
+	const nameLine = text.split("\n").find((l) => l.trim().startsWith("-- name:"));
+	if (nameLine) {
+		const m = nameLine.match(/--\s*name:\s*(\S+)(?:\s+:(one|many|exec))?/);
+		if (!m) {
+			out.push({ severity: 1, message: "Invalid -- name: directive" });
+		} else if (!m[2]) {
+			out.push({ severity: 1, message: "Query mode must be :one, :many, or :exec" });
+		}
+	}
+	return out;
 }

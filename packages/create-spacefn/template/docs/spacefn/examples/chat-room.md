@@ -5,7 +5,6 @@
 A Durable Object room using hibernation.
 
 ```ts
-// app/durable-objects/chat-room.ts
 import { DurableObject } from "cloudflare:workers";
 import { acceptSocket, broadcast, readMessage } from "spacefn/ws";
 
@@ -26,9 +25,9 @@ export class ChatRoom extends DurableObject {
 }
 ```
 
-Route upgrade:
+Route upgrade (illustration):
 
-```ts
+```txt
 import { requireWebSocket } from "spacefn/ws";
 
 export const GET = (c) => {

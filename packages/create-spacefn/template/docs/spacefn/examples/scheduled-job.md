@@ -1,7 +1,8 @@
+<!-- source: playground/app/crons/nightly.ts -->
+
 # Scheduled job
 
 ```ts
-// app/crons/nightly.ts
 import { defineCron } from "spacefn/crons";
 
 export default defineCron("0 3 * * *", async (event) => {

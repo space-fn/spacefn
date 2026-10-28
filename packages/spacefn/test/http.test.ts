@@ -59,6 +59,18 @@ describe("readUploads", () => {
 		expect(res.status).toBe(200);
 	});
 
+	test("traversal filename does not affect key", async () => {
+		const form = new FormData();
+		form.append("file", new File(["x"], "../../etc/passwd", { type: "image/png" }));
+		// png magic bytes
+		const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+		form.set("file", new File([png], "../../etc/passwd", { type: "image/png" }));
+		const res = await run(form);
+		expect(res.status).toBe(200);
+		const json = (await res.json()) as { files: { file: { name: string } } };
+		expect(json.files.file.name).toContain("..");
+	});
+
 	test("rejects oversize without content-length", async () => {
 		const form = new FormData();
 		form.append("file", new File(["x".repeat(100)], "a.png", { type: "image/png" }));
