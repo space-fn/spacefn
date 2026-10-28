@@ -12,7 +12,6 @@ import {
 	ProposedFeatures,
 	Diagnostic,
 	Hover,
-	Location,
 	DidChangeWatchedFilesNotification,
 } from "vscode-languageserver/node";
 
@@ -22,19 +21,18 @@ import { validateCssTemplates } from "./diagnostics/css";
 import { validateHtmlDatastar } from "./diagnostics/datastar";
 import { resolveDbDir, validateEmbedded } from "./diagnostics/embedded";
 import { loadDialectAndMigrations, validateSqlDiagnostics } from "./diagnostics/sql";
-import {
-	inSqlString,
-	findHtmlTemplateRange,
-	findCssTemplateRange,
-	resolveAliases,
-	wordRangeAt,
-	offsetToPosition,
-} from "./lib/helpers";
+import { definition } from "./language/definition";
+import { hover } from "./language/hover";
+import {} from "./lib/helpers";
 
 /** Validates a .sql file and sends diagnostics. */
 async function validateSqlFile(doc: TextDocument): Promise<void> {
 	void connection.sendDiagnostics({ uri: doc.uri, diagnostics: await validateSqlDiagnostics(doc) });
 }
+
+const readDir = async (dir: string) => fsp.readdir(dir);
+const readFile = async (p: string) => fsp.readFile(p, "utf8");
+const joinPath = (...parts: string[]) => path.join(...parts);
 
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
@@ -517,208 +515,54 @@ connection.onHover(async (params): Promise<Hover | null> => {
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
-	const isJsTs =
-		filePath.endsWith(".js") ||
-		filePath.endsWith(".ts") ||
-		filePath.endsWith(".jsx") ||
-		filePath.endsWith(".tsx");
-	const offset = doc.offsetAt(params.position);
-	const text = doc.getText();
-	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
-	const cssTpl = isJsTs ? findCssTemplateRange(text, offset) : null;
-	if (cssTpl && offset >= cssTpl.contentStart && offset <= cssTpl.end) {
-		const cssContent = text.slice(cssTpl.contentStart, cssTpl.end);
-		const safe = cssContent.replace(/\${[\s\S]*?}/g, (s) => " ".repeat(s.length));
-		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
-		const cssPos = cssDoc.positionAt(offset - cssTpl.contentStart);
-		const stylesheet = cssLS.parseStylesheet(cssDoc);
-		const h = cssLS.doHover(cssDoc, cssPos, stylesheet);
-		if (h) return h as any;
-	}
-	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
-		let htmlText = text.slice(tpl.contentStart, tpl.end);
-		let masked = "";
-		let i = 0;
-		while (i < htmlText.length) {
-			if (htmlText[i] === "$" && htmlText[i + 1] === "{") {
-				let d = 1;
-				let j = i + 2;
-				while (j < htmlText.length && d > 0) {
-					if (htmlText[j] === "{") d++;
-					else if (htmlText[j] === "}") d--;
-					j++;
-				}
-				masked += " ".repeat(j - i);
-				i = j;
-			} else {
-				masked += htmlText[i];
-				i++;
-			}
-		}
-		const htmlDoc = htmlService.TextDocument.create("file:///embedded.html", "html", 1, masked);
-		const pos = htmlDoc.positionAt(offset - tpl.contentStart);
-		const htmlDocParsed = htmlLS.parseHTMLDocument(htmlDoc);
-		const hover = htmlLS.doHover(htmlDoc, pos, htmlDocParsed);
-		if (hover) return hover as any;
-		// fallback: check if word is a DataStar attribute or action
-		const wordRange2 = wordRangeAt(doc, params.position, /[a-zA-Z0-9_@:.-]+/);
-		if (wordRange2) {
-			const word2 = doc.getText(wordRange2);
-			// check data-* attributes
-			for (const [attr, info] of Object.entries(datastarDocs)) {
-				if (word2.startsWith(attr)) {
-					const modList = info.modifiers.length ? info.modifiers.join(", ") : "none";
-					return {
-						contents: {
-							kind: "markdown",
-							value: `**${attr}**\n\n${info.description}\n\n**Syntax:** \`${info.syntax}\`\n\n**Modifiers:** ${modList}`,
-						},
-						range: wordRange2,
-					};
-				}
-			}
-			// check @actions
-			for (const [action, info] of Object.entries(datastarActionDocs)) {
-				if (word2.startsWith(action)) {
-					const optList = info.options.length ? info.options.join(", ") : "none";
-					return {
-						contents: {
-							kind: "markdown",
-							value: `**${action}**\n\n${info.description}\n\n**Syntax:** \`${info.syntax}\`\n\n**Options:** ${optList}`,
-						},
-						range: wordRange2,
-					};
-				}
-			}
-		}
-		return hover as any;
-	}
-	const isSqlFile = filePath.endsWith(".sql");
-	if (!isSqlFile && !inSqlString(text, offset)) return null;
-	const resolved = resolveDbDir(filePath);
-	if (!resolved) return null;
-	let schema: SchemaInfo;
-	try {
-		schema = await getSchema(resolved.dbDir, resolved.targetDb);
-	} catch {
-		return null;
-	}
-	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
-	if (!wordRange) return null;
-	const word = doc.getText(wordRange);
-	const aliasMap = resolveAliases(doc.getText());
-	const baseTable = aliasMap.get(word) ?? word;
-	// table?
-	if (schema.tables.includes(baseTable)) {
-		const cols = schema.columns.get(baseTable) ?? [];
-		const colList = cols
-			.map((c) => `${c.pk ? "🔑 " : ""}${c.name} (${c.type}${c.notnull ? ", NN" : ""})`)
-			.join(", ");
-		return {
-			contents: {
-				kind: "markdown",
-				value: `**table** \`${baseTable}\`\n\nColumns: ${colList}`,
-			},
-			range: wordRange,
-		};
-	}
-	// column?
-	for (const [t, cols] of schema.columns) {
-		const col = cols.find((c) => c.name === word);
-		if (col) {
-			const flags = [col.pk ? "PK" : "", col.notnull ? "NOT NULL" : "nullable"]
-				.filter(Boolean)
-				.join(" · ");
-			const def = col.defaultValue != null ? ` · DEFAULT ${col.defaultValue}` : "";
-			return {
-				contents: {
-					kind: "markdown",
-					value: `**column** \`${col.name}\` : ${col.type} · ${flags}${def} (table ${t})`,
-				},
-				range: wordRange,
-			};
-		}
-	}
-	return null;
+	const isJsTs = /\.(js|ts|jsx|tsx)$/.test(filePath);
+	const ctx = {
+		doc,
+		text: doc.getText(),
+		offset: doc.offsetAt(params.position),
+		filePath,
+		isJsTs,
+		position: params.position,
+	};
+	return hover(ctx, {
+		htmlLS,
+		cssLS,
+		htmlService,
+		getSchema,
+		datastarDocs,
+		datastarActionDocs,
+		readDir,
+		readFile,
+		joinPath,
+	});
 });
 
-connection.onDefinition(async (params): Promise<Location[] | null> => {
+connection.onDefinition(async (params) => {
 	const doc = documents.get(params.textDocument.uri);
 	if (!doc) return null;
 	const filePath = params.textDocument.uri.startsWith("file://")
 		? decodeURIComponent(params.textDocument.uri.replace("file://", ""))
 		: params.textDocument.uri;
-	const isSqlFile = filePath.endsWith(".sql");
-	const offset = doc.offsetAt(params.position);
-	if (!isSqlFile && !inSqlString(doc.getText(), offset)) return null;
-	const resolved = resolveDbDir(filePath);
-	if (!resolved) return null;
-	const wordRange = wordRangeAt(doc, params.position, /[A-Za-z_][A-Za-z0-9_]*/);
-	if (!wordRange) return null;
-	const word = doc.getText(wordRange);
-	const aliasMap = resolveAliases(doc.getText());
-	const target = aliasMap.get(word) ?? word;
-
-	// resolve column -> owning table (if applicable)
-	let ownerTable: string | null = null;
-	try {
-		const schema = await getSchema(resolved.dbDir, resolved.targetDb);
-		for (const [t, cols] of schema.columns) {
-			if (cols.some((c) => c.name === word)) {
-				ownerTable = t;
-				break;
-			}
-		}
-	} catch {
-		// ignore
-	}
-	const searchName = ownerTable ?? target;
-
-	const migrationsDir = path.join(resolved.targetDb, "migrations");
-	let files: string[] = [];
-	try {
-		files = await fsp.readdir(migrationsDir);
-	} catch {
-		return null;
-	}
-	for (const f of files) {
-		if (!f.endsWith(".sql")) continue;
-		const full = path.join(migrationsDir, f);
-		const content = await fsp.readFile(full, "utf8");
-		const re = new RegExp(
-			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${searchName}["'\`]?`,
-			"i",
-		);
-		const m = content.match(re);
-		if (m && m.index !== undefined) {
-			// if looking for a column, find its line within the CREATE TABLE block
-			let idx = m.index;
-			if (ownerTable && ownerTable.toLowerCase() !== target.toLowerCase()) {
-				// target was a column name; locate column within table block
-				const start = m.index;
-				const endIdx = content.indexOf(";", start);
-				const block = content.slice(start, endIdx === -1 ? undefined : endIdx);
-				const colRe = new RegExp(`\\b${target}\\b`, "i");
-				const cm = block.match(colRe);
-				if (cm && cm.index !== undefined) idx = start + cm.index;
-			} else if (ownerTable) {
-				const start = m.index;
-				const endIdx = content.indexOf(";", start);
-				const block = content.slice(start, endIdx === -1 ? undefined : endIdx);
-				const colRe = new RegExp(`\\b${target}\\b`, "i");
-				const cm = block.match(colRe);
-				if (cm && cm.index !== undefined) idx = start + cm.index;
-			}
-			const pos = offsetToPosition(content, idx);
-			return [
-				{
-					uri: `file://${full}`,
-					range: { start: pos, end: pos },
-				},
-			];
-		}
-	}
-	return null;
+	const isJsTs = /\.(js|ts|jsx|tsx)$/.test(filePath);
+	const ctx = {
+		doc,
+		text: doc.getText(),
+		offset: doc.offsetAt(params.position),
+		filePath,
+		isJsTs,
+		position: params.position,
+	};
+	return definition(ctx, {
+		htmlLS,
+		cssLS,
+		htmlService,
+		getSchema,
+		datastarDocs,
+		datastarActionDocs,
+		readDir,
+		readFile,
+		joinPath,
+	});
 });
 
 connection.onInitialized(async () => {
