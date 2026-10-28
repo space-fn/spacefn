@@ -19,6 +19,7 @@ export default defineConfig({
 			"src/middleware.ts",
 			"src/html.ts",
 			"src/http.ts",
+			"src/ws.ts",
 			"src/runtime.ts",
 			"src/vite.ts",
 			"src/cloudflare.ts",

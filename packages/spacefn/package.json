@@ -89,6 +89,10 @@
 		"./http": {
 			"types": "./dist/http.d.mts",
 			"import": "./dist/http.mjs"
+		},
+		"./ws": {
+			"types": "./dist/ws.d.mts",
+			"import": "./dist/ws.mjs"
 		}
 	},
 	"scripts": {
