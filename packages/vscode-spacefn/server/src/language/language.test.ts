@@ -1,5 +1,4 @@
 import { describe, expect, test } from "vite-plus/test";
-import { TextDocument } from "vscode-languageserver-textdocument";
 
 import type { LanguageDeps, SchemaInfo } from "./types";
 
