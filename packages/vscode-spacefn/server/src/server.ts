@@ -11,7 +11,6 @@ import {
 	TextDocuments,
 	ProposedFeatures,
 	Diagnostic,
-	DiagnosticSeverity,
 	CompletionItem,
 	CompletionItemKind,
 	Hover,
@@ -21,12 +20,8 @@ import {
 
 import { validateCssTemplates } from "./diagnostics/css";
 import { validateHtmlDatastar } from "./diagnostics/datastar";
-import {
-	extractBadIdentifier,
-	loadDialectAndMigrations,
-	rangeForIdentifier,
-	validateSqlDiagnostics,
-} from "./diagnostics/sql";
+import { resolveDbDir, validateEmbedded } from "./diagnostics/embedded";
+import { loadDialectAndMigrations, validateSqlDiagnostics } from "./diagnostics/sql";
 import {
 	inSqlString,
 	findHtmlTemplateRange,
@@ -46,67 +41,6 @@ async function validateSqlFile(doc: TextDocument): Promise<void> {
 
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);
-
-function findDbDir(filePath: string): string | null {
-	let dir = path.dirname(filePath);
-	while (dir && dir !== path.parse(dir).root) {
-		if (path.basename(dir) === "db") {
-			return dir;
-		}
-		dir = path.dirname(dir);
-	}
-	return null;
-}
-
-// Validate DataStar attribute syntax
-async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]> {
-	const uri = doc.uri;
-	const filePath = uri.startsWith("file://") ? decodeURIComponent(uri.replace("file://", "")) : uri;
-	if (!filePath.endsWith(".ts") && !filePath.endsWith(".js")) return [];
-	const resolved = resolveDbDir(filePath);
-	if (!resolved) return [];
-	const targetDb = resolved.targetDb;
-
-	const text = doc.getText();
-	const regex = /\b(?:sql|db)\s*`([\s\S]*?)`/g;
-	const diagnostics: Diagnostic[] = [];
-	let match: RegExpExecArray | null;
-	let { dialect, migrations } = await loadDialectAndMigrations(targetDb);
-	const scratch = await scratchDatabase(migrations, dialect);
-	while ((match = regex.exec(text)) !== null) {
-		const sql = match[1]!.replace(/\$\{[\s\S]*?\}/g, "NULL");
-		const startOffset = match.index + match[0].indexOf("`") + 1;
-		const startPos = doc.positionAt(startOffset);
-		try {
-			const stmt = await scratch.prepare(sql);
-			await stmt.columns();
-		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
-			console.error("[spacefn] validateEmbedded error:", message);
-			const ident = extractBadIdentifier(message);
-			const range = (ident && rangeForIdentifier(doc, ident)) || {
-				start: startPos,
-				end: startPos,
-			};
-			diagnostics.push({
-				severity: DiagnosticSeverity.Error,
-				range,
-				message,
-				source: "spacefn",
-			});
-		}
-	}
-	return diagnostics;
-}
-
-async function validateJsTs(doc: TextDocument): Promise<void> {
-	const uri = doc.uri;
-	const all: Diagnostic[] = [];
-	all.push(...(await validateHtmlDatastar(doc)));
-	all.push(...(await validateCssTemplates(doc)));
-	all.push(...(await validateEmbedded(doc)));
-	void connection.sendDiagnostics({ uri, diagnostics: all });
-}
 
 interface ColumnInfo {
 	name: string;
@@ -147,36 +81,13 @@ async function getSchema(dbDir: string, targetDb: string): Promise<SchemaInfo> {
 	return schema;
 }
 
-function resolveDbDir(filePath: string): { dbDir: string; targetDb: string } | null {
-	if (filePath.match(/[/\\]app[/\\]db[/\\][^/\\]+[/\\]queries[/\\]/)) {
-		const dbDir = filePath.replace(/[/\\]queries[/\\].*/, "");
-		return { dbDir, targetDb: dbDir };
-	}
-	const dbDir = findDbDir(filePath);
-	if (!dbDir) return null;
-	let targetDb: string | null = null;
-	try {
-		const { readdirSync, readFileSync } = require("node:fs");
-		const entries = readdirSync(dbDir, { withFileTypes: true });
-		const dbs = entries.filter((e: any) => e.isDirectory()).map((e: any) => e.name);
-		let preferred: string | null = null;
-		try {
-			const content = readFileSync(filePath, "utf8");
-			const m = content.match(/@space\/db\/([A-Za-z0-9_-]+)|@app\/db\/([A-Za-z0-9_-]+)/);
-			if (m) preferred = m[1] || m[2];
-		} catch {}
-		if (preferred && dbs.includes(preferred)) {
-			targetDb = path.join(dbDir, preferred);
-		} else if (dbs.length === 1) {
-			targetDb = path.join(dbDir, dbs[0]!);
-		} else {
-			return null;
-		}
-	} catch {
-		return null;
-	}
-	if (!targetDb) return null;
-	return { dbDir, targetDb };
+/** Validates JS/TS files with embedded templates and sends diagnostics. */
+async function validateJsTs(doc: TextDocument): Promise<void> {
+	const all: Diagnostic[] = [];
+	all.push(...(await validateHtmlDatastar(doc)));
+	all.push(...(await validateCssTemplates(doc)));
+	all.push(...(await validateEmbedded(doc)));
+	void connection.sendDiagnostics({ uri: doc.uri, diagnostics: all });
 }
 
 documents.onDidChangeContent((change) => {
