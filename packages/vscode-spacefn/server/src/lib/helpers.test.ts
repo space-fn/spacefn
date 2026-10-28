@@ -76,9 +76,21 @@ describe("resolveAliases", () => {
 });
 
 describe("extractSignals", () => {
-	test("extracts data signals", () => {
-		const sigs = extractSignals('<div data-signals="{count: 0}"></div>');
-		expect(Array.isArray(sigs)).toBe(true);
+	test("extracts signals from data-signals object", () => {
+		const sigs = extractSignals(`<div data-signals="{count: 0, name: 'x'}"></div>`);
+		expect(sigs).toContain("count");
+		expect(sigs).toContain("name");
+	});
+	test("extracts kebab-case signal names as camelCase", () => {
+		const sigs = extractSignals('<input data-signals:my-count="1">');
+		expect(sigs).toContain("myCount");
+	});
+	test("extracts data-bind signals", () => {
+		const sigs = extractSignals('<input data-bind:value="count">');
+		expect(sigs).toContain("value");
+	});
+	test("returns empty for no signals", () => {
+		expect(extractSignals("<div></div>")).toEqual([]);
 	});
 });
 
@@ -112,5 +124,41 @@ describe("validateSqlDirectives", () => {
 			"q.sql",
 		);
 		expect(d.length).toBeGreaterThan(0);
+	});
+});
+
+
+import { extractTables, wordRangeAt } from "./helpers";
+import { TextDocument } from "vscode-languageserver-textdocument";
+
+describe("extractTables", () => {
+	test("extracts FROM table", () => {
+		expect(extractTables("SELECT * FROM users")).toContain("users");
+	});
+	test("extracts JOIN table", () => {
+		expect(extractTables("SELECT * FROM a JOIN b ON a.x = b.x")).toContain("b");
+	});
+	test("empty sql", () => {
+		expect(extractTables("")).toEqual([]);
+	});
+});
+
+describe("wordRangeAt", () => {
+	const mk = (text: string) =>
+		TextDocument.create("file:///t.ts", "typescript", 1, text);
+	test("expands word at middle", () => {
+		const doc = mk("hello world");
+		const r = wordRangeAt(doc, { line: 0, character: 2 } as never, /\w/);
+		expect(r).not.toBeNull();
+		expect(doc.getText({ start: r!.start, end: r!.end } as never)).toBe("hello");
+	});
+	test("second word", () => {
+		const doc = mk("hello world");
+		const r = wordRangeAt(doc, { line: 0, character: 8 } as never, /\w/);
+		expect(doc.getText({ start: r!.start, end: r!.end } as never)).toBe("world");
+	});
+	test("no adjacent word returns null", () => {
+		const doc = mk(" a");
+		expect(wordRangeAt(doc, { line: 0, character: 0 } as never, /\w/)).toBeNull();
 	});
 });
