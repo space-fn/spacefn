@@ -12,5 +12,5 @@
 		"types": ["node"],
 		"typeRoots": ["../../node_modules/@types", "./node_modules/@types"]
 	},
-	"exclude": ["node_modules", ".vscode-test", "server"]
+	"exclude": ["node_modules", ".vscode-test", "server", "vite.config.ts"]
 }

@@ -1,11 +1,11 @@
 # Scheduled job
 
 ```ts
-// app/crons/digest.ts
+// app/crons/nightly.ts
 import { defineCron } from "spacefn/crons";
 
-export default defineCron("0 9 * * *", async (c) => {
-	await c.env.DB.prepare("DELETE FROM sessions WHERE expires_at < datetime('now')").run();
+export default defineCron("0 3 * * *", async (event) => {
+	console.log("NIGHTLY RAN", event.cron);
 });
 ```
 

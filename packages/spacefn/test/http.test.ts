@@ -59,3 +59,48 @@ describe("readUploads", () => {
 		expect(res.status).toBe(200);
 	});
 });
+
+import { putUpload } from "../src/http";
+
+describe("putUpload", () => {
+	test("streams the file without buffering", async () => {
+		let received: unknown;
+		const bucket = {
+			put: async (key: string, value: unknown) => {
+				received = value;
+				return {};
+			},
+		};
+		const file = {
+			name: "photo.png",
+			type: "image/png",
+			size: 4,
+			arrayBuffer: async () => {
+				throw new Error("should not buffer");
+			},
+			stream: () => new ReadableStream(),
+		};
+		const key = await putUpload(bucket, file as never);
+		expect(key).toMatch(/^uploads\/[0-9a-f-]+\.png$/);
+		expect(received).toBeInstanceOf(ReadableStream);
+	});
+
+	test("unknown type yields no extension", async () => {
+		let key = "";
+		const bucket = {
+			put: async (k: string) => {
+				key = k;
+				return {};
+			},
+		};
+		const file = {
+			name: "data.bin",
+			type: "application/octet-stream",
+			size: 4,
+			arrayBuffer: async () => new ArrayBuffer(4),
+			stream: () => new ReadableStream(),
+		};
+		await putUpload(bucket, file as never);
+		expect(key).toMatch(/^uploads\/[0-9a-f-]+$/);
+	});
+});
