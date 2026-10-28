@@ -1,5 +1,7 @@
 import { readdir } from "node:fs/promises";
 
+import { SpaceError } from "../errors";
+
 const CODE_FILE = /\.(?:[cm]?[jt]s|[jt]sx)$/;
 const CSS_FILE = /\.css$/;
 const SAFE_NAME = /^[\w.-]+$/;
@@ -39,8 +41,10 @@ export async function scanClientFiles(dir: string): Promise<string[]> {
 		const base = file.replace(/\.[^.]+$/, "");
 		const prev = seen.get(base);
 		if (prev) {
-			throw new Error(
-				`app/client: entries "${prev}" and "${file}" share the base name "${base}". Rename one of them.`,
+			throw new SpaceError(
+				"CLIENT_DUP_ENTRY",
+				`app/client: entries "${prev}" and "${file}" share the base name "${base}"`,
+				{ hint: "Rename one of them." },
 			);
 		}
 		seen.set(base, file);

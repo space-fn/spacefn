@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
 
+import { SpaceError } from "../errors";
 import { parseRoutePath, type RouteEnv } from "./path";
 
 export type Mode = RouteEnv;
@@ -50,7 +51,11 @@ export async function scanRoutes(dir: string, mode: Mode): Promise<RouteFile[]> 
 
 		const existing = routes.get(parsed.path);
 		if (existing) {
-			throw new Error(`Routes "${existing.file}" and "${file}" both map to ${parsed.path}`);
+			throw new SpaceError(
+				"ROUTE_DUP",
+				`Routes "${existing.file}" and "${file}" both map to ${parsed.path}`,
+				{ hint: "Rename one route file." },
+			);
 		}
 		routes.set(parsed.path, { file, path: parsed.path });
 	}

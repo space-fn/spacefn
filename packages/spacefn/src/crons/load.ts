@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { SpaceError } from "../errors";
 import { scanCodeFiles } from "../scan";
 import type { CronJob } from "./define";
 
@@ -15,7 +16,11 @@ export async function loadCronJobs(root: string): Promise<Record<string, CronJob
 		const url = `${pathToFileURL(join(root, "app", "crons", file)).href}?v=${crypto.randomUUID()}`;
 		const mod = (await import(/* @vite-ignore */ url)) as { default?: CronJob };
 		if (!mod.default || typeof mod.default.run !== "function") {
-			throw new Error(`crons/${file} must default-export the result of defineCron()`);
+			throw new SpaceError(
+				"CRON_INVALID",
+				`crons/${file} must default-export the result of defineCron()`,
+				{ file, hint: "Use `export default defineCron({ ... })`." },
+			);
 		}
 		jobs[file.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, "")] = mod.default;
 	}

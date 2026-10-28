@@ -1,3 +1,4 @@
+import { SpaceError } from "../errors";
 export interface CronEvent {
 	/** The schedule that fired, e.g. `0 3 * * *`. */
 	readonly cron: string;
@@ -26,7 +27,11 @@ export interface CronJob {
  */
 export function defineCron(schedule: string, run: CronHandler): CronJob {
 	if (schedule.trim().split(/\s+/).length !== 5) {
-		throw new Error(`defineCron schedule must be a 5-field cron expression, got "${schedule}"`);
+		throw new SpaceError(
+			"CRON_SCHEDULE",
+			`defineCron schedule must be a 5-field cron expression, got "${schedule}"`,
+			{ hint: "Use five fields: minute hour day month weekday." },
+		);
 	}
 	return { schedule, run };
 }

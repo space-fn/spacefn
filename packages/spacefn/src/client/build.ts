@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 
 import { build } from "vite";
 
+import { SpaceError } from "../errors";
 import { clientAllowlistPlugin } from "./allowlist";
 
 export type ClientManifestMap = Record<string, { js?: string; css?: string[] }>;
@@ -89,7 +90,11 @@ export async function runClientBuild(
 
 	for (const entry of entries) {
 		if (!manifest[entry]?.js && !manifest[entry]?.css?.length) {
-			throw new Error(`Client build produced no output for entry "${entry}".`);
+			throw new SpaceError(
+				"CLIENT_NO_OUTPUT",
+				`Client build produced no output for entry "${entry}".`,
+				{ hint: "Check the entry file for syntax errors." },
+			);
 		}
 	}
 

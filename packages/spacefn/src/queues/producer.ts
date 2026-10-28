@@ -1,4 +1,5 @@
 import { currentBindings } from "../env/current";
+import { SpaceError } from "../errors";
 import type { QueueHandler } from "./define";
 
 /** The body type a consumer declares, read back from its default export. */
@@ -22,7 +23,10 @@ interface QueueBinding<Body> {
 export function queueProducer<Body>(binding: string): QueueProducer<Body> {
 	const queue = () => {
 		const producer = currentBindings()[binding] as QueueBinding<Body> | undefined;
-		if (!producer) throw new Error(`Queue binding ${binding} is not available`);
+		if (!producer)
+			throw new SpaceError("QUEUE_BINDING_MISSING", `Queue binding ${binding} is not available`, {
+				hint: "Declare it in cloudflare.config.ts env.",
+			});
 		return producer;
 	};
 	return {

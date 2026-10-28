@@ -1,5 +1,7 @@
 import type { Context, Hono } from "hono";
 
+import { SpaceError } from "../errors";
+
 export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
 
 export type RouteModule = Partial<Record<(typeof METHODS)[number], (c: Context) => unknown>>;
@@ -14,6 +16,10 @@ export function mountRoute(app: Hono, path: string, module: RouteModule): void {
 		count++;
 	}
 	if (count === 0) {
-		throw new Error(`Route ${path} exports no HTTP method handlers (${METHODS.join(", ")})`);
+		throw new SpaceError(
+			"ROUTE_NO_HANDLERS",
+			`Route ${path} exports no HTTP method handlers (${METHODS.join(", ")})`,
+			{ hint: "Export at least one of GET/POST/PUT/PATCH/DELETE." },
+		);
 	}
 }

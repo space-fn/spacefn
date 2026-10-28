@@ -1,4 +1,5 @@
 import { runWithBindings } from "../env/current";
+import { SpaceError } from "../errors";
 import { traceBindings } from "../trace/bindings";
 import { unwrapQueueBody } from "../trace/envelope";
 import { getTracer, withSpan, type SpanContext } from "../trace/span";
@@ -46,7 +47,11 @@ export async function dispatchQueue(
 	const handler = handlers[batch.queue] as QueueHandler<unknown> | undefined;
 	if (!handler) {
 		batch.retryAll();
-		throw new Error(`No consumer is registered for queue "${batch.queue}"`);
+		throw new SpaceError(
+			"QUEUE_NO_CONSUMER",
+			`No consumer is registered for queue "${batch.queue}"`,
+			{ hint: "Add app/queues/<name>.ts." },
+		);
 	}
 
 	const bindings = traceBindings(env);

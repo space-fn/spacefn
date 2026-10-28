@@ -1,3 +1,4 @@
+import { SpaceError } from "../errors";
 export type RouteEnv = "dev" | "prod";
 
 export interface RoutePath {
@@ -38,8 +39,10 @@ export function parseRoutePath(file: string): RoutePath | null {
 		if (catchAll) parts.push(`:${catchAll}{.+}`);
 		else if (dynamic) parts.push(`:${dynamic}`);
 		else if (BRACKETED.test(segment)) {
-			throw new Error(
-				`Route segment "${segment}" is not a valid parameter. Use [name] or [...name] with letters, digits, _ and -.`,
+			throw new SpaceError(
+				"ROUTE_BAD_PARAM",
+				`Route segment "${segment}" is not a valid parameter.`,
+				{ hint: "Use [name] or [...name] with letters, digits, _ and -." },
 			);
 		} else parts.push(segment);
 	}

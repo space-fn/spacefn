@@ -1,5 +1,6 @@
 import { readdir } from "node:fs/promises";
 
+import { SpaceError } from "../errors";
 import { parseRoutePath } from "../routes/path";
 
 export interface PageFile {
@@ -39,7 +40,12 @@ export async function scanPages(dir: string): Promise<PageFile[]> {
 		const base = file.replace(PAGE, "");
 		const route = parseRoutePath(`${base}.ts`);
 		if (!route) continue;
-		if (route.env) throw new Error(`pages/${file}: pages do not support environment suffixes`);
+		if (route.env)
+			throw new SpaceError(
+				"PAGE_ENV_SUFFIX",
+				`pages/${file}: pages do not support environment suffixes`,
+				{ file, hint: "Remove the environment suffix from the file name." },
+			);
 		const serverFile = [...files].find(
 			(candidate) =>
 				/\.server\.(?:[cm]?[jt]s|[jt]sx)$/.test(candidate) &&
