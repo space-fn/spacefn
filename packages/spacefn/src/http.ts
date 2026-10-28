@@ -18,6 +18,7 @@ export interface UploadResult {
 export interface ReadUploadsOptions {
 	maxFileSize?: number;
 	maxFiles?: number;
+	maxBodySize?: number;
 	allowedTypes?: string[];
 }
 
@@ -62,8 +63,9 @@ export async function readUploads(
 	const maxFiles = options.maxFiles ?? DEFAULT_MAX_FILES;
 	const allowed = options.allowedTypes;
 
+	const maxBodySize = options.maxBodySize ?? maxFileSize * maxFiles + 1024 * 1024;
 	const contentLength = Number(c.req.header("content-length") ?? "0");
-	if (contentLength > 0 && contentLength > maxFileSize * maxFiles + 1024 * 1024) {
+	if (contentLength > 0 && contentLength > maxBodySize) {
 		throw new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
 			status: 413,
 			hint: "Reduce payload size.",
@@ -95,15 +97,15 @@ export async function readUploads(
 				status: 413,
 			});
 		}
-		const buf = new Uint8Array(await file.arrayBuffer());
-		const detected = detectType(buf);
+		const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+		const detected = detectType(head);
 		if (allowed && (detected === null || !allowed.includes(detected))) {
 			throw new SpaceError(
 				"UPLOAD_BAD_TYPE",
 				`File "${file.name}" has disallowed type ${detected ?? "unknown"}`,
 				{
 					status: 415,
-					hint: `Allowed: ${allowed.join(", ")}`,
+					hint: `Allowed: ${allowed.join(", ")}. Declared: ${file.type}.`,
 				},
 			);
 		}
@@ -111,8 +113,8 @@ export async function readUploads(
 			name: file.name,
 			type: detected ?? file.type,
 			size: file.size,
-			arrayBuffer: async () => buf.buffer as ArrayBuffer,
-			stream: () => new Blob([buf]).stream(),
+			arrayBuffer: () => file.arrayBuffer(),
+			stream: () => file.stream() as ReadableStream<Uint8Array>,
 		};
 		const existing = files[key];
 		if (existing) {
