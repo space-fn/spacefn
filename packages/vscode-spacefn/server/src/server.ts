@@ -2,7 +2,6 @@ import * as fs from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 
-import { Parser } from "node-sql-parser";
 import { scanMigrations, scratchDatabase, parseQueryFile } from "spacefn/db";
 import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
@@ -17,7 +16,6 @@ import {
 	CompletionItemKind,
 	Hover,
 	Location,
-	Position,
 	Range,
 	DidChangeWatchedFilesNotification,
 } from "vscode-languageserver/node";
@@ -29,7 +27,6 @@ import {
 	findSqlTemplateRange,
 	detectContext,
 	resolveAliases,
-	extractTables,
 	extractSignals,
 	wordRangeAt,
 	offsetToPosition,
@@ -439,6 +436,7 @@ interface SchemaInfo {
 	columns: Map<string, ColumnInfo[]>;
 }
 
+let workspaceRoot = process.cwd();
 const schemaCache = new Map<string, SchemaInfo>();
 
 async function getSchema(dbDir: string, targetDb: string): Promise<SchemaInfo> {
@@ -705,8 +703,6 @@ const SQL_FUNCTIONS = [
 	"JSON_OBJECT",
 	"JSON_GROUP_ARRAY",
 ];
-
-const parser = new Parser();
 
 const htmlLS = htmlService.getLanguageService();
 
@@ -1047,11 +1043,6 @@ htmlLS.setDataProviders(true, [
 	htmlService.getDefaultHTMLDataProvider(),
 ]);
 htmlLS.setDataProviders(true, [datastarProvider, htmlService.getDefaultHTMLDataProvider()]);
-
-type CompletionContext =
-	| { kind: "table" }
-	| { kind: "column"; tables: string[] }
-	| { kind: "keyword" };
 
 const customProps = new Map<string, string>();
 const cssLS = cssService.getCSSLanguageService();

@@ -1,3 +1,13 @@
+import { TextDocument } from "vscode-languageserver-textdocument";
+export type CompletionContext =
+	| { kind: "table" }
+	| { kind: "column"; tables: string[] }
+	| { kind: "keyword" };
+
+import { Parser } from "node-sql-parser";
+
+const parser = new Parser();
+
 // Extracted pure helpers from server.ts (no LSP connection dependency).
 export function inSqlString(text: string, offset: number): boolean {
 	// crude: walk back to find an unclosed quote/backtick
@@ -258,9 +268,9 @@ export function extractSignals(htmlText: string): string[] {
 
 export function wordRangeAt(
 	doc: TextDocument,
-	position: Position,
+	position: any,
 	regex: RegExp,
-): { start: Position; end: Position } | null {
+): { start: any; end: any } | null {
 	const text = doc.getText();
 	const offset = doc.offsetAt(position);
 	// expand left
@@ -274,10 +284,8 @@ export function wordRangeAt(
 	return { start: doc.positionAt(start), end: doc.positionAt(end) };
 }
 
-export function offsetToPosition(text: string, offset: number): Position {
+export function offsetToPosition(text: string, offset: number): any {
 	const before = text.slice(0, offset);
 	const lines = before.split("\n");
 	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };
 }
-
-let workspaceRoot = process.cwd();
