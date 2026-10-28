@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 
 import type { AppBindings } from "./env";
+import { SpaceError } from "./errors";
 
 export type HandlerResult = unknown;
 
@@ -29,13 +30,10 @@ export function defineHandler(handler: Handler, options: HandlerOptions = {}) {
 			return c.json(result);
 		} catch (error) {
 			if (options.onError) return options.onError(error, c);
-			console.error("[spacefn] handler error", error);
-			return c.json({ error: "internal_error", message: "Something went wrong" }, 500);
+			return onError(error, c);
 		}
 	};
 }
-
-import { SpaceError } from "./errors";
 
 /**
  * Default error handler. Maps SpaceError (with a status) to a matching HTTP

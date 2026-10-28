@@ -64,17 +64,65 @@ export async function readUploads(
 	const allowed = options.allowedTypes;
 
 	const maxBodySize = options.maxBodySize ?? maxFileSize * maxFiles + 1024 * 1024;
-	const contentLength = Number(c.req.header("content-length") ?? "0");
-	if (contentLength > 0 && contentLength > maxBodySize) {
-		throw new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
-			status: 413,
-			hint: "Reduce payload size.",
+
+	let bodyBytes: Uint8Array;
+	try {
+		const raw = c.req.raw;
+		const cl = Number(raw.headers.get("content-length") ?? "0");
+		if (cl > 0 && cl > maxBodySize) {
+			throw new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
+				status: 413,
+				hint: "Reduce payload size.",
+			});
+		}
+		const reader = raw.body?.getReader();
+		if (!reader) {
+			bodyBytes = new Uint8Array();
+		} else {
+			const chunks: Uint8Array[] = [];
+			let total = 0;
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+				total += value.byteLength;
+				if (total > maxBodySize) {
+					await reader.cancel();
+					throw new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
+						status: 413,
+						hint: "Reduce payload size.",
+					});
+				}
+				chunks.push(value);
+			}
+			bodyBytes = new Uint8Array(total);
+			let off = 0;
+			for (const ch of chunks) {
+				bodyBytes.set(ch, off);
+				off += ch.byteLength;
+			}
+		}
+	} catch (error) {
+		if (error instanceof SpaceError) throw error;
+		throw new SpaceError("UPLOAD_READ", "Failed to read request body", {
+			status: 400,
+			cause: error,
 		});
 	}
 
 	let body: Record<string, unknown>;
 	try {
-		body = (await c.req.parseBody({ all: true })) as Record<string, unknown>;
+		const fd = await new Request(c.req.raw.url, {
+			method: c.req.raw.method,
+			headers: c.req.raw.headers,
+			body: bodyBytes as BodyInit,
+		}).formData();
+		body = {};
+		for (const [k, v] of fd.entries()) {
+			const existing = body[k];
+			if (existing === undefined) body[k] = v;
+			else if (Array.isArray(existing)) (existing as unknown[]).push(v);
+			else body[k] = [existing, v];
+		}
 	} catch (error) {
 		throw new SpaceError("UPLOAD_PARSE", "Failed to parse multipart body", {
 			status: 400,

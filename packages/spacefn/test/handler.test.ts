@@ -73,3 +73,29 @@ describe("onError", () => {
 		expect(res.status).toBe(500);
 	});
 });
+
+describe("defineHandler error mapping", () => {
+	test("SpaceError maps to its status", async () => {
+		const res = await call(() => {
+			throw new SpaceError("X", "boom", { status: 413 });
+		});
+		expect(res.status).toBe(413);
+		expect(await res.json()).toEqual({ error: "X", message: "boom" });
+	});
+
+	test("SpaceError 415", async () => {
+		const res = await call(() => {
+			throw new SpaceError("Y", "bad type", { status: 415 });
+		});
+		expect(res.status).toBe(415);
+	});
+
+	test("plain error is 500", async () => {
+		const res = await call(() => {
+			throw new Error("secret");
+		});
+		expect(res.status).toBe(500);
+		const json = (await res.json()) as { message: string };
+		expect(json.message).not.toContain("secret");
+	});
+});

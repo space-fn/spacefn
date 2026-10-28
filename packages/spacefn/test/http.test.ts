@@ -58,6 +58,14 @@ describe("readUploads", () => {
 		const res = await run(form);
 		expect(res.status).toBe(200);
 	});
+
+	test("rejects oversize without content-length", async () => {
+		const form = new FormData();
+		form.append("file", new File(["x".repeat(100)], "a.png", { type: "image/png" }));
+		// force chunked by removing content-length is not possible via app.request body; use maxBodySize small
+		const res = await run(form, { maxFileSize: 10, maxBodySize: 10 });
+		expect(res.status).toBe(413);
+	});
 });
 
 import { putUpload } from "../src/http";
