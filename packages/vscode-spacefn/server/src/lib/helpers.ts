@@ -1,3 +1,4 @@
+import { Position } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 export type CompletionContext =
 	| { kind: "table" }
@@ -268,9 +269,9 @@ export function extractSignals(htmlText: string): string[] {
 
 export function wordRangeAt(
 	doc: TextDocument,
-	position: any,
+	position: Position,
 	regex: RegExp,
-): { start: any; end: any } | null {
+): { start: Position; end: Position } | null {
 	const text = doc.getText();
 	const offset = doc.offsetAt(position);
 	// expand left
@@ -284,7 +285,7 @@ export function wordRangeAt(
 	return { start: doc.positionAt(start), end: doc.positionAt(end) };
 }
 
-export function offsetToPosition(text: string, offset: number): any {
+export function offsetToPosition(text: string, offset: number): Position {
 	const before = text.slice(0, offset);
 	const lines = before.split("\n");
 	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };

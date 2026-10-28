@@ -1,3 +1,5 @@
+<!-- source: playground/app/durable-objects/chat-room.ts -->
+
 # WebSocket chat room
 
 A Durable Object room using hibernation.

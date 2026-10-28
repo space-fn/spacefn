@@ -23,6 +23,7 @@ describe("bundle guard", () => {
 });
 
 import { statSync } from "node:fs";
+import { existsSync } from "node:fs";
 
 describe("bundle size budget", () => {
 	test("worker bundle stays under 130 kB", () => {
@@ -30,11 +31,8 @@ describe("bundle size budget", () => {
 			process.cwd(),
 			"playground/.cloudflare/output/v0/workers/default/bundle/index.js",
 		);
-		try {
-			const size = statSync(p).size;
-			expect(size).toBeLessThanOrEqual(130 * 1024);
-		} catch {
-			// bundle not built; skip
-		}
+		if (!existsSync(p)) return; // bundle not built; skip
+		const size = statSync(p).size;
+		expect(size).toBeLessThanOrEqual(130 * 1024);
 	});
 });

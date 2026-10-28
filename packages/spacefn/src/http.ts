@@ -166,7 +166,7 @@ export async function putUpload(
 							? ".pdf"
 							: "";
 	const key = `${options.prefix ?? "uploads"}/${crypto.randomUUID()}${ext}`;
-	await bucket.put(key, await file.arrayBuffer(), {
+	await bucket.put(key, file.stream(), {
 		httpMetadata: { contentType: options.contentType ?? file.type },
 	});
 	return key;
