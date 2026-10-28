@@ -26,7 +26,6 @@ export function inSqlString(text: string, offset: number): boolean {
 	return close !== -1;
 }
 
-
 export function findHtmlTemplateRange(
 	text: string,
 	offset: number,
@@ -70,7 +69,6 @@ export function findHtmlTemplateRange(
 	return null;
 }
 
-
 export function findCssTemplateRange(
 	text: string,
 	offset: number,
@@ -109,7 +107,6 @@ export function findCssTemplateRange(
 	}
 	return null;
 }
-
 
 export function findSqlTemplateRange(
 	text: string,
@@ -150,7 +147,6 @@ export function findSqlTemplateRange(
 	return null;
 }
 
-
 export function detectContext(before: string, fullText: string): CompletionContext {
 	// table context: last keyword before cursor is a table-introducing keyword
 	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
@@ -168,7 +164,6 @@ export function detectContext(before: string, fullText: string): CompletionConte
 	}
 	return { kind: "keyword" };
 }
-
 
 export function resolveAliases(sql: string): Map<string, string> {
 	const m = new Map<string, string>();
@@ -189,7 +184,6 @@ export function resolveAliases(sql: string): Map<string, string> {
 	}
 	return m;
 }
-
 
 export function extractTables(sql: string): string[] {
 	try {
@@ -262,7 +256,6 @@ export function extractSignals(htmlText: string): string[] {
 	return [...signals];
 }
 
-
 export function wordRangeAt(
 	doc: TextDocument,
 	position: Position,
@@ -280,7 +273,6 @@ export function wordRangeAt(
 	if (start === end) return null;
 	return { start: doc.positionAt(start), end: doc.positionAt(end) };
 }
-
 
 export function offsetToPosition(text: string, offset: number): Position {
 	const before = text.slice(0, offset);

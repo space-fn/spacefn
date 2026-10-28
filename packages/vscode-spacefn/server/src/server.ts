@@ -7,7 +7,6 @@ import { scanMigrations, scratchDatabase, parseQueryFile } from "spacefn/db";
 import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { inSqlString, findHtmlTemplateRange, findCssTemplateRange, findSqlTemplateRange, detectContext, resolveAliases, extractTables, extractSignals, wordRangeAt, offsetToPosition } from "./lib/helpers";
 import {
 	createConnection,
 	TextDocuments,
@@ -22,6 +21,19 @@ import {
 	Range,
 	DidChangeWatchedFilesNotification,
 } from "vscode-languageserver/node";
+
+import {
+	inSqlString,
+	findHtmlTemplateRange,
+	findCssTemplateRange,
+	findSqlTemplateRange,
+	detectContext,
+	resolveAliases,
+	extractTables,
+	extractSignals,
+	wordRangeAt,
+	offsetToPosition,
+} from "./lib/helpers";
 
 const connection = createConnection(ProposedFeatures.all);
 const documents = new TextDocuments(TextDocument);

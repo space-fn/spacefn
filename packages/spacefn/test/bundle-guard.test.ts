@@ -26,7 +26,10 @@ import { statSync } from "node:fs";
 
 describe("bundle size budget", () => {
 	test("worker bundle stays under 130 kB", () => {
-		const p = resolve(process.cwd(), "playground/.cloudflare/output/v0/workers/default/bundle/index.js");
+		const p = resolve(
+			process.cwd(),
+			"playground/.cloudflare/output/v0/workers/default/bundle/index.js",
+		);
 		try {
 			const size = statSync(p).size;
 			expect(size).toBeLessThanOrEqual(130 * 1024);
