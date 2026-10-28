@@ -292,8 +292,10 @@ export function offsetToPosition(text: string, offset: number): Position {
 	return { line: lines.length - 1, character: lines[lines.length - 1]!.length };
 }
 
-
-export interface SqlDiagnostic { severity: number; message: string; }
+export interface SqlDiagnostic {
+	severity: number;
+	message: string;
+}
 
 export function validateSqlDirectives(text: string, file: string): SqlDiagnostic[] {
 	const out: SqlDiagnostic[] = [];
