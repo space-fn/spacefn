@@ -4,11 +4,8 @@
 // app/crons/digest.ts
 import { defineCron } from "spacefn/crons";
 
-export default defineCron({
-	schedule: "0 9 * * *",
-	handler: async (c) => {
-		await c.env.DB.prepare("DELETE FROM sessions WHERE expires_at < datetime('now')").run();
-	},
+export default defineCron("0 9 * * *", async (c) => {
+	await c.env.DB.prepare("DELETE FROM sessions WHERE expires_at < datetime('now')").run();
 });
 ```
 

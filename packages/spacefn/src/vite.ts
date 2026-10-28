@@ -14,6 +14,7 @@ import { createDocsReader } from "./docs/reader";
 import { durableObjectsConfig } from "./durable-objects/config";
 import type { Schema } from "./env/fields";
 import { loadEnvSchema } from "./env/load";
+import { SpaceError } from "./errors";
 import { queueConfig } from "./queues/config";
 import type { Mode } from "./routes/scan";
 import { scanCodeFiles } from "./scan";
@@ -136,7 +137,11 @@ export function spaceSync(
 							visited.add(id);
 							const verdict = isAllowedClientImport(root, id);
 							if (!verdict.ok) {
-								throw new Error(`Import not allowed in app/client code: ${verdict.reason}`);
+								throw new SpaceError(
+									"CLIENT_IMPORT",
+									`Import not allowed in app/client code: ${verdict.reason}`,
+									{ hint: "See the client allowlist." },
+								);
 							}
 						};
 						const mod = server.environments.client.moduleGraph.getModuleById(target);

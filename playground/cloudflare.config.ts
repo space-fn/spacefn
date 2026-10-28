@@ -7,6 +7,7 @@ export default defineConfig({
 		compatibilityDate: "2026-10-19",
 		env: {
 			DB: bindings.d1({ name: "spacefn-app-db" }),
+			UPLOADS: bindings.r2({ name: "spacefn-app-uploads" }),
 		},
 	},
 });

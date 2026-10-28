@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { defineHandler } from "../src/handler";
 
@@ -34,4 +34,42 @@ test("turns undefined into 204", async () => {
 test("awaits async handlers", async () => {
 	const res = await call(async () => ({ n: 1 }));
 	expect(await res.json()).toEqual({ n: 1 });
+});
+
+import { SpaceError } from "../src/errors";
+import { onError } from "../src/handler";
+
+describe("onError", () => {
+	test("maps SpaceError with status", async () => {
+		const app = new Hono();
+		app.onError(onError);
+		app.get("/", () => {
+			throw new SpaceError("X", "boom", { status: 413 });
+		});
+		const res = await app.request("/");
+		expect(res.status).toBe(413);
+		expect(await res.json()).toEqual({ error: "X", message: "boom" });
+	});
+
+	test("generic 500 without leak", async () => {
+		const app = new Hono();
+		app.onError(onError);
+		app.get("/", () => {
+			throw new Error("secret internals");
+		});
+		const res = await app.request("/");
+		expect(res.status).toBe(500);
+		const json = (await res.json()) as { message: string };
+		expect(json.message).not.toContain("secret");
+	});
+
+	test("SpaceError without status is 500", async () => {
+		const app = new Hono();
+		app.onError(onError);
+		app.get("/", () => {
+			throw new SpaceError("X", "boom");
+		});
+		const res = await app.request("/");
+		expect(res.status).toBe(500);
+	});
 });

@@ -1,3 +1,4 @@
+import { SpaceError } from "../errors";
 import { baseName } from "../scan";
 import { queueBinding } from "./binding";
 
@@ -7,9 +8,9 @@ const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 export function producerName(file: string): string {
 	const name = baseName(file).replace(/[-_.]+([a-zA-Z0-9])/g, (_, c: string) => c.toUpperCase());
 	if (!IDENTIFIER.test(name)) {
-		throw new Error(
-			`queues/${file} cannot be turned into a producer name. Use letters, digits and dashes.`,
-		);
+		throw new SpaceError("QUEUE_BAD_NAME", `queues/${file} cannot be turned into a producer name`, {
+			hint: "Use letters, digits and dashes.",
+		});
 	}
 	return name;
 }

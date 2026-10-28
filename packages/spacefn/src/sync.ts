@@ -9,6 +9,7 @@ import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
 import { generateExportsSource, generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
+import { SpaceError } from "./errors";
 import { scanMiddleware } from "./middleware/scan";
 import { generatePagesSource } from "./pages/generate";
 import { scanPages } from "./pages/scan";
@@ -61,8 +62,10 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 			const schema = mod.default ?? mod;
 			envFields = Object.keys(schema ?? {}).map((name) => ({ name }));
 		} catch (error) {
-			throw new Error(
+			throw new SpaceError(
+				"ENV_LOAD",
 				`app/env.ts failed to load: ${error instanceof Error ? error.message : String(error)}`,
+				{ file: "app/env.ts", hint: "Fix the syntax error in app/env.ts." },
 			);
 		}
 	}
@@ -80,8 +83,10 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 			const env = config?.worker?.env ?? config?.env ?? {};
 			cloudflareBindings = env;
 		} catch (error) {
-			throw new Error(
+			throw new SpaceError(
+				"CONFIG_LOAD",
 				`cloudflare.config.ts failed to load: ${error instanceof Error ? error.message : String(error)}`,
+				{ file: "cloudflare.config.ts", hint: "Fix the syntax error in cloudflare.config.ts." },
 			);
 		}
 	}
@@ -92,8 +97,10 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		);
 		for (const page of pages) {
 			if (routePaths.has(page.path)) {
-				throw new Error(
-					`pages/${page.file} and a route both serve ${page.path}. Give one of them another path.`,
+				throw new SpaceError(
+					"ROUTE_CONFLICT",
+					`pages/${page.file} and a route both serve ${page.path}`,
+					{ hint: "Give one of them another path." },
 				);
 			}
 		}
@@ -152,8 +159,10 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 				const cfg = await import(configPath);
 				dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
 			} catch (error) {
-				throw new Error(
+				throw new SpaceError(
+					"DB_CONFIG_LOAD",
 					`app/db/${name}/config.ts failed to load: ${error instanceof Error ? error.message : String(error)}`,
+					{ file: `app/db/${name}/config.ts`, hint: "Fix the syntax error." },
 				);
 			}
 		}

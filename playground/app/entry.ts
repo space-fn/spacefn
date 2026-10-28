@@ -1,10 +1,11 @@
 import { createApp, registerRoutes, registerPages, mountApp } from "@space/worker";
+import { onError } from "spacefn/handler";
 
 import schema from "./env";
 
 const app = createApp({ env: schema });
 
-app.onError((err, c) => c.json({ error: "internal_error", message: "Something went wrong" }, 500));
+app.onError(onError);
 
 registerRoutes(app);
 registerPages(app);

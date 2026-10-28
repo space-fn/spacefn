@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 
+import { SpaceError } from "../errors";
 import type { Schema } from "./fields";
 import { parseEnv } from "./parse";
 
@@ -17,7 +18,12 @@ export function bindEnv(schema: Schema, raw: object): void {
 }
 
 function values(): Record<string, unknown> {
-	if (!current) throw new Error("env is not ready: it can only be read while handling a request");
+	if (!current)
+		throw new SpaceError(
+			"ENV_NOT_READY",
+			"env is not ready: it can only be read while handling a request",
+			{ hint: "Read env inside a request handler." },
+		);
 	return current;
 }
 
