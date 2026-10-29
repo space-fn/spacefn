@@ -105,7 +105,7 @@ await migrate(d1Executor(c.env.DB), "down", 1); // roll back one step
 One query per file. The first line names the function and its mode:
 
 ```sql
--- db/queries/find-todo.sql
+-- app/db/main_db/queries/find-todo.sql
 -- name: findTodo :one
 -- @param id number
 SELECT id, title, done FROM todos WHERE id = :id;
@@ -178,7 +178,7 @@ Parameters used only inside conditional fragments become optional (`?`), and par
 
 ## How types are found
 
-Each query runs against an in-memory SQLite that has every migration applied. That gives the database's own answer:
+Each query runs against an in-memory database for the configured dialect, with every migration applied. SQLite uses `node:sqlite`; PostgreSQL uses PGlite. This gives the database's own answer:
 
 | Column kind                         | Type source                 | Nullable when                                            |
 | ----------------------------------- | --------------------------- | -------------------------------------------------------- |
@@ -248,7 +248,10 @@ export default defineDatabase({ dialect: "sqlite" }); // or "postgres"
 - `sqlite` (default) — inferred against an in-memory SQLite.
 - `postgres` — inferred against PGlite. Type inference differs (for example `SERIAL`); `@column` annotations still apply.
 
-### Drivers and executors
+The PostgreSQL validation engine is an optional dependency. Install
+`@electric-sql/pglite` in the app when using `dialect: "postgres"`.
+
+### Runtime adapters
 
 | Backend               | Executor                                   | Use when                                |
 | --------------------- | ------------------------------------------ | --------------------------------------- |
@@ -278,7 +281,13 @@ const pg: DbReader & MigrationExecutor = {
 };
 ```
 
-The `driver` field in `config.ts` (`"d1"` or `"libsql"`) only affects how `space gen` validates migrations; the executor you pass at run time is independent.
+`dialect` selects the scratch database used to validate query SQL. The optional
+`driver` field is accepted by `defineDatabase` but currently does not select or
+configure a runtime adapter. The built-in runtime executors are D1, Durable
+Object SQLite, and libSQL; there is no built-in PostgreSQL executor. Generated
+query functions use `?` placeholders, so a PostgreSQL `DbReader` must translate
+them to the driver's placeholder syntax. Test your custom adapter against your
+actual database before relying on generated query validation.
 
 ### Multi-database
 
@@ -290,7 +299,7 @@ Each subdirectory of `app/db/` becomes its own module: `@space/db/<name>`. A pro
 - A CTE or subquery column that SQLite cannot trace to a table needs `@column`.
 - Parameter types are not inferred from comparisons. Annotate them when they matter.
 - One query per file.
-- The library does not run migrations for you. Call the generated `migrated` yourself, for example before queries that need the schema, Two isolates that start together can race on D1, so a deploy step is safer. There is no `space migrate` command: `process.env` in Node is not a D1 binding, so the Worker is where migrations run.
+- Migrations are not applied automatically. Call the generated `migrated(db)` for D1, or `migrate(executor)` with the matching executor. Two isolates that start together can race to apply D1 migrations, so applying them in a controlled deploy step is safer. The CLI has `space db doctor` for validation, but no `space migrate` command.
 
 ## Tracing
 

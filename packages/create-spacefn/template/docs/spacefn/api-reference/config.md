@@ -64,3 +64,32 @@ export default defineConfig({
 - `cloudflare` — passed through to the Cloudflare Vite plugin.
 
 See [client](../directory-structure/client.md) for bundling details.
+
+## `envBindings(schema)`
+
+Import this helper from `spacefn/cloudflare` only when building a custom
+Cloudflare config integration. The normal `space()` plugin derives these
+bindings automatically from `app/env.ts`:
+
+```ts
+import { bindings, defineConfig } from "cf/config";
+import { envBindings } from "spacefn/cloudflare";
+
+import schema from "./app/env";
+
+export default defineConfig({
+	worker: {
+		entrypoint: "./app/entry.ts",
+		name: "my-app",
+		compatibilityDate: "2026-10-19",
+		env: {
+			...envBindings(schema),
+			DB: bindings.d1({ name: "my-app-db" }),
+		},
+	},
+});
+```
+
+Fields with a default become text bindings; fields without a default and secret
+fields become secret bindings. See [Environment](../directory-structure/env.md)
+for the schema and local secrets.

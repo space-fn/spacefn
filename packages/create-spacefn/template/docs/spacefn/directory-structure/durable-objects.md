@@ -75,7 +75,7 @@ import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler(async (c) => {
 	const tenant = currentTenant(c);
-	return c.env.TENANT.getByName(tenant.internalId).listTodos({});
+	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos({});
 });
 ```
 
@@ -118,7 +118,7 @@ import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(async (c) => {
 	const id = c.req.param("id");
-	const ns = c.env.ROOM;
+	const ns = c.env.DO_ROOM;
 	const stub = ns.getByName(id);
 	return stub.fetch(c.req.raw);
 });

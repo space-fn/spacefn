@@ -44,7 +44,7 @@ css`
 Opt-in minifier: collapses whitespace between tags and trims. Preserves content inside `<pre>`, `<code>`, `<textarea>`, `<script>` and `<style>`.
 
 ```ts
-import { minifyHtml } from "spacefn/pages";
+import { html, minifyHtml } from "spacefn/pages";
 minifyHtml(
 	html`<div>
 		<p>hello</p>

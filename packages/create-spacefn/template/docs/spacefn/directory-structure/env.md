@@ -56,7 +56,7 @@ Local values go in `.dev.vars`. For deploys, pass `--secrets-file`:
 cf deploy --secrets-file .dev.vars
 ```
 
-Bindings you write in `cloudflare.config.ts` win over derived ones. Do not import `env.ts` from that file. See [cloudflare-v2.md](cloudflare-v2.md).
+Bindings you write in `cloudflare.config.ts` win over derived ones. Do not import `env.ts` from that file. See [Cloudflare setup](../guides/cloudflare-v2.md).
 
 Editing `env.ts` restarts the dev server.
 

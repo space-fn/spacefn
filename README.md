@@ -4,11 +4,10 @@ SpaceFn is one TypeScript package for building full-stack apps on Cloudflare Wor
 
 ## Packages
 
-| Package          | Purpose                                                                    |
-| ---------------- | -------------------------------------------------------------------------- |
-| `spacefn`        | The framework: routes, pages, middleware, env, tracing, SQL, tenancy, auth |
-| `space`          | CLI: `dev`, `build`, `gen`, `deploy`, `migrate`                            |
-| `create-spacefn` | Scaffold a project                                                         |
+| Package          | Purpose                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| `spacefn`        | Framework and `space` CLI (`dev`, `build`, `gen`, `deploy`, `db doctor`, `clean`, `doctor`) |
+| `create-spacefn` | Scaffold a project                                                                          |
 
 ## Quick start
 
@@ -32,35 +31,35 @@ pnpm dev
 A project is a folder of convention files. `spacefn` scans them and generates `.space/`.
 
 ```txt
-routes/            HTTP endpoints
-pages/             server-rendered pages with loaders and actions
-middleware/        numbered middleware
-queues/            queue consumers
-crons/             scheduled jobs
-env.ts             environment schema
-db/migrations/     SQL migrations
-db/queries/        named, typed SQL queries
-tenant/            one Durable Object per tenant
+app/routes/                 HTTP endpoints
+app/pages/                  server-rendered pages with loaders and actions
+app/middleware/             numbered middleware
+app/queues/                 queue consumers
+app/crons/                  scheduled jobs
+app/env.ts                  environment schema
+app/db/<name>/migrations/   SQL migrations
+app/db/<name>/queries/      named, typed SQL queries
+app/durable-objects/        Durable Object classes
+app/workflows/              Workflow classes
 ```
 
 ## Docs
 
-- [Getting started](docs/cloudflare-v2.md)
-- [Conventions](docs/conventions.md)
-- [Environment](docs/env.md)
-- [Tracing](docs/tracing.md)
-- [Database](docs/database.md)
-- [Tenancy](docs/tenancy.md)
-- [Auth](docs/auth.md)
-- [Pages](docs/pages.md)
-- [CLI](docs/cli.md)
+- [Getting started](docs/getting-started/index.md)
+- [Conventions](docs/concepts/conventions.md)
+- [Environment](docs/directory-structure/env.md)
+- [Tracing](docs/guides/tracing.md)
+- [Database](docs/directory-structure/database.md)
+- [Tenancy](docs/guides/tenancy.md)
+- [Auth](docs/guides/auth.md)
+- [Pages](docs/api-reference/pages.md)
+- [CLI](docs/api-reference/cli.md)
 
 ## Local development
 
 ```sh
 pnpm install
-pnpm fmt:check
-pnpm lint
-cd packages/spacefn && pnpm test
+vp check
+vp test run
 cd playground && pnpm dev
 ```

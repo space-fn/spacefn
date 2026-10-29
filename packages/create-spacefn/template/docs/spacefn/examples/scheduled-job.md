@@ -1,5 +1,3 @@
-<!-- source: playground/app/crons/nightly.ts -->
-
 # Scheduled job
 
 ```ts

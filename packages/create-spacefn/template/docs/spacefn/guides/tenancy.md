@@ -1,12 +1,16 @@
 # Tenancy
 
-One app serves many tenants. Each tenant's data lives in its own Durable Object with SQLite storage. A shared D1 database holds the registry: which tenants exist and whether they may be served.
+One app serves many tenants. Tenant-owned application data can live in a
+Durable Object with SQLite storage. A shared D1 database holds the registry:
+which tenants exist and whether they may be served. The tenant registry itself
+is shared data; tenant-owned rows belong in the tenant's storage.
 
 ```txt
 request → resolve tenant (registry in D1) → its Tenant Durable Object → its own SQLite
 ```
 
-Tenant rows never enter the shared database. A query written against one tenant's storage cannot reach another tenant's rows.
+Tenant-owned rows never enter the shared database. A query written against one
+tenant's storage cannot reach another tenant's rows.
 
 ## Layout
 
@@ -16,7 +20,7 @@ app/db/main_db/         registry (shared D1)
   queries/find-tenant.sql, add-tenant.sql
 app/durable-objects/    one Durable Object per tenant (or any other DO)
   tenant.ts
-app/middleware/02-tenant.ts resolves the tenant for /t/ routes
+app/entry.ts scopes tenant resolution to /t/*
 app/routes/t/todos.ts   tenant-scoped handlers
 ```
 
@@ -27,8 +31,9 @@ Tenant data lives in a Durable Object, not in a special folder. The library give
 A tenant is named by the `X-Tenant-Id` header, or by a subdomain when a base domain is set. The header wins.
 
 - Slugs are DNS labels: 1 to 63 letters, digits or dashes, not starting or ending with a dash. Case is ignored.
-- Reserved names are refused: `www`, `api`, `admin`, `app`, `auth`, `static`, `assets`, `cdn`, `mail`, `support`, `status`, `docs`.
+- `assertValidSlug()` refuses reserved names: `www`, `api`, `admin`, `app`, `apps`, `auth`, `static`, `assets`, `cdn`, `mail`, `support`, `status`, `docs`.
 - A subdomain names a tenant only when it is exactly one label above the base domain. `www.yourapp.com` and `eu.acme.yourapp.com` name no tenant.
+- Use `assertValidSlug()` when creating or renaming a tenant. `tenantResolver()` normalizes the incoming header or subdomain and calls your `lookup`; it does not create tenants or enforce reserved-name policy for your registry.
 
 ## Responses
 
@@ -43,31 +48,50 @@ Deleted and purged tenants answer exactly like unknown ones, so the API does not
 ## Using it
 
 ```ts
-// app/middleware/02-tenant.ts
+import { findTenant } from "@space/db/main_db";
+// app/entry.ts excerpt: register this before registerRoutes(app)
+import { createApp, registerRoutes } from "@space/worker";
 import { tenantResolver } from "spacefn/tenancy";
 
-const resolve = tenantResolver<{ DB: object }>({
-	lookup: async (env, slug) => {
-		const row = await findTenant(env.DB, { slug });
-		return row && { slug: row.slug, internalId: row.internalId, status: row.status };
-	},
-});
+import schema from "./env";
+
+const app = createApp({ env: schema });
+app.use(
+	"/t/*",
+	tenantResolver<{ DB: D1Database }>({
+		baseDomain: "yourapp.com",
+		lookup: async (env, slug) => {
+			const row = await findTenant(env.DB, { slug });
+			if (!row) return undefined;
+			return (
+				row && {
+					slug: row.slug,
+					internalId: row.internalId,
+					status: row.status as "active" | "suspended" | "deleted" | "purged",
+				}
+			);
+		},
+	}),
+);
+registerRoutes(app);
 ```
 
 ```ts
 // app/routes/t/todos.ts
-import { defineHandler } from "spacefn/pages";
+import { defineHandler } from "spacefn/handler";
 import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler((c) => {
 	const tenant = currentTenant(c);
-	return c.env.TENANTS.getByName(tenant.internalId).listTodos({});
+	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos({});
 });
 ```
 
 - The `lookup` function is yours. The library only needs the record it returns.
 - Use the tenant's internal id for the Durable Object name, never the slug. The slug can change; the internal id must not.
 - `currentTenant` throws when no resolver ran first, so a route cannot silently run without a tenant.
+- A middleware file is global to the app. Scope `tenantResolver` to the tenant route prefix, as above, or it will reject requests to non-tenant routes too.
+- Tenant selection is not authorization. Authenticate the user and check that they may access the resolved tenant before returning tenant data.
 
 ## Tracing
 

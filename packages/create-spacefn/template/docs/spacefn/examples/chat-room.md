@@ -1,5 +1,3 @@
-<!-- source: playground/app/durable-objects/chat-room.ts -->
-
 # WebSocket chat room
 
 A Durable Object room using hibernation.
@@ -27,14 +25,15 @@ export class ChatRoom extends DurableObject {
 
 Route upgrade (illustration):
 
-```txt
+```ts
+import { defineHandler } from "spacefn/handler";
 import { requireWebSocket } from "spacefn/ws";
 
-export const GET = (c) => {
+export const GET = defineHandler((c) => {
 	requireWebSocket(c.req.raw, ["https://example.com"]);
 	const id = c.env.DO_CHAT_ROOM.idFromName("lobby");
 	return c.env.DO_CHAT_ROOM.get(id).fetch(c.req.raw);
-};
+});
 ```
 
 See [durable objects](../directory-structure/durable-objects.md).
