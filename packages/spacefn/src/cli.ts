@@ -46,6 +46,14 @@ program
 	});
 
 program
+	.command("upgrade")
+	.description("Update spacefn dependencies and docs")
+	.action(async () => {
+		const { upgradeProject } = await import("./upgrade");
+		await upgradeProject(resolve(process.cwd()));
+	});
+
+program
 	.command("deploy")
 	.description("Build and deploy to Cloudflare")
 	.action(async () => {

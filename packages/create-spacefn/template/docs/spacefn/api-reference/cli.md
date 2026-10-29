@@ -18,6 +18,7 @@ without them a built-in minimal renderer is used.
 space dev              # vite dev
 space build            # vite build
 space gen              # regenerate .space/ without starting Vite
+space upgrade          # update framework dependencies and docs
 space deploy           # vite build && cf deploy
 space db doctor        # check migrations and SQL queries
 space doctor           # check project layout and generated files
@@ -26,6 +27,7 @@ space clean            # remove .space/ and .cloudflare/
 
 - `space dev` and `space build` run Vite, which runs the `space()` plugin. The plugin scans folders, writes `.space/`, and starts the Cloudflare Vite plugin.
 - `space gen` is useful in CI, where you want the generated files without a dev server.
+- `space upgrade` updates installed framework dependency ranges from the latest `create-spacefn` template, refreshes the lockfile with the detected package manager, and replaces `docs/spacefn/`. Other dependencies and docs are left unchanged.
 - `space deploy` builds and deploys through `cf`, the Cloudflare CLI that ships with `spacefn` as a dependency. Apps do not install it; it needs an authenticated Cloudflare session.
 - `space db doctor --db main_db` checks one database; `--json` prints machine-readable results. With no `--db`, it checks every folder under `app/db/`.
 - `space doctor` checks the app layout, generated `.space/`, the `@space/*` TypeScript alias, and local secret-file setup.

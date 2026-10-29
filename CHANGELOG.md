@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+### Added
+
+- `space upgrade` updates framework dependency ranges and refreshes `docs/spacefn/` from the latest scaffold template.
+
 ## 0.5.0
 
 ### Added
