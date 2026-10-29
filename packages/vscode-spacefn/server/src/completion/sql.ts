@@ -13,12 +13,13 @@ export async function sqlCompletions(
 	const isSqlFile = ctx.filePath.endsWith(".sql");
 	if (!isSqlFile && !inSqlString(ctx.text, ctx.offset)) return null;
 	const resolved = resolveDbDir(ctx.filePath);
-	if (!resolved) return null;
-	let schema;
-	try {
-		schema = await deps.getSchema(resolved.dbDir, resolved.targetDb);
-	} catch {
-		return null;
+	let schema = { tables: [] as string[], columns: new Map() };
+	if (resolved) {
+		try {
+			schema = await deps.getSchema(resolved.dbDir, resolved.targetDb);
+		} catch {
+			// SQL keywords and functions remain useful without a project schema.
+		}
 	}
 	const before = ctx.text.slice(0, ctx.offset);
 	const items: CompletionItem[] = [];

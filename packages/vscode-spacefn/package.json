@@ -11,7 +11,7 @@
 	"scripts": {
 		"compile": "tsc -p . && npm run bundle",
 		"package": "vsce package",
-		"bundle": "esbuild server/src/server.ts --bundle --platform=node --outfile=server-out/server.js --external:vscode --external:vscode-languageserver --external:vscode-languageserver-textdocument --external:vscode-html-languageservice",
+		"bundle": "esbuild server/src/server.ts --bundle --platform=node --outfile=server-out/server.js --external:vscode --external:vscode-languageserver --external:vscode-languageserver-textdocument --external:vscode-html-languageservice --external:vscode-css-languageservice",
 		"test": "vite-plus test"
 	},
 	"dependencies": {
@@ -67,7 +67,6 @@
 				"path": "./src/grammars/css.injection.tmLanguage.json"
 			},
 			{
-				"language": "sql",
 				"scopeName": "source.sql.spacefn.directives.injection",
 				"path": "./src/grammars/sql-directives.injection.tmLanguage.json",
 				"injectTo": [

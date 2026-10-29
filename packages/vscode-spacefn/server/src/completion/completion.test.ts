@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 
+import { sqlCompletions } from "./sql";
 import { sqlDirectiveCompletions } from "./sqlDirectives";
 import type { CompletionDeps, SchemaInfo } from "./types";
 
@@ -35,6 +36,28 @@ describe("sqlDirectiveCompletions", () => {
 			findSqlTemplate,
 		);
 		expect(items).toBeNull();
+	});
+});
+
+describe("sqlCompletions", () => {
+	test("offers SQL keywords outside a project database", async () => {
+		const deps = {
+			htmlLS: {} as CompletionDeps["htmlLS"],
+			cssLS: {} as CompletionDeps["cssLS"],
+			customProps: new Map(),
+			getSchema: async () => {
+				throw new Error("schema should not be requested");
+			},
+			htmlService: {} as CompletionDeps["htmlService"],
+		} satisfies CompletionDeps;
+		const text = "SEL";
+		const items = await sqlCompletions(
+			deps,
+			{ filePath: "/tmp/query.sql", text, offset: text.length },
+			() => null,
+		);
+
+		expect(items?.some((item) => item.label === "SELECT")).toBe(true);
 	});
 });
 
