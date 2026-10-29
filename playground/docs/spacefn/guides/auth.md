@@ -93,11 +93,31 @@ await db.addSession({ tokenHash: session.tokenHash, userId, expiresAt, lastSeenA
 c.header("Set-Cookie", sessionCookie(session.token));
 ```
 
+For a normal session flow, put the resolver before routes and require a user on
+protected routes:
+
+```ts
+import { requireSession, sessionResolver } from "spacefn/auth";
+
+app.use(
+	sessionResolver({
+		lookup: (env, tokenHash) => findSessionAndUser(env.DB, tokenHash),
+		touch: (env, tokenHash, lastSeenAt) => touchSession(env.DB, tokenHash, lastSeenAt),
+	}),
+);
+
+app.get("/account", requireSession(), (c) => c.json({ user: c.get("user") }));
+```
+
+`findSessionAndUser` and `touchSession` are app-owned database functions. The
+middleware hashes the cookie token before calling `lookup`; persist only
+`tokenHash`, never the browser token.
+
 - The browser gets a random 256-bit token in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. The database stores only its SHA-256 hash, so a leaked table cannot be replayed.
-- A session ends at its absolute expiry (30 days by default) or after 7 days idle. `isSessionActive` checks both.
+- A session ends at the `expiresAt` value you store or after 7 days idle by default. `isSessionActive` checks both; set `expiresAt` when creating the row, commonly 30 days after sign-in.
 - `sessionResolver({ lookup })` reads the cookie and sets `c.get("user")`. An unknown or expired session leaves the user unset and does not refuse the request.
 - `requireSession()` refuses requests without a user, with 401.
-- `clearSessionCookie()` for sign-out. Also delete the session row.
+- `clearSessionCookie()` for sign-out. Also delete the session row. The helper always sets `Secure`; local plain-HTTP development needs a matching cookie-clearing header without `Secure`.
 - The idle clock slides through `touch`: when `lastSeenAt` is over an hour old, `sessionResolver({ lookup, touch })` calls `touch` to write a fresh one. That is one write per hour at most, not one per request. Without `touch`, the idle clock runs from the last write, which is usually the sign-in.
 
 ## Cross-site request guard
@@ -107,6 +127,10 @@ import { csrfGuard } from "spacefn/auth";
 
 app.use(csrfGuard({ cookie: "session", origins: ["https://app.example.com"] }));
 ```
+
+Register it before state-changing routes. This is an origin check, not an
+authorization check; protected handlers still need `requireSession()` and
+resource-level permission checks.
 
 - For `POST`, `PUT`, `PATCH` and `DELETE`, the `Origin` header must be this app's own origin or one you list - with or without a session cookie. Checking cookie-less requests too is what stops a forged login.
 - Without an `Origin`, `Sec-Fetch-Site` must be `same-origin` or `none`.

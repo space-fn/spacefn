@@ -15,8 +15,9 @@ modules/
 Keep `app/` for Cloudflare-facing code (routes, queues, crons, durable objects, workflows, db) and `modules/` for domain logic. This keeps the convention folder small and the business logic testable on its own.
 
 ```ts
-// app/routes/todos.ts
 import { listTodos } from "@modules/todos";
+// app/routes/todos.ts
+import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(() => listTodos());
 ```

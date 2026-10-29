@@ -9,14 +9,22 @@ npm create spacefn my-app
 cd my-app
 ```
 
-This copies the template and installs dependencies. The template declares its own
-`hono`, `cf` and `@cloudflare/vite-plugin` versions — they are yours to upgrade
-directly for security patches without waiting for a `spacefn` release.
+This copies the template into `my-app`; it does not install dependencies. Install
+the packages, then start the app:
+
+```sh
+cd my-app
+pnpm install
+```
+
+The template declares its own `hono`, `cf` and `@cloudflare/vite-plugin`
+versions. You can upgrade them directly for security patches without waiting
+for a `spacefn` release.
 
 ## 2. Run it
 
 ```sh
-npm run dev
+pnpm dev
 ```
 
 Open the URL it prints. You now have a working app on `workerd`.

@@ -12,7 +12,9 @@ spacefn projects use path aliases so you never write `../../` chains. They are w
 | `@utils/*`   | `utils/*`                   | `import { slugify } from "@utils/slugify"`   |
 | `@lib/*`     | `lib/*`                     | `import { http } from "@lib/http"`           |
 
-`@space/*` is the one you use most: every generated helper (`@space`, `@space/client`, `@space/queues`, `@space/db/<name>`) comes through it.
+`@space/*` is the one you use most. Generated modules have concrete paths such
+as `@space/worker`, `@space/client`, `@space/queues`, and `@space/db/<name>`;
+there is no generated `@space` root module.
 
 ## How they are wired
 
@@ -102,5 +104,5 @@ The root `tsconfig.json` also controls which files are type-checked:
 ## Notes
 
 - `@space/*` depends on `.space/` existing. Run `space gen` (or start dev) before type-checking a fresh clone.
-- `space check` verifies that `tsconfig.json` declares `@space/*`. If it is missing, type checking fails with "Cannot find module '@space/...'".
+- `space doctor` checks that `tsconfig.json` declares the `@space/*` path alias. If it is missing, imports such as `@space/worker` cannot be resolved by TypeScript.
 - Relative imports still work. Aliases are a convenience, not a requirement.

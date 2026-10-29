@@ -2,10 +2,6 @@
 
 spacefn is a full-stack framework for Cloudflare Workers. You write files in folders; the framework finds them by name and wires them together. No registry, no config files listing your routes.
 
-## What is spacefn?
-
-spacefn is a full-stack framework for Cloudflare Workers. You write files in folders; the framework finds them by name and wires them together. No registry, no config files listing your routes.
-
 spacefn is not a new runtime or a new language. It is an opinionated convention layer on top of tools you already know:
 
 - **vite-plus (`vp`)** serves and bundles the app in dev and production, and also provides the formatter, linter, test runner (vitest), scripts and package management. Day to day you run `vp check`, `vp test run`, `vp dev`, `vp build`.
@@ -20,6 +16,19 @@ spacefn builds on three ideas:
 - **Conventions over configuration.** A file in `app/routes/` becomes a route. A file in `app/queues/` becomes a queue. The name and location do the work.
 - **Generated code.** Spacefn reads your folders and writes `.space/` - typed helpers for routes, queries, clients, queues, and more. You import from `.space/`.
 - **Cloudflare-first.** Everything runs on `workerd`: D1, KV, R2, Durable Objects, Workflows, queues, crons. Deploy anywhere Cloudflare runs.
+
+## Feature guides
+
+| To learn about                                         | Start here                                                                                           |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Routes and request middleware                          | [Routes](./directory-structure/routes.md), [middleware](./directory-structure/middleware.md)         |
+| Server-rendered pages and safe HTML                    | [Pages](./directory-structure/pages.md), [HTML API](./api-reference/html.md)                         |
+| Browser JavaScript and CSS                             | [Client bundles](./directory-structure/client.md)                                                    |
+| Environment and Cloudflare bindings                    | [Environment](./directory-structure/env.md), [Cloudflare setup](./guides/cloudflare-v2.md)           |
+| SQL, migrations, and typed queries                     | [Database](./directory-structure/database.md)                                                        |
+| Queues, scheduled jobs, Durable Objects, and Workflows | [Directory structure](./directory-structure/index.md)                                                |
+| Authentication, tenancy, and tracing                   | [Auth](./guides/auth.md), [tenancy](./guides/tenancy.md), [tracing](./guides/tracing.md)             |
+| HTTP uploads, WebSockets, and tests                    | [HTTP](./api-reference/http.md), [WebSockets](./api-reference/ws.md), [testing](./guides/testing.md) |
 
 ## How it works (the short version)
 

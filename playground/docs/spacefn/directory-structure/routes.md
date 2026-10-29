@@ -1,6 +1,6 @@
 # Routes
 
-`app/routes/` holds HTTP endpoints. Each file becomes a route; each named export (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) becomes a method handler.
+`app/routes/` holds HTTP endpoints. Each file becomes a route; each named export (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, or `OPTIONS`) becomes a method handler.
 
 ## Layout
 
@@ -37,6 +37,7 @@ A returned `Response` passes through, a string becomes text, `undefined` becomes
 
 - Files starting with `_` are ignored.
 - A route and a page cannot serve the same path. The build stops if they do.
+- Route modules can export `OPTIONS` for preflight requests.
 
 ## Handlers
 

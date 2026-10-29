@@ -20,7 +20,8 @@ Entries are built with Vite. Each top-level file in `app/client/` (not `_`-prefi
 Use the generated helpers in `.space/client.ts`:
 
 ```ts
-import { script, styles, clientUrl } from "@space/client";
+import { script, styles } from "@space/client";
+import { html } from "spacefn/html";
 
 // in a route handler returning HTML:
 c.html(
@@ -34,7 +35,7 @@ c.html(
 - `styles("site.css")` emits a `<link rel="stylesheet">` tag.
 - Entry names are typed as a `ClientEntry` union in `.space/client.ts`, so a typo is a TypeScript error.
 
-`app/client/` has its own `tsconfig.json` with the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
+`app/client/tsconfig.json` uses the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
 
 ## Example
 

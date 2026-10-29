@@ -1,54 +1,69 @@
-# Cloudflare v2 foundation
+# Cloudflare setup
 
-Spike notes for building spacefn on `@cloudflare/vite-plugin@2.0.0-beta.v.1` and `cf@1.0.0-beta.18`. Both are pinned to exact versions because the beta format can change.
+spacefn runs on Cloudflare Workers through the Cloudflare Vite plugin. The
+scaffold supplies the Vite config and Cloudflare plugin; you declare the Worker
+entrypoint and any app-owned bindings in `cloudflare.config.ts`.
 
-## Setup
+## Worker config
 
-| Piece         | Choice                                                                                  |
-| ------------- | --------------------------------------------------------------------------------------- |
-| Vite plugin   | `space()` from `spacefn/vite` returns the folder sync plugin plus the Cloudflare plugin |
-| Worker config | Root `cloudflare.config.ts` using `defineConfig()` from `cf/config`                     |
-| Builders      | `bindings`, `exports`, `triggers` are re-exported from `spacefn/cloudflare`             |
-| `cf` CLI      | Comes with `spacefn` as a dependency. Apps do not install it.                           |
-| Wrangler      | Not used                                                                                |
+The root `cloudflare.config.ts` must point at `app/entry.ts`:
 
-## Verified locally
+```ts
+import { defineConfig } from "cf/config";
 
-All run under `vite dev` with local state in `.cloudflare/state/`.
+export default defineConfig({
+	worker: {
+		entrypoint: "./app/entry.ts",
+		name: "my-app",
+		compatibilityDate: "2026-10-19",
+	},
+});
+```
 
-| Runtime                      | Result                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------- |
-| Fetch routes                 | Works                                                                                       |
-| SQLite Durable Object        | Works, state survives a dev restart                                                         |
-| Queue producer and consumer  | Works, message delivered to `queue()`                                                       |
-| Cron                         | Works, fires through the local explorer API (`/cdn-cgi/local/explorer/api/local/scheduled`) |
-| Workflow                     | Works, two steps complete                                                                   |
-| `vite build`                 | Writes `.cloudflare/output/v0/`                                                             |
-| `cf deploy --dry-run`        | Lists the Durable Object binding, needs no login                                            |
-| `cf-worker` import attribute | Loads at runtime                                                                            |
+Use the `cf/config` package for Cloudflare config helpers. For example, declare
+a D1 binding that your routes read as `c.env.DB`:
 
-## Things to know
+```ts
+import { bindings, defineConfig } from "cf/config";
 
-- `tsconfig.json` must include `.cloudflare/types` explicitly. TypeScript skips dot folders.
-- The `cf-worker` import attribute needs `allowImportingTsExtensions` to typecheck. Not used yet.
-- Durable Object lifecycle is declared in config, with no migration tags. Classes are `created`, `renamed`, `deleted` or `expectingTransfer`. Deleting a class means leaving a `deleted` entry behind, so folder inference alone cannot remove a class safely.
-- `cf deploy` provisions resources whose ids are omitted, but does not write ids back.
-- pnpm adds `minimumReleaseAgeExclude` entries for fresh beta packages in `pnpm-workspace.yaml`.
-- The dev server prints a local explorer API with a `spans` and `logs` SQL endpoint. Worth using for local tracing later.
+export default defineConfig({
+	worker: {
+		entrypoint: "./app/entry.ts",
+		name: "my-app",
+		compatibilityDate: "2026-10-19",
+		env: {
+			DB: bindings.d1({ name: "my-app-db" }),
+		},
+	},
+});
+```
 
-## Effect on the plan
+The template's `space()` plugin reads `worker.name` and adds convention-backed
+queues, scheduled triggers, Durable Objects, and Workflows. Do not duplicate
+those generated entries. Your explicit `worker.env` entries take precedence
+when a binding name overlaps. See [directory conventions](../directory-structure/)
+for the file and class naming rules.
 
-- No generated `wrangler.jsonc`. Config is `cloudflare.config.ts`.
+Environment fields from `app/env.ts` are also converted into Cloudflare
+bindings. Do not import `app/env.ts` from `cloudflare.config.ts`; the plugin
+loads it separately. Values that are not declared as bindings are not visible
+to the Worker. See [Environment](../directory-structure/env.md) for local and
+production secrets.
 
-- Convention folders (`app/durable-objects/`, `app/workflows/`, `app/queues/`, `app/crons/`) are scanned by the `space()` Vite plugin, and their bindings/exports/triggers are injected into the Worker config at Vite config-resolution time — both `vp dev` and `vp build`. The deployed Worker (`.cloudflare/output/v0/workers/default/worker.config.json`) carries the same entries as local dev.
-- Queues, crons, Durable Objects and Workflows map from folders to config entries. The generated worker entry must export the classes.
-- Removed Durable Object classes need a user-declared `deleted` entry.
-- `space dev` and `space build` wrap Vite. `space deploy` wraps `cf deploy`.
+## Development and deploy
 
-## Constraints found while building env
+```sh
+pnpm dev              # local Worker via Vite
+pnpm build            # production build
+pnpm exec space deploy # build, then run cf deploy
+```
 
-- **Config imports are unreadable to the Worker.** The plugin adds every file `cloudflare.config.ts` imports to Vite's `server.fs.deny`. If the Worker imports the same file, dev fails with `Failed to load url ... Does the file exist?`. So `env.ts` must not be imported by the config. The `space()` plugin loads it instead and passes bindings through the plugin's `config` option.
-- **Only declared bindings reach the Worker.** A value in `.dev.vars` that the config does not declare is invisible.
-- **`.dev.vars` does not override a declared text var locally.** Use a secret binding for values that differ per environment. At deploy time `--secrets-file` does override.
-- **A declared secret that is missing** prints a warning at startup and does not stop the server. Optional secrets trigger the same warning.
-- **Type includes.** Use `.space/**/*` in `tsconfig.json`. The plain `.space` entry matches nothing, because TypeScript skips dot folders.
+The scaffold pins compatible `cf` and `@cloudflare/vite-plugin` versions. You
+can update those app dependencies directly when taking Cloudflare toolchain
+updates. `space deploy` uses the `cf` CLI included with `spacefn`; sign in with
+Cloudflare before deploying. spacefn uses `cloudflare.config.ts`, not a
+generated `wrangler.jsonc`.
+
+For `tsconfig.json`, include `.space/**/*` so TypeScript sees the generated
+types. See [import aliases](../concepts/import-aliases.md) for the full
+template config.

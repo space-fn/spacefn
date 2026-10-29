@@ -1,5 +1,3 @@
-<!-- source: playground/app/routes/upload.ts -->
-
 # File upload to R2
 
 ```ts
@@ -23,4 +21,4 @@ export const POST = defineHandler(async (c) => {
 });
 ```
 
-See [pages](../directory-structure/pages.md).
+See [HTTP helpers](../api-reference/http.md) for parsing and upload options.
