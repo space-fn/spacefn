@@ -83,3 +83,14 @@ test("a broken cloudflare.config.ts fails the sync instead of hiding it", async 
 	await writeFile(join(root, "cloudflare.config.ts"), "export default { X: ((( ");
 	await expect(sync(root, "dev")).rejects.toThrow(/cloudflare\.config\.ts failed to load/);
 });
+
+test("generates the SendEmail type for email bindings", async () => {
+	await writeFile(
+		join(root, "cloudflare.config.ts"),
+		'export default { env: { EMAIL: { type: "send-email", allowedSenderAddresses: ["noreply@example.com"] } } };',
+	);
+	await sync(root, "dev");
+	const bindings = await readFile(join(root, ".space", "bindings.d.ts"), "utf8");
+	expect(bindings).toContain("EMAIL: SendEmail;");
+	expect(bindings).toContain("Workflow, SendEmail }");
+});

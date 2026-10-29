@@ -32,6 +32,9 @@ export default defineConfig({
 		compatibilityDate: "2026-10-19",
 		env: {
 			DB: bindings.d1({ name: "my-app-db" }),
+			EMAIL: bindings.sendEmail({
+				allowedSenderAddresses: ["noreply@example.com"],
+			}),
 		},
 		exports: {
 			Counter: exports.durableObject({ storage: "sqlite" }),
@@ -41,6 +44,7 @@ export default defineConfig({
 ```
 
 - `bindings` — `bindings.text`, `bindings.secret`, `bindings.durableObject`, `bindings.queue`, `bindings.kv`, and more.
+- `bindings.sendEmail(...)` creates an email sending binding. SpaceFn types it as `SendEmail` in `.space/bindings.d.ts`, so it is available as `c.env.EMAIL.send(...)`.
 - `exports` — `exports.durableObject({ storage: "sqlite" })`, `exports.workflow({ name })`.
 - `triggers` — `triggers.fetch`, `triggers.queue`, `triggers.scheduled`, `triggers.email`, `triggers.connect`.
 

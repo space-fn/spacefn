@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2
+
+### Fixed
+
+- Generated bindings now type `send-email` bindings as `SendEmail`.
+
 ## 0.7.1
 
 ### Changed
