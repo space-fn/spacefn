@@ -75,7 +75,7 @@ import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler(async (c) => {
 	const tenant = currentTenant(c);
-	return c.env.TENANT.getByName(tenant.internalId).listTodos({});
+	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos({});
 });
 ```
 
@@ -118,7 +118,7 @@ import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(async (c) => {
 	const id = c.req.param("id");
-	const ns = c.env.ROOM;
+	const ns = c.env.DO_ROOM;
 	const stub = ns.getByName(id);
 	return stub.fetch(c.req.raw);
 });
@@ -126,28 +126,25 @@ export const GET = defineHandler(async (c) => {
 
 ## Server-Sent Events
 
-Same idea: the Durable Object owns the connection and pushes events. spacefn only provides the typed binding.
+Same idea: the Durable Object owns the connection and pushes events. The
+`spacefn/sse` helper handles SSE framing, fan-out, and disconnected or slow
+subscribers; spacefn also provides the typed binding.
 
 ```ts
 // app/durable-objects/feed.ts
 import { DurableObject } from "cloudflare:workers";
+import { createSSEHub } from "spacefn/sse";
 
 export class Feed extends DurableObject {
-	private clients = new Set<WritableStreamDefaultWriter<Uint8Array>>();
+	private events = createSSEHub();
 
-	async fetch() {
-		const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
-		const writer = writable.getWriter();
-		this.clients.add(writer);
-		writer.closed.finally(() => this.clients.delete(writer));
-		return new Response(readable, {
-			headers: { "content-type": "text/event-stream", "cache-control": "no-cache" },
-		});
+	async fetch(request: Request) {
+		if (new URL(request.url).pathname === "/events") return this.events.subscribe();
+		return new Response("Not found", { status: 404 });
 	}
 
-	broadcast(event: string, data: string) {
-		const chunk = new TextEncoder().encode(`event: ${event}\ndata: ${data}\n\n`);
-		for (const writer of this.clients) writer.write(chunk).catch(() => this.clients.delete(writer));
+	publish(data: string) {
+		this.events.publish({ event: "update", data });
 	}
 }
 ```

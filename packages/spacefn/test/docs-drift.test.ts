@@ -50,4 +50,16 @@ describe("docs examples drift", () => {
 			}
 		}
 	});
+
+	test("API index covers every package export", () => {
+		const pkg = JSON.parse(readFileSync(join(ROOT, "packages/spacefn/package.json"), "utf8")) as {
+			exports: Record<string, unknown>;
+		};
+		const apiIndex = readFileSync(join(docsRoot, "api-reference/index.md"), "utf8");
+		expect(apiIndex).toContain("`spacefn`");
+		for (const subpath of Object.keys(pkg.exports)) {
+			const importPath = `spacefn${subpath.slice(1)}`;
+			expect(apiIndex, `API index omits ${importPath}`).toContain(`\`${importPath}\``);
+		}
+	});
 });

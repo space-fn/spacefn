@@ -93,6 +93,10 @@
 		"./ws": {
 			"types": "./dist/ws.d.mts",
 			"import": "./dist/ws.mjs"
+		},
+		"./sse": {
+			"types": "./dist/sse.d.mts",
+			"import": "./dist/sse.mjs"
 		}
 	},
 	"scripts": {
