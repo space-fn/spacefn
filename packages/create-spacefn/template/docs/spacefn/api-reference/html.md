@@ -12,6 +12,10 @@ import { html } from "spacefn/pages";
 html`<p>${userComment}</p>`; // <script> is shown as text
 ```
 
+Returns an `Html` instance with the rendered markup in `.value` and a
+`toString()` method. Interpolated `Raw` and `Html` values are inserted as
+already-rendered markup; other values are escaped.
+
 ## `raw`
 
 Places markup unchanged. Use only for markup you built yourself.
@@ -20,6 +24,10 @@ Places markup unchanged. Use only for markup you built yourself.
 import { raw } from "spacefn/pages";
 raw("<b>bold</b>");
 ```
+
+Returns a `Raw` instance. `Html` and `Raw` are exported classes for identifying
+the respective return values; prefer the `html` and `raw` helpers when creating
+them.
 
 ## `escapeHtml`
 

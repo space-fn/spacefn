@@ -49,3 +49,22 @@ entrypoint.
 `mountPage(app, path, page, server?, options?)` registers one server-rendered
 page. The generator calls it for each discovered `*.page.ts`; see the [pages
 API](./pages.md).
+
+## Runtime exports
+
+| Export                                         | Signature or type                              | Purpose                                                              |
+| ---------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| `Hono`                                         | Re-export from `hono`                          | Hono application class.                                              |
+| `mountRoute`                                   | `(app, path, module) => void`                  | Registers method handlers from a `RouteModule`.                      |
+| `envMiddleware`                                | `(schema: Schema) => MiddlewareHandler`        | Validates bindings and establishes request-local env values.         |
+| `runWithBindings`                              | `(env, fn) => T`                               | Runs custom async work with bindings in the framework context.       |
+| `dispatchQueue`                                | `(batch, env, ctx, handlers) => Promise<void>` | Dispatches one queue batch by its queue name.                        |
+| `dispatchScheduled`                            | `(event, env, ctx, jobs) => Promise<void>`     | Runs cron jobs whose schedule matches the event.                     |
+| `traceConfig`, `traceRequest`, `traceBindings` | Tracing helpers                                | Configure export, create request spans, and wrap supported bindings. |
+| `mountPage`                                    | `(app, path, page, server?, options?) => void` | Registers one page's GET renderer and optional POST actions.         |
+
+`RouteModule` is a partial map of `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, and
+`OPTIONS` to Hono handlers. `Schema` is the env schema type. The runtime also
+re-exports `CronJob`, `QueueBatch`, `QueueHandler`, and `QueueMessage` for
+custom Worker entrypoints. See the [queue](./queues.md) and [cron](./crons.md)
+references for their members.

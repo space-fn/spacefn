@@ -65,6 +65,16 @@ export default defineConfig({
 
 See [client](../directory-structure/client.md) for bundling details.
 
+`space(options?)` returns the plugin array for the normal app setup.
+`SpaceOptions.cloudflare` is passed to the Cloudflare Vite plugin (except its
+`config` callback, which SpaceFn owns); `SpaceOptions.client` is merged into
+the client bundle's Vite config.
+
+For advanced integrations, `spaceSync(state?, clientConfig?)` returns only the
+SpaceFn sync plugin. `SpaceState` holds the loaded env schema, queue files,
+cron schedules, Durable Object files, and workflow files used by the full
+plugin. Prefer `space()` unless composing the plugins yourself.
+
 ## `envBindings(schema)`
 
 Import this helper from `spacefn/cloudflare` only when building a custom

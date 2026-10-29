@@ -34,4 +34,11 @@ export class ChatRoom extends DurableObject {
 - `readMessage(raw, { maxSize, parse })`: returns `{ ok, value }` or `{ ok: false, code, reason }`. Code 1009 for oversize, 1008 when `parse` throws.
 - `requireWebSocket(request, origins?)`: throws `SpaceError` 426/403.
 
+`AcceptSocketOptions` contains an optional serializable `attachment` and
+`allowedOrigins`. `WebSocketAttachment` is a string-keyed object persisted on
+the accepted socket. `attachmentOf(ws)` returns that value or `null` if it is
+missing or cannot be deserialized. `ReadMessageOptions<T>` contains `maxSize`
+and an optional `parse(raw)` function; `ReadResult<T>` is either
+`{ ok: true, value }` or `{ ok: false, code, reason }`.
+
 Close codes: 1008 (policy violation, bad message), 1009 (message too big).

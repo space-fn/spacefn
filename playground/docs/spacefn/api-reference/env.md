@@ -25,6 +25,20 @@ export default defineEnv({
 
 Every builder except `secret()` takes `default`. All take `optional: true`, which makes the type `T | undefined`.
 
+`Field<V>` describes a schema field, `FieldOptions<T>` contains `default` and
+`optional`, `Schema` is a record of fields, and `InferEnv<S>` derives the
+parsed value types from a schema. `AppEnv` and `AppBindings` are augmented by
+generated declarations; `Register` is the module-augmentation interface.
+
+## Parse values directly
+
+`parseEnv(schema, raw)` validates a plain record and returns its typed values.
+It applies defaults, permits absent optional fields, converts number and
+boolean strings, and throws `EnvError` with an `issues` array if any field is
+invalid. `EnvError` messages do not reveal secret values. Normal requests use
+`envMiddleware(schema)` from `spacefn/runtime`, which parses and binds the
+request environment before handlers run.
+
 ## Reading values
 
 ```ts

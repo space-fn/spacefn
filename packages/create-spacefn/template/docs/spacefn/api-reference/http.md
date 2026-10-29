@@ -35,9 +35,19 @@ Throws `SpaceError` with status 413 (too large), 415 (bad type), 400 (parse/read
 
 Note: Workers buffer the parsed form in memory. The cap prevents unbounded use; it is not a true stream.
 
+`ReadUploadsOptions` contains `maxFileSize`, `maxFiles`, `maxBodySize`, and
+`allowedTypes`. The result is `UploadResult`: string `fields` plus `files`,
+whose values are `UploadedFile` or arrays of uploaded files. An uploaded file
+exposes `name`, detected or declared `type`, `size`, `arrayBuffer()`, and
+`stream()`.
+
 ## `putUpload(bucket, file, options?)`
 
 Streams the file to R2 under a generated key. Returns the key. The client's filename is never used as the key.
 
 - `prefix` (default `"uploads"`).
 - `contentType` (default: detected type).
+
+The helper returns the generated object key. It accepts an R2-like bucket with
+`put(key, value, options?)`; `putUpload` streams the file body and sets the
+object's HTTP content type.
