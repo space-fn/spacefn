@@ -84,13 +84,15 @@ test("a broken cloudflare.config.ts fails the sync instead of hiding it", async 
 	await expect(sync(root, "dev")).rejects.toThrow(/cloudflare\.config\.ts failed to load/);
 });
 
-test("generates the SendEmail type for email bindings", async () => {
+test("infers Cloudflare binding types from cloudflare.config.ts", async () => {
 	await writeFile(
 		join(root, "cloudflare.config.ts"),
-		'export default { env: { EMAIL: { type: "send-email", allowedSenderAddresses: ["noreply@example.com"] } } };',
+		'export default { worker: { env: { EMAIL: { type: "send-email", allowedSenderAddresses: ["noreply@example.com"] }, ASSETS: { type: "assets" } } } } as const;',
 	);
 	await sync(root, "dev");
 	const bindings = await readFile(join(root, ".space", "bindings.d.ts"), "utf8");
-	expect(bindings).toContain("EMAIL: SendEmail;");
-	expect(bindings).toContain("Workflow, SendEmail }");
+	expect(bindings).toContain('import type { InferEnv, UnwrapConfig } from "cf/config";');
+	expect(bindings).toContain("InferEnv<__SpaceWorkerConfig>");
+	expect(bindings).toContain("interface CloudflareBindings extends __SpaceConfigBindings");
+	expect(bindings).not.toContain("EMAIL: string;");
 });

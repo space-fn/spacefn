@@ -70,7 +70,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	}
 
 	// Read cloudflare config. A missing config is fine; a broken one is not.
-	let cloudflareBindings: Record<string, { type?: string }> = {};
+	let cloudflareBindings: Record<string, unknown> = {};
 	const hasCloudflareConfig = await access(join(root, "cloudflare.config.ts")).then(
 		() => true,
 		() => false,
@@ -129,6 +129,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 			generateBindingsSource({
 				envFields,
 				cloudflareBindings,
+				hasCloudflareConfig,
 				durableObjectFiles: durableObjects,
 				workflowFiles: workflows,
 				queueFiles: queues,
