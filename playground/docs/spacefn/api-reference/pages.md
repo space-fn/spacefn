@@ -62,7 +62,7 @@ from both `spacefn/pages` and the package's `spacefn` entrypoint.
 
 ## `mountPage`
 
-Used by the generated `.space/pages.ts`. Not usually called by hand:
+Used by the generated `.space/routes.ts`. Not usually called by hand:
 
 ```ts
 mountPage(app, "/board", page, server);

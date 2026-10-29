@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+### Changed
+
+- Routes and pages are generated together in path-specificity order in `.space/routes.ts`.
+
 ## 0.6.0
 
 ### Added

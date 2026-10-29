@@ -18,7 +18,7 @@ function rank(segment: string): number {
 	return 0;
 }
 
-function compare(a: RouteFile, b: RouteFile): number {
+export function compareRoutePaths(a: { path: string }, b: { path: string }): number {
 	const left = a.path.split("/");
 	const right = b.path.split("/");
 	for (let i = 0; i < Math.max(left.length, right.length); i++) {
@@ -59,5 +59,5 @@ export async function scanRoutes(dir: string, mode: Mode): Promise<RouteFile[]> 
 		}
 		routes.set(parsed.path, { file, path: parsed.path });
 	}
-	return [...routes.values()].sort(compare);
+	return [...routes.values()].sort(compareRoutePaths);
 }

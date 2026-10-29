@@ -1,4 +1,4 @@
-import { access, readdir } from "node:fs/promises";
+import { access, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { generateBindingsSource } from "./bindings/generate";
@@ -11,7 +11,6 @@ import { generateExportsSource, generateWorkerSource } from "./entry";
 import { generateEnvTypesSource } from "./env/types";
 import { SpaceError } from "./errors";
 import { scanMiddleware } from "./middleware/scan";
-import { generatePagesSource } from "./pages/generate";
 import { scanPages } from "./pages/scan";
 import { generateQueuesSource } from "./queues/generate";
 import type { Mode } from "./routes/scan";
@@ -108,14 +107,13 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 
 	const databases = await scanDatabases(join(app, "db"));
 	const results: (boolean | undefined)[] = [
-		await syncRoutes(root, mode),
+		await syncRoutes(root, mode, pages),
 		await writeIfChanged(
 			join(root, ".space", "worker.ts"),
 			generateWorkerSource({
 				middleware,
 				queues,
 				crons,
-				pages: pages.length > 0,
 			}),
 		),
 		await writeIfChanged(
@@ -137,7 +135,6 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 			}),
 		),
 		await writeIfChanged(join(root, ".space", "queues.ts"), generateQueuesSource(queues)),
-		await writeIfChanged(join(root, ".space", "pages.ts"), generatePagesSource(pages)),
 		await writeIfChanged(join(root, ".space", "client.ts"), generateClientSource(clientFiles)),
 		await writeIfChanged(
 			join(root, ".space", "client-manifest.ts"),
@@ -175,5 +172,11 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		);
 	}
 
-	return results.some(Boolean);
+	const legacyPagesFile = join(root, ".space", "pages.ts");
+	const hadLegacyPagesFile = await access(legacyPagesFile).then(
+		() => true,
+		() => false,
+	);
+	if (hadLegacyPagesFile) await rm(legacyPagesFile);
+	return hadLegacyPagesFile || results.some(Boolean);
 }

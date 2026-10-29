@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -6,7 +6,6 @@ import { Hono } from "hono";
 import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 
 import { defineActions, defineLoader, definePage, html, mountPage, raw } from "../src/pages";
-import { generatePagesSource } from "../src/pages/generate";
 import { scanPages } from "../src/pages/scan";
 import { sync } from "../src/sync";
 
@@ -37,24 +36,22 @@ test("refuses a page and a route that serve the same path", async () => {
 	await expect(sync(root, "dev")).rejects.toThrow("both serve /about");
 });
 
-test("generates a registrar that mounts every page with its server module", () => {
-	const source = generatePagesSource([
-		{ file: "index.page.ts", path: "/" },
-		{ file: "users/[id].page.ts", server: "users/[id].server.ts", path: "/users/:id" },
-	]);
-	expect(source).toContain('import page0 from "../app/pages/index.page";');
-	expect(source).toContain('import * as server1 from "../app/pages/users/[id].server";');
-	expect(source).toContain('mountPage(app, "/", page0, undefined);');
-	expect(source).toContain('mountPage(app, "/users/:id", page1, server1);');
-});
-
-test("sync writes .space/pages.ts and the worker registers it", async () => {
-	await writeFile(join(root, "app", "pages", "index.page.ts"), "");
+test("sync writes routes and pages together and removes the old pages module", async () => {
+	await writeFile(join(root, "app", "pages", "hello.page.ts"), "");
+	await writeFile(join(root, "app", "routes", "[id].ts"), "");
+	await mkdir(join(root, ".space"), { recursive: true });
+	await writeFile(join(root, ".space", "pages.ts"), "old generated file");
 	await sync(root, "dev");
-	expect(await readFile(join(root, ".space", "pages.ts"), "utf8")).toContain("registerPages");
-	expect(await readFile(join(root, ".space", "worker.ts"), "utf8")).toContain(
-		"registerPages(app);",
+	const routes = await readFile(join(root, ".space", "routes.ts"), "utf8");
+	expect(routes).toContain('mountPage(app, "/hello", page0, undefined);');
+	expect(routes).toContain('mountRoute(app, "/:id", route1);');
+	expect(routes.indexOf('mountPage(app, "/hello"')).toBeLessThan(
+		routes.indexOf('mountRoute(app, "/:id"'),
 	);
+	await expect(access(join(root, ".space", "pages.ts"))).rejects.toThrow();
+	const worker = await readFile(join(root, ".space", "worker.ts"), "utf8");
+	expect(worker).not.toContain('from "./pages"');
+	expect(worker).toContain("registerPages(_app: unknown)");
 });
 
 const todos = [

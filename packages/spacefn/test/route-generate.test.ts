@@ -24,3 +24,14 @@ test("generates an empty registrar without routes", () => {
 		"export function registerRoutes(app: Hono): void {\n}",
 	);
 });
+
+test("registers literal pages before dynamic routes", () => {
+	const source = generateRoutesSource(
+		[{ file: "[id].ts", path: "/:id" }],
+		[{ file: "hello.page.ts", path: "/hello" }],
+	);
+	expect(source.indexOf('mountPage(app, "/hello"')).toBeLessThan(
+		source.indexOf('mountRoute(app, "/:id"'),
+	);
+	expect(source).toContain('import { mountPage, mountRoute, type Hono } from "spacefn/runtime";');
+});
