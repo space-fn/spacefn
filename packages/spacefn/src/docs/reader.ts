@@ -21,7 +21,7 @@ async function buildNav(docsRoot: string, currentRel: string): Promise<string> {
 			.sort((a, b) => a.name.localeCompare(b.name));
 		let html = "<ul>";
 		for (const f of files) {
-			const name = f.name.replace(/\\.md$/, "");
+			const name = f.name.replace(/\.md$/, "");
 			const rel = prefix ? prefix + "/" + f.name : f.name;
 			const href = "/__space_docs/" + rel.split("/").map(encodeURIComponent).join("/");
 			const active = rel === currentRel ? ' class="active"' : "";

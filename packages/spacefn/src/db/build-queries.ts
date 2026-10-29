@@ -43,7 +43,7 @@ export async function analyzeQueries(
 		const excludedRaw = parsed.parts
 			.filter((p) => p.gate === null)
 			.map((p) => p.sql)
-			.join("\\n");
+			.join("\n");
 		const { sql: excludedBound } = namedParams(excludedRaw);
 		try {
 			await scratch.prepare(excludedBound);

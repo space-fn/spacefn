@@ -101,6 +101,16 @@ test("a query that does not match the schema stops generation", async () => {
 	await expect(buildQueries(join(dir, "queries"), migrations)).rejects.toThrow(/no such column/);
 });
 
+test("validates the query with conditional parts excluded", async () => {
+	await query(
+		"optional",
+		"-- name: listUsers :many\n-- @param id number\nSELECT id FROM users\n-- case\n-- when id\nWHERE id = :id\n-- end\nORDER BY id",
+	);
+	await expect(buildQueries(join(dir, "queries"), migrations)).resolves.toContain(
+		"export async function listUsers",
+	);
+});
+
 test("two files cannot define the same function name", async () => {
 	await query("a", "-- name: same :many\nSELECT id FROM todos");
 	await query("b", "-- name: same :many\nSELECT id FROM users");

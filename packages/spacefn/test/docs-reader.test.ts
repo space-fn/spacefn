@@ -40,6 +40,14 @@ test("renders a markdown file", async () => {
 	expect(res.body).toContain("Hello");
 });
 
+test("escapes raw HTML in markdown", async () => {
+	await writeFile(join(root, "docs", "unsafe.md"), "<script>alert(1)</script>");
+	const res = makeRes();
+	await handler({ url: "/unsafe.md" }, res);
+	expect(res.body).not.toContain("<script>alert(1)</script>");
+	expect(res.body).toContain("&lt;script&gt;");
+});
+
 test("returns 404 for missing file", async () => {
 	const res = makeRes();
 	await handler({ url: "/nope.md" }, res);

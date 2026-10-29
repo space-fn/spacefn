@@ -1,13 +1,23 @@
 import { escapeHtml } from "../pages/html";
 
-async function loadMarked(): Promise<((md: string) => string) | null> {
+type MarkedRenderer = { html: (token: { text: string }) => string };
+type Marked = (md: string, options?: { renderer: MarkedRenderer }) => string;
+
+async function loadMarked(): Promise<Marked | null> {
 	try {
 		// @ts-ignore - optional peer dependency
 		const mod = await import("marked");
-		const marked =
-			(mod as { marked?: (s: string) => string; default?: (s: string) => string }).marked ??
-			(mod as { default?: (s: string) => string }).default;
-		if (typeof marked === "function") return marked;
+		const api = mod as unknown as {
+			marked?: Marked;
+			default?: Marked;
+			Renderer?: new () => MarkedRenderer;
+		};
+		const marked = api.marked ?? api.default;
+		if (typeof marked === "function" && api.Renderer) {
+			const renderer = new api.Renderer();
+			renderer.html = ({ text }) => escapeHtml(text);
+			return (md) => marked(md, { renderer });
+		}
 		return null;
 	} catch {
 		return null;
