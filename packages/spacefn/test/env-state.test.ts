@@ -48,4 +48,32 @@ describe("env", () => {
 		const res = await app.request("/", {}, raw);
 		expect(await res.json()).toBe("a");
 	});
+
+	test("keeps env isolated across overlapping requests", async () => {
+		let releaseFirst!: () => void;
+		let signalFirstStarted!: () => void;
+		const firstGate = new Promise<void>((resolve) => {
+			releaseFirst = resolve;
+		});
+		const firstStarted = new Promise<void>((resolve) => {
+			signalFirstStarted = resolve;
+		});
+		const app = new Hono();
+		app.use(envMiddleware(schema));
+		app.get("/", async (c) => {
+			if ((c.env as { NAME: string }).NAME === "first") {
+				signalFirstStarted();
+				await firstGate;
+			}
+			return c.text(String((env as Record<string, unknown>).NAME));
+		});
+
+		const firstResponse = app.request("/", {}, { NAME: "first" });
+		await firstStarted;
+		const secondResponse = await app.request("/", {}, { NAME: "second" });
+		releaseFirst();
+
+		expect(await secondResponse.text()).toBe("second");
+		expect(await (await firstResponse).text()).toBe("first");
+	});
 });

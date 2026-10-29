@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, expect, test } from "vite-plus/test";
 
-import { space, spaceSync } from "../src/vite";
+import { space, spaceSync, type SpaceState } from "../src/vite";
 
 let root: string;
 
@@ -21,6 +21,15 @@ test("generates .space on config", async () => {
 	const config = plugin.config as (c: object, env: object) => Promise<void>;
 	await config({ root }, { command: "serve", mode: "development" });
 	expect(await readFile(join(root, ".space", "routes.ts"), "utf8")).toContain('"/hello"');
+});
+
+test("scans queue consumers from app/ for Cloudflare config", async () => {
+	await mkdir(join(root, "app", "queues"), { recursive: true });
+	await writeFile(join(root, "app", "queues", "emails.ts"), "");
+	const state: SpaceState = {};
+	const config = spaceSync(state).config as (c: object, env: object) => Promise<void>;
+	await config({ root }, { command: "serve", mode: "development" });
+	expect(state.queueFiles).toEqual(["emails.ts"]);
 });
 
 test("leaves production-only routes out of dev and keeps them in build", async () => {

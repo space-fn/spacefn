@@ -55,7 +55,7 @@ export function spaceSync(
 			root = resolve(userConfig.root ?? process.cwd());
 			mode = env.command === "serve" ? "dev" : "prod";
 			state.envSchema = await loadEnvSchema(root);
-			state.queueFiles = await scanCodeFiles(join(root, "queues"));
+			state.queueFiles = await scanCodeFiles(join(root, "app", "queues"));
 			state.cronSchedules = Object.values(await loadCronJobs(root)).map((job) => job.schedule);
 			state.durableObjectFiles = await scanCodeFiles(join(root, "app", "durable-objects"));
 			state.workflowFiles = await scanCodeFiles(join(root, "app", "workflows"));
