@@ -68,10 +68,6 @@ export function generateWorkerSource({
 	lines.push("}");
 	lines.push("");
 
-	// Pages are registered by registerRoutes in path-specificity order.
-	lines.push("export function registerPages(_app: unknown) { /* registered by registerRoutes */ }");
-	lines.push("");
-
 	// mountApp
 	lines.push("export function mountApp(app: { fetch: (...a: any[]) => any }) {");
 	lines.push("\treturn {");

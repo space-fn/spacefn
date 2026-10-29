@@ -51,7 +51,7 @@ test("sync writes routes and pages together and removes the old pages module", a
 	await expect(access(join(root, ".space", "pages.ts"))).rejects.toThrow();
 	const worker = await readFile(join(root, ".space", "worker.ts"), "utf8");
 	expect(worker).not.toContain('from "./pages"');
-	expect(worker).toContain("registerPages(_app: unknown)");
+	expect(worker).not.toContain("registerPages");
 });
 
 const todos = [

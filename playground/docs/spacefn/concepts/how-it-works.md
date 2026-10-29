@@ -86,7 +86,7 @@ export const queues = {
 
 ```ts
 // app/entry.ts
-import { createApp, registerRoutes, registerPages, mountApp } from "@space/worker";
+import { createApp, registerRoutes, mountApp } from "@space/worker";
 
 import schema from "./env";
 
@@ -95,7 +95,6 @@ const app = createApp({ env: schema });
 app.onError((err, c) => c.json({ error: "internal_error", message: "Something went wrong" }, 500));
 
 registerRoutes(app);
-registerPages(app);
 
 export * from "@space/exports";
 export default mountApp(app);
@@ -106,7 +105,6 @@ Line by line:
 - `createApp({ env: schema })` builds the Hono app, registers tracing, env validation, and every file in `app/middleware/` in file-name order.
 - `app.onError(...)` is your global error handler.
 - `registerRoutes(app)` mounts every route and page via `mountRoute` and `mountPage`, sorted by path specificity.
-- `registerPages(app)` is a compatibility no-op; pages are mounted by `registerRoutes` so static paths precede dynamic ones.
 - `export * from "@space/exports"` re-exports Durable Object and Workflow classes at the Worker's top level, so Cloudflare can bind them.
 - `export default mountApp(app)` produces the Cloudflare Worker module.
 

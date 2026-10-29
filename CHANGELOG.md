@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1
+
+### Changed
+
+- Removed the obsolete `registerPages` generated helper; `registerRoutes` mounts pages and routes together.
+
 ## 0.7.0
 
 ### Changed
