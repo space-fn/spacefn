@@ -57,4 +57,55 @@ describe("applyUpgradeTemplate", () => {
 		expect(readFileSync(join(root, "docs", "spacefn", "index.md"), "utf8")).toBe("latest");
 		expect(readFileSync(join(root, "docs", "custom.md"), "utf8")).toBe("keep");
 	});
+
+	test.each(["pnpm", "npm", "yarn", "bun"] as const)(
+		"sets the latest workerd override for %s while preserving other rules",
+		async (manager) => {
+			const root = mkdtempSync(join(tmpdir(), "space-upgrade-"));
+			created.push(root);
+			const template = join(root, "latest-template");
+			mkdirSync(join(template, "docs", "spacefn"), { recursive: true });
+			writeFileSync(
+				join(root, "package.json"),
+				JSON.stringify(
+					{
+						name: "my-app",
+						packageManager: `${manager}@1.0.0`,
+						overrides:
+							manager === "npm" || manager === "bun"
+								? { existing: "1.0.0", workerd: "1.20261012.1" }
+								: undefined,
+						resolutions:
+							manager === "yarn" ? { existing: "1.0.0", workerd: "1.20261012.1" } : undefined,
+					},
+					null,
+					2,
+				),
+			);
+			if (manager === "pnpm") {
+				writeFileSync(
+					join(root, "pnpm-workspace.yaml"),
+					"packages:\n  - .\noverrides:\n  existing: 1.0.0\n  workerd: 1.20261012.1\n",
+				);
+			}
+			writeFileSync(join(template, "package.json"), JSON.stringify({}));
+
+			const updated = await applyUpgradeTemplate(root, template, "1.20261030.1");
+			const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as Record<
+				string,
+				unknown
+			>;
+			expect(updated).toEqual(["workerd override"]);
+			if (manager === "pnpm") {
+				const { parse } = await import("yaml");
+				expect(parse(readFileSync(join(root, "pnpm-workspace.yaml"), "utf8"))).toEqual({
+					packages: ["."],
+					overrides: { existing: "1.0.0", workerd: "1.20261030.1" },
+				});
+			} else {
+				const key = manager === "yarn" ? "resolutions" : "overrides";
+				expect(pkg[key]).toEqual({ existing: "1.0.0", workerd: "1.20261030.1" });
+			}
+		},
+	);
 });
