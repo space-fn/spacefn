@@ -32,6 +32,7 @@ Read the framework docs in `docs/spacefn/` before making changes.
 ## Conventions
 
 - `app/` is the only supported layout; `.space/` is generated.
+- Do not modify `docs/spacefn/`; `space upgrade` can replace everything in that folder.
 - `modules/`, `utils/`, `lib/` are not scanned (business logic).
 - Path aliases: `@space/*`, `@app/*`, `@modules/*`, `@utils/*`, `@lib/*`.
 - Commit messages: conventional commits, one line, no body.
