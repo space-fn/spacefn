@@ -1,6 +1,73 @@
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import type { Diagnostic } from "vscode-languageserver/node";
 
+function findHtmlAttributes(htmlText: string): { name: string; start: number; end: number }[] {
+	const attributes: { name: string; start: number; end: number }[] = [];
+	let index = 0;
+
+	while (index < htmlText.length) {
+		if (htmlText[index] !== "<") {
+			index++;
+			continue;
+		}
+		if (htmlText.startsWith("<!--", index)) {
+			const commentEnd = htmlText.indexOf("-->", index + 4);
+			index = commentEnd === -1 ? htmlText.length : commentEnd + 3;
+			continue;
+		}
+
+		let cursor = index + 1;
+		if (htmlText[cursor] === "/" || htmlText[cursor] === "!" || htmlText[cursor] === "?") {
+			index++;
+			continue;
+		}
+		if (!/[a-z]/i.test(htmlText[cursor] ?? "")) {
+			index++;
+			continue;
+		}
+
+		while (cursor < htmlText.length && !/[\s/>]/.test(htmlText[cursor]!)) cursor++;
+
+		while (cursor < htmlText.length) {
+			while (/\s/.test(htmlText[cursor] ?? "")) cursor++;
+			if (htmlText[cursor] === ">") {
+				index = cursor + 1;
+				break;
+			}
+			if (htmlText[cursor] === "/" && htmlText[cursor + 1] === ">") {
+				index = cursor + 2;
+				break;
+			}
+
+			const start = cursor;
+			while (cursor < htmlText.length && !/[\s=/>]/.test(htmlText[cursor]!)) cursor++;
+			if (cursor === start) {
+				cursor++;
+				continue;
+			}
+			const name = htmlText.slice(start, cursor);
+			while (/\s/.test(htmlText[cursor] ?? "")) cursor++;
+			if (htmlText[cursor] === "=") {
+				cursor++;
+				while (/\s/.test(htmlText[cursor] ?? "")) cursor++;
+				const quote =
+					htmlText[cursor] === "'" || htmlText[cursor] === '"' ? htmlText[cursor] : null;
+				if (quote) {
+					cursor++;
+					while (cursor < htmlText.length && htmlText[cursor] !== quote) cursor++;
+					if (cursor < htmlText.length) cursor++;
+				} else {
+					while (cursor < htmlText.length && !/[\s>]/.test(htmlText[cursor]!)) cursor++;
+				}
+			}
+			attributes.push({ name, start, end: cursor });
+		}
+		if (cursor >= htmlText.length) index = htmlText.length;
+	}
+
+	return attributes;
+}
+
 export async function validateDatastarAttributes(
 	doc: TextDocument,
 	htmlText: string,
@@ -8,9 +75,7 @@ export async function validateDatastarAttributes(
 ): Promise<any[]> {
 	const diagnostics: any[] = [];
 
-	// Check for invalid attribute syntax
-	const attrRe = /data-([a-z-]+)(?::([a-zA-Z0-9_-]+))?(__[a-z]+(?:\.[a-z0-9]+)*)?(?:="([^"]*)")?/g;
-	let m;
+	const attrRe = /^data-([a-z-]+)(?::([a-zA-Z0-9_-]+))?(__[a-z]+(?:\.[a-z0-9]+)*)?$/;
 	const validPlugins = [
 		"on",
 		"attr",
@@ -46,15 +111,18 @@ export async function validateDatastarAttributes(
 		"nonce",
 	];
 
-	while ((m = attrRe.exec(htmlText)) !== null) {
-		const plugin = m[1];
-		const modifiers = m[3];
+	for (const attribute of findHtmlAttributes(htmlText)) {
+		if (!attribute.name.startsWith("data-")) continue;
+		const match = attrRe.exec(attribute.name);
+		if (!match) continue;
+		const plugin = match[1];
+		const modifiers = match[3];
 
 		// Validate plugin name
 		if (!validPlugins.includes(plugin)) {
 			const range = {
-				start: doc.positionAt(contentStart + m.index),
-				end: doc.positionAt(contentStart + m.index + m[0].length),
+				start: doc.positionAt(contentStart + attribute.start),
+				end: doc.positionAt(contentStart + attribute.end),
 			};
 			diagnostics.push({
 				severity: 2,
@@ -114,7 +182,7 @@ export async function validateDatastarAttributes(
 			for (const mod of modParts) {
 				const modName = mod.split(".")[0];
 				if (!validModifiers.includes(modName)) {
-					const modStart = contentStart + m.index + m[0].indexOf(mod);
+					const modStart = contentStart + attribute.start + attribute.name.indexOf(mod);
 					const range = {
 						start: doc.positionAt(modStart),
 						end: doc.positionAt(modStart + mod.length),
