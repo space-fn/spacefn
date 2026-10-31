@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+
+### Added
+
+- `space upgrade` pins the latest `workerd` version for the detected package manager.
+
 ## 0.7.2
 
 ### Fixed
