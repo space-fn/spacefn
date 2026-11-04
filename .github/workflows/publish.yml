@@ -20,13 +20,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: pnpm/action-setup@v6.1.1
-        with:
-          version: 12.4.2
-      - uses: actions/setup-node@v7.1.0
+      - uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version: 26.13.0
-          cache: pnpm
+          cache: true
+          run-install: false
       - run: pnpm install --frozen-lockfile
       - name: Test extension
         run: pnpm --filter vscode-spacefn test
