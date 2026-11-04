@@ -30,6 +30,12 @@ jobs:
         run: pnpm --filter vscode-spacefn test
       - name: Compile extension
         run: pnpm --filter vscode-spacefn run compile
+      - name: Prepare extension package
+        run: |
+          mkdir -p "$RUNNER_TEMP/vscode-spacefn"
+          rsync -a --exclude=node_modules packages/vscode-spacefn/ "$RUNNER_TEMP/vscode-spacefn/"
+          cd "$RUNNER_TEMP/vscode-spacefn"
+          npm install --omit=dev --package-lock=false
       - name: Publish extension
-        working-directory: packages/vscode-spacefn
+        working-directory: ${{ runner.temp }}/vscode-spacefn
         run: npx --yes @vscode/vsce@4.1.0 publish --oidc
