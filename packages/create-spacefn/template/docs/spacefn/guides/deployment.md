@@ -2,6 +2,8 @@
 
 spacefn apps deploy as Cloudflare Workers. The app is built by Vite, then the Worker is deployed through the Cloudflare beta CLI (`cf`). The generated `cloudflare.config.ts` remains the source of truth for bindings and the Worker entrypoint.
 
+For the simplest setup, connect the repository to the Cloudflare dashboard and let Cloudflare handle the deployment pipeline. That way users do not need to wire custom CI/CD jobs in GitHub, GitLab, or other providers. They only need to configure the build scripts until the `cf` command is stable.
+
 ## Recommended Cloudflare project settings
 
 Use these values in the Cloudflare dashboard when the project is configured as a Worker:
