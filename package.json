@@ -8,6 +8,7 @@
 	"type": "module",
 	"scripts": {
 		"publish": "./scripts/publish.sh",
+		"publish:vscode": "./scripts/publish-vscode.sh",
 		"prepare": "vp config"
 	},
 	"devDependencies": {

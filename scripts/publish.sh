@@ -54,10 +54,7 @@ publish_one() {
 publish_one "packages/spacefn" "pnpm test -- --coverage"
 publish_one "packages/create-spacefn" "pnpm test"
 
-# vscode-spacefn is a VS Code extension (publish via `vsce publish`), not npm.
-# echo ""
-# echo "vscode-spacefn: publish with 'cd packages/vscode-spacefn && vsce publish'"
-
 echo ""
 echo "Done: $published published, $skipped skipped, $failed failed"
 [ "$failed" -eq 0 ] || exit 1
+echo "To publish vscode-spacefn after the npm packages, run: pnpm publish:vscode"

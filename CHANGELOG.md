@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+### Added
+
+- Published VS Code extension metadata with a square transparent marketplace icon and refreshed extension README for VS Code Marketplace.
+
 ## 0.8.0
 
 ### Added

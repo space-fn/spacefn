@@ -274,8 +274,8 @@ importers:
         specifier: ^5.3.0
         version: 5.4.0
       spacefn:
-        specifier: workspace:*
-        version: link:../spacefn
+        specifier: ^0.8.0
+        version: 0.8.0(@cloudflare/vite-plugin@2.0.0-beta.v.1(@types/node@26.6.5)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(workerd@1.20261023.1))(@electric-sql/pglite@0.2.17)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(cf@1.0.0-beta.26(@types/node@26.6.5))(hono@4.13.14)(marked@18.1.1)(shiki@4.5.0)(vite-plus@1.4.0(@types/node@26.6.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -2256,6 +2256,26 @@ packages:
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
 
+  spacefn@0.8.0:
+    resolution: {integrity: sha512-j+yq6K83Q5hJWmSFXUlJMQz4mRAS7Erc7Va/iJi+HiEGHQmTu6J4buzbr6Wcp02hylaYq/pZ/2dN9QQ4XcUeUw==}
+    hasBin: true
+    peerDependencies:
+      '@cloudflare/vite-plugin': '>=2.0.0-beta.v.1'
+      '@electric-sql/pglite': '>=0.2'
+      cf: '>=1.0.0-beta.18'
+      hono: ^4.13.13
+      marked: '>=9'
+      shiki: '>=1'
+      vite: '>=8'
+      vite-plus: '>=1'
+    peerDependenciesMeta:
+      '@electric-sql/pglite':
+        optional: true
+      marked:
+        optional: true
+      shiki:
+        optional: true
+
   std-env@4.3.0:
     resolution: {integrity: sha512-OtU/EgQ1kIm5KwqQpBC6ZEMXrZRui11w8zgfTWp8cdO9B8OaPsbA8bTHO2P+HNo1VlUTGMVBwPhydu6poeXiag==}
 
@@ -2654,12 +2674,34 @@ snapshots:
     optionalDependencies:
       workerd: 1.20261012.1
 
+  '@cloudflare/unenv-preset@2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261023.1)':
+    dependencies:
+      unenv: 2.0.0-rc.24
+    optionalDependencies:
+      workerd: 1.20261023.1
+
   '@cloudflare/vite-plugin@2.0.0-beta.v.1(@types/node@26.6.5)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(workerd@1.20261012.1)':
     dependencies:
       '@cloudflare/build-output-utils': 0.9.3
       '@cloudflare/config': 0.27.0
       '@cloudflare/runtime-types': 0.1.12(@types/node@26.6.5)
       '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261012.1)
+      miniflare: 5.20261012.1-beta(@types/node@26.6.5)
+      unenv: 2.0.0-rc.24
+      vite: '@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1)'
+      ws: 8.21.0
+    transitivePeerDependencies:
+      - '@types/node'
+      - bufferutil
+      - utf-8-validate
+      - workerd
+
+  '@cloudflare/vite-plugin@2.0.0-beta.v.1(@types/node@26.6.5)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(workerd@1.20261023.1)':
+    dependencies:
+      '@cloudflare/build-output-utils': 0.9.3
+      '@cloudflare/config': 0.27.0
+      '@cloudflare/runtime-types': 0.1.12(@types/node@26.6.5)
+      '@cloudflare/unenv-preset': 2.16.2(unenv@2.0.0-rc.24)(workerd@1.20261023.1)
       miniflare: 5.20261012.1-beta(@types/node@26.6.5)
       unenv: 2.0.0-rc.24
       vite: '@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1)'
@@ -4412,6 +4454,20 @@ snapshots:
   source-map-js@1.2.2: {}
 
   space-separated-tokens@2.0.2: {}
+
+  spacefn@0.8.0(@cloudflare/vite-plugin@2.0.0-beta.v.1(@types/node@26.6.5)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(workerd@1.20261023.1))(@electric-sql/pglite@0.2.17)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(cf@1.0.0-beta.26(@types/node@26.6.5))(hono@4.13.14)(marked@18.1.1)(shiki@4.5.0)(vite-plus@1.4.0(@types/node@26.6.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1)):
+    dependencies:
+      '@cloudflare/vite-plugin': 2.0.0-beta.v.1(@types/node@26.6.5)(@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1))(workerd@1.20261023.1)
+      cf: 1.0.0-beta.26(@types/node@26.6.5)
+      commander: 12.1.0
+      hono: 4.13.14
+      vite: '@voidzero-dev/vite-plus-core@1.4.0(@types/node@26.6.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1)'
+      vite-plus: 1.4.0(@types/node@26.6.5)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(esbuild@0.28.2)(typescript@7.0.2)(yaml@2.9.1)
+      yaml: 2.9.1
+    optionalDependencies:
+      '@electric-sql/pglite': 0.2.17
+      marked: 18.1.1
+      shiki: 4.5.0
 
   std-env@4.3.0: {}
 
