@@ -20,8 +20,10 @@ export default defineConfig({
 });
 ```
 
-Use the `cf/config` package for Cloudflare config helpers. For example, declare
-a D1 binding that your routes read as `c.env.DB`:
+Use the `cf/config` package for Cloudflare config helpers. `app/env.ts` is the
+validation schema for the app; the actual Worker env values live in
+`worker.env` in this file. For example, declare a D1 binding that your routes
+read as `c.env.DB`:
 
 ```ts
 import { bindings, defineConfig } from "cf/config";
@@ -33,6 +35,7 @@ export default defineConfig({
 		compatibilityDate: "2026-10-19",
 		env: {
 			DB: bindings.d1({ name: "my-app-db" }),
+			API_KEY: bindings.secret(),
 		},
 	},
 });
@@ -44,11 +47,12 @@ those generated entries. Your explicit `worker.env` entries take precedence
 when a binding name overlaps. See [directory conventions](../directory-structure/)
 for the file and class naming rules.
 
-Environment fields from `app/env.ts` are also converted into Cloudflare
-bindings. Do not import `app/env.ts` from `cloudflare.config.ts`; the plugin
-loads it separately. Values that are not declared as bindings are not visible
-to the Worker. See [Environment](../directory-structure/env.md) for local and
-production secrets.
+For secret values, define the binding in `worker.env` and add the actual secret
+in Cloudflare for production. `app/env.ts` should validate the value and surface
+warnings/errors when the app receives a bad value, but it does not replace the
+Cloudflare secret configuration step. Values that are not declared as bindings
+are not visible to the Worker. See [Environment](../directory-structure/env.md)
+for local and production secrets.
 
 ## Development and deploy
 
