@@ -42,6 +42,14 @@ publish_one() {
   (cd "$dir" && npm run build)
 
   echo "📦 Publishing $name@$version"
+  if ! npm whoami >/dev/null 2>&1; then
+    echo "🔐 npm is not logged in; starting npm login"
+    npm login
+    if ! npm whoami >/dev/null 2>&1; then
+      echo "❌ npm login completed, but npm is still not authenticated" >&2
+      exit 1
+    fi
+  fi
   if (cd "$dir" && npm publish --access public); then
     published=$((published + 1))
   else

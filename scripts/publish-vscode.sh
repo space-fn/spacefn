@@ -13,6 +13,18 @@ if ! git diff --quiet -- "${dependency_files[@]}" || ! git diff --cached --quiet
   exit 1
 fi
 
+publisher="$(node -p "require('./packages/vscode-spacefn/package.json').publisher")"
+if ! publishers="$(pnpm --filter vscode-spacefn exec vsce ls-publishers 2>/dev/null)" ||
+  ! grep -Fxq "$publisher" <<<"$publishers"; then
+  echo "🔐 VS Code Marketplace publisher '$publisher' is not logged in; starting vsce login"
+  pnpm --filter vscode-spacefn exec vsce login "$publisher"
+  publishers="$(pnpm --filter vscode-spacefn exec vsce ls-publishers)"
+  if ! grep -Fxq "$publisher" <<<"$publishers"; then
+    echo "❌ VS Code Marketplace login did not authenticate publisher '$publisher'" >&2
+    exit 1
+  fi
+fi
+
 echo "🔎 Looking up the latest published spacefn version"
 spacefn_version="$(npm view spacefn version)"
 if [ -z "$spacefn_version" ]; then
