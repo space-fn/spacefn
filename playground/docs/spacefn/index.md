@@ -25,6 +25,7 @@ spacefn builds on three ideas:
 | Server-rendered pages and safe HTML                    | [Pages](./directory-structure/pages.md), [HTML API](./api-reference/html.md)                         |
 | Browser JavaScript and CSS                             | [Client bundles](./directory-structure/client.md)                                                    |
 | Environment and Cloudflare bindings                    | [Environment](./directory-structure/env.md), [Cloudflare setup](./guides/cloudflare-v2.md)           |
+| Deployment and Cloudflare project settings             | [Deployment](./guides/deployment.md)                                                                 |
 | SQL, migrations, and typed queries                     | [Database](./directory-structure/database.md)                                                        |
 | Queues, scheduled jobs, Durable Objects, and Workflows | [Directory structure](./directory-structure/index.md)                                                |
 | Authentication, tenancy, and tracing                   | [Auth](./guides/auth.md), [tenancy](./guides/tenancy.md), [tracing](./guides/tracing.md)             |
