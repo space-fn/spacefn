@@ -83,3 +83,12 @@ test("renders README.md for a directory", async () => {
 	expect(res.statusCode).toBe(200);
 	expect(res.body).toContain("Sub home");
 });
+
+test("renders a sidebar logo when provided", async () => {
+	await writeFile(join(root, "docs", "logo.svg"), "<svg />");
+	const res = makeRes();
+	await handler({ url: "/" }, res);
+	expect(res.statusCode).toBe(200);
+	expect(res.body).toContain("sidebar-brand");
+	expect(res.body).toContain("/__space_docs/logo.svg");
+});

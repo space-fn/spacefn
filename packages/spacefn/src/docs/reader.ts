@@ -4,8 +4,63 @@ import { escapeHtml } from "../pages/html";
 import { DOCS_CSS } from "./css";
 import { renderMarkdown } from "./markdown";
 
+function getAssetMimeType(filePath: string): string | null {
+	const ext = filePath.split(".").pop()?.toLowerCase();
+	switch (ext) {
+		case "svg":
+			return "image/svg+xml";
+		case "png":
+			return "image/png";
+		case "jpg":
+		case "jpeg":
+			return "image/jpeg";
+		case "gif":
+			return "image/gif";
+		case "webp":
+			return "image/webp";
+		case "ico":
+			return "image/x-icon";
+		case "css":
+			return "text/css; charset=utf-8";
+		case "js":
+			return "application/javascript; charset=utf-8";
+		case "json":
+			return "application/json; charset=utf-8";
+		default:
+			return null;
+	}
+}
+
+async function findBrandAsset(docsRoot: string): Promise<string | null> {
+	const { access } = await import("node:fs/promises");
+	for (const candidate of [
+		resolve(docsRoot, "logo.svg"),
+		resolve(docsRoot, "logo.png"),
+		resolve(docsRoot, "logo.webp"),
+		resolve(docsRoot, "logo.jpg"),
+		resolve(docsRoot, "logo.jpeg"),
+		resolve(docsRoot, "..", "logo.svg"),
+		resolve(docsRoot, "..", "logo.png"),
+		resolve(docsRoot, "..", "logo.webp"),
+		resolve(docsRoot, "..", "logo.jpg"),
+		resolve(docsRoot, "..", "logo.jpeg"),
+	]) {
+		try {
+			await access(candidate);
+			return candidate;
+		} catch {
+			// keep looking
+		}
+	}
+	return null;
+}
+
 async function buildNav(docsRoot: string, currentRel: string): Promise<string> {
 	const { readdir } = await import("node:fs/promises");
+	const brandPath = await findBrandAsset(docsRoot);
+	const brand = brandPath
+		? `<div class="sidebar-brand"><a href="/__space_docs/"><img src="/__space_docs/${encodeURIComponent(brandPath.split("/").pop() ?? "logo.svg")}" alt="Project docs logo" width="64" height="64" /></a></div>`
+		: "";
 	async function walk(dir: string, prefix: string): Promise<string> {
 		let entries: import("node:fs").Dirent[];
 		try {
@@ -36,7 +91,7 @@ async function buildNav(docsRoot: string, currentRel: string): Promise<string> {
 		return html;
 	}
 	const nav = await walk(docsRoot, "");
-	return `<nav class="sidebar">${nav}</nav>`;
+	return `<nav class="sidebar">${brand}${nav}</nav>`;
 }
 
 export function createDocsReader(root: string) {
@@ -52,6 +107,29 @@ export function createDocsReader(root: string) {
 		},
 	) => {
 		const url = (req.url ?? "/").split("?")[0] ?? "/";
+		if (
+			url === "/logo.svg" ||
+			url === "/logo.png" ||
+			url === "/logo.webp" ||
+			url === "/logo.jpg" ||
+			url === "/logo.jpeg"
+		) {
+			for (const basename of ["logo.svg", "logo.png", "logo.webp", "logo.jpg", "logo.jpeg"]) {
+				for (const baseDir of [docsRoot, resolve(docsRoot, "..")]) {
+					try {
+						const fullPath = resolve(baseDir, basename);
+						const { readFile, stat } = await import("node:fs/promises");
+						await stat(fullPath);
+						const mimeType = getAssetMimeType(basename) ?? "application/octet-stream";
+						res.setHeader("Content-Type", mimeType);
+						res.end((await readFile(fullPath)).toString("binary"));
+						return;
+					} catch {
+						// continue to next candidate
+					}
+				}
+			}
+		}
 		const rel = url.replace(/^\/+/, "");
 		const target = resolve(docsRoot, rel || ".");
 		if (target !== docsRoot && !target.startsWith(docsRoot + sep)) {
