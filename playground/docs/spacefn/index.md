@@ -21,6 +21,7 @@ spacefn builds on three ideas:
 
 | To learn about                                         | Start here                                                                                           |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| Interactive frontend with Datastar                     | [Datastar guide](./guides/datastar.md), [Rocket components](./guides/datastar-components.md)         |
 | Routes and request middleware                          | [Routes](./directory-structure/routes.md), [middleware](./directory-structure/middleware.md)         |
 | Server-rendered pages and safe HTML                    | [Pages](./directory-structure/pages.md), [HTML API](./api-reference/html.md)                         |
 | Browser JavaScript and CSS                             | [Client bundles](./directory-structure/client.md)                                                    |

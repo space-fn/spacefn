@@ -1,6 +1,10 @@
 # Pages
 
-Server-rendered HTML written as template strings. No component framework and no client bundle. A page is a function from data to markup, and it runs on the Worker.
+Server-rendered HTML written as template strings. No component framework or
+client bundle is required. A page is a function from data to markup, and it
+runs on the Worker. For interactive pages, [Datastar](../guides/datastar.md) is
+the recommended frontend: add its attributes to the HTML and handle requests
+with colocated `*.server.ts` actions that return fragments or SSE updates.
 
 ## Layout
 
@@ -131,9 +135,16 @@ const markup = minifyHtml(
 );
 ```
 
+## Interactivity
+
+Pages can render Datastar attributes in their HTML. Load the Datastar browser
+bundle in the page shell, then use `data-signals`, `data-bind`, and `data-on:*`
+for browser state and backend actions. See the [Datastar guide](../guides/datastar.md)
+for complete route and page examples.
+
 ## Limits
 
 - The loader's data reaches the page unchecked at run time. Use `definePage<typeof loader>` to keep the page's props in step with its loader; the two are fully decoupled with `definePage<{ ... }>` and mismatched types are not caught across files.
 - Pages do not support environment suffixes such as `.dev`.
 - No layouts yet. Share a head or a shell with a function that returns `html`.
-- No client-side interactivity yet. Forms and redirects are the only interaction. Datastar's TypeScript SDK can be added later.
+- Pages do not provide layouts yet. Share a head or shell with a function that returns `html`.

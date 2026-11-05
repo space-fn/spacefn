@@ -1,9 +1,10 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { build } from "vite";
 
 import { SpaceError } from "../errors";
+import { writeIfChanged } from "../write";
 import { clientAllowlistPlugin } from "./allowlist";
 
 export type ClientManifestMap = Record<string, { js?: string; css?: string[] }>;
@@ -95,6 +96,25 @@ export async function runClientBuild(
 				`Client build produced no output for entry "${entry}".`,
 				{ hint: "Check the entry file for syntax errors." },
 			);
+		}
+	}
+
+	if (manifest["service-worker.js"]?.js) {
+		const headersFile = join(assetsDir, "_headers");
+		const current = await readFile(headersFile, "utf8").catch((error: NodeJS.ErrnoException) => {
+			if (error.code === "ENOENT") return "";
+			throw error;
+		});
+		const rule = "/_client/service-worker-*.js\n  Service-Worker-Allowed: /\n";
+		if (!current.includes(rule.trimEnd())) {
+			const separator = current
+				? current.endsWith("\n\n")
+					? ""
+					: current.endsWith("\n")
+						? "\n"
+						: "\n\n"
+				: "";
+			await writeIfChanged(headersFile, `${current}${separator}${rule}`);
 		}
 	}
 

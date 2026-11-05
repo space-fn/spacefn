@@ -152,6 +152,9 @@ export function spaceSync(
 						};
 						walk(mod);
 						res.setHeader("Content-Type", isCss ? "text/css" : "application/javascript");
+						if (rawPath === "/service-worker.js") {
+							res.setHeader("Service-Worker-Allowed", "/");
+						}
 						res.end(result.code);
 					})
 					.catch((error: unknown) => {
