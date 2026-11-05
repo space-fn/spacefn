@@ -4,20 +4,33 @@ Use Datastar attributes for most interactions. For complex, highly interactive
 and reusable components, use [Rocket](../guides/datastar-components.md) in
 `app/client/`. Put additional browser-only code there as well.
 
+## Layout
+
+```txt
+app/client/
+├── tsconfig.json        → DOM lib for browser code
+├── site.css             → entry   /_client/site.css
+├── counter.ts           → entry   /_client/counter.js
+├── components.ts        → entry   Rocket components
+├── service-worker.js    → entry   registered with root scope
+└── _shared.ts           → shared module, not an entry
+```
+
 - Only files directly in `app/client/` are entries (nested folders are not scanned). Files not starting with `_` are entries; JS/TS and CSS are both supported.
-- Import allowlist (checked transitively): `app/client/`, `modules/`, `utils/`, `lib/`, npm packages. `app/env.ts` and other server code are rejected.
 - Serving prefix is `/_client/`. Dev: unhashed, transformed on request. Build: content-hashed, CDN-cacheable.
+- Import allowlist (checked transitively): `app/client/`, `modules/`, `utils/`, `lib/`, npm packages. `app/env.ts` and other server code are rejected. The same check runs in dev and build.
 
 ## Bundling
 
-Entries are built with Vite. Each top-level file in `app/client/` (not `_`-prefixed) becomes an entry point; nested folders are shared modules, not entries.
+Entries are built with Vite.
 
-- **Dev.** Files are served unhashed at `/_client/<name>` and transformed on request (TypeScript, CSS). The import allowlist is checked on the dev graph walk too.
-- **Build.** A Vite build emits content-hashed files into `_client/` (e.g. `counter-a1b2c3.js`, `site-d4e5f6.css`). `script()` emits a module script plus links to CSS imported by that entry; `styles()` emits stylesheet links.
-- **Import allowlist.** Checked transitively: `app/client/`, `modules/`, `utils/`, `lib/`, and npm packages. `app/env.ts` and other server code are rejected. The same predicate runs in dev and build.
+- **Dev.** Files are served unhashed at `/_client/<name>` and transformed on request (TypeScript, CSS).
+- **Build.** A Vite build emits content-hashed files into `_client/` (e.g. `counter-a1b2c3.js`, `site-d4e5f6.css`).
 - **CSS.** A CSS entry is served as a stylesheet. CSS imported from a JavaScript or TypeScript entry is collected and linked by `script()` in production.
 - **TypeScript.** `app/client/` has its own `tsconfig.json` with the DOM lib. Worker code keeps `@cloudflare/workers-types`.
 - **Customization.** Pass Vite plugins, CSS tooling, etc. through `SpaceOptions.client` (the `client` field of the space config).
+
+## Include an entry in a page
 
 Use the generated helpers in `.space/client.ts`:
 
@@ -41,28 +54,29 @@ Assuming the build emits the example asset URLs below:
 | `styles()`    | `styles("site.css")`             | `<link rel="stylesheet" href="/_client/site-d4e5f6.css">`                                                                          | Add a CSS entry's stylesheet link(s). It can also link CSS imported by a JS/TS entry.   |
 | `clientUrl()` | `clientUrl("service-worker.js")` | `/_client/service-worker-a1b2c3.js` _(a string, not HTML)_                                                                         | Get the asset URL for use in an attribute or client-side API.                           |
 
-- `ClientEntry` includes all entries; `ClientScriptEntry` includes only JavaScript and TypeScript entries accepted by `script()`. Names are generated unions, so typos and passing a CSS entry to `script()` are type errors.
+`ClientEntry` includes all entries; `ClientScriptEntry` includes only JavaScript and TypeScript entries accepted by `script()`. Names are generated unions, so typos and passing a CSS entry to `script()` are type errors.
 
-Name a service worker entry `app/client/service-worker.js`. Spacefn adds the
-`Service-Worker-Allowed: /` response header to this entry so it can be
-registered with root scope. Use `clientUrl("service-worker.js")` to get its
-URL, and `script()` to include a separate registration entry.
+## Examples
 
-`app/client/tsconfig.json` uses the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
-
-## Example
+### A script and a stylesheet
 
 ```ts
 // app/client/counter.ts
-import { greet } from "@modules/greet";
+import { formatCount } from "./_shared";
 
 const button = document.querySelector<HTMLButtonElement>("#inc")!;
 let count = 0;
 button.addEventListener("click", () => {
 	count += 1;
-	button.textContent = `Clicked ${count}`;
-	greet();
+	button.textContent = formatCount(count);
 });
+```
+
+```ts
+// app/client/_shared.ts — shared by entries, never served on its own
+export function formatCount(n: number): string {
+	return `count: ${n}`;
+}
 ```
 
 ```css
@@ -74,3 +88,68 @@ body {
 	padding: 0.5rem 1rem;
 }
 ```
+
+```ts
+// app/routes/counter-page.ts
+import { script, styles } from "@space/client";
+import { defineHandler } from "spacefn/handler";
+import { html } from "spacefn/html";
+
+export const GET = defineHandler((c) =>
+	c.html(
+		html`<!doctype html>
+			<html>
+				<head>
+					<title>Counter</title>
+					${styles("site.css")}
+				</head>
+				<body>
+					<button id="inc">count: 0</button>
+					${script("counter.ts")}
+				</body>
+			</html>`,
+	),
+);
+```
+
+### CSS imported by a script
+
+CSS imported from a script travels with it. In a build, `script()` also emits the stylesheet link, so the page does not need a separate `styles()` call:
+
+```ts
+// app/client/widget.ts
+import "./widget.css";
+
+document.body.dataset.widget = "ready";
+```
+
+### Share code with the server
+
+Browser code can import from `modules/`, `utils/` and `lib/`, so validation or formatting is written once:
+
+```ts
+// app/client/counter.ts
+import { greet } from "@modules/greet";
+
+console.log(greet("browser"));
+```
+
+### Datastar, Rocket and PWA
+
+- Datastar needs no entry file for most pages; see [Datastar](../guides/datastar.md).
+- Reusable web components live in `app/client/` as Rocket entries; see [Datastar components](../guides/datastar-components.md).
+- A service worker is also an entry; see the PWA section in the [Datastar guide](../guides/datastar.md).
+
+## Service worker
+
+Name a service worker entry `app/client/service-worker.js`. Spacefn adds the
+`Service-Worker-Allowed: /` response header to this entry so it can be
+registered with root scope. Use `clientUrl("service-worker.js")` to get its
+URL, and `script()` to include a separate registration entry.
+
+`app/client/tsconfig.json` uses the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
+
+## Related
+
+- [Generated API](../api-reference/generated.md) lists the types and helpers in `.space/client.ts`.
+- [Import aliases](../concepts/import-aliases.md) explains `@modules/*` and friends.
