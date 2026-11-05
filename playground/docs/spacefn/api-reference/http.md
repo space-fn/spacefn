@@ -14,7 +14,7 @@ export const POST = defineHandler(async (c) => {
 	const image = files.image;
 	const file = Array.isArray(image) ? image[0] : image;
 	if (!file) return c.json({ error: "image_required" }, 400);
-	const key = await putUpload(c.env.UPLOADS, file, { prefix: "avatars" });
+	const key = await putUpload(c.env.UPLOADS as never, file, { prefix: "avatars" });
 	return c.json({ key, caption: fields.caption ?? "" }, 201);
 });
 ```
@@ -51,3 +51,12 @@ Streams the file to R2 under a generated key. Returns the key. The client's file
 The helper returns the generated object key. It accepts an R2-like bucket with
 `put(key, value, options?)`; `putUpload` streams the file body and sets the
 object's HTTP content type.
+
+## Related
+
+- [File upload example](../examples/file-upload.md) — binding, multipart form,
+  R2 write, and authorized read.
+- [File storage guide](../guides/file-storage.md) — ownership and storage
+  recommendations.
+- [HTTP routes](../directory-structure/routes.md) — request and response
+  behavior.

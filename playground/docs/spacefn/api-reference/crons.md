@@ -25,3 +25,23 @@ matching jobs concurrently; it records failures and rejects after every due
 job has settled. `loadCronJobs(root)` imports the default export of each cron
 file under `<root>/app/crons`. Keep cron module top-level code free of side
 effects because the build loads these files to read their schedules.
+
+## Send scheduled work to a queue
+
+```ts
+import { queues } from "@space/queues";
+import { defineCron } from "spacefn/crons";
+
+export default defineCron("0 8 * * *", async () => {
+	await queues.emails.sendBatch([{ to: "a@example.test", subject: "Digest" }]);
+});
+```
+
+The generated producer is typed from `app/queues/emails.ts`. See the
+[scheduled digest example](../examples/scheduled-job.md) for a cron, consumer,
+and retry flow.
+
+## Related
+
+- [Cron convention](../directory-structure/crons.md)
+- [Queue API](./queues.md)

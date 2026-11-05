@@ -63,3 +63,10 @@ optional `deletedAt`; `TenantAction` is the action union.
 `isValidSlug(value)`, `assertValidSlug(value)`, and `RESERVED_SLUGS` validate
 tenant names. `currentTenant()` reads the tenant from the framework's async
 request context; use it only in work running under that request context.
+
+## Related
+
+- [Tenant-scoped data example](../examples/tenant-scoped-data.md) shows a
+  registry lookup and per-tenant Durable Object.
+- [Tenancy guide](../guides/tenancy.md) covers lifecycle transitions,
+  authorization, and isolation boundaries.

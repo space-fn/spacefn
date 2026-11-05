@@ -42,3 +42,10 @@ and an optional `parse(raw)` function; `ReadResult<T>` is either
 `{ ok: true, value }` or `{ ok: false, code, reason }`.
 
 Close codes: 1008 (policy violation, bad message), 1009 (message too big).
+
+## Related
+
+- [WebSocket chat example](../examples/chat-room.md) includes the Worker route
+  and browser client.
+- [Durable Objects](../directory-structure/durable-objects.md) explains
+  binding discovery and hibernation.

@@ -15,3 +15,22 @@ The Vite plugin calls `durableObjectsConfig` automatically. Generated
 namespaces use SQLite storage and are added to the Worker environment; do not
 declare the derived bindings a second time. `unwrapDurableObject` is a
 low-level compatibility helper for code working with development bindings.
+
+## Use the generated binding
+
+A class named `Counter` in `app/durable-objects/counter.ts` is available as
+`c.env.DO_COUNTER`:
+
+```ts
+import { defineHandler } from "spacefn/handler";
+
+export const POST = defineHandler(async (c) => {
+	const counter = c.env.DO_COUNTER.getByName("main");
+	return { value: await counter.increment() };
+});
+```
+
+The class itself extends Cloudflare's `DurableObject`; spacefn generates the
+export and binding around it. See [Durable Objects](../directory-structure/durable-objects.md),
+[WebSocket chat](../examples/chat-room.md), and
+[tenant-scoped data](../examples/tenant-scoped-data.md).
