@@ -27,10 +27,20 @@ spacefn builds on three ideas:
 | Browser JavaScript and CSS                             | [Client bundles](./directory-structure/client.md)                                                    |
 | Environment and Cloudflare bindings                    | [Environment](./directory-structure/env.md), [Cloudflare setup](./guides/cloudflare-v2.md)           |
 | Deployment and Cloudflare project settings             | [Deployment](./guides/deployment.md)                                                                 |
+| Forms and server-side validation                       | [Forms and validation](./guides/forms-and-validation.md), [Pages](./directory-structure/pages.md)    |
+| SSE and streamed HTML updates                          | [Streaming](./guides/streaming.md), [Datastar SSE](./guides/datastar.md#stream-a-patch-with-sse)     |
+| Uploads and object storage                             | [File storage](./guides/file-storage.md), [R2 upload example](./examples/file-upload.md)             |
 | SQL, migrations, and typed queries                     | [Database](./directory-structure/database.md)                                                        |
 | Queues, scheduled jobs, Durable Objects, and Workflows | [Directory structure](./directory-structure/index.md)                                                |
 | Authentication, tenancy, and tracing                   | [Auth](./guides/auth.md), [tenancy](./guides/tenancy.md), [tracing](./guides/tracing.md)             |
 | HTTP uploads, WebSockets, and tests                    | [HTTP](./api-reference/http.md), [WebSockets](./api-reference/ws.md), [testing](./guides/testing.md) |
+
+## Worked examples
+
+The [examples cookbook](./examples/) connects the APIs into complete flows:
+Datastar forms and CRUD, authentication, R2 uploads, signed webhooks, cron and
+queue processing, Workflows, tenancy, SSE, and WebSocket chat. For a virtual
+scroller, see the linked [Rocket example](./examples/virtual-scroller.md).
 
 ## How it works (the short version)
 

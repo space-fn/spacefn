@@ -110,6 +110,36 @@ Actions on a tenant follow fixed rules, enforced by `transition` in `spacefn/ten
 
 An action that breaks a rule throws `TenantTransitionError` and changes nothing. Map it to a response in your route, for example 409.
 
+```ts
+// app/routes/admin/tenants/[id]/suspend.ts
+import { findTenantById, updateTenantLifecycle } from "@modules/tenants";
+import { defineHandler } from "spacefn/handler";
+import { TenantTransitionError, transition, type LifecycleState } from "spacefn/tenancy";
+
+export const POST = defineHandler(async (c) => {
+	const tenant = await findTenantById(c.env.DB, c.req.param("id"));
+	if (!tenant) return c.notFound();
+
+	let next: LifecycleState;
+	try {
+		next = transition({ status: tenant.status }, "suspend", Date.now());
+	} catch (error) {
+		if (error instanceof TenantTransitionError) {
+			return c.json({ error: "invalid_transition", message: error.message }, 409);
+		}
+		throw error;
+	}
+
+	await updateTenantLifecycle(c.env.DB, tenant.internalId, next);
+	return c.json({ status: next.status });
+});
+```
+
+`findTenantById` and `updateTenantLifecycle` are app-owned, and this route
+must be protected by admin authorization. In real code, include
+`deletedAt` when passing a deleted record into `transition`; the lifecycle
+helper needs it to enforce the restore grace period.
+
 ## Not yet
 
 - The generated `Tenant` class. Today the Durable Object is yours to write. Apply its migrations before it serves anything, so a request never sees a half-migrated database, and keep the ledger so the step is idempotent.
