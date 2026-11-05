@@ -231,6 +231,9 @@ ORDER BY name;
 
 Parameters used only in conditional fragments become optional in the generated function, and the SQL is assembled at run time.
 
+For complete examples that combine joins, aggregates, optional filters, and
+pagination, see [Relational query patterns](../examples/database-queries.md).
+
 ## Executors and dialects
 
 Spacefn is not tied to D1. The generated query functions take a `DbReader` (`{ query<T>(sql, params?) }`), and migrations take a `MigrationExecutor`. Plug in whichever client matches your database.
