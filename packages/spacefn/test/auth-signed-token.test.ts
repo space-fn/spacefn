@@ -13,6 +13,12 @@ test("a valid token returns its claims", async () => {
 	expect(payload.jti).toMatch(/^[A-Za-z0-9_-]{22}$/);
 });
 
+test("a signature that is not base64url is a TokenError, not a crash", async () => {
+	const token = await signToken({ purpose: "invite", subject: "user-7" }, key, hour, t0);
+	const body = token.split(".")[0];
+	await expect(verifyToken(`${body}.%%%`, key, "invite", t0)).rejects.toBeInstanceOf(TokenError);
+});
+
 test("every token has its own id", async () => {
 	const a = await verifyToken(
 		await signToken({ purpose: "p", subject: "s" }, key, hour, t0),

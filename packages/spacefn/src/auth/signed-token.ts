@@ -66,11 +66,17 @@ export async function verifyToken(
 	const [body, signature, extra] = token.split(".");
 	if (!body || !signature || extra !== undefined) throw new TokenError("Token is malformed");
 
+	let signatureBytes: Uint8Array<ArrayBuffer>;
+	try {
+		signatureBytes = new Uint8Array(fromBase64Url(signature));
+	} catch {
+		throw new TokenError("Token signature is invalid");
+	}
 	const key = await hmacKey(secret, "verify");
 	const valid = await crypto.subtle.verify(
 		"HMAC",
 		key,
-		new Uint8Array(fromBase64Url(signature)),
+		signatureBytes,
 		new TextEncoder().encode(body),
 	);
 	if (!valid) throw new TokenError("Token signature is invalid");

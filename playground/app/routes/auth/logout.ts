@@ -6,9 +6,11 @@ import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const token = readCookie(c.req.header("cookie"));
-	if (token) {
+	// A malformed cookie cannot name a session, so there is nothing to delete.
+	const tokenHash = token ? await hashSessionToken(token).catch(() => undefined) : undefined;
+	if (tokenHash) {
 		await migrated(c.env.DB);
-		await deleteSession(d1Executor(c.env.DB), { tokenHash: await hashSessionToken(token) });
+		await deleteSession(d1Executor(c.env.DB), { tokenHash });
 	}
 	c.header("Set-Cookie", clearSessionCookie());
 	return { signedOut: true };

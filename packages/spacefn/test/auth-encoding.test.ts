@@ -16,6 +16,13 @@ test("toBase64Url uses url-safe alphabet", () => {
 	expect(enc).not.toContain("=");
 });
 
+test("fromBase64Url rejects characters outside the url-safe alphabet", () => {
+	expect(() => fromBase64Url("abc+")).toThrow();
+	expect(() => fromBase64Url("ab=c")).toThrow();
+	expect(() => fromBase64Url("%%%")).toThrow();
+	expect(() => fromBase64Url("abcde")).toThrow();
+});
+
 test("constantTimeEqual", () => {
 	expect(constantTimeEqual(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 3]))).toBe(true);
 	expect(constantTimeEqual(new Uint8Array([1, 2, 3]), new Uint8Array([1, 2, 4]))).toBe(false);
