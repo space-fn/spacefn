@@ -14,3 +14,28 @@ listing. The reader is dev-only and is not included in production builds.
 
 Files that cannot be read as UTF-8 are returned with a 415 status. Path
 traversal outside `docs/` is rejected with 403.
+
+## Layout
+
+- **Sidebar.** Each folder is a nav group, named by its `index.md` or `README.md`
+  title. Pages are listed by their first `#` heading. Files sort by name, so a
+  numeric prefix sets the order: `1.getting-started/` is shown as "Getting started".
+  When `docs/` only wraps one folder, as in `docs/spacefn/`, that folder is the top level.
+- **On this page.** `##` and `###` headings get anchor links and are listed on the right.
+- **Search.** Press `⌘K`, `Ctrl+K` or `/` to search page titles and `##` headings.
+- **Previous and next.** Each page links to its neighbours in sidebar order.
+- **Edit this page.** Opens the Markdown file in your editor through Vite.
+- **Theme.** Follows the system setting until you pick light or dark in the header.
+
+A `logo.svg`, `logo.png`, `logo.webp` or `logo.jpg` in `docs/`, its single
+wrapper folder, or the app root is shown in the header. Images inside `docs/`
+are served as files, so Markdown can embed them with relative paths.
+
+GitHub-style alerts render as callouts:
+
+```md
+> [!TIP]
+> Run `vp check` before you commit.
+```
+
+`NOTE`, `TIP`, `IMPORTANT`, `WARNING` and `CAUTION` are supported.
