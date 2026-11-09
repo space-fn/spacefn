@@ -11,11 +11,12 @@ const records = new Map<string, TenantRecord>([
 	["gone", { slug: "gone", internalId: "id-gone", status: "deleted" }],
 ]);
 
-function appWith() {
+function appWith(allowTenantHeader = true) {
 	const app = new Hono<{ Bindings: Env; Variables: TenantVariables }>();
 	app.use(
 		tenantResolver<Env>({
 			baseDomain: "yourapp.com",
+			allowTenantHeader,
 			lookup: async (env, slug) => env.DB.get(slug),
 		}),
 	);
@@ -25,10 +26,15 @@ function appWith() {
 
 const env = { DB: records };
 
-test("serves an active tenant named by the header", async () => {
+test("serves an active tenant named by the header when the header is allowed", async () => {
 	const res = await appWith().request("/whoami", { headers: { "x-tenant-id": "acme" } }, env);
 	expect(res.status).toBe(200);
 	expect(await res.json()).toEqual({ tenant: "id-acme" });
+});
+
+test("ignores the tenant header when it is not allowed", async () => {
+	const res = await appWith(false).request("/whoami", { headers: { "x-tenant-id": "acme" } }, env);
+	expect(res.status).toBe(400);
 });
 
 test("serves an active tenant named by the subdomain", async () => {

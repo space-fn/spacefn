@@ -28,7 +28,7 @@ Tenant data lives in a Durable Object, not in a special folder. The library give
 
 ## Tenant names
 
-A tenant is named by the `X-Tenant-Id` header, or by a subdomain when a base domain is set. The header wins.
+A tenant is named by a subdomain when a base domain is set. The `X-Tenant-Id` header counts only when you pass `allowTenantHeader: true`, and then it wins. Leave it off unless a gateway you control sets the header.
 
 - Slugs are DNS labels: 1 to 63 letters, digits or dashes, not starting or ending with a dash. Case is ignored.
 - `assertValidSlug()` refuses reserved names: `www`, `api`, `admin`, `app`, `apps`, `auth`, `static`, `assets`, `cdn`, `mail`, `support`, `status`, `docs`.
