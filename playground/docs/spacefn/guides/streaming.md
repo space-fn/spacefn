@@ -51,9 +51,13 @@ export const actions = defineActions({
 	refresh: (c) =>
 		streamSSE(c, async (stream) => {
 			const fragment = html`<p id="status">Updated at ${new Date().toISOString()}</p>`;
+			// Datastar reads each line of a patch from its own `elements` prefix.
 			await stream.writeSSE({
 				event: "datastar-patch-elements",
-				data: `elements ${fragment.value}`,
+				data: fragment.value
+					.split("\n")
+					.map((line) => `elements ${line}`)
+					.join("\n"),
 			});
 		}),
 });
