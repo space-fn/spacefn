@@ -108,3 +108,12 @@ test("re-reads env.ts on every sync", async () => {
 	expect(await bindings()).toContain("BETA");
 	expect(await bindings()).not.toContain("ALPHA");
 });
+
+test("refuses an unknown database driver in app/db/<name>/config.ts", async () => {
+	await mkdir(join(root, "app", "db", "main"), { recursive: true });
+	await writeFile(
+		join(root, "app", "db", "main", "config.ts"),
+		'export default { driver: "mysql" };',
+	);
+	await expect(sync(root, "dev")).rejects.toThrow('unknown driver "mysql"');
+});

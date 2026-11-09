@@ -14,8 +14,11 @@ export default defineDatabase({ dialect: "sqlite", driver: "d1" });
 
 `defineDatabase(config?)` returns the config with `dialect` defaulting to
 `"sqlite"`. `DatabaseConfig` accepts `dialect?: "sqlite" | "postgres"` and
-`driver?: "d1" | "libsql"`. This is metadata for generation; it does not open a
-database connection.
+`driver?: "d1" | "libsql"`. The driver defaults to `"d1"`. `migrated()` in the
+generated module runs migrations with the executor for the driver: `d1Executor`
+for D1, `libsqlExecutor` for libsql. A `"postgres"` dialect has no executor yet,
+so `migrated()` rejects with an error; call `migrate()` with your own
+`MigrationExecutor` instead. Neither setting opens a connection.
 
 ## Migrations
 

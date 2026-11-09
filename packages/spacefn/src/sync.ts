@@ -6,6 +6,7 @@ import { generateBindingsSource } from "./bindings/generate";
 import { generateClientManifestSource, generateClientSource } from "./client/generate";
 import { scanClientFiles } from "./client/scan";
 import { analyzeQueries } from "./db/build-queries";
+import type { DatabaseConfig } from "./db/config";
 import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
 import { generateExportsSource, generateWorkerSource } from "./entry";
@@ -156,7 +157,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	for (const name of databases) {
 		const dir = join(app, "db", name);
 		const migrations = await scanMigrations(join(dir, "migrations"));
-		let dialect: "sqlite" | "postgres" = "sqlite";
+		let config: DatabaseConfig = {};
 		const configPath = join(dir, "config.ts");
 		const hasConfig = await access(configPath).then(
 			() => true,
@@ -165,7 +166,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		if (hasConfig) {
 			try {
 				const cfg = await importFresh(configPath);
-				dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
+				config = cfg.default ?? cfg;
 			} catch (error) {
 				throw new SpaceError(
 					"DB_CONFIG_LOAD",
@@ -174,11 +175,22 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 				);
 			}
 		}
+		if (config.driver !== undefined && config.driver !== "d1" && config.driver !== "libsql") {
+			throw new SpaceError(
+				"DB_CONFIG_DRIVER",
+				`app/db/${name}/config.ts sets an unknown driver "${String(config.driver)}"`,
+				{
+					file: `app/db/${name}/config.ts`,
+					hint: 'Use "d1" or "libsql".',
+				},
+			);
+		}
+		const dialect = config.dialect ?? "sqlite";
 		const queries = await analyzeQueries(join(dir, "queries"), migrations, dialect);
 		results.push(
 			await writeIfChanged(
 				join(root, ".space", "db", `${name}.ts`),
-				generateDbSource(name, migrations, queries),
+				generateDbSource(name, migrations, queries, config),
 			),
 		);
 	}
