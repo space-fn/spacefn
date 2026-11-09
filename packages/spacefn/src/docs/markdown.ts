@@ -142,23 +142,29 @@ function decodeHtml(s: string): string {
 export async function renderMarkdown(md: string): Promise<string> {
 	const marked = await loadMarked();
 	if (!marked) return fallbackRender(md);
-	let html = marked(md);
+	const html = marked(md);
 	// highlight code blocks with shiki if available
 	const shiki = await getShiki().catch(() => null);
-	if (shiki) {
-		html = html.replace(
-			/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g,
-			(_m, lang, code) => {
+	return html.replace(
+		/<pre><code class="language-([\w-]+)">([\s\S]*?)<\/code><\/pre>/g,
+		(block, lang: string, code: string) => {
+			let inner = block;
+			if (shiki) {
 				try {
-					return shiki.codeToHtml(decodeHtml(code).replace(/\t/g, "   "), {
+					inner = shiki.codeToHtml(decodeHtml(code).replace(/\t/g, "   "), {
 						lang,
 						themes: { light: "github-light", dark: "github-dark" },
 					});
 				} catch {
-					return _m;
+					// unknown language: keep the plain block
 				}
-			},
-		);
-	}
-	return html;
+			}
+			return codeBlock(lang, inner);
+		},
+	);
+}
+
+/** Frames a code block with its language, so the page can add a label and a copy button. */
+export function codeBlock(lang: string, inner: string): string {
+	return `<div class="code-block" data-lang="${escapeHtml(lang)}"><div class="code-head"><span class="code-lang">${escapeHtml(lang)}</span></div>${inner}</div>`;
 }
