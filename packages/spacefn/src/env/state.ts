@@ -41,6 +41,16 @@ export const envValues = new Proxy({} as Record<string, unknown>, {
 			: undefined,
 });
 
+/**
+ * Runs `fn` with the validated env for the work it starts. Requests get this from
+ * `envMiddleware`; queue batches and cron runs have no middleware, so the generated
+ * worker wraps them with this.
+ */
+export function runWithEnv<T>(schema: Schema | undefined, raw: object, fn: () => T): T {
+	if (!schema) return fn();
+	return store.run(bindEnv(schema, raw), fn);
+}
+
 /** Validates the environment before each request reaches a handler. */
 export function envMiddleware(schema: Schema): MiddlewareHandler {
 	return async (c, next) => {

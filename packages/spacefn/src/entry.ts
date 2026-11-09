@@ -28,6 +28,7 @@ export function generateWorkerSource({
 		"traceConfig",
 		"traceRequest",
 		"envMiddleware",
+		"runWithEnv",
 		"type Schema",
 		...(queues.length > 0 ? ["dispatchQueue", "type QueueBatch"] : []),
 		...(crons.length > 0 ? ["dispatchScheduled"] : []),
@@ -48,9 +49,13 @@ export function generateWorkerSource({
 		lines.push(`import cron${i} from "../app/crons/${stripExtension(file)}";`);
 	}
 	lines.push("");
+	// Queue and cron runs read env through the schema the app was created with.
+	lines.push("let envSchema: Schema | undefined;");
+	lines.push("");
 
 	// createApp
 	lines.push("export function createApp(options?: { env?: Schema }) {");
+	lines.push("\tenvSchema = options?.env;");
 	lines.push("\tconst app = new Hono();");
 	lines.push("\tapp.use(traceConfig());");
 	lines.push("\tapp.use(traceRequest());");
@@ -80,20 +85,22 @@ export function generateWorkerSource({
 			(file, i) => `\t\t\t${JSON.stringify(stripExtension(file))}: queue${i},`,
 		);
 		lines.push("\t\tqueue: (batch: QueueBatch<unknown>, env: unknown, ctx: ExecutionContext) =>");
+		lines.push("\t\t\trunWithEnv(envSchema, env as object, () =>");
 		lines.push("\t\t\tdispatchQueue(batch, env as object, ctx, {");
 		lines.push(...handlers.map((h) => `\t${h}`));
-		lines.push("\t\t\t}),");
+		lines.push("\t\t\t})),");
 	}
 	if (crons.length > 0) {
 		const jobs = crons.map((file, i) => `\t\t\t${JSON.stringify(stripExtension(file))}: cron${i},`);
 		lines.push(
 			"\t\tscheduled: (controller: ScheduledController, env: unknown, ctx: ExecutionContext) =>",
 		);
+		lines.push("\t\t\trunWithEnv(envSchema, env as object, () =>");
 		lines.push(
 			"\t\t\tdispatchScheduled({ cron: controller.cron, scheduledTime: controller.scheduledTime }, env as object, ctx, {",
 		);
 		lines.push(...jobs.map((j) => `\t${j}`));
-		lines.push("\t\t\t}),");
+		lines.push("\t\t\t})),");
 	}
 	lines.push("\t};");
 	lines.push("}");
