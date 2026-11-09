@@ -93,14 +93,24 @@ export function requireWebSocket(request: Request, allowedOrigins?: string[]): v
 			hint: "Use fetch with Upgrade: websocket.",
 		});
 	}
-	if (allowedOrigins && allowedOrigins.length) {
-		const origin = request.headers.get("Origin");
+	const origin = request.headers.get("Origin");
+	if (allowedOrigins && allowedOrigins.length > 0) {
 		if (!origin || !allowedOrigins.includes(origin)) {
 			throw new SpaceError("WS_BAD_ORIGIN", `Origin ${origin ?? "(none)"} is not allowed`, {
 				status: 403,
 				hint: "Add the origin to the allowed list.",
 			});
 		}
+		return;
+	}
+	// Without an allowlist, only the app's own origin may open a socket. Browsers
+	// always send Origin on a WebSocket, so a cross-site page is refused. A request
+	// with no Origin is not from a browser and is allowed.
+	if (origin !== null && origin !== new URL(request.url).origin) {
+		throw new SpaceError("WS_BAD_ORIGIN", `Origin ${origin} is not allowed`, {
+			status: 403,
+			hint: "Pass allowedOrigins to accept another origin.",
+		});
 	}
 }
 
