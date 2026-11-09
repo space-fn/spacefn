@@ -96,3 +96,15 @@ test("infers Cloudflare binding types from cloudflare.config.ts", async () => {
 	expect(bindings).toContain("interface CloudflareBindings extends __SpaceConfigBindings");
 	expect(bindings).not.toContain("EMAIL: string;");
 });
+
+test("re-reads env.ts on every sync", async () => {
+	const bindings = () => readFile(join(root, ".space", "bindings.d.ts"), "utf8");
+	await writeFile(join(root, "app", "env.ts"), "export default { ALPHA: 1 };");
+	await sync(root, "dev");
+	expect(await bindings()).toContain("ALPHA");
+
+	await writeFile(join(root, "app", "env.ts"), "export default { BETA: 1 };");
+	await sync(root, "dev");
+	expect(await bindings()).toContain("BETA");
+	expect(await bindings()).not.toContain("ALPHA");
+});

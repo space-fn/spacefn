@@ -1,5 +1,6 @@
 import { access, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { generateBindingsSource } from "./bindings/generate";
 import { generateClientManifestSource, generateClientSource } from "./client/generate";
@@ -18,6 +19,15 @@ import { scanRoutes } from "./routes/scan";
 import { syncRoutes } from "./routes/sync";
 import { scanCodeFiles } from "./scan";
 import { writeIfChanged } from "./write";
+
+/**
+ * Imports a user config file fresh. Node caches modules by URL, so without a
+ * unique query the first copy would be served for the life of the process, and
+ * edits to env.ts or cloudflare.config.ts would never reach the generated types.
+ */
+function importFresh(file: string): Promise<any> {
+	return import(/* @vite-ignore */ `${pathToFileURL(file).href}?v=${crypto.randomUUID()}`);
+}
 
 /** Convention folders live under `<root>/app`. */
 function appDir(root: string): string {
@@ -57,7 +67,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	let envFields: Array<{ name: string }> = [];
 	if (hasEnv) {
 		try {
-			const mod = await import(join(app, "env.ts"));
+			const mod = await importFresh(join(app, "env.ts"));
 			const schema = mod.default ?? mod;
 			envFields = Object.keys(schema ?? {}).map((name) => ({ name }));
 		} catch (error) {
@@ -77,7 +87,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	);
 	if (hasCloudflareConfig) {
 		try {
-			const cfg = await import(join(root, "cloudflare.config.ts"));
+			const cfg = await importFresh(join(root, "cloudflare.config.ts"));
 			const config = cfg.default ?? cfg;
 			const env = config?.worker?.env ?? config?.env ?? {};
 			cloudflareBindings = env;
@@ -154,7 +164,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		);
 		if (hasConfig) {
 			try {
-				const cfg = await import(configPath);
+				const cfg = await importFresh(configPath);
 				dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
 			} catch (error) {
 				throw new SpaceError(
