@@ -102,14 +102,26 @@ test("redirects a folder URL without a trailing slash", async () => {
 	expect(res.headers.Location).toBe("/__space_docs/sub/");
 });
 
-test("opens the only folder when docs/ just wraps one", async () => {
+test("shows every folder in docs/, not just one", async () => {
+	await rm(join(root, "docs", "hello.md"));
+	await mkdir(join(root, "docs", "guide"), { recursive: true });
+	await writeFile(join(root, "docs", "guide", "index.md"), "# Guide");
+	await writeFile(join(root, "docs", "notes.md"), "# Notes");
+	const res = makeRes();
+	await handler({ url: "/", originalUrl: "/__space_docs/" }, res);
+	expect(res.statusCode).toBe(200);
+	expect(res.body).toContain('href="/__space_docs/guide/"');
+	expect(res.body).toContain(">Notes</a>");
+});
+
+test("a single folder in docs/ stays one entry of the tree", async () => {
 	await rm(join(root, "docs", "hello.md"));
 	await mkdir(join(root, "docs", "guide"), { recursive: true });
 	await writeFile(join(root, "docs", "guide", "index.md"), "# Guide");
 	const res = makeRes();
 	await handler({ url: "/", originalUrl: "/__space_docs/" }, res);
-	expect(res.statusCode).toBe(302);
-	expect(res.headers.Location).toBe("/__space_docs/guide/");
+	expect(res.statusCode).toBe(200);
+	expect(res.body).toContain('class="nav-group-title">Guide<');
 });
 
 test("serves files under encoded paths", async () => {

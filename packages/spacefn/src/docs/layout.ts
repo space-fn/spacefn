@@ -147,13 +147,12 @@ export type PageInput = {
 	/** Path of the source file relative to the app root, for "Edit this page". */
 	source: string | null;
 	tree: DocNode[];
-	nav: DocNode[];
 	brand: Brand;
 };
 
 export function renderPage(input: PageInput): string {
-	const { title, body, toc, rel, source, tree, nav, brand } = input;
-	const group = groupOf(nav, rel);
+	const { title, body, toc, rel, source, tree, brand } = input;
+	const group = groupOf(tree, rel);
 	const eyebrow = group ? `<div class="eyebrow">${escapeHtml(group)}</div>` : "";
 	const logo = brand.logo
 		? `<img src="${escapeHtml(brand.logo)}" alt="" width="64" height="64" />`
@@ -161,7 +160,7 @@ export function renderPage(input: PageInput): string {
 	const index = flattenPages(tree).map((p) => ({
 		title: p.title,
 		href: p.href,
-		group: groupOf(nav, p.rel),
+		group: groupOf(tree, p.rel),
 		headings: p.headings,
 	}));
 	const indexJson = JSON.stringify(index).replace(/</g, "\\u003c");
@@ -169,7 +168,7 @@ export function renderPage(input: PageInput): string {
 		? `<a class="edit-link" href="/__open-in-editor?file=${encodeURIComponent(source)}">${ICONS.edit}Edit this page</a>`
 		: "";
 	const pageTitle = title === brand.name ? `${brand.name} docs` : `${title} · ${brand.name} docs`;
-	const pager = renderPager(nav, rel);
+	const pager = renderPager(tree, rel);
 	const foot = edit || pager ? `<footer class="page-foot">${edit}${pager}</footer>` : "";
 	return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(pageTitle)}</title><script>${THEME_BOOT}</script><style>${DOCS_CSS}</style></head><body>
 <header class="topbar">
@@ -178,7 +177,7 @@ export function renderPage(input: PageInput): string {
 <button class="topbar-search" type="button" aria-label="Search docs">${ICONS.search}<span>Search…</span><kbd>⌘K</kbd></button>
 <div class="topbar-actions"><button class="icon-btn theme-toggle" type="button" aria-label="Toggle dark mode">${ICONS.sun}${ICONS.moon}</button></div>
 </header>
-<div class="shell">${renderSidebar(nav, rel)}<main class="content">${eyebrow}<article class="prose">${body}</article>${foot}</main>${renderToc(toc)}</div>
+<div class="shell">${renderSidebar(tree, rel)}<main class="content">${eyebrow}<article class="prose">${body}</article>${foot}</main>${renderToc(toc)}</div>
 <dialog class="search-dialog" aria-label="Search docs"><div class="search-field">${ICONS.search}<input type="search" placeholder="Search the docs" autocomplete="off" spellcheck="false"><kbd>esc</kbd></div><ul class="search-results" role="listbox"></ul></dialog>
 <script type="application/json" id="docs-index">${indexJson}</script><script>${CLIENT}</script></body></html>`;
 }

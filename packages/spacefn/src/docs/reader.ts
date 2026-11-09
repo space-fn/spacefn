@@ -12,7 +12,6 @@ import {
 	type DocNode,
 	docHref,
 	labelFromName,
-	navRoot,
 	outline,
 	scanDocs,
 } from "./tree";
@@ -61,42 +60,17 @@ function findDir(nodes: DocNode[], rel: string): DocDir | null {
 	return null;
 }
 
-/** The folders that `navRoot` unwraps, outermost first: `docs/spacefn` → ["spacefn"]. */
-function wrapperDirs(tree: DocNode[]): DocDir[] {
-	const out: DocDir[] = [];
-	let current = tree;
-	while (current.length === 1 && current[0]!.kind === "dir") {
-		out.push(current[0]!);
-		current = current[0]!.children;
-	}
-	return out;
-}
-
 async function readBrand(root: string, docsRoot: string, tree: DocNode[]): Promise<Brand> {
-	const wrappers = wrapperDirs(tree);
 	let logo: string | null = null;
-	for (const dir of ["", ...wrappers.map((w) => w.rel)]) {
-		for (const name of LOGO_NAMES) {
-			const rel = dir ? `${dir}/${name}` : name;
-			if (await exists(resolve(docsRoot, rel))) logo = docHref(rel);
-		}
-		if (logo) break;
-	}
-	if (!logo) {
-		for (const name of LOGO_NAMES) {
-			if (await exists(resolve(root, name))) {
-				logo = DOCS_BASE + name;
-				break;
-			}
+	for (const name of LOGO_NAMES) {
+		if ((await exists(resolve(docsRoot, name))) || (await exists(resolve(root, name)))) {
+			logo = DOCS_BASE + name;
+			break;
 		}
 	}
-	const inner = wrappers.at(-1);
-	if (inner) {
-		const home = inner.children.find(
-			(n) => n.kind === "page" && /^(index|README)\.md$/.test(n.rel.split("/").pop()!),
-		);
-		return { name: home?.kind === "page" ? home.title : inner.label, logo };
-	}
+	// docs/README.md or docs/index.md names the site; otherwise the package does.
+	const home = tree.find((n) => n.kind === "page" && /^(index|README)\.md$/.test(n.rel));
+	if (home?.kind === "page") return { name: home.title, logo };
 	let name = "Docs";
 	try {
 		const pkg = JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as {
@@ -163,14 +137,13 @@ export function createDocsReader(root: string) {
 		}
 
 		const tree = await scanDocs(docsRoot);
-		const nav = navRoot(tree);
 		const brand = await readBrand(root, docsRoot, tree);
 		// The nav marks this path as current: a folder's README/index page, or the file itself.
 		let current = rel;
 		const send = (title: string, html: string, source: string | null) => {
 			const { html: body, toc } = enhance(html);
 			res.setHeader("Content-Type", "text/html; charset=utf-8");
-			res.end(renderPage({ title, body, toc, rel: current, source, tree, nav, brand }));
+			res.end(renderPage({ title, body, toc, rel: current, source, tree, brand }));
 		};
 
 		if (st.isDirectory()) {
@@ -192,11 +165,6 @@ export function createDocsReader(root: string) {
 			}
 			const dir = rel ? findDir(tree, rel) : null;
 			const children = dir ? dir.children : tree;
-			// docs/ that only wraps one folder (docs/spacefn) opens that folder's home page.
-			if (!rel && children.length === 1 && children[0]!.kind === "dir") {
-				redirect(children[0]!.href);
-				return;
-			}
 			const label = dir?.label ?? "Documentation";
 			send(
 				label,

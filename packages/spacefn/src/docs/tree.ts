@@ -130,13 +130,6 @@ export async function scanDocs(docsRoot: string): Promise<DocNode[]> {
 	return walk(docsRoot, "");
 }
 
-/** Unwraps `docs/` folders that only hold one folder, so `docs/spacefn/*` becomes the top level. */
-export function navRoot(nodes: DocNode[]): DocNode[] {
-	let current = nodes;
-	while (current.length === 1 && current[0]!.kind === "dir") current = current[0]!.children;
-	return current;
-}
-
 export function flattenPages(nodes: DocNode[]): DocPage[] {
 	const out: DocPage[] = [];
 	for (const n of nodes) {
