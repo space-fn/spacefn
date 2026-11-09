@@ -43,6 +43,15 @@ test("the window resets after it ends", async () => {
 	}
 });
 
+test("the in-memory store drops ended windows so it does not grow forever", async () => {
+	const store = memoryRateStore();
+	await store.hit("a", 1000, 0);
+	await store.hit("b", 1000, 0);
+	expect(store.size()).toBe(2);
+	await store.hit("c", 1000, 61_000);
+	expect(store.size()).toBe(1);
+});
+
 test("a request with no client address shares one bucket", async () => {
 	const app = appWith(1);
 	expect((await app.request("/login", { method: "POST" })).status).toBe(200);

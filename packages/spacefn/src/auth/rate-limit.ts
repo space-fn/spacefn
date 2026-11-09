@@ -16,11 +16,25 @@ export interface RateStore {
 	hit(key: string, windowMs: number, now: number): Promise<RateHit>;
 }
 
-/** An in-memory store. Correct within one isolate only: for development and tests. */
-export function memoryRateStore(): RateStore {
+/** How often the in-memory store drops windows that have ended. */
+const SWEEP_EVERY_MS = 60_000;
+
+/**
+ * An in-memory store. Correct within one isolate only: for development and tests.
+ * Windows that have ended are removed at most once a minute, so memory follows the
+ * keys seen recently rather than every key ever seen.
+ */
+export function memoryRateStore(): RateStore & { size(): number } {
 	const windows = new Map<string, RateHit>();
+	let lastSweep = Number.NEGATIVE_INFINITY;
 	return {
 		async hit(key, windowMs, now) {
+			if (now - lastSweep >= SWEEP_EVERY_MS) {
+				for (const [name, window] of windows) {
+					if (now >= window.resetAt) windows.delete(name);
+				}
+				lastSweep = now;
+			}
 			const current = windows.get(key);
 			const next =
 				current && now < current.resetAt
@@ -29,6 +43,7 @@ export function memoryRateStore(): RateStore {
 			windows.set(key, next);
 			return next;
 		},
+		size: () => windows.size,
 	};
 }
 
