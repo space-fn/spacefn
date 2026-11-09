@@ -193,7 +193,13 @@ export async function putUpload(
 							? ".pdf"
 							: "";
 	const key = `${options.prefix ?? "uploads"}/${crypto.randomUUID()}${ext}`;
-	await bucket.put(key, file.stream(), {
+	// R2 rejects a stream whose length is unknown, and an uploaded file's stream is
+	// one. The size is known, so declare it with FixedLengthStream when the runtime has it.
+	const body =
+		typeof FixedLengthStream === "function"
+			? file.stream().pipeThrough(new FixedLengthStream(file.size))
+			: file.stream();
+	await bucket.put(key, body, {
 		httpMetadata: { contentType: options.contentType ?? file.type },
 	});
 	return key;
