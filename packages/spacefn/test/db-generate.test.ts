@@ -19,14 +19,14 @@ async function importGenerated(migrations: Parameters<typeof generateDbSource>[1
 
 test("generated migrated(): a failed first run is not cached and can be retried", async () => {
 	const mod = await importGenerated([{ id: "0001_t", sql: "CREATE TABLE t (id INTEGER)" }]);
-	let failFirst = true;
+	let failures = 2; // one attempt and its single retry both fail
 	let calls = 0;
 	const db = {
 		prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }),
 		batch: async () => {
 			calls++;
-			if (failFirst) {
-				failFirst = false;
+			if (failures > 0) {
+				failures--;
 				throw new Error("transient D1 error");
 			}
 			return [];

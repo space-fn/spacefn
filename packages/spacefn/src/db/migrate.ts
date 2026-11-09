@@ -137,11 +137,28 @@ export async function applyMigrations(
 		await db.transaction([
 			...splitStatements(migration.sql),
 			{
-				sql: `INSERT INTO ${LEDGER} (id, checksum, applied_at) VALUES (?, ?, datetime('now'))`,
-				params: [migration.id, sum],
+				sql: `INSERT INTO ${LEDGER} (id, checksum, applied_at) VALUES (?, ?, ?)`,
+				// A bound timestamp works on every dialect; datetime('now') is SQLite-only.
+				params: [migration.id, sum, new Date().toISOString()],
 			},
 		]);
 		ran.push(migration.id);
 	}
 	return ran;
+}
+
+/**
+ * Applies pending migrations, retrying once. A cold start can race another isolate
+ * to the same migration: the loser's batch fails and rolls back. The retry reads
+ * the ledger again, finds the winner's rows, and applies only what is left.
+ */
+export async function applyMigrationsWithRetry(
+	db: MigrationExecutor,
+	migrations: Migration[],
+): Promise<string[]> {
+	try {
+		return await applyMigrations(db, migrations);
+	} catch {
+		return applyMigrations(db, migrations);
+	}
 }

@@ -27,7 +27,7 @@ export function generateDbSource(
 	blocks.push("");
 
 	blocks.push(
-		'import { applyMigrations, rollbackMigrations, type MigrationExecutor } from "spacefn/db";',
+		'import { applyMigrations, applyMigrationsWithRetry, rollbackMigrations, type MigrationExecutor } from "spacefn/db";',
 	);
 	blocks.push("");
 	blocks.push(
@@ -42,7 +42,7 @@ export function generateDbSource(
 	blocks.push("export function migrated(db: unknown): Promise<string[]> {");
 	blocks.push("\tlet pending = ready.get(db as WeakKey);");
 	blocks.push("\tif (!pending) {");
-	blocks.push("\t\tpending = applyMigrations(d1Executor(db as never), migrations);");
+	blocks.push("\t\tpending = applyMigrationsWithRetry(d1Executor(db as never), migrations);");
 	blocks.push("\t\tpending.catch(() => {");
 	blocks.push("\t\t\tready.delete(db as WeakKey);");
 	blocks.push("\t\t});");

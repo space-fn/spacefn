@@ -4,6 +4,7 @@ import { expect, test } from "vite-plus/test";
 
 import {
 	applyMigrations,
+	applyMigrationsWithRetry,
 	checksum,
 	MigrationError,
 	rollbackMigrations,
@@ -192,4 +193,33 @@ test("binds the ledger insert on apply and the ledger delete on rollback", async
 		sql: "DELETE FROM space_migrations WHERE id = ?",
 		params: ["0010_create"],
 	});
+});
+
+test("a cold start that loses a race to another isolate catches up on retry", async () => {
+	const { db, executor } = sqlite();
+	await applyMigrations(executor, [first]); // another isolate finished 0001 first
+
+	// This isolate's first ledger read is stale and shows nothing applied yet.
+	let staleRead = true;
+	const stale: MigrationExecutor = {
+		query: async <T>(sql: string, params?: unknown[]) => {
+			if (staleRead) {
+				staleRead = false;
+				return [] as T[];
+			}
+			return executor.query<T>(sql, params);
+		},
+		transaction: (statements) => executor.transaction(statements),
+	};
+
+	expect(await applyMigrationsWithRetry(stale, [first, second])).toEqual(["0002_done"]);
+	const columns = db.prepare("PRAGMA table_info(todos)").all() as { name: string }[];
+	expect(columns.map((c) => c.name)).toContain("done");
+});
+
+test("ledger rows record applied_at as an ISO timestamp", async () => {
+	const { db, executor } = sqlite();
+	await applyMigrations(executor, [first]);
+	const row = db.prepare("SELECT applied_at FROM space_migrations").get() as { applied_at: string };
+	expect(row.applied_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 });
