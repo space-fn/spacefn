@@ -62,6 +62,13 @@ export function spaceSync(
 			clientFiles = await scanClientFiles(join(root, "app", "client"));
 			await sync(root, mode);
 			return {
+				// Generated code imports these two, so the plugin owns them. Other aliases stay the app's to set.
+				resolve: {
+					alias: {
+						"@space": join(root, ".space"),
+						"@app": join(root, "app"),
+					},
+				},
 				environments: {
 					client: { build: { emptyOutDir: false } },
 				},
