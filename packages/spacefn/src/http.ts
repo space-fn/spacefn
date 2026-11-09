@@ -62,68 +62,45 @@ export async function readUploads(
 	const maxFileSize = options.maxFileSize ?? DEFAULT_MAX_FILE;
 	const maxFiles = options.maxFiles ?? DEFAULT_MAX_FILES;
 	const allowed = options.allowedTypes;
-
 	const maxBodySize = options.maxBodySize ?? maxFileSize * maxFiles + 1024 * 1024;
 
-	let bodyBytes: Uint8Array;
-	try {
-		const raw = c.req.raw;
-		const cl = Number(raw.headers.get("content-length") ?? "0");
-		if (cl > 0 && cl > maxBodySize) {
-			throw new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
-				status: 413,
-				hint: "Reduce payload size.",
-			});
-		}
-		const reader = raw.body?.getReader();
-		if (!reader) {
-			bodyBytes = new Uint8Array();
-		} else {
-			const chunks: Uint8Array[] = [];
-			let total = 0;
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-				total += value.byteLength;
-				if (total > maxBodySize) {
-					await reader.cancel();
-					throw new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
-						status: 413,
-						hint: "Reduce payload size.",
-					});
-				}
-				chunks.push(value);
-			}
-			bodyBytes = new Uint8Array(total);
-			let off = 0;
-			for (const ch of chunks) {
-				bodyBytes.set(ch, off);
-				off += ch.byteLength;
-			}
-		}
-	} catch (error) {
-		if (error instanceof SpaceError) throw error;
-		throw new SpaceError("UPLOAD_READ", "Failed to read request body", {
-			status: 400,
-			cause: error,
+	const tooLarge = () =>
+		new SpaceError("UPLOAD_TOO_LARGE", "Request body too large", {
+			status: 413,
+			hint: "Reduce payload size.",
 		});
-	}
 
-	let body: Record<string, unknown>;
+	const raw = c.req.raw;
+	if (Number(raw.headers.get("content-length") ?? "0") > maxBodySize) throw tooLarge();
+
+	// Count bytes as they stream in. An oversized body stops early, and the body is
+	// never copied into a second buffer before the form is parsed.
+	let received = 0;
+	let exceeded = false;
+	const limited = raw.body?.pipeThrough(
+		new TransformStream<Uint8Array, Uint8Array>({
+			transform(chunk, controller) {
+				received += chunk.byteLength;
+				if (received > maxBodySize) {
+					exceeded = true;
+					controller.error(tooLarge());
+					return;
+				}
+				controller.enqueue(chunk);
+			},
+		}),
+	);
+
+	let form: FormData;
 	try {
-		const fd = await new Request(c.req.raw.url, {
-			method: c.req.raw.method,
-			headers: c.req.raw.headers,
-			body: bodyBytes as BodyInit,
-		}).formData();
-		body = {};
-		for (const [k, v] of fd.entries()) {
-			const existing = body[k];
-			if (existing === undefined) body[k] = v;
-			else if (Array.isArray(existing)) (existing as unknown[]).push(v);
-			else body[k] = [existing, v];
-		}
+		form = await new Request(raw.url, {
+			method: raw.method,
+			headers: raw.headers,
+			body: limited ?? null,
+			duplex: "half",
+		} as RequestInit).formData();
 	} catch (error) {
+		if (exceeded) throw tooLarge();
 		throw new SpaceError("UPLOAD_PARSE", "Failed to parse multipart body", {
 			status: 400,
 			hint: "Ensure Content-Type is multipart/form-data.",
@@ -174,17 +151,19 @@ export async function readUploads(
 		}
 	};
 
-	for (const [key, value] of Object.entries(body)) {
+	for (const [key, value] of form.entries()) {
 		if (value instanceof File) {
 			await handleFile(key, value);
-		} else if (Array.isArray(value)) {
-			for (const v of value) {
-				if (v instanceof File) await handleFile(key, v);
-				else if (typeof v === "string") fields[key] = v;
-			}
-		} else if (typeof value === "string") {
-			fields[key] = value;
+			continue;
 		}
+		// A text field holds one value. Keeping only the last would drop data silently.
+		if (Object.hasOwn(fields, key)) {
+			throw new SpaceError("UPLOAD_DUPLICATE_FIELD", `Field "${key}" was sent more than once`, {
+				status: 400,
+				hint: "Send one value per text field, or read repeated values with c.req.formData().",
+			});
+		}
+		fields[key] = value;
 	}
 
 	return { fields, files };

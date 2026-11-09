@@ -31,7 +31,7 @@ Parses a multipart body and returns `{ fields, files }`.
 - `maxBodySize` (default `maxFileSize * maxFiles + 1 MiB`): whole-body cap, enforced while reading. Applies to chunked requests too.
 - `allowedTypes`: list of MIME types, matched against the **detected** type (magic bytes), not the client's `Content-Type`.
 
-Throws `SpaceError` with status 413 (too large), 415 (bad type), 400 (parse/read error), 400 (too many files).
+Throws `SpaceError` with status 413 (too large), 415 (bad type), 400 (parse/read error), 400 (too many files, or a text field sent more than once).
 
 Note: Workers buffer the parsed form in memory. The cap prevents unbounded use; it is not a true stream.
 
