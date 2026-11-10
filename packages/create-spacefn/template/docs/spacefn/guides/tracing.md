@@ -78,6 +78,37 @@ export async function charge(orderId: string) {
 
 `withSpan` takes `{ attributes, kind, parent }` as its third argument. `setError(message)` marks a span failed without throwing.
 
+## Inspect a span in a test
+
+Install a small in-memory tracer to verify the name, attributes, and error
+behavior without sending telemetry:
+
+```ts
+import { setTracer, withSpan, type SpanRecord } from "spacefn/trace";
+import { afterEach, expect, test } from "vite-plus/test";
+
+afterEach(() => setTracer(undefined));
+
+test("records an order span", async () => {
+	const spans: SpanRecord[] = [];
+	setTracer({ onEnd: (record) => spans.push(record) });
+
+	await withSpan("orders.charge", async (span) => {
+		span.setAttributes({ "order.id": "ord_123" });
+	});
+
+	expect(spans[0]).toMatchObject({
+		name: "orders.charge",
+		kind: "internal",
+		attributes: { "order.id": "ord_123" },
+	});
+});
+```
+
+Trace and span IDs are generated at runtime. Assert stable names and
+attributes, not particular ID values. The test tracer is global to the
+isolate; reset it after each test to avoid leaking records between tests.
+
 ## Limits
 
 - No sampling. Every request is exported. Add a sampler before production traffic gets large.

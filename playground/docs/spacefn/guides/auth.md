@@ -4,6 +4,8 @@ spacefn ships the parts of authentication that are easy to get wrong, and leaves
 
 Import from `spacefn/auth`.
 
+The helpers split along the project layout. Hashing, sessions, tokens, and TOTP need no request, so call them from your `modules/` (an `accounts` module, say), passing secrets such as the pepper in as arguments. The middleware factories (`sessionResolver`, `requireSession`, `csrfGuard`, `rateLimit`) are setup and are wired in `app/`. The snippets below show each API on its own; the [sign-up and sign-in example](../examples/auth-flow.md) shows them placed in a module and its page actions.
+
 ## Password hashing
 
 ```ts
@@ -97,21 +99,24 @@ For a normal session flow, put the resolver before routes and require a user on
 protected routes:
 
 ```ts
+import { mainDb } from "@app/db/main_db";
+import { sessionFor, touchSession } from "@modules/accounts";
 import { requireSession, sessionResolver } from "spacefn/auth";
 
 app.use(
-	sessionResolver({
-		lookup: (env, tokenHash) => findSessionAndUser(env.DB, tokenHash),
-		touch: (env, tokenHash, lastSeenAt) => touchSession(env.DB, tokenHash, lastSeenAt),
+	sessionResolver<{ DB: D1Database }, { id: number; email: string }>({
+		lookup: async (env, tokenHash) => sessionFor(await mainDb(env.DB), tokenHash),
+		touch: async (env, tokenHash, lastSeenAt) =>
+			touchSession(await mainDb(env.DB), tokenHash, lastSeenAt),
 	}),
 );
 
 app.get("/account", requireSession(), (c) => c.json({ user: c.get("user") }));
 ```
 
-`findSessionAndUser` and `touchSession` are app-owned database functions. The
-middleware hashes the cookie token before calling `lookup`; persist only
-`tokenHash`, never the browser token.
+`sessionFor` and `touchSession` are functions in your accounts module that
+call generated queries. The middleware hashes the cookie token before calling
+`lookup`; persist only `tokenHash`, never the browser token.
 
 - The browser gets a random 256-bit token in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie. The database stores only its SHA-256 hash, so a leaked table cannot be replayed.
 - A session ends at the `expiresAt` value you store or after 7 days idle by default. `isSessionActive` checks both; set `expiresAt` when creating the row, commonly 30 days after sign-in.

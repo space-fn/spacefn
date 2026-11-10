@@ -15,6 +15,24 @@ describe("requireWebSocket", () => {
 		expect(() => requireWebSocket(req, ["https://ok.com"])).toThrow(/not allowed/);
 	});
 
+	test("without an allowlist, refuses a cross-site origin", () => {
+		const req = new Request("https://app.example.com/socket", {
+			headers: { Upgrade: "websocket", Origin: "https://evil.com" },
+		});
+		expect(() => requireWebSocket(req)).toThrow(/not allowed/);
+	});
+
+	test("without an allowlist, accepts the app's own origin and a non-browser client", () => {
+		const own = new Request("https://app.example.com/socket", {
+			headers: { Upgrade: "websocket", Origin: "https://app.example.com" },
+		});
+		const native = new Request("https://app.example.com/socket", {
+			headers: { Upgrade: "websocket" },
+		});
+		expect(() => requireWebSocket(own)).not.toThrow();
+		expect(() => requireWebSocket(native)).not.toThrow();
+	});
+
 	test("allows valid origin", () => {
 		const req = new Request("http://localhost/", {
 			headers: { Upgrade: "websocket", Origin: "https://ok.com" },

@@ -67,6 +67,7 @@ Create a route that attaches each browser stream to the same named object,
 
 ```ts
 // app/routes/events.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler((c) =>
@@ -78,6 +79,7 @@ Publish an update through another route:
 
 ```ts
 // app/routes/events/publish.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {

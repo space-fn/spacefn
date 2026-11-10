@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 import { Command } from "commander";
 
+import { resolveBin, runBin } from "./bin";
 import { SpaceError } from "./errors";
 
 const require = createRequire(import.meta.url);
@@ -19,22 +19,21 @@ const program = new Command();
 
 program.name("space").description("CLI for spacefn projects").version(CLI_VERSION);
 
-function run(command: string, args: string[]): Promise<number> {
-	return new Promise((resolveExit) => {
-		const child = spawn("pnpm", ["exec", command, ...args], { stdio: "inherit" });
-		child.on("exit", (code) => resolveExit(code ?? 0));
-	});
+/** Runs the app's `vp` CLI from vite-plus, the same tool its own dev and build scripts use. */
+function runVp(args: string[]): Promise<number> {
+	const cwd = process.cwd();
+	return runBin(resolveBin("vite-plus", "vp", join(cwd, "package.json")), args, cwd);
 }
 
 program
 	.command("dev")
 	.description("Start the Vite dev server")
-	.action(async () => process.exit(await run("vite", ["dev"])));
+	.action(async () => process.exit(await runVp(["dev"])));
 
 program
 	.command("build")
 	.description("Build the app")
-	.action(async () => process.exit(await run("vite", ["build"])));
+	.action(async () => process.exit(await runVp(["build"])));
 
 program
 	.command("gen")
@@ -57,28 +56,12 @@ program
 	.command("deploy")
 	.description("Build and deploy to Cloudflare")
 	.action(async () => {
-		const buildCode = await run("vite", ["build"]);
+		const buildCode = await runVp(["build"]);
 		if (buildCode !== 0) process.exit(buildCode);
-		// `cf`, the Cloudflare CLI, ships with spacefn as a dependency. Resolve its
-		// bin from this package: a dependency's bin is not on the app's PATH.
-		const { readFileSync } = await import("node:fs");
-		const { createRequire } = await import("node:module");
-		const { dirname, join } = await import("node:path");
-		const nodeRequire = createRequire(import.meta.url);
-		const cfPkgPath = nodeRequire.resolve("cf/package.json");
-		const cfPkg = JSON.parse(readFileSync(cfPkgPath, "utf8")) as {
-			bin?: string | Record<string, string>;
-		};
-		const entry = typeof cfPkg.bin === "string" ? cfPkg.bin : cfPkg.bin?.cf;
-		if (!entry) {
-			console.error("The cf package declares no bin. Reinstall dependencies.");
-			process.exit(1);
-		}
-		const code = await new Promise<number>((done) => {
-			const child = spawn(join(dirname(cfPkgPath), entry), ["deploy"], { stdio: "inherit" });
-			child.on("exit", (c) => done(c ?? 0));
-		});
-		process.exit(code);
+		// `cf`, the Cloudflare CLI, ships with spacefn as a dependency, so resolve it
+		// from this package: a dependency's bin is not visible to the app.
+		const cfBin = resolveBin("cf", "cf", import.meta.url);
+		process.exit(await runBin(cfBin, ["deploy"], process.cwd()));
 	});
 
 program

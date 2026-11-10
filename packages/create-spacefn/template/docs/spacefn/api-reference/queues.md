@@ -31,9 +31,29 @@ call time. Prefer the generated typed producers from `@space/queues` when
 possible. `QueueBodyOf<Handler>` extracts the consumer body type from a
 `QueueHandler`.
 
+```ts
+import { queues } from "@space/queues";
+
+await queues.emails.send({ to: "a@example.test" });
+await queues.emails.sendBatch([{ to: "b@example.test" }, { to: "c@example.test" }]);
+await queues.emails.send({ to: "d@example.test" }, { delaySeconds: 30 });
+```
+
+The generated producer name is camelCase (`order-jobs.ts` becomes
+`queues.orderJobs`). The payload is inferred from the consumer's type
+argument; a mismatched payload fails type checking. For acknowledgment,
+retry, and batch behavior, see the [queue convention](../directory-structure/queues.md)
+and [scheduled digest example](../examples/scheduled-job.md).
+
 ## Configuration helpers
 
 `queueBinding(file)` derives a producer binding name from a consumer filename.
 `queueConfig(files)` returns the `cf/config` env bindings and queue triggers
 implied by those files. These helpers are used by the Vite plugin; application
 code normally does not call them directly.
+
+## Related
+
+- [Queue convention](../directory-structure/queues.md)
+- [Cron API](./crons.md)
+- [Webhook receiver example](../examples/webhook-receiver.md)

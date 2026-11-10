@@ -35,8 +35,9 @@ export function sessionResolver<Env extends object, User>(
 ): MiddlewareHandler<{ Bindings: Env; Variables: { user?: User } }> {
 	return async (c, next) => {
 		const token = readCookie(c.req.header("cookie"), options.cookie);
-		if (token) {
-			const tokenHash = await hashSessionToken(token);
+		// A cookie that is not a valid token is no session at all; it must not fail the request.
+		const tokenHash = token ? await hashSessionToken(token).catch(() => undefined) : undefined;
+		if (tokenHash) {
 			const session = await options.lookup(c.env, tokenHash);
 			const now = Date.now();
 			if (session && isSessionActive(session, now, options.policy)) {

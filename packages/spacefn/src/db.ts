@@ -1,5 +1,6 @@
 export {
 	applyMigrations,
+	applyMigrationsWithRetry,
 	rollbackMigrations,
 	checksum,
 	MigrationError,

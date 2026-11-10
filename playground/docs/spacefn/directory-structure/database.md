@@ -78,13 +78,23 @@ DROP TABLE todos;
 
 ### Applying and rolling back
 
-The generated `migrated(db)` applies what is missing and caches the result per database object. Call it before queries that need the schema, once per isolate. A failed run is retried on the next call:
+The generated `migrated(db)` applies what is missing and caches the result per database object. Call it before queries that need the schema, once per isolate. A failed run is retried on the next call.
+
+Put that call in one connect helper beside the database folder, and use the helper everywhere instead of calling `migrated` in each route:
 
 ```ts
-import { migrated } from "@space/db/main_db";
+// app/db/main_db.ts
 
-await migrated(c.env.DB);
+import { migrated } from "@space/db/main_db";
+import { d1Executor, type DbReader } from "spacefn/db";
+
+export async function mainDb(binding: D1Database): Promise<DbReader> {
+	await migrated(binding);
+	return d1Executor(binding);
+}
 ```
+
+spacefn reads only the folders in `app/db/`, so this file is ignored by the generator. See [Use queries from your code](#use-queries-from-your-code).
 
 To drive migrations yourself, use the generated `migrate`, or `runMigrations` when you want the traced variant:
 
@@ -119,11 +129,45 @@ SELECT id, title, done FROM todos WHERE id = :id;
 
 Parameters are named (`:id`). Positional `?` is refused, so every value has a name in the generated type. A repeated name is bound once per use.
 
-Generated code (`.space/db/<name>.ts`):
+Each generated function takes an executor and the named parameters:
 
 ```ts
-const row = await findTodo(d1Executor(c.env.DB), { id: 2 }); // FindTodoRow | undefined
+const row = await findTodo(db, { id: 2 }); // FindTodoRow | undefined
 ```
+
+### Use queries from your code
+
+The SQL is part of your project, so the generated functions are called from `modules/`, not from routes. A module takes the executor as a `DbReader` argument; the `app/` file that calls it supplies one from the connect helper:
+
+```ts
+// modules/todos/todos.ts
+
+import { findTodo } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
+import type { DbReader } from "spacefn/db";
+
+export async function todoById(db: DbReader, rawId: string | undefined) {
+	const id = Number(rawId);
+	if (!Number.isSafeInteger(id)) throw new AppError("invalid", "The id must be a whole number.");
+	const todo = await findTodo(db, { id });
+	if (!todo) throw new AppError("not_found", "No such todo.");
+	return todo;
+}
+```
+
+```ts
+// app/routes/todos/[id].ts
+
+import { mainDb } from "@app/db/main_db";
+import { todoById } from "@modules/todos";
+import { defineHandler } from "spacefn/handler";
+
+export const GET = defineHandler(async (c) => todoById(await mainDb(c.env.DB), c.req.param("id")));
+```
+
+Because the module only needs something with a `query` method, the same function runs against D1, a Durable Object's SQLite, or libSQL, and a test can pass a scratch database. See [modules](./modules.md).
+
+Generated code (`.space/db/<name>.ts`):
 
 ### What the generated TypeScript looks like
 
@@ -231,6 +275,9 @@ ORDER BY name;
 
 Parameters used only in conditional fragments become optional in the generated function, and the SQL is assembled at run time.
 
+For complete examples that combine joins, aggregates, optional filters, and
+pagination, see [Relational query patterns](../examples/database-queries.md).
+
 ## Executors and dialects
 
 Spacefn is not tied to D1. The generated query functions take a `DbReader` (`{ query<T>(sql, params?) }`), and migrations take a `MigrationExecutor`. Plug in whichever client matches your database.
@@ -299,7 +346,7 @@ Each subdirectory of `app/db/` becomes its own module: `@space/db/<name>`. A pro
 - A CTE or subquery column that SQLite cannot trace to a table needs `@column`.
 - Parameter types are not inferred from comparisons. Annotate them when they matter.
 - One query per file.
-- Migrations are not applied automatically. Call the generated `migrated(db)` for D1, or `migrate(executor)` with the matching executor. Two isolates that start together can race to apply D1 migrations, so applying them in a controlled deploy step is safer. The CLI has `space db doctor` for validation, but no `space migrate` command.
+- Migrations are not applied automatically. Call the generated `migrated(db)` for D1 (in the connect helper), or `migrate(executor)` with the matching executor. Two isolates that start together can race to apply D1 migrations, so applying them in a controlled deploy step is safer. The CLI has `space db doctor` for validation, but no `space migrate` command.
 
 ## Tracing
 

@@ -41,9 +41,18 @@ Set runtime values in Cloudflare, not in source control:
 - Production: Cloudflare Dashboard > Worker > Settings > Variables and Secrets
 - App-defined bindings: `worker.env` in `cloudflare.config.ts`
 
+For local development, create `.dev.vars` (do not commit it):
+
+```dotenv
+GREETING=hello
+API_KEY=local-development-secret
+```
+
 For example, a secret binding is declared in `cloudflare.config.ts`, then the actual secret value is added in Cloudflare:
 
 ```ts
+import { bindings, defineConfig } from "cf/config";
+
 export default defineConfig({
 	worker: {
 		entrypoint: "./app/entry.ts",
@@ -59,6 +68,12 @@ export default defineConfig({
 
 The `app/env.ts` schema validates the value for the app at runtime; it does not replace the Cloudflare secret configuration step. See [Cloudflare setup](./cloudflare-v2.md) and [Environment](../directory-structure/env.md).
 
+For production, open the Worker's **Settings → Variables and Secrets** in the
+Cloudflare Dashboard and add the `API_KEY` secret value there. The code only
+declares the binding name and kind; it does not contain the production value.
+Do not copy a production secret into `.dev.vars`, `cloudflare.config.ts`, or
+the repository.
+
 ## Preview and release flow
 
 A practical flow is:
@@ -70,3 +85,12 @@ A practical flow is:
 5. When ready, run `pnpm cf deploy` to publish to production.
 
 If you prefer the built-in wrapper, `pnpm exec space deploy` is equivalent to the project build + Cloudflare deploy flow, but the Cloudflare dashboard settings above remain the simplest way to wire up the deployment pipeline.
+
+## Before deploying
+
+- Confirm the Dashboard uses build `pnpm run build`, deploy `pnpm cf deploy`,
+  preview `pnpm cf preview`, and root directory `/`.
+- Review `worker.env` and ensure every runtime binding is declared.
+- Add production secret values in Cloudflare; `app/env.ts` only validates
+  values when the Worker receives them.
+- Run `pnpm run build`, then preview before deploying to production.

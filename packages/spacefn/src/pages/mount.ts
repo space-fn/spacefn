@@ -19,10 +19,10 @@ export function mountPage<P>(
 	server?: ServerModule,
 	options: MountPageOptions = {},
 ): void {
+	// Without a page-level onError, errors go to the app's app.onError like route errors do.
 	const handleError = async (error: unknown, c: Context): Promise<Response> => {
 		if (options.onError) return options.onError(error, c);
-		console.error("[spacefn] page error", error);
-		return c.json({ error: "internal_error", message: "Something went wrong" }, 500);
+		throw error;
 	};
 
 	app.get(path, async (c: Context) => {

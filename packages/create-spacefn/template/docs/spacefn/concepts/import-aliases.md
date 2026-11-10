@@ -60,8 +60,6 @@ import { resolve } from "node:path";
 export default defineConfig({
 	resolve: {
 		alias: {
-			"@space": resolve(process.cwd(), ".space"),
-			"@app": resolve(process.cwd(), "app"),
 			"@modules": resolve(process.cwd(), "modules"),
 			"@utils": resolve(process.cwd(), "utils"),
 			"@lib": resolve(process.cwd(), "lib"),
@@ -71,7 +69,7 @@ export default defineConfig({
 });
 ```
 
-The `space()` plugin does not inject aliases. It only regenerates `.space/` and merges the Cloudflare config. The alias map is yours to keep in both files.
+The `space()` plugin adds `@space` and `@app` itself, resolved from the project root, because generated code imports them. Every other alias is yours to define in both files; the plugin does not touch them.
 
 The client build inherits the root alias map through `runClientBuild`, so you do not need a separate alias list for `app/client/`.
 

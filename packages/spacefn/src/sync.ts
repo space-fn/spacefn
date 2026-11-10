@@ -1,10 +1,12 @@
 import { access, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { generateBindingsSource } from "./bindings/generate";
 import { generateClientManifestSource, generateClientSource } from "./client/generate";
 import { scanClientFiles } from "./client/scan";
 import { analyzeQueries } from "./db/build-queries";
+import type { DatabaseConfig } from "./db/config";
 import { generateDbSource } from "./db/generate-db";
 import { scanMigrations } from "./db/scan";
 import { generateExportsSource, generateWorkerSource } from "./entry";
@@ -18,6 +20,15 @@ import { scanRoutes } from "./routes/scan";
 import { syncRoutes } from "./routes/sync";
 import { scanCodeFiles } from "./scan";
 import { writeIfChanged } from "./write";
+
+/**
+ * Imports a user config file fresh. Node caches modules by URL, so without a
+ * unique query the first copy would be served for the life of the process, and
+ * edits to env.ts or cloudflare.config.ts would never reach the generated types.
+ */
+function importFresh(file: string): Promise<any> {
+	return import(/* @vite-ignore */ `${pathToFileURL(file).href}?v=${crypto.randomUUID()}`);
+}
 
 /** Convention folders live under `<root>/app`. */
 function appDir(root: string): string {
@@ -57,7 +68,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	let envFields: Array<{ name: string }> = [];
 	if (hasEnv) {
 		try {
-			const mod = await import(join(app, "env.ts"));
+			const mod = await importFresh(join(app, "env.ts"));
 			const schema = mod.default ?? mod;
 			envFields = Object.keys(schema ?? {}).map((name) => ({ name }));
 		} catch (error) {
@@ -77,7 +88,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	);
 	if (hasCloudflareConfig) {
 		try {
-			const cfg = await import(join(root, "cloudflare.config.ts"));
+			const cfg = await importFresh(join(root, "cloudflare.config.ts"));
 			const config = cfg.default ?? cfg;
 			const env = config?.worker?.env ?? config?.env ?? {};
 			cloudflareBindings = env;
@@ -146,7 +157,7 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 	for (const name of databases) {
 		const dir = join(app, "db", name);
 		const migrations = await scanMigrations(join(dir, "migrations"));
-		let dialect: "sqlite" | "postgres" = "sqlite";
+		let config: DatabaseConfig = {};
 		const configPath = join(dir, "config.ts");
 		const hasConfig = await access(configPath).then(
 			() => true,
@@ -154,8 +165,8 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 		);
 		if (hasConfig) {
 			try {
-				const cfg = await import(configPath);
-				dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
+				const cfg = await importFresh(configPath);
+				config = cfg.default ?? cfg;
 			} catch (error) {
 				throw new SpaceError(
 					"DB_CONFIG_LOAD",
@@ -164,11 +175,22 @@ export async function sync(root: string, mode: Mode): Promise<boolean> {
 				);
 			}
 		}
+		if (config.driver !== undefined && config.driver !== "d1" && config.driver !== "libsql") {
+			throw new SpaceError(
+				"DB_CONFIG_DRIVER",
+				`app/db/${name}/config.ts sets an unknown driver "${String(config.driver)}"`,
+				{
+					file: `app/db/${name}/config.ts`,
+					hint: 'Use "d1" or "libsql".',
+				},
+			);
+		}
+		const dialect = config.dialect ?? "sqlite";
 		const queries = await analyzeQueries(join(dir, "queries"), migrations, dialect);
 		results.push(
 			await writeIfChanged(
 				join(root, ".space", "db", `${name}.ts`),
-				generateDbSource(name, migrations, queries),
+				generateDbSource(name, migrations, queries, config),
 			),
 		);
 	}

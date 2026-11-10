@@ -155,3 +155,42 @@ test("html output and raw() pass through unescaped", async () => {
 	const body = await (await server.request("/p")).text();
 	expect(body).toBe("<b>&lt;script&gt;</b><i>ok</i>");
 });
+
+test("loader and action errors reach the app's app.onError", async () => {
+	class AppError extends Error {}
+	const server = new Hono();
+	server.onError((error, c) =>
+		error instanceof AppError ? c.json({ message: error.message }, 404) : c.text("other", 500),
+	);
+	const fail = () => {
+		throw new AppError("missing");
+	};
+	mountPage(
+		server,
+		"/p",
+		(() => html`<p></p>`) as never,
+		{
+			loader: fail,
+			actions: defineActions({ go: fail }),
+		} as never,
+	);
+	const get = await server.request("/p");
+	expect(get.status).toBe(404);
+	expect(await get.json()).toEqual({ message: "missing" });
+	expect((await server.request("/p?_action=go", { method: "POST" })).status).toBe(404);
+});
+
+test("a page-level onError still handles its own errors", async () => {
+	const server = new Hono();
+	server.onError(() => new Response("app", { status: 500 }));
+	mountPage(
+		server,
+		"/p",
+		(() => {
+			throw new Error("x");
+		}) as never,
+		undefined,
+		{ onError: (_error, c) => c.text("page", 418) },
+	);
+	expect((await server.request("/p")).status).toBe(418);
+});

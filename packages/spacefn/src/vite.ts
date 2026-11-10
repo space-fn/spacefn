@@ -62,6 +62,13 @@ export function spaceSync(
 			clientFiles = await scanClientFiles(join(root, "app", "client"));
 			await sync(root, mode);
 			return {
+				// Generated code imports these two, so the plugin owns them. Other aliases stay the app's to set.
+				resolve: {
+					alias: {
+						"@space": join(root, ".space"),
+						"@app": join(root, "app"),
+					},
+				},
 				environments: {
 					client: { build: { emptyOutDir: false } },
 				},
@@ -152,6 +159,9 @@ export function spaceSync(
 						};
 						walk(mod);
 						res.setHeader("Content-Type", isCss ? "text/css" : "application/javascript");
+						if (rawPath === "/service-worker.js") {
+							res.setHeader("Service-Worker-Allowed", "/");
+						}
 						res.end(result.code);
 					})
 					.catch((error: unknown) => {

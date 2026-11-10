@@ -3,8 +3,10 @@ import type { Context, MiddlewareHandler } from "hono";
 import { decideTenant, slugFromRequest, type TenantRecord } from "./resolve";
 
 export interface TenantOptions<Env> {
-	/** Base domain for subdomain tenants, e.g. `yourapp.com`. Empty means header only. */
+	/** Base domain for subdomain tenants, e.g. `yourapp.com`. Empty disables subdomain tenants. */
 	baseDomain?: string;
+	/** Accept the `X-Tenant-Id` header as the tenant name. Off by default. */
+	allowTenantHeader?: boolean;
 	/** Finds a tenant by slug in the app's registry. Returns `undefined` when there is none. */
 	lookup: (env: Env, slug: string) => Promise<TenantRecord | undefined>;
 }
@@ -26,6 +28,7 @@ export function tenantResolver<Env extends object>(
 }> {
 	return async (c, next) => {
 		const slug = slugFromRequest({
+			allowHeader: options.allowTenantHeader === true,
 			header: c.req.header("x-tenant-id"),
 			// The URL is the reliable source of the host; a Host header may be absent.
 			host: new URL(c.req.url).host,

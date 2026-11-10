@@ -7,8 +7,9 @@ application-level isolation.
 ## Identify and authorize a tenant
 
 `slugFromRequest(input)` returns a normalized slug or `undefined`.
-`RequestTenantInput` accepts `header`, `host`, and `baseDomain`. A non-empty
-header wins; otherwise only one subdomain label above `baseDomain` is used.
+`RequestTenantInput` accepts `header`, `host`, `baseDomain`, and `allowHeader`.
+The header is read only when `allowHeader` is true, and then a non-empty header
+wins. Otherwise only one subdomain label above `baseDomain` is used.
 `www` and nested subdomains are ignored.
 
 `decideTenant(slug, tenant)` returns a `TenantOutcome`:
@@ -29,7 +30,7 @@ Deleted and purged tenants deliberately look like unknown tenants. A
 Hono middleware reads `X-Tenant-Id` first, then the request host and optional
 `baseDomain`. It calls `lookup(env, slug)`, returns the refusal JSON when the
 tenant cannot serve the request, or sets `c.get("tenant")` before continuing.
-`TenantOptions<Env>` contains `lookup` and optional `baseDomain`;
+`TenantOptions<Env>` contains `lookup` and optional `baseDomain` and `allowTenantHeader` (default `false`);
 `TenantVariables` types the context variable.
 
 ```ts
@@ -63,3 +64,10 @@ optional `deletedAt`; `TenantAction` is the action union.
 `isValidSlug(value)`, `assertValidSlug(value)`, and `RESERVED_SLUGS` validate
 tenant names. `currentTenant()` reads the tenant from the framework's async
 request context; use it only in work running under that request context.
+
+## Related
+
+- [Tenant-scoped data example](../examples/tenant-scoped-data.md) shows a
+  registry lookup and per-tenant Durable Object.
+- [Tenancy guide](../guides/tenancy.md) covers lifecycle transitions,
+  authorization, and isolation boundaries.

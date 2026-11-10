@@ -7,8 +7,11 @@ import { expect, test } from "vite-plus/test";
 import { generateDbSource } from "../src/db/generate-db";
 
 /** Writes generated source to a temp file with its `spacefn/db` import pointed at our source. */
-async function importGenerated(migrations: Parameters<typeof generateDbSource>[1]) {
-	const src = generateDbSource("main", migrations, []);
+async function importGenerated(
+	migrations: Parameters<typeof generateDbSource>[1],
+	config?: Parameters<typeof generateDbSource>[3],
+) {
+	const src = generateDbSource("main", migrations, [], config);
 	const dbModule = new URL("../src/db.ts", import.meta.url).pathname;
 	const file = join(mkdtempSync(join(tmpdir(), "generated-db-")), "main.ts");
 	writeFileSync(file, src.replaceAll('from "spacefn/db"', `from ${JSON.stringify(dbModule)}`));
@@ -19,14 +22,14 @@ async function importGenerated(migrations: Parameters<typeof generateDbSource>[1
 
 test("generated migrated(): a failed first run is not cached and can be retried", async () => {
 	const mod = await importGenerated([{ id: "0001_t", sql: "CREATE TABLE t (id INTEGER)" }]);
-	let failFirst = true;
+	let failures = 2; // one attempt and its single retry both fail
 	let calls = 0;
 	const db = {
 		prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }),
 		batch: async () => {
 			calls++;
-			if (failFirst) {
-				failFirst = false;
+			if (failures > 0) {
+				failures--;
 				throw new Error("transient D1 error");
 			}
 			return [];
@@ -52,4 +55,29 @@ test("generated migrated(): a successful run is cached", async () => {
 	calls = 0;
 	await expect(mod.migrated(db)).resolves.toBeDefined();
 	expect(calls).toBe(0);
+});
+
+test("generated migrated(): driver libsql runs migrations through the libsql client", async () => {
+	const migrations = [{ id: "0001_t", sql: "CREATE TABLE t (id INTEGER)" }];
+	expect(generateDbSource("main", migrations, [], { driver: "libsql" })).not.toContain(
+		"d1Executor",
+	);
+	const mod = await importGenerated(migrations, { driver: "libsql" });
+	let batches = 0;
+	const client = {
+		execute: async () => ({ rows: [] }),
+		batch: async () => {
+			batches++;
+			return [];
+		},
+	};
+	await expect(mod.migrated(client)).resolves.toEqual(["0001_t"]);
+	expect(batches).toBeGreaterThan(0); // ledger table, then the migration
+});
+
+test("generated migrated(): dialect postgres rejects with a clear message until an executor exists", async () => {
+	const mod = await importGenerated([{ id: "0001_t", sql: "CREATE TABLE t (id INTEGER)" }], {
+		dialect: "postgres",
+	});
+	await expect(mod.migrated({})).rejects.toThrow("no migration executor for dialect postgres");
 });

@@ -23,6 +23,20 @@ test("generates .space on config", async () => {
 	expect(await readFile(join(root, ".space", "routes.ts"), "utf8")).toContain('"/hello"');
 });
 
+test("aliases @space and @app to the project root, and no others", async () => {
+	const config = spaceSync().config as (
+		c: object,
+		env: object,
+	) => Promise<{
+		resolve: { alias: Record<string, string> };
+	}>;
+	const result = await config({ root }, { command: "serve", mode: "development" });
+	expect(result.resolve.alias).toEqual({
+		"@space": join(root, ".space"),
+		"@app": join(root, "app"),
+	});
+});
+
 test("scans queue consumers from app/ for Cloudflare config", async () => {
 	await mkdir(join(root, "app", "queues"), { recursive: true });
 	await writeFile(join(root, "app", "queues", "emails.ts"), "");

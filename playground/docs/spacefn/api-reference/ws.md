@@ -35,10 +35,17 @@ export class ChatRoom extends DurableObject {
 - `requireWebSocket(request, origins?)`: throws `SpaceError` 426/403.
 
 `AcceptSocketOptions` contains an optional serializable `attachment` and
-`allowedOrigins`. `WebSocketAttachment` is a string-keyed object persisted on
+`allowedOrigins`. Without it, only the app's own origin is accepted. A request with no `Origin` header comes from a non-browser client and is allowed. `WebSocketAttachment` is a string-keyed object persisted on
 the accepted socket. `attachmentOf(ws)` returns that value or `null` if it is
 missing or cannot be deserialized. `ReadMessageOptions<T>` contains `maxSize`
 and an optional `parse(raw)` function; `ReadResult<T>` is either
 `{ ok: true, value }` or `{ ok: false, code, reason }`.
 
 Close codes: 1008 (policy violation, bad message), 1009 (message too big).
+
+## Related
+
+- [WebSocket chat example](../examples/chat-room.md) includes the Worker route
+  and browser client.
+- [Durable Objects](../directory-structure/durable-objects.md) explains
+  binding discovery and hibernation.

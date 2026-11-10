@@ -25,6 +25,7 @@ test("writes the routes module and the worker entry", async () => {
 	expect(worker).toContain("app.use(traceRequest());");
 	expect(worker).toContain("runWithBindings(bindings, () => app.fetch(request, bindings, ctx))");
 	expect(worker).toContain("export function createApp");
+	expect(worker).toContain("app.onError(onError);");
 });
 
 test("reports no change on a second run", async () => {
@@ -95,4 +96,25 @@ test("infers Cloudflare binding types from cloudflare.config.ts", async () => {
 	expect(bindings).toContain("InferEnv<__SpaceWorkerConfig>");
 	expect(bindings).toContain("interface CloudflareBindings extends __SpaceConfigBindings");
 	expect(bindings).not.toContain("EMAIL: string;");
+});
+
+test("re-reads env.ts on every sync", async () => {
+	const bindings = () => readFile(join(root, ".space", "bindings.d.ts"), "utf8");
+	await writeFile(join(root, "app", "env.ts"), "export default { ALPHA: 1 };");
+	await sync(root, "dev");
+	expect(await bindings()).toContain("ALPHA");
+
+	await writeFile(join(root, "app", "env.ts"), "export default { BETA: 1 };");
+	await sync(root, "dev");
+	expect(await bindings()).toContain("BETA");
+	expect(await bindings()).not.toContain("ALPHA");
+});
+
+test("refuses an unknown database driver in app/db/<name>/config.ts", async () => {
+	await mkdir(join(root, "app", "db", "main"), { recursive: true });
+	await writeFile(
+		join(root, "app", "db", "main", "config.ts"),
+		'export default { driver: "mysql" };',
+	);
+	await expect(sync(root, "dev")).rejects.toThrow('unknown driver "mysql"');
 });

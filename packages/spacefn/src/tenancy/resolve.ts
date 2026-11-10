@@ -9,19 +9,24 @@ export interface TenantRecord {
 export interface RequestTenantInput {
 	/** The `Host` header, with or without a port. */
 	host?: string | null;
-	/** The `X-Tenant-Id` header. Takes precedence over the host. */
+	/** The `X-Tenant-Id` header. Read only when `allowHeader` is true. */
 	header?: string | null;
+	/** Lets the header name the tenant. Off by default: any client could name any tenant. */
+	allowHeader?: boolean;
 	/** The base domain, e.g. `yourapp.com`. Empty disables subdomain tenants. */
 	baseDomain?: string;
 }
 
 /**
- * Finds the slug a request names. The header wins. Otherwise the host must be
- * exactly one label above the base domain: `acme.yourapp.com` is `acme`, but
- * `www.yourapp.com` and `eu.acme.yourapp.com` name no tenant.
+ * Finds the slug a request names. The host must be exactly one label above the
+ * base domain: `acme.yourapp.com` is `acme`, but `www.yourapp.com` and
+ * `eu.acme.yourapp.com` name no tenant. The header is considered only with
+ * `allowHeader`, and then it wins.
  */
 export function slugFromRequest(input: RequestTenantInput): string | undefined {
-	if (input.header && input.header.trim() !== "") return input.header.trim().toLowerCase();
+	if (input.allowHeader && input.header && input.header.trim() !== "") {
+		return input.header.trim().toLowerCase();
+	}
 
 	const base = (input.baseDomain ?? "").toLowerCase().replace(/^\.+|\.+$/g, "");
 	const host = (input.host ?? "").toLowerCase().replace(/:\d+$/, "");

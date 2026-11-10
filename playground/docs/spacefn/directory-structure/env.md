@@ -35,7 +35,7 @@ export default defineEnv({
 });
 ```
 
-Read it anywhere a request is being handled:
+Read it in `app/` files while a request is being handled:
 
 ```ts
 import { env } from "spacefn/env";
@@ -43,6 +43,23 @@ import { env } from "spacefn/env";
 env.MAX_ITEMS; // number
 env.WEBHOOK_URL; // string | undefined
 ```
+
+Code in `modules/`, `utils/`, and `lib/` never reads `env`. The `app/` file reads the value and passes it in, so the module stays testable and runs outside a request:
+
+```ts
+// app/routes/todos.ts
+
+import { mainDb } from "@app/db/main_db";
+import { latestTodos } from "@modules/todos";
+import { env } from "spacefn/env";
+import { defineHandler } from "spacefn/handler";
+
+export const GET = defineHandler(async (c) =>
+	latestTodos(await mainDb(c.env.DB), { limit: env.MAX_ITEMS }),
+);
+```
+
+See [modules](./modules.md).
 
 ## Fields
 

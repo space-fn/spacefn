@@ -1,7 +1,7 @@
 export { Hono } from "hono";
 export { mountRoute } from "./routes/mount";
 export type { RouteModule } from "./routes/mount";
-export { envMiddleware } from "./env/state";
+export { envMiddleware, runWithEnv } from "./env/state";
 export type { Schema } from "./env/fields";
 export { configureTracing, traceBindings, traceConfig, traceRequest } from "./trace";
 export { runWithBindings } from "./env/current";
@@ -10,3 +10,4 @@ export { dispatchScheduled } from "./crons/dispatch";
 export type { CronJob } from "./crons/define";
 export type { QueueBatch, QueueHandler, QueueMessage } from "./queues/define";
 export { mountPage } from "./pages/mount";
+export { onError } from "./handler";

@@ -9,6 +9,7 @@ test("a handler reads the tenant the resolver attached", async () => {
 	const app = new Hono();
 	app.use(
 		tenantResolver({
+			allowTenantHeader: true,
 			lookup: async (_env: unknown, slug: string) => (slug === "acme" ? acme : undefined),
 		}),
 	);

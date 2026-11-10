@@ -6,9 +6,14 @@ const base = "yourapp.com";
 const active: TenantRecord = { slug: "acme", internalId: "7c9e", status: "active" };
 
 test("the header names the tenant, even when the host also does", () => {
-	expect(slugFromRequest({ header: "Beta", host: "acme.yourapp.com", baseDomain: base })).toBe(
-		"beta",
-	);
+	expect(
+		slugFromRequest({
+			allowHeader: true,
+			header: "Beta",
+			host: "acme.yourapp.com",
+			baseDomain: base,
+		}),
+	).toBe("beta");
 });
 
 test("a single label above the base domain names the tenant", () => {
@@ -25,8 +30,9 @@ test("www, deeper labels, the bare domain and other domains name no tenant", () 
 
 test("without a base domain only the header counts", () => {
 	expect(slugFromRequest({ host: "acme.yourapp.com" })).toBeUndefined();
-	expect(slugFromRequest({ header: "acme" })).toBe("acme");
-	expect(slugFromRequest({ header: "   " })).toBeUndefined();
+	expect(slugFromRequest({ allowHeader: true, header: "acme" })).toBe("acme");
+	expect(slugFromRequest({ allowHeader: true, header: "   " })).toBeUndefined();
+	expect(slugFromRequest({ header: "acme", baseDomain: base })).toBeUndefined();
 });
 
 test("a missing tenant is a 400", () => {

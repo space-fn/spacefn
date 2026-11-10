@@ -42,3 +42,37 @@ export interface CompletionCtx {
 export function inRange(range: TemplateRange, offset: number): boolean {
 	return offset >= range.contentStart && offset <= range.end;
 }
+
+/** A text edit replacing `[start, end)` of `doc`, so the client never guesses the word to replace. */
+export function editAt(doc: TextDocument, start: number, end: number, newText: string) {
+	return { range: { start: doc.positionAt(start), end: doc.positionAt(end) }, newText };
+}
+
+type Pos = { line: number; character: number };
+type Range = { start: Pos; end: Pos };
+
+/**
+ * Moves a completion item's edit from an embedded document back into the host file.
+ * `toHost` turns an offset in the embedded document into an offset in the host.
+ */
+export function mapItemEdit(
+	item: CompletionItem,
+	embedded: { offsetAt(p: Pos): number },
+	host: TextDocument,
+	toHost: (offset: number) => number,
+): CompletionItem {
+	const map = (r: Range): Range => ({
+		start: host.positionAt(toHost(embedded.offsetAt(r.start))),
+		end: host.positionAt(toHost(embedded.offsetAt(r.end))),
+	});
+	const te = item.textEdit as
+		| { range: Range; newText: string }
+		| { insert: Range; replace: Range; newText: string }
+		| undefined;
+	if (!te) return item;
+	if ("range" in te) return { ...item, textEdit: { range: map(te.range), newText: te.newText } };
+	return {
+		...item,
+		textEdit: { insert: map(te.insert), replace: map(te.replace), newText: te.newText },
+	};
+}

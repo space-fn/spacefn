@@ -5,7 +5,11 @@ export function toBase64Url(bytes: Uint8Array): string {
 	return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** Throws on anything outside the base64url alphabet, so untrusted input (cookies, tokens) cannot crash a request. */
 export function fromBase64Url(text: string): Uint8Array {
+	if (!/^[A-Za-z0-9_-]*$/.test(text) || text.length % 4 === 1) {
+		throw new Error("Value is not base64url");
+	}
 	const base64 = text.replace(/-/g, "+").replace(/_/g, "/");
 	const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
 	const binary = atob(padded);

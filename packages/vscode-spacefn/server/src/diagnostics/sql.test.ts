@@ -30,3 +30,18 @@ describe("rangeForIdentifier", () => {
 		expect(rangeForIdentifier(doc, "foo")).toBeNull();
 	});
 });
+
+describe("ambiguous columns", () => {
+	test("the identifier is read from SQLite and Postgres messages", () => {
+		expect(extractBadIdentifier("ambiguous column name: id")).toBe("id");
+		expect(extractBadIdentifier('column reference "id" is ambiguous')).toBe("id");
+		expect(extractBadIdentifier("no such column: u.nope")).toBe("nope");
+	});
+	test("the unqualified use inside the SQL is underlined, not a comment or other code", () => {
+		const text = "// id here\nconst q = sql`SELECT u.id, id FROM users u JOIN todos t`;";
+		const doc = TextDocument.create("file:///a.ts", "typescript", 1, text);
+		const from = text.indexOf("SELECT");
+		const r = rangeForIdentifier(doc, "id", from, text.lastIndexOf("`"))!;
+		expect(doc.offsetAt(r.start)).toBe(text.indexOf(", id") + 2);
+	});
+});

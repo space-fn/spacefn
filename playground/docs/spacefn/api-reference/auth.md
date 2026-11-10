@@ -86,3 +86,10 @@ throw `TokenError`.
 
 `constantTimeEqual`, `toBase64Url`, and `fromBase64Url` are low-level encoding
 helpers also exported from this module.
+
+## Related
+
+- [Datastar sign-up and sign-in](../examples/auth-flow.md) demonstrates forms,
+  password hashing, and session creation.
+- [Auth guide](../guides/auth.md) covers storage, session middleware, CSRF,
+  rate limits, and production trade-offs.

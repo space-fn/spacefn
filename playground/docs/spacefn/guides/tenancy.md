@@ -28,7 +28,7 @@ Tenant data lives in a Durable Object, not in a special folder. The library give
 
 ## Tenant names
 
-A tenant is named by the `X-Tenant-Id` header, or by a subdomain when a base domain is set. The header wins.
+A tenant is named by a subdomain when a base domain is set. The `X-Tenant-Id` header counts only when you pass `allowTenantHeader: true`, and then it wins. Leave it off unless a gateway you control sets the header.
 
 - Slugs are DNS labels: 1 to 63 letters, digits or dashes, not starting or ending with a dash. Case is ignored.
 - `assertValidSlug()` refuses reserved names: `www`, `api`, `admin`, `app`, `apps`, `auth`, `static`, `assets`, `cdn`, `mail`, `support`, `status`, `docs`.
@@ -47,9 +47,15 @@ Deleted and purged tenants answer exactly like unknown ones, so the API does not
 
 ## Using it
 
+The resolver is framework middleware, so it is wired in `app/entry.ts`. Its
+`lookup` calls a module that reads the registry; see `tenantBySlug` in the
+[tenant-scoped data example](../examples/tenant-scoped-data.md#read-the-registry).
+
 ```ts
-import { findTenant } from "@space/db/main_db";
 // app/entry.ts excerpt: register this before registerRoutes(app)
+
+import { mainDb } from "@app/db/main_db";
+import { tenantBySlug } from "@modules/tenants";
 import { createApp, registerRoutes } from "@space/worker";
 import { tenantResolver } from "spacefn/tenancy";
 
@@ -60,17 +66,7 @@ app.use(
 	"/t/*",
 	tenantResolver<{ DB: D1Database }>({
 		baseDomain: "yourapp.com",
-		lookup: async (env, slug) => {
-			const row = await findTenant(env.DB, { slug });
-			if (!row) return undefined;
-			return (
-				row && {
-					slug: row.slug,
-					internalId: row.internalId,
-					status: row.status as "active" | "suspended" | "deleted" | "purged",
-				}
-			);
-		},
+		lookup: async (env, slug) => tenantBySlug(await mainDb(env.DB), slug),
 	}),
 );
 registerRoutes(app);
@@ -78,16 +74,17 @@ registerRoutes(app);
 
 ```ts
 // app/routes/t/todos.ts
+
 import { defineHandler } from "spacefn/handler";
 import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler((c) => {
 	const tenant = currentTenant(c);
-	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos({});
+	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos();
 });
 ```
 
-- The `lookup` function is yours. The library only needs the record it returns.
+- The `lookup` function is yours: a module function that returns the record. The library only needs that record.
 - Use the tenant's internal id for the Durable Object name, never the slug. The slug can change; the internal id must not.
 - `currentTenant` throws when no resolver ran first, so a route cannot silently run without a tenant.
 - A middleware file is global to the app. Scope `tenantResolver` to the tenant route prefix, as above, or it will reject requests to non-tenant routes too.
@@ -108,7 +105,54 @@ Actions on a tenant follow fixed rules, enforced by `transition` in `spacefn/ten
 | active, suspended | delete  | deleted   | Requests get 404. Data is kept for 30 days. |
 | deleted           | restore | active    | Only within the 30 days. Data is intact.    |
 
-An action that breaks a rule throws `TenantTransitionError` and changes nothing. Map it to a response in your route, for example 409.
+An action that breaks a rule throws `TenantTransitionError` and changes
+nothing. Deciding whether a tenant may be suspended is a rule, so a module
+calls `transition` (a request-free helper) and reports a refusal as an
+`AppError`, which `app.onError` answers with 409:
+
+```ts
+// modules/tenants/lifecycle.ts
+
+import { findTenantById, updateTenantLifecycle } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
+import type { DbReader } from "spacefn/db";
+import { TenantTransitionError, transition, type TenantStatus } from "spacefn/tenancy";
+
+export async function suspendTenant(db: DbReader, id: string, now: number) {
+	const tenant = await findTenantById(db, { id });
+	if (!tenant) throw new AppError("not_found", "No such tenant.");
+	let next;
+	try {
+		next = transition({ status: tenant.status as TenantStatus }, "suspend", now);
+	} catch (error) {
+		if (error instanceof TenantTransitionError) {
+			throw new AppError("conflict", error.message, "invalid_transition");
+		}
+		throw error;
+	}
+	await updateTenantLifecycle(db, { id: tenant.internalId, status: next.status });
+	return { status: next.status };
+}
+```
+
+The route only reads the id and the clock:
+
+```ts
+// app/routes/admin/tenants/[id]/suspend.ts
+
+import { mainDb } from "@app/db/main_db";
+import { suspendTenant } from "@modules/tenants/lifecycle";
+import { defineHandler } from "spacefn/handler";
+
+export const POST = defineHandler(async (c) =>
+	suspendTenant(await mainDb(c.env.DB), c.req.param("id") ?? "", Date.now()),
+);
+```
+
+`findTenantById` and `updateTenantLifecycle` are generated queries, and this
+route must be protected by admin authorization. In real code, include
+`deletedAt` when passing a deleted record into `transition`; the lifecycle
+helper needs it to enforce the restore grace period.
 
 ## Not yet
 

@@ -13,21 +13,23 @@ Files starting with `_` and `*.test.*` files are ignored. The exported class nam
 
 ## A Workflow
 
+The class is setup: it names the steps, their retries, and their order, which Cloudflare needs to checkpoint them. Each step calls a module function that does the work (see [modules](./modules.md)).
+
 ```ts
 // app/workflows/order-fulfillment.ts
+
+import { mainDb } from "@app/db/main_db";
+import { chargeOrder, validateOrder } from "@modules/orders";
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 
-export class OrderFulfillment extends WorkflowEntrypoint {
+type Env = { DB: D1Database };
+
+export class OrderFulfillment extends WorkflowEntrypoint<Env> {
 	async run(event: WorkflowEvent<{ orderId: string }>, step: WorkflowStep) {
-		const validated = await step.do("validate", async () => {
-			console.log("validating", event.payload.orderId);
-			return true;
-		});
-		const charged = await step.do("charge", async () => {
-			console.log("charging", event.payload.orderId);
-			return validated;
-		});
-		return { orderId: event.payload.orderId, charged };
+		const db = await mainDb(this.env.DB);
+		const order = await step.do("validate", () => validateOrder(db, event.payload.orderId));
+		const charge = await step.do("charge", () => chargeOrder(db, order));
+		return { orderId: order.id, chargeId: charge.id };
 	}
 }
 ```
@@ -55,13 +57,19 @@ Throw `NonRetryableError` (from `cloudflare:workflows`) to fail immediately with
 
 ```ts
 // app/workflows/follow-up.ts
+
+import { createEmailClient } from "@lib/email";
+import { followUpEmail } from "@modules/orders";
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 
-export class FollowUp extends WorkflowEntrypoint {
+type Env = { MAIL_API_KEY: string };
+
+export class FollowUp extends WorkflowEntrypoint<Env> {
 	async run(event: WorkflowEvent<{ orderId: string; email: string }>, step: WorkflowStep) {
 		await step.sleep("wait-three-days", "3 days");
 		await step.do("send-email", async () => {
-			// send the follow-up email
+			const mail = createEmailClient({ apiKey: this.env.MAIL_API_KEY });
+			await mail.send(followUpEmail(event.payload));
 			return true;
 		});
 		return { sent: true };
@@ -77,6 +85,7 @@ A workflow can pause for an external signal:
 
 ```ts
 // app/workflows/approval.ts
+
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 
 export class Approval extends WorkflowEntrypoint {
@@ -96,11 +105,12 @@ Send the signal from a route:
 
 ```ts
 // app/routes/approve.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ instanceId: string; approved: boolean }>();
-	const instance = await c.env.WORKFLOW_APPROVAL.get(body.instanceId);
+	const instance = await c.env.WF_APPROVAL.get(body.instanceId);
 	await instance.sendEvent({ type: "approval.received", payload: { approved: body.approved } });
 	return { ok: true };
 });
@@ -108,19 +118,28 @@ export const POST = defineHandler(async (c) => {
 
 ## Triggering a workflow
 
-Create an instance from a route and read its result:
+Create an instance from a route, and read its status from another:
 
 ```ts
 // app/routes/workflow.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const body = await c.req.json<{ orderId: string }>();
-	const binding = c.env.WF_ORDER_FULFILLMENT;
-	const instance = await binding.create({ params: { orderId: body.orderId } });
-	await new Promise((r) => setTimeout(r, 500));
-	const status = await instance.status();
-	return { created: instance.id, status: status.status, output: status.output };
+	const instance = await c.env.WF_ORDER_FULFILLMENT.create({ params: { orderId: body.orderId } });
+	return c.json({ instanceId: instance.id }, 202);
+});
+```
+
+```ts
+// app/routes/workflow/[id].ts
+
+import { defineHandler } from "spacefn/handler";
+
+export const GET = defineHandler(async (c) => {
+	const status = await (await c.env.WF_ORDER_FULFILLMENT.get(c.req.param("id") ?? "")).status();
+	return { status: status.status, output: status.output };
 });
 ```
 

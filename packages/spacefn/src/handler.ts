@@ -10,13 +10,15 @@ export type Handler = (
 ) => HandlerResult;
 
 export interface HandlerOptions {
-	/** Called when the handler throws. Defaults to logging the error. */
+	/** Called when the handler throws. Without it the error goes to the app's `app.onError`. */
 	onError?: (error: unknown, c: Context) => Response | Promise<Response>;
 }
 
 /**
  * Wraps a route handler. A returned `Response` passes through, a string
  * becomes text, `undefined` becomes 204, anything else becomes JSON.
+ * A thrown error goes to `options.onError` when given, else to `app.onError`,
+ * so an app maps its own errors in one place.
  */
 export function defineHandler(handler: Handler, options: HandlerOptions = {}) {
 	return async (c: Context): Promise<Response> => {
@@ -30,7 +32,7 @@ export function defineHandler(handler: Handler, options: HandlerOptions = {}) {
 			return c.json(result);
 		} catch (error) {
 			if (options.onError) return options.onError(error, c);
-			return onError(error, c);
+			throw error;
 		}
 	};
 }

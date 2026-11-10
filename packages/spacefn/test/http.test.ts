@@ -124,3 +124,96 @@ describe("putUpload", () => {
 		expect(key).toMatch(/^uploads\/[0-9a-f-]+$/);
 	});
 });
+
+describe("readUploads body handling", () => {
+	function streamed(form: FormData) {
+		const source = new Response(form);
+		return source.arrayBuffer().then((buf) => {
+			const bytes = new Uint8Array(buf);
+			const body = new ReadableStream<Uint8Array>({
+				start(controller) {
+					for (let i = 0; i < bytes.length; i += 16) controller.enqueue(bytes.slice(i, i + 16));
+					controller.close();
+				},
+			});
+			return { type: source.headers.get("content-type") ?? "", body };
+		});
+	}
+
+	function uploadApp(opts?: Parameters<typeof readUploads>[1]) {
+		const app = new Hono();
+		app.onError(onError);
+		app.post("/upload", async (c) => c.json(await readUploads(c, opts)));
+		return app;
+	}
+
+	test("refuses a repeated text field instead of dropping a value", async () => {
+		const form = new FormData();
+		form.append("tag", "a");
+		form.append("tag", "b");
+		const res = await uploadApp().request("/upload", { method: "POST", body: form });
+		expect(res.status).toBe(400);
+		expect(await res.text()).toContain("UPLOAD_DUPLICATE_FIELD");
+	});
+
+	test("stops a streamed body with no content-length once it passes the limit", async () => {
+		const form = new FormData();
+		form.append("name", "x".repeat(200));
+		const { type, body } = await streamed(form);
+		const res = await uploadApp({ maxBodySize: 50 }).request("/upload", {
+			method: "POST",
+			headers: { "content-type": type },
+			body,
+			duplex: "half",
+		} as RequestInit);
+		expect(res.status).toBe(413);
+	});
+
+	test("accepts a streamed body with no content-length under the limit", async () => {
+		const form = new FormData();
+		form.append("name", "alice");
+		const { type, body } = await streamed(form);
+		const res = await uploadApp({ maxBodySize: 10_000 }).request("/upload", {
+			method: "POST",
+			headers: { "content-type": type },
+			body,
+			duplex: "half",
+		} as RequestInit);
+		expect(res.status).toBe(200);
+		expect(((await res.json()) as { fields: { name: string } }).fields.name).toBe("alice");
+	});
+});
+
+describe("putUpload length", () => {
+	test("declares the file's known size to R2 with FixedLengthStream", async () => {
+		const declared: number[] = [];
+		class RecordingLength extends TransformStream<Uint8Array, Uint8Array> {
+			constructor(length: number) {
+				super();
+				declared.push(length);
+			}
+		}
+		const globals = globalThis as { FixedLengthStream?: unknown };
+		globals.FixedLengthStream = RecordingLength;
+		try {
+			const file = {
+				name: "a.png",
+				type: "image/png",
+				size: 4,
+				arrayBuffer: async () => new ArrayBuffer(0),
+				stream: () =>
+					new ReadableStream<Uint8Array>({
+						start(controller) {
+							controller.enqueue(new Uint8Array([1, 2, 3, 4]));
+							controller.close();
+						},
+					}),
+			};
+			const bucket = { put: async () => ({}) };
+			await putUpload(bucket, file as never);
+			expect(declared).toEqual([4]);
+		} finally {
+			delete globals.FixedLengthStream;
+		}
+	});
+});

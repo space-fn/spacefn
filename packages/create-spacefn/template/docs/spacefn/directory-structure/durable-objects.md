@@ -11,10 +11,13 @@ app/durable-objects/
 
 Files starting with `_` are ignored. One class per file. The binding name is `DO_` plus the uppercased snake-case of the class name, for example `ChatRoom` becomes `DO_CHAT_ROOM`.
 
+The class is setup: Cloudflare needs it to own storage and connections. Its methods hand that storage to functions in `modules/` and return what they return, so the rules can be tested without a Durable Object (see [modules](./modules.md)).
+
 ## A Durable Object
 
 ```ts
 // app/durable-objects/counter.ts
+
 import { DurableObject } from "cloudflare:workers";
 
 export class Counter extends DurableObject {
@@ -30,6 +33,7 @@ Call it from a route:
 
 ```ts
 // app/routes/counter.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
@@ -44,24 +48,42 @@ export const POST = defineHandler(async (c) => {
 
 This is the main real use case. Each tenant gets its own Durable Object with its own SQLite database, so tenant rows never enter the shared database.
 
+The tenant's rules live in a module that takes any `DbReader`, so the same functions work against D1 in tests and against Durable Object storage in production:
+
 ```ts
-import { migrate } from "@space/db/tenant_db";
+// modules/tenant-todos/index.ts
+
+import { listTodos } from "@space/db/tenant_db";
+import type { DbReader } from "spacefn/db";
+
+export function tenantTodos(db: DbReader) {
+	return listTodos(db, {});
+}
+```
+
+The Durable Object only migrates its storage and passes the executor in:
+
+```ts
 // app/durable-objects/tenant.ts
+
+import { tenantTodos } from "@modules/tenant-todos";
+import { migrate } from "@space/db/tenant_db";
 import { DurableObject } from "cloudflare:workers";
 import { durableObjectExecutor } from "spacefn/db";
 
 export class Tenant extends DurableObject {
 	private ready?: Promise<unknown>;
 
-	private migrated() {
+	private async db() {
+		const executor = durableObjectExecutor(this.ctx.storage);
 		// run once per instance, before anything touches the schema
-		this.ready ??= migrate(durableObjectExecutor(this.ctx.storage));
-		return this.ready;
+		this.ready ??= migrate(executor);
+		await this.ready;
+		return executor;
 	}
 
-	async listTodos(filter: unknown) {
-		await this.migrated();
-		return this.ctx.storage.sql.exec("SELECT id, title, done FROM todos", []).toArray();
+	async listTodos() {
+		return tenantTodos(await this.db());
 	}
 }
 ```
@@ -70,12 +92,13 @@ Wire it through the tenant resolver (see [tenancy](../guides/tenancy.md)):
 
 ```ts
 // app/routes/t/todos.ts
+
 import { defineHandler } from "spacefn/handler";
 import { currentTenant } from "spacefn/tenancy";
 
 export const GET = defineHandler(async (c) => {
 	const tenant = currentTenant(c);
-	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos({});
+	return c.env.DO_TENANT.getByName(tenant.internalId).listTodos();
 });
 ```
 
@@ -88,8 +111,12 @@ Two things to get right:
 
 spacefn does not wrap WebSockets. A Durable Object that holds connections is standard Cloudflare: implement `fetch` to upgrade, and `webSocketMessage` / `webSocketClose` to handle traffic. spacefn's job ends at wiring the binding and typing it.
 
+What a valid message looks like is a rule, so the parser is a module; the [chat room example](../examples/chat-room.md) shares it with the browser.
+
 ```ts
 // app/durable-objects/room.ts
+
+import { parseChatMessage } from "@modules/chat";
 import { DurableObject } from "cloudflare:workers";
 import { acceptSocket, broadcast, readMessage } from "spacefn/ws";
 
@@ -100,7 +127,7 @@ export class Room extends DurableObject {
 
 	async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
 		const raw = typeof message === "string" ? message : new TextDecoder().decode(message);
-		const r = readMessage(raw, { maxSize: 64 * 1024 });
+		const r = readMessage(raw, { maxSize: 64 * 1024, parse: parseChatMessage });
 		if (!r.ok) {
 			ws.close(r.code, r.reason);
 			return;
@@ -114,6 +141,7 @@ Reach it from a route the same way:
 
 ```ts
 // app/routes/room/[id].ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(async (c) => {
@@ -132,6 +160,7 @@ subscribers; spacefn also provides the typed binding.
 
 ```ts
 // app/durable-objects/feed.ts
+
 import { DurableObject } from "cloudflare:workers";
 import { createSSEHub } from "spacefn/sse";
 

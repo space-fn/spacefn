@@ -2,7 +2,7 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import type { CompletionItem } from "vscode-languageserver/node";
 
 import type { CompletionDeps, TemplateRange } from "./types";
-import { inRange } from "./types";
+import { editAt, inRange, mapItemEdit } from "./types";
 
 /** Completions inside a `css` tagged template: custom properties then the CSS language service. */
 export function cssCompletions(
@@ -24,7 +24,7 @@ export function cssCompletions(
 			.map(([name, value]) => ({
 				label: name,
 				kind: 6,
-				insertText: name,
+				textEdit: editAt(ctx.doc, ctx.offset - prefix.length, ctx.offset, name),
 				detail: value,
 			}));
 		if (items.length) return items as CompletionItem[];
@@ -36,12 +36,12 @@ export function cssCompletions(
 	const stylesheet = deps.cssLS.parseStylesheet(cssDoc);
 	const cssCompletions = deps.cssLS.doComplete(cssDoc, cssPos, stylesheet);
 	if (cssCompletions && cssCompletions.items && cssCompletions.items.length) {
-		return cssCompletions.items.map((it) => ({
-			label: it.label,
-			kind: it.kind,
-			insertText: it.insertText ?? it.label,
-			detail: it.detail,
-		}));
+		// Keep the service's edit range (mapped into the host file) and snippet format: a bare
+		// insertText makes VS Code replace only its JS word, so `background-co` became
+		// `background-background-color`.
+		return cssCompletions.items.map((it) =>
+			mapItemEdit(it, cssDoc, ctx.doc, (o) => cssTpl.contentStart + o),
+		);
 	}
 	return null;
 }

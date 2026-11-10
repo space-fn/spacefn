@@ -86,13 +86,28 @@ export const queues = {
 
 ```ts
 // app/entry.ts
+
 import { createApp, registerRoutes, mountApp } from "@space/worker";
+import { AppError, type ErrorKind } from "@utils/errors";
+import { onError } from "spacefn/handler";
 
 import schema from "./env";
 
+const STATUS: Record<ErrorKind, 400 | 401 | 403 | 404 | 409> = {
+	invalid: 400,
+	unauthorized: 401,
+	forbidden: 403,
+	not_found: 404,
+	conflict: 409,
+};
+
 const app = createApp({ env: schema });
 
-app.onError((err, c) => c.json({ error: "internal_error", message: "Something went wrong" }, 500));
+app.onError((error, c) =>
+	error instanceof AppError
+		? c.json({ error: error.code, message: error.message }, STATUS[error.kind])
+		: onError(error, c),
+);
 
 registerRoutes(app);
 
@@ -102,8 +117,8 @@ export default mountApp(app);
 
 Line by line:
 
-- `createApp({ env: schema })` builds the Hono app, registers tracing, env validation, and every file in `app/middleware/` in file-name order.
-- `app.onError(...)` is your global error handler.
+- `createApp({ env: schema })` builds the Hono app, registers the default error handler, tracing, env validation, and every file in `app/middleware/` in file-name order.
+- `app.onError(...)` replaces the default with your global error handler. An error thrown in a route, page loader, or page action lands here unless that handler passes its own `onError`, so this is the one place your modules' `AppError` becomes an HTTP status. Anything else goes to spacefn's `onError`, which answers status-bearing framework errors and hides the rest behind a 500 (see [errors](../directory-structure/modules.md#errors-cross-the-boundary-as-apperror)).
 - `registerRoutes(app)` mounts every route and page via `mountRoute` and `mountPage`, sorted by path specificity.
 - `export * from "@space/exports"` re-exports Durable Object and Workflow classes at the Worker's top level, so Cloudflare can bind them.
 - `export default mountApp(app)` produces the Cloudflare Worker module.
@@ -132,7 +147,7 @@ Line by line:
 
 ## Generated vs hand-written
 
-- **Hand-written:** everything under `app/`, plus `cloudflare.config.ts`, `vite.config.ts`, and `app/entry.ts`.
+- **Hand-written:** everything under `app/` (setup), your code in `modules/`, `utils/`, and `lib/`, plus `cloudflare.config.ts` and `vite.config.ts`. spacefn scans `app/` only.
 - **Generated (never edit, gitignored):** everything under `.space/`. Deterministic: unchanged content is not rewritten.
 
 See [directory structure](../directory-structure/) for each folder in detail, and [generated code](../api-reference/generated.md) for the full helper list.

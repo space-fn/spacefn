@@ -74,3 +74,43 @@ describe("CompletionDeps contract", () => {
 		expect(typeof deps.getSchema).toBe("function");
 	});
 });
+
+describe("sqlCompletions with a schema", () => {
+	const col = (name: string) => ({ name, type: "TEXT" });
+	const deps = {
+		htmlLS: {} as CompletionDeps["htmlLS"],
+		cssLS: {} as CompletionDeps["cssLS"],
+		customProps: new Map(),
+		getSchema: async () => ({
+			tables: ["users", "todos"],
+			columns: new Map([
+				["users", [col("id"), col("email")]],
+				["todos", [col("id"), col("title")]],
+			]),
+		}),
+		htmlService: {} as CompletionDeps["htmlService"],
+	} satisfies CompletionDeps;
+	const labels = async (source: string) => {
+		const offset = source.indexOf("|");
+		const text = source.replace("|", "");
+		const items = await sqlCompletions(
+			deps,
+			{ filePath: "/app/db/main/queries/q.sql", text, offset },
+			() => ({ dbDir: "/app/db/main", targetDb: "/app/db/main" }),
+		);
+		return items!.filter((i) => i.kind === 5).map((i) => i.insertText ?? i.label);
+	};
+
+	test("a column two joined tables share is offered qualified, one per table", async () => {
+		expect(await labels("SELECT i| FROM users u JOIN todos t ON t.id = u.id")).toEqual([
+			"u.id",
+			"t.id",
+		]);
+	});
+	test("a column only one table has stays bare", async () => {
+		expect(await labels("SELECT ti| FROM users u JOIN todos t")).toEqual(["title"]);
+	});
+	test("USING keeps the shared column bare", async () => {
+		expect(await labels("SELECT i| FROM users JOIN todos USING (id)")).toEqual(["id"]);
+	});
+});
