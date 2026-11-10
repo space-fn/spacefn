@@ -141,6 +141,7 @@ export function generateExportsSource(
 			`export { ${name} } from "../app/workflows/${file.replace(/\.(?:[cm]?[jt]s|[jt]sx)$/, "")}";`,
 		);
 	}
-	if (lines.length === 1) lines.push("// (no durable objects or workflows)");
+	// Still a module when empty, so `export * from "@space/exports"` type-checks.
+	if (lines.length === 1) lines.push("// (no durable objects or workflows)", "export {};");
 	return lines.join("\n");
 }
