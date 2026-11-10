@@ -43,6 +43,31 @@ export const GET = defineHandler(() => {
 
 Visit `/hello`. The route is picked up automatically - no registration needed.
 
+As soon as a route does more than return a value, put that logic in
+`modules/` and keep the route as setup: read the input, call the module,
+return the result.
+
+```ts
+// modules/greetings/index.ts
+
+export function greeting(name?: string) {
+	return { message: `Hello, ${name?.trim() || "world"}!` };
+}
+```
+
+```ts
+// app/routes/hello.ts
+
+import { greeting } from "@modules/greetings";
+import { defineHandler } from "spacefn/handler";
+
+export const GET = defineHandler((c) => greeting(c.req.query("name")));
+```
+
+`app/` holds only setup like this; your project's code lives in `modules/`,
+`utils/`, and `lib/`. Read [modules, utils, and lib](../directory-structure/modules.md)
+before writing more.
+
 ## 4. Add a page
 
 Create `app/pages/welcome.page.ts`:
@@ -109,8 +134,10 @@ search, SSE, and PWA examples.
 ## 6. Add data
 
 When the app needs persistent state, add a database migration and typed query
-files under `app/db/<name>/`. The [Todo board example](../examples/todo-crud.md)
-shows the full D1 setup, loader, actions, and Datastar fragments.
+files under `app/db/<name>/`. A module calls the generated query functions;
+routes and page actions pass it the database. The
+[Todo board example](../examples/todo-crud.md) shows the full D1 setup, the
+module, loader, actions, and Datastar fragments.
 
 ## 7. Build and deploy
 
