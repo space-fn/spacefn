@@ -2,7 +2,7 @@ import * as htmlService from "vscode-html-languageservice";
 import type { CompletionItem } from "vscode-languageserver/node";
 
 import { extractSignals } from "../lib/helpers";
-import { inRange, type CompletionDeps, type TemplateRange } from "./types";
+import { editAt, inRange, mapItemEdit, type CompletionDeps, type TemplateRange } from "./types";
 
 const MODIFIERS = [
 	"once",
@@ -76,7 +76,7 @@ const ACTIONS = [
 	{
 		name: "@peek",
 		detail: "Access signals without subscribing",
-		insert: "peek(${1:() => $signal})",
+		insert: "peek(${1:() => \\$signal})",
 	},
 	{
 		name: "@setAll",
@@ -131,21 +131,28 @@ export function datastarCompletions(
 			.map((s) => ({
 				label: `$${s}`,
 				kind: htmlService.CompletionItemKind.Variable,
-				insertText: s,
+				// Replace the typed `$prefix` exactly: VS Code's JS word includes `$`, so a bare
+				// insertText of `s` would overwrite the `$` the user typed.
+				textEdit: editAt(ctx.doc, ctx.offset - dollarMatch[0].length, ctx.offset, `$${s}`),
+				filterText: `$${s}`,
 				detail: "DataStar signal",
 			}));
 	}
 
 	// __modifier
-	const modMatch = beforeCursor.match(/data-[a-z-]+:[a-zA-Z0-9_-]*(__[a-z]*)?$/);
-	const modMatch2 = beforeCursor.match(/data-[a-z-]+(__[a-z]*)?$/);
-	if ((modMatch && modMatch[1] !== undefined) || (modMatch2 && modMatch2[1] !== undefined)) {
-		const modPrefix = (modMatch?.[1] || modMatch2?.[1] || "").replace(/^__/, "");
+	// data-on:click__debounce.500ms__on| — the key must not swallow `__`, and earlier modifiers
+	// (with their .args) may precede the one being typed.
+	const modMatch = beforeCursor.match(
+		/data-[a-z-]+(?::[a-zA-Z0-9-]*)?(?:__[a-z]+(?:\.[a-z0-9]+)*)*(__[a-z]*)$/,
+	);
+	if (modMatch) {
+		const typed = modMatch[1]!;
+		const modPrefix = typed.replace(/^__/, "");
 		const items = MODIFIERS.filter((m) => m.toLowerCase().startsWith(modPrefix.toLowerCase())).map(
 			(m) => ({
 				label: `__${m}`,
 				kind: htmlService.CompletionItemKind.Keyword,
-				insertText: `__${m}`,
+				textEdit: editAt(ctx.doc, ctx.offset - typed.length, ctx.offset, `__${m}`),
 				detail: `DataStar modifier: ${m}`,
 				filterText: `__${m}`,
 				sortText: `__${m}`,
@@ -163,7 +170,7 @@ export function datastarCompletions(
 		).map((a) => ({
 			label: `.${a}`,
 			kind: htmlService.CompletionItemKind.Value,
-			insertText: `.${a}`,
+			textEdit: editAt(ctx.doc, ctx.offset - argMatch[1]!.length, ctx.offset, `.${a}`),
 			detail: `DataStar modifier arg: ${a}`,
 			filterText: `.${a}`,
 			sortText: `.${a}`,
@@ -179,7 +186,7 @@ export function datastarCompletions(
 			(a) => ({
 				label: a.name,
 				kind: htmlService.CompletionItemKind.Function,
-				insertText: a.insert,
+				textEdit: editAt(ctx.doc, ctx.offset - actionMatch[0].length, ctx.offset, `@${a.insert}`),
 				insertTextFormat: 2,
 				detail: a.detail,
 				filterText: a.name,
@@ -212,16 +219,9 @@ export function datastarCompletions(
 	const htmlDocParsed = deps.htmlLS.parseHTMLDocument(htmlDoc);
 	const list = deps.htmlLS.doComplete(htmlDoc, pos, htmlDocParsed);
 	if (!list) return null;
-	const adjusted = list.items.map((item) => {
-		const te = item.textEdit as { range?: { start: unknown; end: unknown } } | undefined;
-		if (te && te.range) {
-			te.range = {
-				start: ctx.doc.positionAt(tpl.contentStart + htmlDoc.offsetAt(te.range.start as never)),
-				end: ctx.doc.positionAt(tpl.contentStart + htmlDoc.offsetAt(te.range.end as never)),
-			};
-		}
-		return item;
-	});
+	const adjusted = list.items.map((item) =>
+		mapItemEdit(item, htmlDoc, ctx.doc, (o) => tpl.contentStart + o),
+	);
 	const seen = new Set<string>();
 	return adjusted.filter((item) => {
 		if (seen.has(item.label)) return false;
