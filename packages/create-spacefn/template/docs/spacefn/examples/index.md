@@ -4,6 +4,11 @@ Worked examples that tie together the concepts and reference pages. Start
 with the [Datastar guide](../guides/datastar.md) for the recommended
 server-rendered frontend path.
 
+Every example follows the project layout: `app/` files only read input, call
+your code, and respond, while the rules live in `modules/`, `utils/`, and
+`lib/`. Copy that split along with the code; see
+[modules, utils, and lib](../directory-structure/modules.md).
+
 | Scenario                                           | What it covers                                                     |
 | -------------------------------------------------- | ------------------------------------------------------------------ |
 | [Todo board](./todo-crud.md)                       | D1 migrations and queries, page loader/actions, Datastar fragments |

@@ -70,14 +70,20 @@ order count. `COALESCE` makes the no-orders total zero; the latest order
 timestamp remains nullable. Aggregates and other expressions need `@column`
 annotations because the schema cannot supply their types.
 
-Call the generated function from a route or service:
+Call the generated function from a module. The module decides what a missing customer means; the route only supplies the executor and the id:
 
 ```ts
-import { customerSpending } from "@space/db/main_db";
-import { d1Executor } from "spacefn/db";
+// modules/customers/spending.ts
 
-const summary = await customerSpending(d1Executor(c.env.DB), { customerId: 42 });
-// CustomerSpendingRow | undefined
+import { customerSpending } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
+import type { DbReader } from "spacefn/db";
+
+export async function spendingFor(db: DbReader, customerId: number) {
+	const summary = await customerSpending(db, { customerId }); // CustomerSpendingRow | undefined
+	if (!summary) throw new AppError("not_found", "No such customer.");
+	return summary;
+}
 ```
 
 The generated row has `customerId`, `orderCount`, and `lifetimeCents` as
@@ -127,25 +133,68 @@ fragments. `limit` and `offset` are required and always bound. The paired date
 range is included only when both values are present; using an exclusive upper
 bound makes adjacent time windows compose without overlap.
 
-The generated call is still ordinary typed code:
+The generated call is still ordinary typed code. A named parameter prevents
+SQL injection, but does not decide whether a value is allowed or reasonable;
+that is the module's job:
 
 ```ts
-import { searchOrders } from "@space/db/main_db";
-import { d1Executor } from "spacefn/db";
+// modules/orders/search.ts
 
-const page = await searchOrders(d1Executor(c.env.DB), {
-	status: "paid",
-	createdAfter: "2026-01-01T00:00:00Z",
-	createdBefore: "2026-02-01T00:00:00Z",
-	limit: 25,
-	offset: 0,
-});
+import { searchOrders } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
+import type { DbReader } from "spacefn/db";
+
+const STATUSES = ["pending", "paid", "shipped", "cancelled"] as const;
+const PAGE_SIZE = 25;
+
+export interface OrderSearch {
+	status?: string;
+	customerId?: number;
+	createdAfter?: string;
+	createdBefore?: string;
+	page?: number;
+}
+
+export function findOrders(db: DbReader, search: OrderSearch) {
+	if (search.status && !STATUSES.includes(search.status as (typeof STATUSES)[number])) {
+		throw new AppError("invalid", "Unknown order status.");
+	}
+	const page = search.page ?? 1;
+	if (!Number.isSafeInteger(page) || page < 1 || page > 100) {
+		throw new AppError("invalid", "Pages run from 1 to 100.");
+	}
+	return searchOrders(db, {
+		status: search.status,
+		customerId: search.customerId,
+		createdAfter: search.createdAfter,
+		createdBefore: search.createdBefore,
+		limit: PAGE_SIZE,
+		offset: (page - 1) * PAGE_SIZE,
+	});
+}
 ```
 
-Validate `status`, page size, and offset at the request boundary. A named
-parameter prevents SQL injection, but does not validate whether a value is
-allowed or reasonable. For large result sets, prefer a keyset cursor over
-large offsets.
+The route reads the query string and hands it over:
+
+```ts
+// app/routes/orders.ts
+
+import { mainDb } from "@app/db/main_db";
+import { findOrders } from "@modules/orders/search";
+import { defineHandler } from "spacefn/handler";
+
+export const GET = defineHandler(async (c) =>
+	findOrders(await mainDb(c.env.DB), {
+		status: c.req.query("status"),
+		createdAfter: c.req.query("after"),
+		createdBefore: c.req.query("before"),
+		page: c.req.query("page") ? Number(c.req.query("page")) : undefined,
+	}),
+);
+```
+
+`mainDb` is the database's [connect helper](../directory-structure/database.md#applying-and-rolling-back).
+For large result sets, prefer a keyset cursor over large offsets.
 
 ## Query rules these examples use
 
