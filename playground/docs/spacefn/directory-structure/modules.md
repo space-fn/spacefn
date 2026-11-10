@@ -44,6 +44,7 @@ Code outside `app/` must run without a request, a Worker, or the dev server, so 
 - Other modules, `@utils/*`, and `@lib/*`.
 - Generated database functions and row types from `@space/db/<name>`, and the `DbReader` type from `spacefn/db`. SQL is part of your project, and the generated functions are plain functions of an executor.
 - Pure spacefn helpers that need no request: `spacefn/auth` hashing, tokens and TOTP, and `html`/`raw` from `spacefn/html` for markup fragments.
+- Types from any spacefn entry, imported with `import type` (for example `TenantRecord` from `spacefn/tenancy`). A type-only import adds no runtime dependency.
 
 **Not allowed:**
 
@@ -77,7 +78,7 @@ export function todoTitle(input: unknown): string {
 	return title;
 }
 
-export async function createTodo(db: DbReader, input: { title: unknown }) {
+export async function createTodo(db: DbReader, input: { title?: unknown }) {
 	await addTodo(db, { title: todoTitle(input.title) });
 	return listTodos(db, {});
 }
@@ -86,7 +87,7 @@ export function allTodos(db: DbReader) {
 	return listTodos(db, {});
 }
 
-export async function todoById(db: DbReader, rawId: string) {
+export async function todoById(db: DbReader, rawId: string | undefined) {
 	const id = Number(rawId);
 	if (!Number.isSafeInteger(id)) throw new AppError("invalid", "The id must be a whole number.");
 	const todo = await findTodo(db, { id });

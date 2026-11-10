@@ -155,7 +155,7 @@ import { findTodo } from "@space/db/main_db";
 import { AppError } from "@utils/errors";
 import type { DbReader } from "spacefn/db";
 
-export async function todoById(db: DbReader, rawId: string) {
+export async function todoById(db: DbReader, rawId: string | undefined) {
 	const id = Number(rawId);
 	if (!Number.isSafeInteger(id)) throw new AppError("invalid", "The id must be a whole number.");
 	const todo = await findTodo(db, { id });

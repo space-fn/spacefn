@@ -138,7 +138,7 @@ export const POST = defineHandler(async (c) => {
 import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(async (c) => {
-	const status = await (await c.env.WF_ORDER_FULFILLMENT.get(c.req.param("id"))).status();
+	const status = await (await c.env.WF_ORDER_FULFILLMENT.get(c.req.param("id") ?? "")).status();
 	return { status: status.status, output: status.output };
 });
 ```
