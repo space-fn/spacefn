@@ -12,7 +12,7 @@
 	"dependencies": {
 		"cf": "1.0.0-beta.26",
 		"hono": "^4.13.14",
-		"spacefn": "^0.9.0"
+		"spacefn": "^0.10.0"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "2.0.0-beta.v.1",
