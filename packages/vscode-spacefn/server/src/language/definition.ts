@@ -1,82 +1,70 @@
 import type { Location } from "vscode-languageserver/node";
 
 import { resolveDbDir } from "../diagnostics/embedded";
-import { inSqlString, offsetToPosition, resolveAliases, wordRangeAt } from "../lib/helpers";
-import type { LanguageCtx, LanguageDeps } from "./types";
+import { offsetToPosition, wordRangeAt } from "../lib/helpers";
+import { qualifierBefore, resolveSymbol, scopeOf, statementAt } from "../lib/sqlScope";
+import type { LanguageCtx, LanguageDeps, SchemaInfo } from "./types";
 
-/** Go-to-definition for SQL schema (jump to CREATE TABLE in migrations). */
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Go-to-definition for SQL schema: jump to the CREATE TABLE, or the column's line in it. */
 export async function definition(ctx: LanguageCtx, deps: LanguageDeps): Promise<Location[] | null> {
 	const { getSchema, readDir, readFile, joinPath } = deps;
-	const offset = ctx.offset;
-	const filePath = ctx.filePath;
-	const isSqlFile = filePath.endsWith(".sql");
-	if (!isSqlFile && !inSqlString(ctx.text, offset)) return null;
-	const resolved = resolveDbDir(filePath);
+	const stmt = statementAt(ctx.text, ctx.offset, ctx.filePath.endsWith(".sql"));
+	if (!stmt) return null;
+	const resolved = resolveDbDir(ctx.filePath);
 	if (!resolved) return null;
-	const wordRange = wordRangeAt(ctx.doc, ctx.position, /[A-Za-z_][A-Za-z0-9_]*/);
+	const wordRange = wordRangeAt(ctx.doc, ctx.position, /\w/);
 	if (!wordRange) return null;
 	const word = ctx.doc.getText(wordRange);
-	const aliasMap = resolveAliases(ctx.text);
-	const target = aliasMap.get(word) ?? word;
 
-	// resolve column -> owning table (if applicable)
-	let ownerTable: string | null = null;
+	let schema: SchemaInfo;
 	try {
-		const schema = await getSchema(resolved.dbDir, resolved.targetDb);
-		for (const [t, cols] of schema.columns) {
-			if (cols.some((c) => c.name === word)) {
-				ownerTable = t;
-				break;
-			}
-		}
-	} catch {
-		// ignore
-	}
-	const searchName = ownerTable ?? target;
-
-	const migrationsDir = joinPath(resolved.targetDb, "migrations");
-	let files: string[] = [];
-	try {
-		files = await readDir(migrationsDir);
+		schema = await getSchema(resolved.dbDir, resolved.targetDb);
 	} catch {
 		return null;
 	}
-	for (const f of files) {
-		if (!f.endsWith(".sql")) continue;
-		const full = joinPath(migrationsDir, f);
-		const content = await readFile(full);
-		const re = new RegExp(
-			`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?["'\`]?${searchName}["'\`]?`,
+	const qualifier = qualifierBefore(ctx.text, ctx.doc.offsetAt(wordRange.start));
+	const symbol = resolveSymbol(schema, scopeOf(stmt.sql), word, qualifier);
+	if (!symbol) return null;
+	const targets =
+		symbol.kind === "table"
+			? [{ table: symbol.table, column: null }]
+			: symbol.matches.map((m) => ({ table: m.table, column: m.column.name }));
+
+	const migrationsDir = joinPath(resolved.targetDb, "migrations");
+	let files: string[];
+	try {
+		files = (await readDir(migrationsDir)).filter((f) => f.endsWith(".sql")).sort();
+	} catch {
+		return null;
+	}
+	const out: Location[] = [];
+	for (const { table, column } of targets) {
+		const create = new RegExp(
+			String.raw`CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?["'\`\[]?${escape(table)}\b["'\`\]]?\s*\(`,
 			"i",
 		);
-		const m = content.match(re);
-		if (m && m.index !== undefined) {
-			// if looking for a column, find its line within the CREATE TABLE block
+		for (const f of files) {
+			const full = joinPath(migrationsDir, f);
+			const content = await readFile(full);
+			const m = create.exec(content);
+			if (!m) continue;
 			let idx = m.index;
-			if (ownerTable && ownerTable.toLowerCase() !== target.toLowerCase()) {
-				// target was a column name; locate column within table block
-				const start = m.index;
-				const endIdx = content.indexOf(";", start);
-				const block = content.slice(start, endIdx === -1 ? undefined : endIdx);
-				const colRe = new RegExp(`\\b${target}\\b`, "i");
-				const cm = block.match(colRe);
-				if (cm && cm.index !== undefined) idx = start + cm.index;
-			} else if (ownerTable) {
-				const start = m.index;
-				const endIdx = content.indexOf(";", start);
-				const block = content.slice(start, endIdx === -1 ? undefined : endIdx);
-				const colRe = new RegExp(`\\b${target}\\b`, "i");
-				const cm = block.match(colRe);
-				if (cm && cm.index !== undefined) idx = start + cm.index;
+			if (column) {
+				// A column definition starts a line or follows `(`/`,` in the table's body.
+				const bodyStart = m.index + m[0].length;
+				const bodyEnd = content.indexOf(";", bodyStart);
+				const body = content.slice(bodyStart, bodyEnd === -1 ? undefined : bodyEnd);
+				const col = new RegExp(String.raw`(^|[(,])\s*["'\`\[]?(${escape(column)})\b`, "im").exec(
+					"(" + body,
+				);
+				if (col) idx = bodyStart - 1 + col.index + col[0].length - column.length;
 			}
 			const pos = offsetToPosition(content, idx);
-			return [
-				{
-					uri: `file://${full}`,
-					range: { start: pos, end: pos },
-				},
-			];
+			out.push({ uri: `file://${full}`, range: { start: pos, end: pos } });
+			break;
 		}
 	}
-	return null;
+	return out.length ? out : null;
 }

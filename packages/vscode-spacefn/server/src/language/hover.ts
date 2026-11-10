@@ -2,13 +2,8 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import type { Hover } from "vscode-languageserver/node";
 
 import { resolveDbDir } from "../diagnostics/embedded";
-import {
-	findCssTemplateRange,
-	findHtmlTemplateRange,
-	resolveAliases,
-	wordRangeAt,
-	inSqlString,
-} from "../lib/helpers";
+import { findCssTemplateRange, findHtmlTemplateRange, wordRangeAt } from "../lib/helpers";
+import { qualifierBefore, resolveSymbol, scopeOf, statementAt } from "../lib/sqlScope";
 import type { LanguageCtx, LanguageDeps, SchemaInfo } from "./types";
 
 /** Hover for CSS/HTML/DataStar templates and SQL schema. */
@@ -87,8 +82,8 @@ export async function hover(ctx: LanguageCtx, deps: LanguageDeps): Promise<Hover
 		}
 		return hover as any;
 	}
-	const isSqlFile = filePath.endsWith(".sql");
-	if (!isSqlFile && !inSqlString(text, offset)) return null;
+	const stmt = statementAt(text, offset, filePath.endsWith(".sql"));
+	if (!stmt) return null;
 	const resolved = resolveDbDir(filePath);
 	if (!resolved) return null;
 	let schema: SchemaInfo;
@@ -97,41 +92,32 @@ export async function hover(ctx: LanguageCtx, deps: LanguageDeps): Promise<Hover
 	} catch {
 		return null;
 	}
-	const wordRange = wordRangeAt(ctx.doc, ctx.position, /[A-Za-z_][A-Za-z0-9_]*/);
+	const wordRange = wordRangeAt(ctx.doc, ctx.position, /\w/);
 	if (!wordRange) return null;
 	const word = ctx.doc.getText(wordRange);
-	const aliasMap = resolveAliases(ctx.text);
-	const baseTable = aliasMap.get(word) ?? word;
-	// table?
-	if (schema.tables.includes(baseTable)) {
-		const cols = schema.columns.get(baseTable) ?? [];
+	const wordStart = ctx.doc.offsetAt(wordRange.start);
+	const symbol = resolveSymbol(schema, scopeOf(stmt.sql), word, qualifierBefore(text, wordStart));
+	if (!symbol) return null;
+	if (symbol.kind === "table") {
+		const cols = schema.columns.get(symbol.table) ?? [];
 		const colList = cols
-			.map((c) => `${c.pk ? "🔑 " : ""}${c.name} (${c.type}${c.notnull ? ", NN" : ""})`)
-			.join(", ");
+			.map((c) => `- ${c.pk ? "🔑 " : ""}\`${c.name}\` ${c.type}${c.notnull ? " NOT NULL" : ""}`)
+			.join("\n");
 		return {
-			contents: {
-				kind: "markdown",
-				value: `**table** \`${baseTable}\`\n\nColumns: ${colList}`,
-			},
+			contents: { kind: "markdown", value: `**table** \`${symbol.table}\`\n\n${colList}` },
 			range: wordRange,
 		};
 	}
-	// column?
-	for (const [t, cols] of schema.columns) {
-		const col = cols.find((c) => c.name === word);
-		if (col) {
+	const value = symbol.matches
+		.map(({ table, column: col }) => {
 			const flags = [col.pk ? "PK" : "", col.notnull ? "NOT NULL" : "nullable"]
 				.filter(Boolean)
 				.join(" · ");
 			const def = col.defaultValue != null ? ` · DEFAULT ${col.defaultValue}` : "";
-			return {
-				contents: {
-					kind: "markdown",
-					value: `**column** \`${col.name}\` : ${col.type} · ${flags}${def} (table ${t})`,
-				},
-				range: wordRange,
-			};
-		}
-	}
-	return null;
+			return `**column** \`${table}.${col.name}\` : ${col.type} · ${flags}${def}`;
+		})
+		.join("\n\n");
+	const ambiguous =
+		symbol.matches.length > 1 ? "\n\n_Ambiguous: qualify it with a table or alias._" : "";
+	return { contents: { kind: "markdown", value: value + ambiguous }, range: wordRange };
 }

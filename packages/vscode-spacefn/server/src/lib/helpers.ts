@@ -1,45 +1,8 @@
 import { parseQueryFile } from "spacefn/db";
 import { Position } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-export type CompletionContext =
-	| { kind: "table" }
-	| { kind: "column"; tables: string[] }
-	| { kind: "keyword" };
-
-import { Parser } from "node-sql-parser";
 
 import { templateAt } from "./templates";
-
-const parser = new Parser();
-
-// Extracted pure helpers from server.ts (no LSP connection dependency).
-export function inSqlString(text: string, offset: number): boolean {
-	// crude: walk back to find an unclosed quote/backtick
-	let i = offset - 1;
-	let quote: string | null = null;
-	while (i >= 0) {
-		const ch = text[i];
-		if (ch === "`" || ch === '"' || ch === "'") {
-			// count consecutive backslashes
-			let bs = 0;
-			let j = i - 1;
-			while (j >= 0 && text[j] === "\\") {
-				bs++;
-				j--;
-			}
-			if (bs % 2 === 0) {
-				quote = ch;
-				break;
-			}
-		}
-		i--;
-	}
-	if (!quote) return false;
-	// ensure there's a closing quote after offset
-	const close = text.indexOf(quote, offset);
-	return close !== -1;
-}
-
 type Range = { start: number; end: number; contentStart: number };
 
 const pick = (t: Range | null): Range | null =>
@@ -56,67 +19,6 @@ export function findCssTemplateRange(text: string, offset: number): Range | null
 export function findSqlTemplateRange(text: string, offset: number): Range | null {
 	return pick(templateAt(text, offset, ["sql", "db"]));
 }
-
-export function detectContext(before: string, fullText: string): CompletionContext {
-	// table context: last keyword before cursor is a table-introducing keyword
-	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+\w*$/i.test(before)) return { kind: "table" };
-	// column context after dot
-	const dot = before.match(/(\w+)\.\s*\w*$/);
-	if (dot) return { kind: "column", tables: [dot[1]!] };
-	// column context: after SELECT/WHERE/ON/GROUP/ORDER/HAVING/SET
-	if (
-		/\b(SELECT|WHERE|ON|GROUP\s+BY|ORDER\s+BY|HAVING|SET)\s+[\w,\s]*$/i.test(before) &&
-		!/\b(FROM|JOIN)\s+\w*$/i.test(before)
-	) {
-		// try to extract tables from FROM clause in the statement
-		const tables = extractTables(fullText);
-		if (tables.length) return { kind: "column", tables };
-	}
-	return { kind: "keyword" };
-}
-
-export function resolveAliases(sql: string): Map<string, string> {
-	const m = new Map<string, string>();
-	try {
-		const ast = parser.astify(sql + " ", { database: "sqlite" }) as any;
-		const node = Array.isArray(ast) ? ast[0] : ast;
-		const from = node?.from;
-		if (Array.isArray(from)) {
-			for (const n of from) {
-				if (n && typeof n.table === "string") {
-					m.set(n.table, n.table);
-					if (typeof n.as === "string" && n.as) m.set(n.as, n.table);
-				}
-			}
-		}
-	} catch {
-		// ignore
-	}
-	return m;
-}
-
-export function extractTables(sql: string): string[] {
-	try {
-		const ast = parser.astify(sql + " ", { database: "sqlite" }) as any;
-		const tables = new Set<string>();
-		const walk = (node: any) => {
-			if (!node || typeof node !== "object") return;
-			if (node.table && typeof node.table === "string") tables.add(node.table);
-			for (const k of Object.keys(node)) {
-				const v = node[k];
-				if (Array.isArray(v)) v.forEach(walk);
-				else if (v && typeof v === "object") walk(v);
-			}
-		};
-		walk(ast);
-		return [...tables];
-	} catch {
-		// fallback regex
-		const m = sql.match(/\bFROM\s+(\w+)/gi);
-		return m ? m.map((x) => x.replace(/\bFROM\s+/i, "")) : [];
-	}
-}
-
 // Extract signals from data-signals:* attributes in HTML
 
 export function extractSignals(htmlText: string): string[] {
