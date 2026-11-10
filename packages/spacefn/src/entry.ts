@@ -29,6 +29,7 @@ export function generateWorkerSource({
 		"traceRequest",
 		"envMiddleware",
 		"runWithEnv",
+		"onError",
 		"type Schema",
 		...(queues.length > 0 ? ["dispatchQueue", "type QueueBatch"] : []),
 		...(crons.length > 0 ? ["dispatchScheduled"] : []),
@@ -57,6 +58,8 @@ export function generateWorkerSource({
 	lines.push("export function createApp(options?: { env?: Schema }) {");
 	lines.push("\tenvSchema = options?.env;");
 	lines.push("\tconst app = new Hono();");
+	// Routes and pages rethrow, so errors land here; an app's own app.onError replaces this.
+	lines.push("\tapp.onError(onError);");
 	lines.push("\tapp.use(traceConfig());");
 	lines.push("\tapp.use(traceRequest());");
 	lines.push("\tif (options?.env) app.use(envMiddleware(options.env));");

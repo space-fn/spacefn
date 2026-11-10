@@ -1,10 +1,12 @@
 import { Hono } from "hono";
 import { describe, expect, test } from "vite-plus/test";
 
-import { defineHandler } from "../src/handler";
+import { defineHandler, onError as defaultOnError } from "../src/handler";
 
+// Mirrors the generated createApp, which registers the default error handler.
 function call(handler: Parameters<typeof defineHandler>[0]) {
 	const app = new Hono();
+	app.onError(defaultOnError);
 	app.get("/", defineHandler(handler));
 	return app.request("/");
 }
@@ -97,5 +99,38 @@ describe("defineHandler error mapping", () => {
 		expect(res.status).toBe(500);
 		const json = (await res.json()) as { message: string };
 		expect(json.message).not.toContain("secret");
+	});
+
+	test("an error reaches the app's own app.onError", async () => {
+		class AppError extends Error {}
+		const app = new Hono();
+		app.onError((error, c) =>
+			error instanceof AppError ? c.json({ mine: true }, 404) : defaultOnError(error, c),
+		);
+		app.get(
+			"/",
+			defineHandler(() => {
+				throw new AppError("missing");
+			}),
+		);
+		const res = await app.request("/");
+		expect(res.status).toBe(404);
+		expect(await res.json()).toEqual({ mine: true });
+	});
+
+	test("a per-handler onError still wins", async () => {
+		const app = new Hono();
+		app.onError(() => new Response("app", { status: 500 }));
+		app.get(
+			"/",
+			defineHandler(
+				() => {
+					throw new Error("x");
+				},
+				{ onError: (_error, c) => c.text("handler", 418) },
+			),
+		);
+		const res = await app.request("/");
+		expect(res.status).toBe(418);
 	});
 });

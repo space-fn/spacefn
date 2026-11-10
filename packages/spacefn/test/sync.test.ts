@@ -25,6 +25,7 @@ test("writes the routes module and the worker entry", async () => {
 	expect(worker).toContain("app.use(traceRequest());");
 	expect(worker).toContain("runWithBindings(bindings, () => app.fetch(request, bindings, ctx))");
 	expect(worker).toContain("export function createApp");
+	expect(worker).toContain("app.onError(onError);");
 });
 
 test("reports no change on a second run", async () => {

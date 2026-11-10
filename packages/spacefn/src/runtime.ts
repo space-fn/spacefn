@@ -10,3 +10,4 @@ export { dispatchScheduled } from "./crons/dispatch";
 export type { CronJob } from "./crons/define";
 export type { QueueBatch, QueueHandler, QueueMessage } from "./queues/define";
 export { mountPage } from "./pages/mount";
+export { onError } from "./handler";
