@@ -12,6 +12,12 @@ back to that page. `actions.<name>.path()` gives you the action query string, so
 you do not need to hard-code URLs or create a separate `app/routes/` endpoint
 for each interaction.
 
+Both files are setup. An action reads the signals or form and returns a
+fragment; anything it decides (validation, matching, rendering your data) is a
+function in `modules/` (see [modules](../directory-structure/modules.md)). The
+first example only echoes a value, so it needs no module; the later ones call
+one, and the [todo board](../examples/todo-crud.md) shows a complete feature.
+
 ## Load Datastar
 
 For a quick start, add the pinned browser bundle to the page. This example uses
@@ -125,23 +131,34 @@ export default definePage(
 );
 ```
 
+What counts as a message, and how its preview looks, is the module's:
+
+```ts
+// modules/messages/preview.ts
+
+import { html } from "spacefn/html";
+
+export function messagePreview(input: unknown) {
+	const message = String(input ?? "").trim();
+	if (!message) {
+		return html`<output id="message-preview" role="alert">Enter a message first.</output>`;
+	}
+	return html`<output id="message-preview">${message}</output>`;
+}
+```
+
 Create `app/pages/preview.server.ts`:
 
 ```ts
-import { defineActions, html } from "spacefn/pages";
+// app/pages/preview.server.ts
+
+import { messagePreview } from "@modules/messages/preview";
+import { defineActions } from "spacefn/pages";
 
 export const actions = defineActions({
 	preview: async (c) => {
 		const form = await c.req.formData();
-		const message = String(form.get("message") ?? "").trim();
-
-		if (!message) {
-			return c.html(
-				html`<output id="message-preview" role="alert">Enter a message first.</output>`,
-			);
-		}
-
-		return c.html(html`<output id="message-preview">${message}</output>`);
+		return c.html(messagePreview(form.get("message")));
 	},
 });
 ```
@@ -180,12 +197,36 @@ export default definePage(
 );
 ```
 
-Create `app/pages/search.server.ts`:
+Matching and rendering results are the feature, so they live in a module:
 
 ```ts
-import { defineActions, html } from "spacefn/pages";
+// modules/search/index.ts
+
+import { html } from "spacefn/html";
 
 const entries = ["Cloudflare Workers", "Datastar", "spacefn"];
+const MAX_QUERY = 100;
+
+export function searchEntries(query: string) {
+	const needle = query.trim().slice(0, MAX_QUERY).toLowerCase();
+	return entries.filter((entry) => entry.toLowerCase().includes(needle));
+}
+
+export function searchResults(matches: string[]) {
+	return html`<ul id="search-results">
+		${matches.map((entry) => html`<li>${entry}</li>`)}
+	</ul>`;
+}
+```
+
+Create `app/pages/search.server.ts`. The action reads the signal, calls the
+module, and returns its fragment:
+
+```ts
+// app/pages/search.server.ts
+
+import { searchEntries, searchResults } from "@modules/search";
+import { defineActions } from "spacefn/pages";
 
 export const actions = defineActions({
 	search: async (c) => {
@@ -194,22 +235,14 @@ export const actions = defineActions({
 		if (typeof query !== "string") {
 			return c.json({ error: "invalid_query" }, 400);
 		}
-
-		const matches = entries.filter((entry) =>
-			entry.toLowerCase().includes(query.trim().toLowerCase()),
-		);
-		return c.html(
-			html`<ul id="search-results">
-				${matches.map((entry) => html`<li>${entry}</li>`)}
-			</ul>`,
-		);
+		return c.html(searchResults(searchEntries(query)));
 	},
 });
 ```
 
 The action returns a small HTML fragment with the same ID as the existing
-results list. For real data, bound the query length and use parameterized
-database queries. Do not interpolate user input into SQL or into `raw()` HTML.
+results list. For real data, the module takes a `DbReader` and calls a
+generated query. Do not interpolate user input into SQL or into `raw()` HTML.
 
 ## Stream a patch with SSE
 
@@ -412,8 +445,10 @@ deployments already use HTTPS.
   `?_action=<name>`.
 - Return HTML fragments or an SSE `Response` from Datastar actions. Returning
   nothing triggers the normal page-action `303` redirect.
-- Put durable state and business rules in server actions and the data layer.
-  Browser signals are UI state, not trusted application state.
+- Keep `*.server.ts` actions as setup: read the signals or form, call a
+  function from `modules/`, and return its fragment. Business rules and
+  durable state belong in [modules](../directory-structure/modules.md) and the
+  database. Browser signals are UI state, not trusted application state.
 - Render untrusted values with `html` and avoid `raw()` for user content.
 - Protect mutations with the same authentication, authorization, validation,
   and CSRF strategy as any other endpoint.
