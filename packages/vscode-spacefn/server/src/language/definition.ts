@@ -2,7 +2,7 @@ import type { Location } from "vscode-languageserver/node";
 
 import { resolveDbDir } from "../diagnostics/embedded";
 import { offsetToPosition, wordRangeAt } from "../lib/helpers";
-import { qualifierBefore, resolveSymbol, scopeOf, statementAt } from "../lib/sqlScope";
+import { qualifierBefore, resolveSymbol, scopesAt, statementAt } from "../lib/sqlScope";
 import type { LanguageCtx, LanguageDeps, SchemaInfo } from "./types";
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -25,12 +25,17 @@ export async function definition(ctx: LanguageCtx, deps: LanguageDeps): Promise<
 		return null;
 	}
 	const qualifier = qualifierBefore(ctx.text, ctx.doc.offsetAt(wordRange.start));
-	const symbol = resolveSymbol(schema, scopeOf(stmt.sql), word, qualifier);
+	// Several targets only for an ambiguous column: VS Code then lets you pick.
+	const wordStart = ctx.doc.offsetAt(wordRange.start);
+	const symbol = resolveSymbol(schema, scopesAt(stmt.sql, wordStart - stmt.start), word, qualifier);
 	if (!symbol) return null;
 	const targets =
 		symbol.kind === "table"
 			? [{ table: symbol.table, column: null }]
-			: symbol.matches.map((m) => ({ table: m.table, column: m.column.name }));
+			: [...new Set(symbol.matches.map((m) => m.table))].map((table) => ({
+					table,
+					column: symbol.matches[0]!.column.name,
+				}));
 
 	const migrationsDir = joinPath(resolved.targetDb, "migrations");
 	let files: string[];

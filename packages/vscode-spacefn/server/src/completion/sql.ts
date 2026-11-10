@@ -1,12 +1,20 @@
 import { CompletionItem, CompletionItemKind } from "vscode-languageserver/node";
 
-import { schemaTable, scopeOf, statementAt } from "../lib/sqlScope";
+import {
+	columnsIn,
+	isShared,
+	scopeOf,
+	scopesAt,
+	statementAt,
+	type SqlScope,
+} from "../lib/sqlScope";
 import { SQL_FUNCTIONS, SQL_KEYWORDS } from "./data";
 import type { CompletionDeps, CompletionResult } from "./types";
 
+/** `scope` holds the tables whose columns belong at the cursor; `only` drops keywords. */
 type Context =
 	| { kind: "table" }
-	| { kind: "column"; tables: string[]; only: boolean }
+	| { kind: "column"; scope: SqlScope; only: boolean }
 	| { kind: "keyword" };
 
 const CLAUSE =
@@ -30,22 +38,29 @@ const COLUMN_CLAUSES = new Set([
 
 /** What belongs at the cursor, read from the statement text before it. */
 export function sqlContext(before: string, statement: string): Context {
-	const scope = scopeOf(statement);
-	// `alias.` / `table.`: only that table's columns.
+	// The query level the cursor is in: a subquery sees its own tables, not its parent's.
+	const scopes = scopesAt(statement, before.length);
+	const scope = scopes[0]!;
+	// `alias.` / `table.`: only that reference's columns, found at the nearest level naming it.
 	const dot = /([A-Za-z_]\w*)\.\w*$/.exec(before);
 	if (dot) {
-		const table = scope.aliases.get(dot[1]!.toLowerCase()) ?? dot[1]!;
-		return { kind: "column", tables: [table], only: true };
+		const q = dot[1]!.toLowerCase();
+		for (const s of scopes) {
+			const refs = s.refs.filter((r) => (r.alias ?? r.table).toLowerCase() === q);
+			const ref = refs[0];
+			if (ref)
+				return { kind: "column", scope: { ...s, refs: [ref], tables: [ref.table] }, only: true };
+		}
+		return { kind: "column", scope: scopeOf(`FROM ${dot[1]}`), only: true };
 	}
 	// INSERT INTO t (a, b|
 	const insert = /\bINTO\s+["`]?(\w+)["`]?\s*\([^)]*$/i.exec(before);
-	if (insert) return { kind: "column", tables: [insert[1]!], only: true };
+	if (insert) return { kind: "column", scope: scopeOf(`FROM ${insert[1]}`), only: true };
 	if (/\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+["`]?\w*$/i.test(before)) return { kind: "table" };
 	const last = [...before.matchAll(CLAUSE)].at(-1)?.[1]?.toLowerCase().replace(/\s+/g, " ");
 	// FROM a, b|
 	if (last === "from" && /,\s*\w*$/.test(before)) return { kind: "table" };
-	if (last && COLUMN_CLAUSES.has(last))
-		return { kind: "column", tables: scope.tables, only: false };
+	if (last && COLUMN_CLAUSES.has(last)) return { kind: "column", scope, only: false };
 	return { kind: "keyword" };
 }
 
@@ -85,18 +100,26 @@ export async function sqlCompletions(
 	}
 
 	if (det.kind === "column") {
-		const seen = new Set<string>();
-		const tables = det.tables.map((t) => schemaTable(schema, t)).filter((t): t is string => !!t);
-		for (const t of tables) {
-			for (const c of schema.columns.get(t) ?? []) {
-				if (!c.name.toLowerCase().startsWith(prefix) || seen.has(c.name)) continue;
-				seen.add(c.name);
+		const all = columnsIn(schema, det.scope);
+		const byName = new Map<string, typeof all>();
+		for (const m of all) {
+			const key = m.column.name.toLowerCase();
+			if (key.startsWith(prefix)) byName.set(key, [...(byName.get(key) ?? []), m]);
+		}
+		for (const matches of byName.values()) {
+			const name = matches[0]!.column.name;
+			// A name several tables share would be rejected bare, so offer `u.id`, `t.id` instead.
+			const qualify = matches.length > 1 && !isShared(det.scope, name);
+			for (const { table, alias, column } of qualify ? matches : matches.slice(0, 1)) {
+				const label = qualify ? `${alias ?? table}.${name}` : name;
 				items.push({
-					label: c.name,
+					label,
 					kind: CompletionItemKind.Field,
-					detail: `${t}.${c.name} : ${c.type}`,
+					detail: `${table}.${name} : ${column.type}`,
+					filterText: name,
+					insertText: label,
 					// Columns of the query's tables come before keywords and functions.
-					sortText: `0${c.name}`,
+					sortText: `0${label}`,
 				});
 			}
 		}

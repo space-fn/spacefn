@@ -6,12 +6,6 @@ export interface SqlStatement {
 	start: number;
 }
 
-/** Tables a statement reads or writes; `aliases` maps lower-cased alias and table names to tables. */
-export interface SqlScope {
-	tables: string[];
-	aliases: Map<string, string>;
-}
-
 const NOT_ALIAS = new Set(
 	(
 		"where on join left right inner outer cross natural full set values select from group order " +
@@ -64,14 +58,39 @@ export function statementAt(text: string, offset: number, isSqlFile: boolean): S
 	return { sql: masked.slice(from, to), start: start + from };
 }
 
+/** One table reference in a FROM/JOIN/UPDATE/INTO list, with the alias it was given. */
+export interface TableRef {
+	table: string;
+	alias: string | null;
+}
+
+/**
+ * The tables one query level reads or writes. `aliases` maps lower-cased aliases and table
+ * names to tables; `shared` holds columns a `JOIN ... USING (...)` merges, and `natural` is set
+ * when a NATURAL JOIN merges every common column.
+ */
+export interface SqlScope {
+	refs: TableRef[];
+	tables: string[];
+	aliases: Map<string, string>;
+	shared: Set<string>;
+	natural: boolean;
+}
+
 /** Reads FROM/JOIN/UPDATE/INTO targets and their aliases; tolerant of half-typed SQL. */
 export function scopeOf(sql: string): SqlScope {
-	const tables: string[] = [];
-	const aliases = new Map<string, string>();
+	const scope: SqlScope = {
+		refs: [],
+		tables: [],
+		aliases: new Map(),
+		shared: new Set(),
+		natural: /\bNATURAL\s+(?:LEFT\s+|INNER\s+|CROSS\s+)?JOIN\b/i.test(sql),
+	};
 	const add = (table: string, alias: string | undefined) => {
-		if (!tables.includes(table)) tables.push(table);
-		aliases.set(table.toLowerCase(), table);
-		if (alias) aliases.set(alias.toLowerCase(), table);
+		scope.refs.push({ table, alias: alias ?? null });
+		if (!scope.tables.includes(table)) scope.tables.push(table);
+		scope.aliases.set(table.toLowerCase(), table);
+		if (alias) scope.aliases.set(alias.toLowerCase(), table);
 	};
 	const ident = String.raw`["\`\[]?([A-Za-z_]\w*)["\`\]]?`;
 	// The alias must not be a keyword, or `FROM a JOIN b` would read JOIN as a's alias and miss b.
@@ -88,7 +107,51 @@ export function scopeOf(sql: string): SqlScope {
 			rest = rest.slice(c[0].length);
 		}
 	}
-	return { tables, aliases };
+	for (const m of sql.matchAll(/\bUSING\s*\(([^)]*)\)/gi)) {
+		for (const name of m[1]!.split(","))
+			scope.shared.add(name.trim().replace(/["`]/g, "").toLowerCase());
+	}
+	return scope;
+}
+
+/** `(SELECT ...)` groups of `sql`, outermost first, as [open paren, close paren] offsets. */
+function subqueries(sql: string): [number, number][] {
+	const out: [number, number][] = [];
+	const open: number[] = [];
+	for (let i = 0; i < sql.length; i++) {
+		if (sql[i] === "(") open.push(i);
+		else if (sql[i] === ")" && open.length) {
+			const start = open.pop()!;
+			if (/^\(\s*(SELECT|WITH)\b/i.test(sql.slice(start, start + 12))) out.push([start, i]);
+		}
+	}
+	return out.sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * The query levels around `rel` (an offset into `sql`), innermost first: each `(SELECT ...)`
+ * containing it, then the statement itself. A level never sees the tables of subqueries nested
+ * in it, so `SELECT id FROM todos WHERE id IN (SELECT id FROM users)` keeps the two `id`s apart.
+ */
+export function scopesAt(sql: string, rel: number): SqlScope[] {
+	const groups = subqueries(sql);
+	const levels: [number, number][] = [
+		[-1, sql.length],
+		...groups.filter(([s, e]) => s < rel && rel <= e),
+	];
+	return levels.reverse().map(([s, e]) => {
+		// Blank the level's own nested subqueries, keeping the parens so `FROM (...) x` stays
+		// unreadable as a table.
+		let text = sql.slice(s + 1, e);
+		for (const [gs, ge] of groups) {
+			if (gs > s && ge < e) {
+				const a = gs - s - 1;
+				const b = ge - s - 1;
+				text = text.slice(0, a + 1) + " ".repeat(b - a - 1) + text.slice(b);
+			}
+		}
+		return scopeOf(text);
+	});
 }
 
 /** The `x` in `x.word` when the word at `wordStart` is qualified. */
@@ -111,43 +174,79 @@ export function schemaTable<C extends Column>(schema: Schema<C>, name: string): 
 	return schema.tables.find((t) => t.toLowerCase() === lower) ?? null;
 }
 
+export interface ColumnMatch<C extends Column> {
+	table: string;
+	alias: string | null;
+	column: C;
+}
+
 export type SqlSymbol<C extends Column> =
 	| { kind: "table"; table: string }
-	| { kind: "column"; matches: { table: string; column: C }[] };
+	| { kind: "column"; matches: ColumnMatch<C>[]; ambiguous: boolean };
+
+/** Columns named `name` (any case) of each table reference in `scope`. */
+export function columnsIn<C extends Column>(
+	schema: Schema<C>,
+	scope: SqlScope,
+	name?: string,
+): ColumnMatch<C>[] {
+	const lower = name?.toLowerCase();
+	return scope.refs.flatMap(({ table: t, alias }) => {
+		const table = schemaTable(schema, t);
+		if (!table) return [];
+		return (schema.columns.get(table) ?? [])
+			.filter((c) => lower === undefined || c.name.toLowerCase() === lower)
+			.map((column) => ({ table, alias, column }));
+	});
+}
+
+/** Whether an unqualified `column` is legal although several tables of `scope` have it. */
+export function isShared(scope: SqlScope, column: string): boolean {
+	return scope.natural || scope.shared.has(column.toLowerCase());
+}
 
 /**
- * What `word` names in this statement: a table (directly or through an alias), or the columns
- * of the statement's own tables that carry that name. Tables outside the statement are never
- * consulted for columns, so `id` resolves to the table the query actually reads.
+ * What `word` names at the cursor: a table (directly or through an alias), or the column it
+ * refers to. `scopes` are the query levels innermost first (see `scopesAt`); a name resolves at
+ * the innermost level that has it, as SQL does, and tables outside the statement are never
+ * consulted for columns. `ambiguous` is set only when SQL itself would reject the reference.
  */
 export function resolveSymbol<C extends Column>(
 	schema: Schema<C>,
-	scope: SqlScope,
+	scopes: SqlScope[],
 	word: string,
 	qualifier: string | null,
 ): SqlSymbol<C> | null {
 	const lower = word.toLowerCase();
-	const columnsOf = (table: string) =>
-		(schema.columns.get(table) ?? schema.columns.get(table.toLowerCase()) ?? [])
-			.filter((c) => c.name.toLowerCase() === lower)
-			.map((column) => ({ table, column }));
-
 	if (qualifier) {
-		const table = schemaTable(schema, scope.aliases.get(qualifier.toLowerCase()) ?? qualifier);
-		if (!table) return null;
-		const matches = columnsOf(table);
-		return matches.length ? { kind: "column", matches } : null;
+		for (const scope of scopes) {
+			const q = qualifier.toLowerCase();
+			// `a.id` in `users a JOIN users b` names one reference, not every users table.
+			const refs = scope.refs.filter((r) => (r.alias ?? r.table).toLowerCase() === q);
+			if (!refs.length) continue;
+			const matches = columnsIn(schema, { ...scope, refs }, word).slice(0, 1);
+			return matches.length ? { kind: "column", matches, ambiguous: false } : null;
+		}
+		const table = schemaTable(schema, qualifier);
+		const col = table && schema.columns.get(table)?.find((c) => c.name.toLowerCase() === lower);
+		if (!col) return null;
+		return {
+			kind: "column",
+			matches: [{ table: table!, alias: null, column: col }],
+			ambiguous: false,
+		};
 	}
-	// An alias or a table of this statement (aliases holds both).
-	const aliased = scope.aliases.get(lower);
-	const inScope = aliased && schemaTable(schema, aliased);
-	if (inScope) return { kind: "table", table: inScope };
-
-	const matches = scope.tables
-		.map((t) => schemaTable(schema, t))
-		.filter((t): t is string => !!t)
-		.flatMap(columnsOf);
-	if (matches.length) return { kind: "column", matches };
+	for (const scope of scopes) {
+		// An alias or a table of this level (aliases holds both).
+		const aliased = scope.aliases.get(lower);
+		const table = aliased && schemaTable(schema, aliased);
+		if (table) return { kind: "table", table };
+		const matches = columnsIn(schema, scope, word);
+		if (!matches.length) continue;
+		if (matches.length > 1 && isShared(scope, word))
+			return { kind: "column", matches: matches.slice(0, 1), ambiguous: false };
+		return { kind: "column", matches, ambiguous: matches.length > 1 };
+	}
 	const table = schemaTable(schema, word);
 	return table ? { kind: "table", table } : null;
 }

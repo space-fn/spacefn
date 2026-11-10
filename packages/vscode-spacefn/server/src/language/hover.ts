@@ -3,7 +3,7 @@ import type { Hover } from "vscode-languageserver/node";
 
 import { resolveDbDir } from "../diagnostics/embedded";
 import { findCssTemplateRange, findHtmlTemplateRange, wordRangeAt } from "../lib/helpers";
-import { qualifierBefore, resolveSymbol, scopeOf, statementAt } from "../lib/sqlScope";
+import { qualifierBefore, resolveSymbol, scopesAt, statementAt } from "../lib/sqlScope";
 import type { LanguageCtx, LanguageDeps, SchemaInfo } from "./types";
 
 /** Hover for CSS/HTML/DataStar templates and SQL schema. */
@@ -96,7 +96,8 @@ export async function hover(ctx: LanguageCtx, deps: LanguageDeps): Promise<Hover
 	if (!wordRange) return null;
 	const word = ctx.doc.getText(wordRange);
 	const wordStart = ctx.doc.offsetAt(wordRange.start);
-	const symbol = resolveSymbol(schema, scopeOf(stmt.sql), word, qualifierBefore(text, wordStart));
+	const scopes = scopesAt(stmt.sql, wordStart - stmt.start);
+	const symbol = resolveSymbol(schema, scopes, word, qualifierBefore(text, wordStart));
 	if (!symbol) return null;
 	if (symbol.kind === "table") {
 		const cols = schema.columns.get(symbol.table) ?? [];
@@ -117,7 +118,10 @@ export async function hover(ctx: LanguageCtx, deps: LanguageDeps): Promise<Hover
 			return `**column** \`${table}.${col.name}\` : ${col.type} · ${flags}${def}`;
 		})
 		.join("\n\n");
-	const ambiguous =
-		symbol.matches.length > 1 ? "\n\n_Ambiguous: qualify it with a table or alias._" : "";
+	// SQL rejects this reference; say how to write it instead.
+	const fixes = symbol.matches.map((m) => `\`${m.alias ?? m.table}.${m.column.name}\``);
+	const ambiguous = symbol.ambiguous
+		? `\n\n⚠️ Ambiguous: \`${word}\` is in more than one table here. Write ${fixes.join(" or ")}.`
+		: "";
 	return { contents: { kind: "markdown", value: value + ambiguous }, range: wordRange };
 }
