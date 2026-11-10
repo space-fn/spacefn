@@ -1,6 +1,8 @@
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import type { Diagnostic } from "vscode-languageserver/node";
 
+import { taggedTemplates } from "../lib/templates";
+
 function findHtmlAttributes(htmlText: string): { name: string; start: number; end: number }[] {
 	const attributes: { name: string; start: number; end: number }[] = [];
 	let index = 0;
@@ -204,37 +206,9 @@ export async function validateDatastarAttributes(
 export async function validateHtmlDatastar(doc: TextDocument): Promise<Diagnostic[]> {
 	const text = doc.getText();
 	const diagnostics: any[] = [];
-	const re = /\bhtml\s*`/g;
-	let m;
-	while ((m = re.exec(text)) !== null) {
-		const contentStart = m.index + m[0].length;
-		let i = contentStart;
-		let depth = 0;
-		let end = -1;
-		while (i < text.length) {
-			const ch = text[i];
-			if (ch === "`" && depth === 0) {
-				end = i;
-				break;
-			}
-			if (ch === "$" && text[i + 1] === "{") {
-				let d = 1;
-				let j = i + 2;
-				while (j < text.length && d > 0) {
-					if (text[j] === "{") d++;
-					else if (text[j] === "}") d--;
-					j++;
-				}
-				i = j;
-				continue;
-			}
-			i++;
-		}
-		if (end === -1) break;
-		const htmlText = text.slice(contentStart, end);
-		const htmlDiags = await validateDatastarAttributes(doc, htmlText, contentStart);
-		diagnostics.push(...htmlDiags);
-		re.lastIndex = end + 1;
+	for (const tpl of taggedTemplates(text, ["html"])) {
+		const htmlText = text.slice(tpl.contentStart, tpl.end);
+		diagnostics.push(...(await validateDatastarAttributes(doc, htmlText, tpl.contentStart)));
 	}
 	return diagnostics;
 }

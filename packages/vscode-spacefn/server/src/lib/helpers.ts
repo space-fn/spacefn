@@ -8,6 +8,8 @@ export type CompletionContext =
 
 import { Parser } from "node-sql-parser";
 
+import { templateAt } from "./templates";
+
 const parser = new Parser();
 
 // Extracted pure helpers from server.ts (no LSP connection dependency).
@@ -38,125 +40,21 @@ export function inSqlString(text: string, offset: number): boolean {
 	return close !== -1;
 }
 
-export function findHtmlTemplateRange(
-	text: string,
-	offset: number,
-): { start: number; end: number; contentStart: number } | null {
-	// find the nearest html` before offset
-	const re = /\bhtml\s*`/g;
-	let m: RegExpExecArray | null;
-	let last: RegExpExecArray | null = null;
-	while ((m = re.exec(text)) !== null) {
-		if (m.index < offset) last = m;
-		else break;
-	}
-	if (!last) return null;
-	const contentStart = last.index + last[0].length;
-	// find closing backtick
-	let i = contentStart;
-	let depth = 0;
-	while (i < text.length) {
-		const ch = text[i];
-		if (ch === "`" && depth === 0) {
-			// ensure not escaped
-			if (i > 0 && text[i - 1] === "\\") {
-				i++;
-				continue;
-			}
-			return { start: last.index, end: i, contentStart };
-		}
-		if (ch === "$" && text[i + 1] === "{") {
-			// skip ${...} by tracking braces
-			let d = 1;
-			i += 2;
-			while (i < text.length && d > 0) {
-				if (text[i] === "{") d++;
-				else if (text[i] === "}") d--;
-				i++;
-			}
-			continue;
-		}
-		i++;
-	}
-	return null;
+type Range = { start: number; end: number; contentStart: number };
+
+const pick = (t: Range | null): Range | null =>
+	t && { start: t.start, end: t.end, contentStart: t.contentStart };
+
+export function findHtmlTemplateRange(text: string, offset: number): Range | null {
+	return pick(templateAt(text, offset, ["html"]));
 }
 
-export function findCssTemplateRange(
-	text: string,
-	offset: number,
-): { start: number; end: number; contentStart: number } | null {
-	const re = /\bcss\s*`/g;
-	let m: RegExpExecArray | null;
-	let last: RegExpExecArray | null = null;
-	while ((m = re.exec(text)) !== null) {
-		if (m.index < offset) last = m;
-		else break;
-	}
-	if (!last) return null;
-	const contentStart = last.index + last[0].length;
-	let i = contentStart;
-	let depth = 0;
-	while (i < text.length) {
-		const ch = text[i];
-		if (ch === "`" && depth === 0) {
-			if (i > 0 && text[i - 1] === "\\\\") {
-				i++;
-				continue;
-			}
-			return { start: last.index, end: i, contentStart };
-		}
-		if (ch === "$" && text[i + 1] === "{") {
-			let d = 1;
-			i += 2;
-			while (i < text.length && d > 0) {
-				if (text[i] === "{") d++;
-				else if (text[i] === "}") d--;
-				i++;
-			}
-			continue;
-		}
-		i++;
-	}
-	return null;
+export function findCssTemplateRange(text: string, offset: number): Range | null {
+	return pick(templateAt(text, offset, ["css"]));
 }
 
-export function findSqlTemplateRange(
-	text: string,
-	offset: number,
-): { start: number; end: number; contentStart: number } | null {
-	const re = /\b(?:sql|db)\s*`/g;
-	let m: RegExpExecArray | null;
-	let last: RegExpExecArray | null = null;
-	while ((m = re.exec(text)) !== null) {
-		if (m.index < offset) last = m;
-		else break;
-	}
-	if (!last) return null;
-	const contentStart = last.index + last[0].length;
-	let i = contentStart;
-	let depth = 0;
-	while (i < text.length) {
-		const ch = text[i];
-		if (ch === "`" && depth === 0) {
-			if (i > 0 && text[i - 1] === "\\") {
-				i++;
-				continue;
-			}
-			return { start: last.index, end: i, contentStart };
-		}
-		if (ch === "$" && text[i + 1] === "{") {
-			let d = 1;
-			i += 2;
-			while (i < text.length && d > 0) {
-				if (text[i] === "{") d++;
-				else if (text[i] === "}") d--;
-				i++;
-			}
-			continue;
-		}
-		i++;
-	}
-	return null;
+export function findSqlTemplateRange(text: string, offset: number): Range | null {
+	return pick(templateAt(text, offset, ["sql", "db"]));
 }
 
 export function detectContext(before: string, fullText: string): CompletionContext {

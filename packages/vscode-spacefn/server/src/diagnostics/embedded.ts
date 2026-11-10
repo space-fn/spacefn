@@ -4,6 +4,7 @@ import { scratchDatabase } from "spacefn/db";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver/node";
 
+import { taggedTemplates } from "../lib/templates";
 import { extractBadIdentifier, loadDialectAndMigrations, rangeForIdentifier } from "./sql";
 
 export function findDbDir(filePath: string): string | null {
@@ -28,14 +29,12 @@ export async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]>
 	const targetDb = resolved.targetDb;
 
 	const text = doc.getText();
-	const regex = /\b(?:sql|db)\s*`([\s\S]*?)`/g;
 	const diagnostics: Diagnostic[] = [];
-	let match: RegExpExecArray | null;
 	let { dialect, migrations } = await loadDialectAndMigrations(targetDb);
 	const scratch = await scratchDatabase(migrations, dialect);
-	while ((match = regex.exec(text)) !== null) {
-		const sql = match[1]!.replace(/\$\{[\s\S]*?\}/g, "NULL");
-		const startOffset = match.index + match[0].indexOf("`") + 1;
+	for (const tpl of taggedTemplates(text, ["sql", "db"])) {
+		const sql = text.slice(tpl.contentStart, tpl.end).replace(/\$\{[\s\S]*?\}/g, "NULL");
+		const startOffset = tpl.contentStart;
 		const startPos = doc.positionAt(startOffset);
 		try {
 			const stmt = await scratch.prepare(sql);
