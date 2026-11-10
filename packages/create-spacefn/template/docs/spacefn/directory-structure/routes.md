@@ -166,7 +166,7 @@ export async function todoById(db: DbReader, rawId: string | undefined) {
 
 `app/entry.ts` maps each kind to an HTTP status once, so routes never repeat `c.json({ error }, 404)`. See [errors cross the boundary as `AppError`](./modules.md#errors-cross-the-boundary-as-apperror) for `utils/errors.ts` and the mapping.
 
-A thrown error is caught by `defineHandler`. Framework helpers such as `readUploads` and `requireWebSocket` throw errors that carry a status (`413`, `415`, `426`, ...), and the default handler answers with that status and a JSON body. Any other error is logged and answered with a generic `500`.
+A thrown error goes to the app's `app.onError`. Your `AppError` gets its mapped status there. Framework helpers such as `readUploads` and `requireWebSocket` throw errors that carry a status (`413`, `415`, `426`, ...), and spacefn's default handler answers with that status and a JSON body. Any other error is logged and answered with a generic `500`.
 
 ```json
 { "error": "internal_error", "message": "Something went wrong" }

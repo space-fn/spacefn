@@ -13,10 +13,12 @@ A page is a function from data to markup. `definePage<Props>` types the props th
 ## `defineLoader`
 
 ```ts
+import { mainDb } from "@app/db/main_db";
+import { allTodos } from "@modules/todos";
 import { defineLoader } from "spacefn/pages";
 
 export const loader = defineLoader(async (c) => ({
-	todos: await listTodos(c.env.DB, {}),
+	todos: await allTodos(await mainDb(c.env.DB)),
 }));
 ```
 
@@ -40,7 +42,8 @@ Each action is callable and gains `.path(): string`, which returns `?_action=<na
 
 `mountPage(app, path, page, server?, options?)` registers the page directly on
 a Hono app. A `ServerModule` may contain a `loader` and named `actions`;
-`MountPageOptions.onError` customizes loader, render, and action failures. A
+`MountPageOptions.onError` customizes loader, render, and action failures;
+without it, the error is rethrown to the app's `app.onError`, like a route's. A
 loader's `Response` is sent as-is. An action's `Response` is sent as-is; any
 other return redirects to the page with 303.
 

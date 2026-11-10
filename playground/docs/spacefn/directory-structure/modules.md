@@ -43,7 +43,7 @@ Code outside `app/` must run without a request, a Worker, or the dev server, so 
 
 - Other modules, `@utils/*`, and `@lib/*`.
 - Generated database functions and row types from `@space/db/<name>`, and the `DbReader` type from `spacefn/db`. SQL is part of your project, and the generated functions are plain functions of an executor.
-- Pure spacefn helpers that need no request: `spacefn/auth` hashing, tokens and TOTP, and `html`/`raw` from `spacefn/html` for markup fragments.
+- Pure spacefn helpers that need no request: `spacefn/auth` hashing, sessions, tokens and TOTP; `html`/`raw` from `spacefn/html` for markup fragments; and `transition` from `spacefn/tenancy` for tenant lifecycle rules.
 - Types from any spacefn entry, imported with `import type` (for example `TenantRecord` from `spacefn/tenancy`). A type-only import adds no runtime dependency.
 
 **Not allowed:**
@@ -207,7 +207,7 @@ export * from "@space/exports";
 export default mountApp(app);
 ```
 
-A page action that answers with an HTML fragment catches the `AppError` itself and renders the message; see the [todo board](../examples/todo-crud.md).
+Errors thrown in route handlers, page loaders, and page actions all reach this one handler. A page action that answers with an HTML fragment can instead catch the `AppError` itself and render the message in place; see the [todo board](../examples/todo-crud.md).
 
 ## Markup fragments
 
