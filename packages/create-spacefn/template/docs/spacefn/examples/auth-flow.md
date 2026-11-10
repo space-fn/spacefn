@@ -1,9 +1,9 @@
 # Datastar sign-up and sign-in
 
 This example shows the browser and server parts of an email/password flow.
-User storage (`findUserByEmail`, `registerUser`, and `insertSession`) is
-app-owned; use parameterized database queries and enforce a unique email
-constraint in the database.
+The page and its actions are setup; the rules live in an `accounts` module
+that uses generated queries against `users` and `sessions` tables (as in the
+playground), with a unique constraint on `users.email`.
 
 ## Page
 
@@ -68,93 +68,145 @@ Both forms post to actions on the same page. Datastar sends form values as
 `application/x-www-form-urlencoded`; the action reads them with
 `c.req.formData()` and returns a fragment with the matching `auth-result` ID.
 
-## Actions
+## The accounts module
 
-Create `app/pages/sign-in.server.ts`:
+The rules of signing up and signing in live in `modules/accounts/`: what a valid email and password are, how a password is hashed, and how long a session lasts. The module uses the generated user and session queries and the request-free helpers from `spacefn/auth`. The pepper arrives as an argument, because a module never reads the environment.
 
 ```ts
-import { findUserByEmail, insertSession, registerUser } from "@modules/users";
+// modules/accounts/accounts.ts
+
+import { addSession, addUser, findUser } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
 import {
 	hashPassword,
 	hibpBreachCheck,
 	MAX_PASSWORD_LENGTH,
 	MIN_PASSWORD_LENGTH,
 	newSession,
-	sessionCookie,
 	verifyPassword,
 } from "spacefn/auth";
+import type { DbReader } from "spacefn/db";
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
+
+export interface Credentials {
+	email: unknown;
+	password: unknown;
+}
+
+function read(input: Credentials) {
+	return {
+		email: String(input.email ?? "")
+			.trim()
+			.toLowerCase(),
+		password: String(input.password ?? ""),
+	};
+}
+
+export async function signUp(db: DbReader, input: Credentials, pepper: string) {
+	const { email, password } = read(input);
+	if (!EMAIL.test(email)) throw new AppError("invalid", "Enter a valid email address.");
+	if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+		throw new AppError(
+			"invalid",
+			`Password must be ${MIN_PASSWORD_LENGTH} to ${MAX_PASSWORD_LENGTH} characters.`,
+		);
+	}
+	let passwordHash: string;
+	try {
+		passwordHash = await hashPassword(password, { pepper, breachCheck: hibpBreachCheck() });
+	} catch (error) {
+		// hashPassword refuses breached passwords with a message meant for the user.
+		throw new AppError(
+			"invalid",
+			error instanceof Error ? error.message : "Choose another password.",
+		);
+	}
+	try {
+		await addUser(db, { email, passwordHash });
+	} catch (error) {
+		// The unique email constraint decides, so two sign-ups cannot race past a lookup.
+		if (String(error).includes("UNIQUE")) {
+			throw new AppError("conflict", "That account could not be created.");
+		}
+		throw error;
+	}
+}
+
+export async function signIn(db: DbReader, input: Credentials, pepper: string, now: number) {
+	const { email, password } = read(input);
+	const user = await findUser(db, { email });
+	const result = user && (await verifyPassword(password, user.passwordHash, { pepper }));
+	if (!user || !result?.valid) throw new AppError("unauthorized", "Wrong email or password.");
+
+	const session = await newSession();
+	await addSession(db, {
+		tokenHash: session.tokenHash,
+		userId: user.id,
+		expiresAt: now + SESSION_MS,
+		lastSeenAt: now,
+	});
+	return { token: session.token };
+}
+```
+
+```ts
+// modules/accounts/index.ts
+
+export { signIn, signUp, type Credentials } from "./accounts";
+```
+
+## Actions
+
+`app/pages/sign-in.server.ts` is setup: it reads the form and the secret, calls the module, sets the cookie, and renders the message. An `AppError` becomes the message the user sees:
+
+```ts
+// app/pages/sign-in.server.ts
+
+import { mainDb } from "@app/db/main_db";
+import { signIn, signUp } from "@modules/accounts";
+import { AppError } from "@utils/errors";
+import { sessionCookie } from "spacefn/auth";
 import { defineActions, html } from "spacefn/pages";
 
 function message(text: string) {
 	return html`<p id="auth-result" role="status">${text}</p>`;
 }
 
+async function credentials(form: Promise<FormData>) {
+	const data = await form;
+	return { email: data.get("email"), password: data.get("password") };
+}
+
 export const actions = defineActions({
 	signup: async (c) => {
-		const form = await c.req.formData();
-		const email = String(form.get("email") ?? "")
-			.trim()
-			.toLowerCase();
-		const password = String(form.get("password") ?? "");
-
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-			return c.html(message("Enter a valid email address."));
-		}
-		if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
-			return c.html(
-				message(`Password must be ${MIN_PASSWORD_LENGTH} to ${MAX_PASSWORD_LENGTH} characters.`),
-			);
-		}
-
-		let passwordHash: string;
 		try {
-			passwordHash = await hashPassword(password, {
-				pepper: c.env.PASSWORD_PEPPER,
-				breachCheck: hibpBreachCheck(),
-			});
+			const input = await credentials(c.req.formData());
+			await signUp(await mainDb(c.env.DB), input, c.env.PASSWORD_PEPPER);
+			return c.html(message("Account created. You can now sign in."));
 		} catch (error) {
-			return c.html(message(error instanceof Error ? error.message : "Could not hash password."));
+			if (error instanceof AppError) return c.html(message(error.message));
+			throw error;
 		}
-		const created = await registerUser(c.env.DB, { email, passwordHash });
-		if (!created) return c.html(message("That account could not be created."));
-
-		return c.html(message("Account created. You can now sign in."));
 	},
 
 	login: async (c) => {
-		const form = await c.req.formData();
-		const email = String(form.get("email") ?? "")
-			.trim()
-			.toLowerCase();
-		const password = String(form.get("password") ?? "");
-		const user = await findUserByEmail(c.env.DB, email);
-		if (!user) return c.html(message("Wrong email or password."));
-
-		const result = await verifyPassword(password, user.passwordHash, {
-			pepper: c.env.PASSWORD_PEPPER,
-		});
-		if (!result.valid) return c.html(message("Wrong email or password."));
-
-		const session = await newSession();
-		const now = Date.now();
-		await insertSession(c.env.DB, {
-			tokenHash: session.tokenHash,
-			userId: user.id,
-			expiresAt: now + 30 * 24 * 60 * 60 * 1000,
-			lastSeenAt: now,
-		});
-		c.header("Set-Cookie", sessionCookie(session.token));
-		return c.html(message("Signed in."));
+		try {
+			const input = await credentials(c.req.formData());
+			const db = await mainDb(c.env.DB);
+			const { token } = await signIn(db, input, c.env.PASSWORD_PEPPER, Date.now());
+			c.header("Set-Cookie", sessionCookie(token));
+			return c.html(message("Signed in."));
+		} catch (error) {
+			if (error instanceof AppError) return c.html(message(error.message));
+			throw error;
+		}
 	},
 });
 ```
 
-`registerUser` should return `false` for a duplicate email using an atomic
-database constraint; do not rely on a separate check-then-insert sequence.
-Production sign-in should rate-limit attempts and verify a decoy hash when
-the account is unknown, so an unknown email does not take a noticeably
-different path. The playground demonstrates that pattern in
-`app/routes/auth/login.ts`.
+The cookie and the response belong to the action because they are HTTP; the session itself is the module's. `signUp` relies on the database's unique email constraint rather than a check-then-insert sequence. Production sign-in should also rate-limit attempts and verify a decoy hash when the account is unknown, so an unknown email does not take a noticeably different path. The playground demonstrates that pattern in `app/routes/auth/login.ts`.
 
 ## Protect mutations against CSRF
 
@@ -163,6 +215,7 @@ folder:
 
 ```ts
 // app/middleware/04-csrf.ts
+
 import { csrfGuard } from "spacefn/auth";
 import { defineMiddleware } from "spacefn/middleware";
 
