@@ -20,20 +20,24 @@ app/pages/
 
 `*.page.ts` renders a URL. `*.server.ts` next to it supplies the data and the form actions. Files starting with `_` are ignored. A page and a route cannot serve the same path. The build stops if they do.
 
+Both files are setup. The page file holds the shell around your content; the server file reads the request and calls `modules/`. Fragments that render your data, and every rule about it, live in the module (see [modules](./modules.md#markup-fragments)).
+
 ## A page
 
 ```ts
 // app/pages/board.page.ts
+
+import { todoList } from "@modules/todos";
 import { definePage, html } from "spacefn/pages";
 
-export default definePage<{ todos: { title: string }[] }>(
+import type { loader } from "./board.server";
+
+export default definePage<typeof loader>(
 	(props) =>
 		html`<!doctype html>
 			<html>
 				<body>
-					<ul>
-						${props.todos.map((todo) => html`<li>${todo.title}</li>`)}
-					</ul>
+					${todoList(props.todos)}
 				</body>
 			</html>`,
 );
@@ -43,16 +47,19 @@ export default definePage<{ todos: { title: string }[] }>(
 
 ```ts
 // app/pages/board.server.ts
+
+import { mainDb } from "@app/db/main_db";
+import { allTodos, createTodo } from "@modules/todos";
 import { defineActions, defineLoader } from "spacefn/pages";
 
 export const loader = defineLoader(async (c) => ({
-	todos: await listTodos(c.env.DB, {}),
+	todos: await allTodos(await mainDb(c.env.DB)),
 }));
 
 export const actions = defineActions({
 	add: async (c) => {
 		const form = await c.req.formData();
-		await addTodo(c.env.DB, { title: String(form.get("title") ?? "") });
+		await createTodo(await mainDb(c.env.DB), { title: form.get("title") });
 		// return nothing: the user is redirected back to /board with 303
 	},
 });
@@ -146,5 +153,4 @@ for complete route and page examples.
 
 - The loader's data reaches the page unchecked at run time. Use `definePage<typeof loader>` to keep the page's props in step with its loader; the two are fully decoupled with `definePage<{ ... }>` and mismatched types are not caught across files.
 - Pages do not support environment suffixes such as `.dev`.
-- No layouts yet. Share a head or a shell with a function that returns `html`.
-- Pages do not provide layouts yet. Share a head or shell with a function that returns `html`.
+- Pages do not provide layouts yet. Share a head or shell with a function that returns `html`, in a setup file such as `app/pages/_layout.ts`.

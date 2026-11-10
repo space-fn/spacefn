@@ -18,7 +18,7 @@ app/routes/
 ├── (admin)/
 │   └── stats.ts          → GET /stats
 ├── debug.dev.ts          → GET /debug (dev only)
-└── _helpers.ts           → not a route
+└── _shared.ts            → not a route (setup shared by routes)
 ```
 
 | File name           | URL               | Notes                                                         |
@@ -35,17 +35,20 @@ When several routes match, the most specific wins: static segments, then `[id]`,
 
 ## A route file
 
+A route is setup: it reads the request, calls a function from `modules/`, and returns the result. The rules for what a todo is live in the module, not here (see [modules](./modules.md)).
+
 ```ts
 // app/routes/todos.ts
+
+import { mainDb } from "@app/db/main_db";
+import { allTodos, createTodo } from "@modules/todos";
 import { defineHandler } from "spacefn/handler";
 
-export const GET = defineHandler((c) => {
-	return { items: [] };
-});
+export const GET = defineHandler(async (c) => allTodos(await mainDb(c.env.DB)));
 
 export const POST = defineHandler(async (c) => {
-	const body = await c.req.json();
-	return { created: body };
+	const body = await c.req.json<{ title?: unknown }>();
+	return c.json(await createTodo(await mainDb(c.env.DB), body), 201);
 });
 ```
 
@@ -66,6 +69,7 @@ export const POST = defineHandler(async (c) => {
 
 ```ts
 // app/routes/examples.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler((c) => {
@@ -85,8 +89,11 @@ export const GET = defineHandler((c) => {
 
 ## Reading the request
 
+Reading and shaping input is the route's job. Anything that decides what the input means (is this title allowed, may this user see this record) belongs in the module the route calls.
+
 ```ts
 // app/routes/search/[section].ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler(async (c) => {
@@ -109,6 +116,7 @@ Forms and uploads:
 
 ```ts
 // app/routes/contact.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
@@ -122,34 +130,41 @@ For file uploads with size and type limits, see [file upload to R2](../examples/
 
 ## Using bindings
 
-`c.env` holds your Worker bindings, typed from `.space/`:
+`c.env` holds your Worker bindings, typed from `.space/`. The route picks the binding and hands it to the module; the module never reads `c.env` itself:
 
 ```ts
 // app/routes/todos/[id].ts
-import { findTodo } from "@space/db/main_db";
-import { d1Executor } from "spacefn/db";
+
+import { mainDb } from "@app/db/main_db";
+import { todoById } from "@modules/todos";
 import { defineHandler } from "spacefn/handler";
 
-export const GET = defineHandler(async (c) => {
-	const todo = await findTodo(d1Executor(c.env.DB), { id: Number(c.req.param("id")) });
-	return todo ?? c.json({ error: "not found" }, 404);
-});
+export const GET = defineHandler(async (c) => todoById(await mainDb(c.env.DB), c.req.param("id")));
 ```
+
+`mainDb` is the database's [connect helper](./modules.md#connect-the-database-once) in `app/db/main_db.ts`.
 
 ## Errors
 
-Return an error response for failures you expect:
+A module reports a failure the caller can act on by throwing an `AppError` with a kind such as `"invalid"` or `"not_found"`:
 
 ```ts
-// app/routes/todos/[id].ts
-import { defineHandler } from "spacefn/handler";
+// modules/todos/todos.ts
 
-export const DELETE = defineHandler(async (c) => {
-	const id = Number(c.req.param("id"));
-	if (!Number.isInteger(id)) return c.json({ error: "id must be a whole number" }, 400);
-	return { deleted: id };
-});
+import { findTodo } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
+import type { DbReader } from "spacefn/db";
+
+export async function todoById(db: DbReader, rawId: string) {
+	const id = Number(rawId);
+	if (!Number.isSafeInteger(id)) throw new AppError("invalid", "The id must be a whole number.");
+	const todo = await findTodo(db, { id });
+	if (!todo) throw new AppError("not_found", "No such todo.");
+	return todo;
+}
 ```
+
+`app/entry.ts` maps each kind to an HTTP status once, so routes never repeat `c.json({ error }, 404)`. See [errors cross the boundary as `AppError`](./modules.md#errors-cross-the-boundary-as-apperror) for `utils/errors.ts` and the mapping.
 
 A thrown error is caught by `defineHandler`. Framework helpers such as `readUploads` and `requireWebSocket` throw errors that carry a status (`413`, `415`, `426`, ...), and the default handler answers with that status and a JSON body. Any other error is logged and answered with a generic `500`.
 
@@ -172,10 +187,14 @@ export const GET = defineHandler(
 
 ### Global error handler
 
-`app/entry.ts` registers the same default handler on the Hono app. Replace it to change the shape of every error response:
+`app/entry.ts` registers the same default handler on the Hono app. Wrap it to translate your own errors, and let it handle the rest:
 
 ```ts
-app.onError((err, c) => c.json({ error: "internal_error" }, 500));
+app.onError((error, c) =>
+	error instanceof AppError
+		? c.json({ error: error.code, message: error.message }, STATUS[error.kind])
+		: onError(error, c),
+);
 ```
 
 ## Related

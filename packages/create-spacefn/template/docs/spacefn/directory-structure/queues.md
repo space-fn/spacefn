@@ -12,13 +12,18 @@ app/queues/
 
 ## A queue
 
+A consumer is setup: it unpacks each message, hands it to your code, and acknowledges it. The work itself is a module or `lib/` function that takes its dependencies as arguments (see [modules](./modules.md)).
+
 ```ts
 // app/queues/emails.ts
+
+import { createEmailClient, type Email } from "@lib/email";
 import { defineQueue } from "spacefn/queues";
 
-export default defineQueue<{ to: string; subject: string }>(async (batch) => {
+export default defineQueue<Email>(async (batch, env) => {
+	const mail = createEmailClient({ apiKey: (env as { MAIL_API_KEY: string }).MAIL_API_KEY });
 	for (const message of batch.messages) {
-		await sendMail(message.body.to, message.body.subject);
+		await mail.send(message.body);
 		message.ack();
 	}
 });
@@ -28,16 +33,28 @@ The consumer and its trigger are generated from the file. The type argument is t
 
 ## Send messages
 
-Send from any route, page action, or cron:
+Send from any route, page action, or cron. The decision to send, and what the message says, belongs to a module; the `app/` file passes it the producer:
+
+```ts
+// modules/accounts/welcome.ts
+
+import type { Email } from "@lib/email";
+
+export async function sendWelcome(send: (email: Email) => Promise<void>, to: string) {
+	await send({ to, subject: "Welcome", body: "Thanks for signing up." });
+}
+```
 
 ```ts
 // app/routes/signup.ts
+
+import { sendWelcome } from "@modules/accounts/welcome";
 import { queues } from "@space/queues";
 import { defineHandler } from "spacefn/handler";
 
 export const POST = defineHandler(async (c) => {
 	const { email } = await c.req.json<{ email: string }>();
-	await queues.emails.send({ to: email, subject: "Welcome" });
+	await sendWelcome((job) => queues.emails.send(job), email);
 	return c.json({ queued: true }, 202);
 });
 ```
@@ -50,24 +67,28 @@ export const POST = defineHandler(async (c) => {
 | `queues.emails.sendBatch([...], { delaySeconds })` | Many messages, delivered after a delay |
 
 ```ts
-await queues.emails.send({ to: "a@example.com", subject: "Reminder" }, { delaySeconds: 600 });
-await queues.emails.sendBatch([{ to: "b@example.com", subject: "Hi" }]);
+await queues.emails.send(reminder, { delaySeconds: 600 });
+await queues.emails.sendBatch([first, second]);
 ```
 
 Each queue name maps to a camelCase producer: `order-jobs.ts` is `queues.orderJobs`. Bodies are type-checked against the consumer's type argument, so `queues.emails.send({ to: 1 })` is a compile error.
 
 ## Acknowledge, retry, and give up
 
-A message is acknowledged only when your handler calls `message.ack()` (or `batch.ackAll()`). Decide per message what should happen:
+A message is acknowledged only when your handler calls `message.ack()` (or `batch.ackAll()`). The retry policy is delivery setup, so it stays in the consumer; fulfilling the order is a module function:
 
 ```ts
 // app/queues/order-jobs.ts
+
+import { mainDb } from "@app/db/main_db";
+import { fulfilOrder } from "@modules/orders";
 import { defineQueue } from "spacefn/queues";
 
-export default defineQueue<{ orderId: string }>(async (batch) => {
+export default defineQueue<{ orderId: string }>(async (batch, env) => {
+	const db = await mainDb((env as { DB: D1Database }).DB);
 	for (const message of batch.messages) {
 		try {
-			await fulfil(message.body.orderId);
+			await fulfilOrder(db, message.body.orderId);
 			message.ack();
 		} catch (error) {
 			if (message.attempts >= 5) {
@@ -96,9 +117,14 @@ If the handler throws, the platform can retry the batch; use `message.retry()` w
 The consumer's third argument is a context with `waitUntil`:
 
 ```ts
+import { mainDb } from "@app/db/main_db";
+import { recordAudit } from "@modules/audit";
+import { defineQueue } from "spacefn/queues";
+
 export default defineQueue<{ url: string }>(async (batch, env, ctx) => {
+	const db = await mainDb((env as { DB: D1Database }).DB);
 	for (const message of batch.messages) {
-		ctx.waitUntil(recordAudit(env, message.body.url));
+		ctx.waitUntil(recordAudit(db, message.body.url));
 		message.ack();
 	}
 });

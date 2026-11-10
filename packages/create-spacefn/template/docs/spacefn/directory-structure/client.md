@@ -4,6 +4,11 @@ Use Datastar attributes for most interactions. For complex, highly interactive
 and reusable components, use [Rocket](../guides/datastar-components.md) in
 `app/client/`. Put additional browser-only code there as well.
 
+An entry is setup like any other `app/` file: it finds elements, attaches
+listeners, and calls your code. Validation, formatting, and other rules live in
+`modules/` or `utils/`, where the server can use the same function (see
+[modules](./modules.md#shared-with-the-browser)).
+
 ## Layout
 
 ```txt
@@ -13,7 +18,7 @@ app/client/
 ├── counter.ts           → entry   /_client/counter.js
 ├── components.ts        → entry   Rocket components
 ├── service-worker.js    → entry   registered with root scope
-└── _shared.ts           → shared module, not an entry
+└── _dom.ts              → browser-only helper shared by entries, not an entry
 ```
 
 - Only files directly in `app/client/` are entries (nested folders are not scanned). Files not starting with `_` are entries; JS/TS and CSS are both supported.
@@ -62,7 +67,8 @@ Assuming the build emits the example asset URLs below:
 
 ```ts
 // app/client/counter.ts
-import { formatCount } from "./_shared";
+
+import { formatCount } from "@utils/format";
 
 const button = document.querySelector<HTMLButtonElement>("#inc")!;
 let count = 0;
@@ -73,7 +79,7 @@ button.addEventListener("click", () => {
 ```
 
 ```ts
-// app/client/_shared.ts — shared by entries, never served on its own
+// utils/format.ts — pure, so the server can render the same text
 export function formatCount(n: number): string {
 	return `count: ${n}`;
 }
@@ -91,6 +97,7 @@ body {
 
 ```ts
 // app/routes/counter-page.ts
+
 import { script, styles } from "@space/client";
 import { defineHandler } from "spacefn/handler";
 import { html } from "spacefn/html";
@@ -118,6 +125,7 @@ CSS imported from a script travels with it. In a build, `script()` also emits th
 
 ```ts
 // app/client/widget.ts
+
 import "./widget.css";
 
 document.body.dataset.widget = "ready";
@@ -128,10 +136,11 @@ document.body.dataset.widget = "ready";
 Browser code can import from `modules/`, `utils/` and `lib/`, so validation or formatting is written once:
 
 ```ts
-// app/client/counter.ts
-import { greet } from "@modules/greet";
+// app/client/greeting.ts
 
-console.log(greet("browser"));
+import { greeting } from "@modules/greetings";
+
+console.log(greeting("browser").message);
 ```
 
 ### Datastar, Rocket and PWA
@@ -147,7 +156,7 @@ Name a service worker entry `app/client/service-worker.js`. Spacefn adds the
 registered with root scope. Use `clientUrl("service-worker.js")` to get its
 URL, and `script()` to include a separate registration entry.
 
-`app/client/tsconfig.json` uses the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_shared.ts`) are shared modules, not entries.
+`app/client/tsconfig.json` uses the DOM lib; worker code keeps `@cloudflare/workers-types`. Files starting with `_` (e.g. `_dom.ts`) are browser-only helpers, not entries.
 
 ## Related
 

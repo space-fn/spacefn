@@ -13,14 +13,21 @@ app/crons/
 
 ## A cron job
 
+A cron file is setup: it holds the schedule and calls a module with the bindings it needs. What the job does lives in `modules/` (see [modules](./modules.md)).
+
 ```ts
 // app/crons/nightly.ts
+
+import { mainDb } from "@app/db/main_db";
+import { deleteExpiredSessions } from "@modules/sessions";
 import { defineCron } from "spacefn/crons";
 
 export default defineCron("0 3 * * *", async (event, env) => {
-	await cleanup(env);
+	await deleteExpiredSessions(await mainDb((env as { DB: D1Database }).DB), event.scheduledTime);
 });
 ```
+
+Pass the event's `scheduledTime` rather than calling `Date.now()` inside the module, so a test can choose the time.
 
 The handler receives:
 
@@ -52,16 +59,19 @@ Keep the cron fast and let a [queue](./queues.md) do the slow part, so each item
 
 ```ts
 // app/crons/daily-digest.ts
+
+import { mainDb } from "@app/db/main_db";
+import { digestEmails } from "@modules/digest";
 import { queues } from "@space/queues";
 import { defineCron } from "spacefn/crons";
 
-export default defineCron("0 8 * * *", async () => {
-	const subscribers = await listSubscribers();
-	await queues.emails.sendBatch(
-		subscribers.map((s) => ({ to: s.email, subject: "Your daily digest" })),
-	);
+export default defineCron("0 8 * * *", async (_event, env) => {
+	const emails = await digestEmails(await mainDb((env as { DB: D1Database }).DB));
+	await queues.emails.sendBatch(emails);
 });
 ```
+
+`digestEmails` decides who gets a digest and what it says; the cron only delivers the result.
 
 ## Background work with `waitUntil`
 
@@ -69,6 +79,7 @@ export default defineCron("0 8 * * *", async () => {
 
 ```ts
 // app/crons/heartbeat.ts
+
 import { defineCron } from "spacefn/crons";
 
 export default defineCron("*/5 * * * *", async (event, env, ctx) => {

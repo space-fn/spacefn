@@ -14,10 +14,13 @@ app/middleware/
 └── _helpers.ts          → ignored
 ```
 
+Middleware is setup: it wires framework behavior around every request, such as sessions, CSRF checks, rate limits, and headers. When a middleware has to make a decision about your users or data, it calls a module for it, like any other `app/` file (see [modules](./modules.md)).
+
 ## A middleware
 
 ```ts
 // app/middleware/01-powered-by.ts
+
 import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware(async (c, next) => {
@@ -35,6 +38,7 @@ export default defineMiddleware(async (c, next) => {
 
 ```ts
 // app/middleware/02-timing.ts
+
 import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware(async (c, next) => {
@@ -50,6 +54,7 @@ Return a response instead of calling `next()`. Nothing after this middleware run
 
 ```ts
 // app/middleware/02-maintenance.ts
+
 import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware((c, next) => {
@@ -60,15 +65,29 @@ export default defineMiddleware((c, next) => {
 
 ## Apply to some paths only
 
-A middleware sees every request, so check the path or method yourself:
+A middleware sees every request, so check the path or method yourself. Who counts as an admin is a decision, so it lives in a module; the middleware supplies the header and the secret:
+
+```ts
+// modules/admin/access.ts
+
+import { constantTimeEqual } from "spacefn/auth";
+
+const bytes = (text: string) => new TextEncoder().encode(text);
+
+export function isAdmin(authorization: string | undefined, token: string) {
+	return constantTimeEqual(bytes(authorization ?? ""), bytes(`Bearer ${token}`));
+}
+```
 
 ```ts
 // app/middleware/06-admin-guard.ts
+
+import { isAdmin } from "@modules/admin/access";
 import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware((c, next) => {
 	if (!c.req.path.startsWith("/admin")) return next();
-	if (c.req.header("authorization") !== `Bearer ${c.env.ADMIN_TOKEN}`) {
+	if (!isAdmin(c.req.header("authorization"), c.env.ADMIN_TOKEN)) {
 		return c.json({ error: "unauthorized" }, 401);
 	}
 	return next();
@@ -81,6 +100,7 @@ Store a value with `c.set` and read it in any later middleware, route, or page a
 
 ```ts
 // app/middleware/03-request-id.ts
+
 import { defineMiddleware } from "spacefn/middleware";
 
 export default defineMiddleware(async (c, next) => {
@@ -93,6 +113,7 @@ export default defineMiddleware(async (c, next) => {
 
 ```ts
 // app/routes/whoami.ts
+
 import { defineHandler } from "spacefn/handler";
 
 export const GET = defineHandler((c) => ({ requestId: c.get("requestId") }));
@@ -104,6 +125,7 @@ Anything written for Hono works, because `defineMiddleware` takes a Hono middlew
 
 ```ts
 // app/middleware/02-cors.ts
+
 import { cors } from "hono/cors";
 import { defineMiddleware } from "spacefn/middleware";
 
@@ -118,6 +140,7 @@ export default defineMiddleware(
 
 ```ts
 // app/middleware/04-csrf.ts
+
 import { csrfGuard } from "spacefn/auth";
 import { defineMiddleware } from "spacefn/middleware";
 
@@ -127,6 +150,7 @@ export default defineMiddleware(csrfGuard({ cookie: "session", origins: [] }));
 
 ```ts
 // app/middleware/05-login-limit.ts
+
 import { clientKey, memoryRateStore, rateLimit } from "spacefn/auth";
 import { defineMiddleware } from "spacefn/middleware";
 
