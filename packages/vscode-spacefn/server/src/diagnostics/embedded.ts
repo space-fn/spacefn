@@ -43,7 +43,7 @@ export async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]>
 			const message = err instanceof Error ? err.message : String(err);
 			console.error("[spacefn] validateEmbedded error:", message);
 			const ident = extractBadIdentifier(message);
-			const range = (ident && rangeForIdentifier(doc, ident)) || {
+			const range = (ident && rangeForIdentifier(doc, ident, tpl.contentStart, tpl.end)) || {
 				start: startPos,
 				end: startPos,
 			};
