@@ -30,52 +30,83 @@ Cloudflare and configure the production binding to point at it.
 
 Use [`readUploads`](../api-reference/http.md) to limit request size, file
 count, and supported content types. It detects signatures for supported
-formats rather than trusting the browser MIME type. Then write the stream to
-R2 with a generated key:
+formats rather than trusting the browser MIME type. The limits are a rule, so a
+module owns them, along with recording who owns each object:
 
 ```ts
-import { currentUser } from "@modules/auth";
+// modules/images/index.ts
+
+import { addImage } from "@space/db/main_db";
+import { AppError } from "@utils/errors";
+import type { DbReader } from "spacefn/db";
+
+export const imageUploads = {
+	maxFileSize: 5 * 1024 * 1024,
+	maxFiles: 1,
+	allowedTypes: ["image/png", "image/jpeg"],
+};
+
+export async function saveImage(
+	db: DbReader,
+	owner: { id: number } | undefined,
+	image: { key: string; contentType: string },
+) {
+	if (!owner) throw new AppError("unauthorized", "Sign in first.");
+	await addImage(db, { ownerId: owner.id, key: image.key, contentType: image.contentType });
+	return { id: image.key };
+}
+```
+
+The route parses the upload, writes it to R2 with a generated key, and hands
+the key to the module:
+
+```ts
 // app/routes/images.ts
-import { saveImageRecord } from "@modules/images";
+
+import { mainDb } from "@app/db/main_db";
+import { imageUploads, saveImage } from "@modules/images";
+import { AppError } from "@utils/errors";
 import { defineHandler } from "spacefn/handler";
 import { putUpload, readUploads } from "spacefn/http";
 
 export const POST = defineHandler(async (c) => {
-	const user = currentUser(c);
-	const { files } = await readUploads(c, {
-		maxFileSize: 5 * 1024 * 1024,
-		maxFiles: 1,
-		allowedTypes: ["image/png", "image/jpeg"],
-	});
+	const user = c.get("user") as { id: number } | undefined;
+	if (!user) throw new AppError("unauthorized", "Sign in first.");
+	const { files } = await readUploads(c, imageUploads);
 	const file = files.image;
-	if (!file || Array.isArray(file)) return c.json({ error: "image_required" }, 400);
+	if (!file || Array.isArray(file)) throw new AppError("invalid", "Choose one image.");
 	const key = await putUpload(c.env.UPLOADS as never, file, { prefix: "images" });
-	await saveImageRecord(c.env.DB, { ownerId: user.id, key, contentType: file.type });
-	return c.json({ id: key }, 201);
+	return c.json(
+		await saveImage(await mainDb(c.env.DB), user, { key, contentType: file.type }),
+		201,
+	);
 });
 ```
 
-The helper returns a generated object key with a random identifier. Store that
-key alongside the owner, detected media type, and any application-level
-metadata. See the complete [upload example](../examples/file-upload.md) for
-the route and multipart form.
+The route checks the session before reading the body, so an anonymous caller
+cannot make the Worker parse or store a file. `putUpload` returns a generated
+object key with a random identifier; the module stores it with the owner and
+detected media type. See the complete [upload example](../examples/file-upload.md)
+for the multipart form.
 
 ## Serve only after authorization
 
-On download, load the record through a query scoped to the current user or
-tenant, then fetch the object by its stored key:
+On download, a module looks the record up through a query scoped to the
+current user or tenant, and the route fetches the object by its stored key:
 
 ```ts
-const image = await findImageForUser(c.env.DB, { id, userId: user.id });
-if (!image) return c.notFound();
+const user = c.get("user") as { id: number } | undefined;
+const key = await imageKeyFor(await mainDb(c.env.DB), user, c.req.param("id"));
 
-const object = await c.env.UPLOADS.get(image.key);
+const object = await c.env.UPLOADS.get(key);
 if (!object) return c.notFound();
 const headers = new Headers();
 object.writeHttpMetadata(headers);
 headers.set("x-content-type-options", "nosniff");
 return new Response(object.body, { headers });
 ```
+
+`imageKeyFor` is shown in the [upload example](../examples/file-upload.md#serve-an-authorized-object).
 
 Do not treat an unguessable key as authorization. Avoid serving user-controlled
 HTML or SVG from the app's origin; for public content, use a separate origin,
