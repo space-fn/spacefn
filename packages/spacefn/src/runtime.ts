@@ -24,3 +24,4 @@ export {
 	type MigrationState,
 	type MigrationStatus,
 } from "./db/migrate.ts";
+export { libsql, libsqlConnection, libsqlFromConfig, type LibsqlOptions } from "./db/libsql.ts";
