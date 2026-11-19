@@ -12,13 +12,18 @@
 	],
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./vite": "./src/vite.ts"
 	},
 	"publishConfig": {
 		"exports": {
 			".": {
 				"types": "./dist/index.d.mts",
 				"import": "./dist/index.mjs"
+			},
+			"./vite": {
+				"types": "./dist/vite.d.mts",
+				"import": "./dist/vite.mjs"
 			}
 		}
 	},
@@ -28,20 +33,27 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"@alchemy.run/docker": "catalog:",
 		"@effect/platform-node": "catalog:",
-		"@libsql/client": "catalog:"
+		"@libsql/client": "catalog:",
+		"alchemy": "catalog:"
 	},
 	"devDependencies": {
 		"@effect/vitest": "catalog:",
+		"@spacefn/bun": "workspace:*",
+		"@spacefn/cloudflare": "workspace:*",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
 		"spacefn": "workspace:*",
 		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
+		"vite": "catalog:",
 		"vitest": "catalog:"
 	},
 	"peerDependencies": {
 		"effect": "^4.1.4",
-		"spacefn": "workspace:^"
+		"spacefn": "workspace:^",
+		"vite": "^8.3.8"
 	}
 }

@@ -19,6 +19,10 @@ minimumReleaseAgeExclude:
   - "@vitest/spy@5.1.1"
   - vitest@5.1.1
 catalog:
+  alchemy: 2.0.0-beta.87
+  "@alchemy.run/cloudflare": 2.0.0-beta.87
+  "@alchemy.run/docker": 2.0.0-beta.87
+  vite: 8.3.8
   vitest: 5.1.1
   "@vitest/coverage-v8": 5.1.1
   "@effect/vitest": 4.1.4
