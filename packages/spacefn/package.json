@@ -1,0 +1,38 @@
+{
+	"name": "spacefn",
+	"version": "0.11.0-alpha.0",
+	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun",
+	"license": "Apache-2.0",
+	"author": "wai-lin",
+	"bin": {
+		"space": "./dist/cli.mjs"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@spacefn/sql": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.6",
+		"effect": "catalog:",
+		"tsdown": "catalog:",
+		"typescript": "^7.0.2",
+		"vitest": "catalog:"
+	},
+	"peerDependencies": {
+		"effect": "^4.1.4"
+	}
+}

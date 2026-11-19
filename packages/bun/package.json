@@ -1,0 +1,35 @@
+{
+	"name": "@spacefn/bun",
+	"version": "0.11.0-alpha.0",
+	"description": "Bun / Docker target for spacefn",
+	"license": "Apache-2.0",
+	"author": "wai-lin",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.4.4",
+		"@types/node": "^26.6.6",
+		"effect": "catalog:",
+		"spacefn": "workspace:*",
+		"tsdown": "catalog:",
+		"typescript": "^7.0.2",
+		"vitest": "catalog:"
+	},
+	"peerDependencies": {
+		"effect": "^4.1.4",
+		"spacefn": "workspace:^"
+	}
+}

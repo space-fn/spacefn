@@ -1,0 +1,34 @@
+{
+	"name": "@spacefn/infra",
+	"version": "0.11.0-alpha.0",
+	"description": "Infrastructure, local dev and deploy for spacefn apps (via Alchemy)",
+	"license": "Apache-2.0",
+	"author": "wai-lin",
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.mts",
+			"import": "./dist/index.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.6",
+		"effect": "catalog:",
+		"spacefn": "workspace:*",
+		"tsdown": "catalog:",
+		"typescript": "^7.0.2",
+		"vitest": "catalog:"
+	},
+	"peerDependencies": {
+		"effect": "^4.1.4",
+		"spacefn": "workspace:^"
+	}
+}
