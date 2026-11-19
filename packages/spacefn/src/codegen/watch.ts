@@ -12,9 +12,9 @@ import type { WriteResult } from "./write.ts";
 const WATCHED_AT_ROOT = new Set(["app", "configs", ".gitignore", "package.json"]);
 
 /**
- * Emits once per batch of file changes under `app/` and `configs/`, and for
- * root files that affect codegen. `app/` and `configs/` are watched
- * recursively; creating them later re-arms their watchers.
+ * Emits once when the watchers are armed, then for each change under `app/`
+ * and `configs/` and to root files that affect codegen. `app/` and `configs/`
+ * are watched recursively; creating them later re-arms their watchers.
  */
 const changes = (root: string): Stream.Stream<void> =>
 	Stream.callback<void>((queue) =>
@@ -40,6 +40,8 @@ const changes = (root: string): Stream.Stream<void> =>
 				);
 				arm("app");
 				arm("configs");
+				// The first run starts only now, so a save during it is not missed.
+				notify();
 				return watchers;
 			}),
 			(watchers) => Effect.sync(() => watchers.forEach((watcher) => watcher.close())),
@@ -56,6 +58,7 @@ export const watchGen = (
 	mode: Mode,
 	debounce: Duration.Input = Duration.millis(50),
 ): Stream.Stream<Result.Result<WriteResult, SpaceError>> =>
-	Stream.concat(Stream.make(undefined), changes(root).pipe(Stream.debounce(debounce))).pipe(
+	changes(root).pipe(
+		Stream.debounce(debounce),
 		Stream.mapEffect(() => Effect.result(gen(root, mode))),
 	);

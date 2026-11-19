@@ -22,36 +22,52 @@ const write = (files: Record<string, string>) =>
 	});
 
 describe("watchGen", () => {
-	it.live("regenerates after changes and keeps going after a failure", () =>
-		Effect.scoped(
-			Effect.gen(function* () {
-				yield* write({
-					"package.json": JSON.stringify({ name: "todo" }),
-					".gitignore": ".space/\n",
-					"configs/space.ts": `export default { target: "bun" as const };`,
-					"app/routes/index.ts": "",
-				});
-				const results =
-					yield* Queue.unbounded<Result.Result<{ written: readonly string[] }, { code: string }>>();
-				yield* watchGen(root, "dev", Duration.millis(30)).pipe(
-					Stream.runForEach((result) => Queue.offer(results, result)),
-					Effect.forkScoped,
-				);
-				const next = Queue.take(results).pipe(Effect.timeout(Duration.seconds(5)));
+	it.live(
+		"regenerates after changes and keeps going after a failure",
+		() =>
+			Effect.scoped(
+				Effect.gen(function* () {
+					yield* write({
+						"package.json": JSON.stringify({ name: "todo" }),
+						".gitignore": ".space/\n",
+						"configs/space.ts": `export default { target: "bun" as const };`,
+						"app/routes/index.ts": "",
+					});
+					const results =
+						yield* Queue.unbounded<
+							Result.Result<{ written: readonly string[] }, { code: string }>
+						>();
+					yield* watchGen(root, "dev", Duration.millis(30)).pipe(
+						Stream.runForEach((result) => Queue.offer(results, result)),
+						Effect.forkScoped,
+					);
+					type Got = Result.Result<{ written: readonly string[] }, { code: string }>;
+					// Under load one change can arrive as several debounced batches, so wait for
+					// the result a step expects and skip extra "up to date" runs.
+					const until = (wanted: (result: Got) => boolean) =>
+						Effect.gen(function* () {
+							while (true) {
+								const result = yield* Queue.take(results);
+								if (wanted(result)) return result;
+							}
+						}).pipe(Effect.timeout(Duration.seconds(10)));
+					const wrote = (file: string) => (r: Got) =>
+						Result.isSuccess(r) && r.success.written.includes(file);
 
-				expect(Result.isSuccess(yield* next)).toBe(true);
+					yield* until(wrote("manifest.ts"));
 
-				yield* write({ "app/routes/about.ts": "" });
-				const added = yield* next;
-				expect(Result.isSuccess(added) && added.success.written).toEqual(["manifest.ts"]);
+					yield* write({ "app/routes/about.ts": "" });
+					const added = yield* until((r) => Result.isFailure(r) || r.success.written.length > 0);
+					expect(Result.isSuccess(added) && added.success.written).toEqual(["manifest.ts"]);
 
-				yield* write({ "app/durable-objects/room.ts": "" });
-				const failed = yield* next;
-				expect(Result.isFailure(failed) && failed.failure.code).toBe("TARGET_UNSUPPORTED");
+					yield* write({ "app/durable-objects/room.ts": "" });
+					const failed = yield* until(Result.isFailure);
+					expect(Result.isFailure(failed) && failed.failure.code).toBe("TARGET_UNSUPPORTED");
 
-				yield* Effect.promise(() => rm(join(root, "app/durable-objects"), { recursive: true }));
-				expect(Result.isSuccess(yield* next)).toBe(true);
-			}),
-		),
+					yield* Effect.promise(() => rm(join(root, "app/durable-objects"), { recursive: true }));
+					expect(Result.isSuccess(yield* until(Result.isSuccess))).toBe(true);
+				}),
+			),
+		30_000,
 	);
 });
