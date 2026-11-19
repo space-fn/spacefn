@@ -19,6 +19,10 @@ jobs:
         with:
           node-version: 26.13.0
           cache: pnpm
+      # @spacefn/bun runs its server end to end under Bun.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm test
