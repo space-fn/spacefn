@@ -1,4 +1,6 @@
 import { SqlError } from "./error.ts";
+import { splitStatements } from "./split.ts";
+
 export type QueryMode = "one" | "many" | "exec";
 
 export interface QueryPart {
@@ -39,6 +41,12 @@ export function parseQueryFile(file: string, text: string): QueryFile {
 			{ file, hint: "Add the header line as the first non-empty line." },
 		);
 	}
+
+	if (lines.filter((line) => HEADER.test(line.trim())).length > 1)
+		throw new SqlError("QUERY_MULTIPLE", `${file} has more than one "-- name:" header`, {
+			file,
+			hint: "Put each query in its own file.",
+		});
 
 	const columns: Record<string, string> = {};
 	const params: Record<string, string> = {};
@@ -155,5 +163,10 @@ export function parseQueryFile(file: string, text: string): QueryFile {
 		.map((p) => p.sql)
 		.join("\n")
 		.trim();
+	if (splitStatements(sql).length > 1)
+		throw new SqlError("QUERY_MULTIPLE", `${file} has more than one statement`, {
+			file,
+			hint: "Put each query in its own file; D1 can't run several with parameters at once.",
+		});
 	return { name: match[1] as string, mode: match[2] as QueryMode, sql, columns, params, parts };
 }

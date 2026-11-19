@@ -46,3 +46,15 @@ test("a gate must name a declared @param", () => {
 		parseQueryFile("q.sql", "-- name: x :many\nSELECT 1\n-- case\n-- when nope\nAND 1\n-- end"),
 	).toThrow('undeclared param "nope"');
 });
+
+test("a file holds one query of one statement", () => {
+	expect(() =>
+		parseQueryFile("q.sql", "-- name: a :exec\nDELETE FROM t;\n\n-- name: b :one\nSELECT 1;"),
+	).toThrow('more than one "-- name:" header');
+	expect(() => parseQueryFile("q.sql", "-- name: a :exec\nDELETE FROM t;\nSELECT 1;")).toThrow(
+		"more than one statement",
+	);
+	expect(parseQueryFile("q.sql", "-- name: a :one\nSELECT ';' AS semi;\n").sql).toBe(
+		"SELECT ';' AS semi;",
+	);
+});
