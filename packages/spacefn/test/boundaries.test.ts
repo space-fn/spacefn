@@ -32,7 +32,12 @@ const BOUNDARIES: Record<
 	string,
 	{ forbid: Rule[]; runtimeForbid?: Rule[]; runtimeExempt?: RegExp }
 > = {
-	sql: { forbid: [ALCHEMY, CLOUDFLARE, BUN, PLATFORM, INFRA, EFFECT, NODE] },
+	// Pure SQL tooling. Only the `@spacefn/sql/node` helpers (fs, node:sqlite) may touch Node.
+	sql: {
+		forbid: [ALCHEMY, CLOUDFLARE, BUN, PLATFORM, INFRA, EFFECT],
+		runtimeForbid: [NODE],
+		runtimeExempt: /^src\/node\//,
+	},
 	spacefn: {
 		forbid: [ALCHEMY, CLOUDFLARE, BUN, PLATFORM, INFRA],
 		runtimeForbid: [NODE],
