@@ -1,7 +1,7 @@
 import { Cause, Effect, Option, Schema, SchemaIssue } from "effect";
-import { HttpServerResponse } from "effect/http";
+import { HttpServerError, HttpServerResponse } from "effect/http";
 
-import { BadRequest, httpStatus, isHttpError, type HttpError } from "../errors.ts";
+import { BadRequest, httpStatus, isHttpError, NotFound, type HttpError } from "../errors.ts";
 
 const issuesOf = SchemaIssue.makeFormatterStandardSchemaV1();
 
@@ -60,6 +60,17 @@ const INTERNAL = HttpServerResponse.jsonUnsafe(
 	{ status: 500 },
 );
 
+/** The router's own failures, as the matching tagged HTTP error. */
+const fromServerError = (error: unknown): HttpError | undefined => {
+	if (!HttpServerError.isHttpServerError(error)) return undefined;
+	const { reason } = error;
+	if (reason._tag === "RouteNotFound")
+		return new NotFound({ message: `No route for ${reason.request.method} ${reason.request.url}` });
+	if (reason._tag === "RequestParseError")
+		return new BadRequest({ message: "Could not parse the request" });
+	return undefined;
+};
+
 /**
  * Answers every failure of a handler. Tagged HTTP errors get their status;
  * anything else is logged with its full cause and answered with an opaque 500,
@@ -70,8 +81,12 @@ export const handleErrors = <R>(
 ): Effect.Effect<HttpServerResponse.HttpServerResponse, never, R> =>
 	Effect.catchCause(effect, (cause) => {
 		if (Cause.hasInterruptsOnly(cause)) return Effect.failCause(cause as Cause.Cause<never>);
-		const error = Cause.findErrorOption(cause);
-		if (Option.isSome(error) && isHttpError(error.value))
-			return Effect.succeed(errorResponse(error.value));
+		const found = Cause.findErrorOption(cause);
+		const error = Option.isSome(found)
+			? isHttpError(found.value)
+				? found.value
+				: fromServerError(found.value)
+			: undefined;
+		if (error) return Effect.succeed(errorResponse(error));
 		return Effect.as(Effect.logError("Unhandled error in a request", cause), INTERNAL);
 	});
