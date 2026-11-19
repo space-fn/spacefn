@@ -14,6 +14,7 @@ import {
 	isUnhealthy,
 	type DbReport,
 } from "./db.ts";
+import { addDockerfile, APP_DOCKERFILE } from "./dockerfile.ts";
 
 const summary = (result: WriteResult) => {
 	const changes = [
@@ -140,9 +141,24 @@ const dbCommand = Command.make("db").pipe(
 	]),
 );
 
+const addCommand = Command.make("add").pipe(
+	Command.withDescription("Add an optional file to the app"),
+	Command.withSubcommands([
+		Command.make("docker", {}, () =>
+			Effect.promise(() => addDockerfile(process.cwd())).pipe(
+				Effect.flatMap((result) =>
+					result === "written"
+						? Console.log(`space add docker: wrote ${APP_DOCKERFILE}`)
+						: exitWith(`space add docker: ${APP_DOCKERFILE} already exists`),
+				),
+			),
+		).pipe(Command.withDescription(`Copy spacefn's Dockerfile to ${APP_DOCKERFILE} to change it`)),
+	]),
+);
+
 Command.make("space").pipe(
 	Command.withDescription("spacefn: folder-convention apps on Effect"),
-	Command.withSubcommands([genCommand, dbCommand]),
+	Command.withSubcommands([genCommand, dbCommand, addCommand]),
 	Command.run({ version: "0.11.0-alpha.0" }),
 	Effect.provide(NodeServices.layer),
 	NodeRuntime.runMain,

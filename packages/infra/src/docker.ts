@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import * as Docker from "@alchemy.run/docker";
 import * as Alchemy from "alchemy";
 import { Effect } from "effect";
 
+import { dockerfileFor } from "./dockerfile.ts";
 import type { InfraConfig } from "./infra-config.ts";
 import { deployVariables } from "./variables.ts";
 
@@ -22,15 +22,6 @@ export interface DockerStackOptions {
 	readonly env?: { readonly fields: Readonly<Record<string, unknown>> } | undefined;
 	readonly infra?: InfraConfig | undefined;
 }
-
-/** The Dockerfile used when the app has no `configs/docker/Dockerfile`. */
-export const DEFAULT_DOCKERFILE = fileURLToPath(new URL("../docker/Dockerfile", import.meta.url));
-
-/** The app's Dockerfile: `configs/docker/Dockerfile` if there is one, else spacefn's. */
-export const dockerfileFor = (rootDir: string): string => {
-	const own = join(rootDir, "..", "configs", "docker", "Dockerfile");
-	return existsSync(own) ? own : DEFAULT_DOCKERFILE;
-};
 
 /**
  * The Alchemy stack for a Bun app: an image built from `.space/dist` (so run
@@ -55,7 +46,7 @@ export const dockerStack = (app: DockerApp, options: DockerStackOptions = {}) =>
 				skipPush: true,
 				build: {
 					context: dist,
-					dockerfile: dockerfileFor(app.rootDir),
+					dockerfile: dockerfileFor(join(app.rootDir, "..")),
 					...(infra.platform ? { platform: infra.platform } : {}),
 				},
 				...context,
