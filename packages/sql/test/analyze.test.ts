@@ -48,3 +48,12 @@ test("a base query that is invalid without its conditional parts is refused", as
 		),
 	).rejects.toMatchObject({ code: "QUERY_INVALID" });
 });
+
+test("every failure carries a stable code and the query file", async () => {
+	await expect(
+		analyzeQuery(scratch, "missing.sql", "-- name: missing :one\nSELECT nope FROM users"),
+	).rejects.toMatchObject({ code: "QUERY_INVALID", file: "missing.sql" });
+	await expect(
+		analyzeQuery(scratch, "expr.sql", "-- name: expr :one\nSELECT count(*) AS n FROM users"),
+	).rejects.toMatchObject({ code: "INFER_EXPR", file: "expr.sql" });
+});

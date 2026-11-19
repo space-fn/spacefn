@@ -150,7 +150,17 @@ export async function analyzeQuery(
 ): Promise<AnalyzedQuery> {
 	const parsed = parseQueryFile(file, text);
 	const { sql: boundSql, names } = namedParams(parsed.sql);
-	const inferred = await inferQuery(scratch, { ...parsed, sql: boundSql });
+	const inferred = await inferQuery(scratch, { ...parsed, sql: boundSql }).catch((cause) => {
+		if (cause instanceof SqlError) {
+			if (cause.file) throw cause;
+			throw new SqlError(cause.code, cause.message, { file, hint: cause.hint, cause });
+		}
+		throw new SqlError("QUERY_INVALID", `${parsed.name}: ${(cause as Error).message}`, {
+			file,
+			hint: "Check the SQL against the tables in your migrations.",
+			cause,
+		});
+	});
 	const base = parsed.parts
 		.filter((p) => p.gate === null)
 		.map((p) => p.sql)
