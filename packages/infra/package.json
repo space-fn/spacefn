@@ -8,12 +8,15 @@
 		"space": "./dist/cli.mjs"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"docker"
 	],
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
-		"./vite": "./src/vite.ts"
+		"./vite": "./src/vite.ts",
+		"./cloudflare": "./src/cloudflare.ts",
+		"./docker": "./src/docker.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -24,6 +27,14 @@
 			"./vite": {
 				"types": "./dist/vite.d.mts",
 				"import": "./dist/vite.mjs"
+			},
+			"./cloudflare": {
+				"types": "./dist/cloudflare.d.mts",
+				"import": "./dist/cloudflare.mjs"
+			},
+			"./docker": {
+				"types": "./dist/docker.d.mts",
+				"import": "./dist/docker.mjs"
 			}
 		}
 	},
