@@ -1,20 +1,32 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
 import { NodeRuntime, NodeServices } from "@effect/platform-node";
-import { Console, Effect, Option, Result, Stream } from "effect";
+import { Console, Effect, Fiber, Option, Result, Stream } from "effect";
 import { Command, Flag } from "effect/cli";
 import { formatSpaceError, SpaceError } from "spacefn";
 import { gen, loadPlan, watchGen, type PlannedDb, type WriteResult } from "spacefn/codegen";
 
+import { runAlchemy } from "./alchemy.ts";
+import { buildBun } from "./build.ts";
+import { clean, KEPT } from "./clean.ts";
 import {
-	connectFromEnv,
+	connectFor,
 	dbMigrate,
 	dbRollback,
 	dbStatus,
 	formatReport,
 	isUnhealthy,
+	type Connect,
 	type DbReport,
 } from "./db.ts";
+import { devBun } from "./dev.ts";
 import { addDockerfile, APP_DOCKERFILE } from "./dockerfile.ts";
+import { doctor, formatChecks } from "./doctor.ts";
+import { detectPackageManager } from "./package-manager.ts";
+import { run } from "./process.ts";
+import { installedInfra, providerUpgrades, readPackageJson, spacefnUpgrades } from "./upgrade.ts";
 
 const summary = (result: WriteResult) => {
 	const changes = [
@@ -84,11 +96,13 @@ const dbFlag = Flag.String("db").pipe(
 /** Runs a db command on the selected databases and prints what happened. */
 const dbAction = (
 	name: Option.Option<string>,
-	run: (dbs: readonly PlannedDb[]) => Effect.Effect<readonly DbReport[], unknown>,
+	run: (dbs: readonly PlannedDb[], connect: Connect) => Effect.Effect<readonly DbReport[], unknown>,
 	options: { readonly single?: boolean } = {},
 ) =>
 	Effect.gen(function* () {
-		const plan = yield* loadPlan(process.cwd(), "dev");
+		const root = process.cwd();
+		loadDotEnv(root);
+		const plan = yield* loadPlan(root, "dev");
 		const dbs = Option.match(name, {
 			onNone: () => plan.db,
 			onSome: (n) => plan.db.filter((db) => db.name === n),
@@ -104,7 +118,7 @@ const dbAction = (
 			return yield* exitWith(
 				`Choose one database with --db (${dbs.map((db) => db.name).join(", ")})`,
 			);
-		const reports = yield* run(dbs);
+		const reports = yield* run(dbs, connectFor(plan.target, root));
 		yield* Console.log(reports.map(formatReport).join("\n"));
 		if (reports.some(isUnhealthy)) process.exitCode = 1;
 	}).pipe(
@@ -119,10 +133,10 @@ const dbCommand = Command.make("db").pipe(
 	),
 	Command.withSubcommands([
 		Command.make("status", { db: dbFlag }, ({ db }) =>
-			dbAction(db, (dbs) => dbStatus(dbs, connectFromEnv)),
+			dbAction(db, (dbs, connect) => dbStatus(dbs, connect)),
 		).pipe(Command.withDescription("Compare migration files with each database's ledger")),
 		Command.make("migrate", { db: dbFlag }, ({ db }) =>
-			dbAction(db, (dbs) => dbMigrate(dbs, connectFromEnv)),
+			dbAction(db, (dbs, connect) => dbMigrate(dbs, connect)),
 		).pipe(Command.withDescription("Apply pending migrations")),
 		Command.make(
 			"rollback",
@@ -134,12 +148,180 @@ const dbCommand = Command.make("db").pipe(
 				),
 			},
 			({ db, steps }) =>
-				dbAction(db, (dbs) => dbRollback(dbs[0] as PlannedDb, steps, connectFromEnv), {
+				dbAction(db, (dbs, connect) => dbRollback(dbs[0] as PlannedDb, steps, connect), {
 					single: true,
 				}),
 		).pipe(Command.withDescription("Undo the newest migrations with their down sections")),
 	]),
 );
+
+/** Loads `<root>/.env` into the environment, as Bun and Alchemy do for the app. */
+const loadDotEnv = (root: string) => {
+	const file = join(root, ".env");
+	if (existsSync(file)) process.loadEnvFile(file);
+};
+
+/** Ends with the exit code of a tool the CLI ran. */
+const exitCode = (code: number) =>
+	Effect.sync(() => {
+		if (code !== 0) process.exitCode = code;
+	});
+
+const stageFlag = Flag.String("stage").pipe(
+	Flag.withDescription("Deployment stage, e.g. prod or staging. Default: prod (dev: yours)"),
+	Flag.optional,
+);
+const yesFlag = Flag.Boolean("yes").pipe(
+	Flag.withAlias("y"),
+	Flag.withDescription("Don't ask for approval (for CI)"),
+	Flag.withDefault(false),
+);
+
+/** `gen`, printed, failing the command readably. */
+const generate = (root: string, mode: "dev" | "prod") =>
+	gen(root, mode).pipe(
+		Effect.tap((result) =>
+			result.written.length + result.removed.length > 0
+				? Console.log(summary(result))
+				: Effect.void,
+		),
+		Effect.andThen(loadPlan(root, mode)),
+	);
+
+/** Ends a command on its error: a SpaceError formatted, anything else by its message. */
+const report = (error: unknown) =>
+	error instanceof SpaceError ? fail(error) : exitWith(`space: ${describeFailure(error)}`);
+
+const devCommand = Command.make(
+	"dev",
+	{
+		port: Flag.Int("port").pipe(
+			Flag.withAlias("p"),
+			Flag.withDescription("Port for the dev server (Bun). Default: Vite's"),
+			Flag.optional,
+		),
+		stage: stageFlag,
+	},
+	({ port, stage }) =>
+		Effect.gen(function* () {
+			const root = process.cwd();
+			const plan = yield* generate(root, "dev");
+			// Keep .space/ current while the dev server runs; Vite and Alchemy reload from it.
+			const watcher = yield* Effect.forkChild(
+				watchGen(root, "dev").pipe(
+					Stream.drop(1),
+					Stream.runForEach((result) =>
+						Result.isSuccess(result)
+							? result.success.written.length + result.success.removed.length > 0
+								? Console.log(summary(result.success))
+								: Effect.void
+							: Console.error(formatSpaceError(result.failure)),
+					),
+				),
+			);
+			const code = yield* plan.target === "cloudflare"
+				? runAlchemy(root, "dev", { stage: Option.getOrUndefined(stage) })
+				: devBun(root, Option.getOrUndefined(port));
+			yield* Fiber.interrupt(watcher);
+			yield* exitCode(code);
+		}).pipe(Effect.catch(report)),
+).pipe(
+	Command.withDescription(
+		"Run the app locally: workerd via Alchemy on Cloudflare, Vite inside Bun on Bun",
+	),
+);
+
+const buildCommand = Command.make("build", {}, () =>
+	Effect.gen(function* () {
+		const root = process.cwd();
+		const plan = yield* generate(root, "prod");
+		if (plan.target === "cloudflare")
+			return yield* Console.log("space build: the Worker is built and uploaded by space deploy");
+		yield* Effect.tryPromise({ try: () => buildBun(root), catch: (error) => error });
+		yield* Console.log(
+			"space build: wrote .space/dist (run it with bun .space/dist/server/index.js)",
+		);
+	}).pipe(Effect.catch(report)),
+).pipe(Command.withDescription("Build for production (Bun: .space/dist)"));
+
+const deployCommand = Command.make("deploy", { stage: stageFlag, yes: yesFlag }, ({ stage, yes }) =>
+	Effect.gen(function* () {
+		const root = process.cwd();
+		const plan = yield* generate(root, "prod");
+		if (plan.target === "bun")
+			yield* Effect.tryPromise({ try: () => buildBun(root), catch: (error) => error });
+		yield* exitCode(
+			yield* runAlchemy(root, "deploy", { stage: Option.getOrUndefined(stage), yes }),
+		);
+	}).pipe(Effect.catch(report)),
+).pipe(
+	Command.withDescription(
+		"Build and deploy with Alchemy. Variables come from .env.<stage> and the environment",
+	),
+);
+
+const destroyCommand = Command.make(
+	"destroy",
+	{ stage: stageFlag, yes: yesFlag },
+	({ stage, yes }) =>
+		Effect.gen(function* () {
+			const root = process.cwd();
+			yield* generate(root, "prod");
+			yield* exitCode(
+				yield* runAlchemy(root, "destroy", { stage: Option.getOrUndefined(stage), yes }),
+			);
+		}).pipe(Effect.catch(report)),
+).pipe(Command.withDescription("Delete everything a stage deployed, its data included"));
+
+const doctorCommand = Command.make("doctor", {}, () =>
+	Effect.gen(function* () {
+		const checks = yield* Effect.promise(() => doctor(process.cwd()));
+		yield* Console.log(formatChecks(checks));
+		if (checks.some((check) => check.level === "fail")) process.exitCode = 1;
+	}),
+).pipe(Command.withDescription("Check what dev and deploy need"));
+
+const upgradeCommand = Command.make("upgrade", {}, () =>
+	Effect.gen(function* () {
+		const root = process.cwd();
+		const manager = detectPackageManager(root);
+		const runAll = (commands: readonly (readonly string[])[]) =>
+			Effect.gen(function* () {
+				for (const [command, ...args] of commands) {
+					yield* Console.log(`$ ${[command, ...args].join(" ")}`);
+					const code = yield* run(command!, args, { cwd: root });
+					if (code !== 0) return code;
+				}
+				return 0;
+			});
+		const app = yield* Effect.promise(() => readPackageJson(root));
+		const commands = spacefnUpgrades(manager, app);
+		if (commands.length === 0)
+			return yield* exitWith("space upgrade: no spacefn packages in package.json");
+		if ((yield* runAll(commands)) !== 0) return yield* exitCode(1);
+		const infra = yield* Effect.promise(() => installedInfra(root));
+		if (infra && (yield* runAll(providerUpgrades(manager, app, infra))) !== 0)
+			return yield* exitCode(1);
+		yield* generate(root, "dev");
+		yield* Console.log("space upgrade: done");
+	}).pipe(Effect.catch(report)),
+).pipe(
+	Command.withDescription("Update the spacefn packages, their Alchemy provider, then .space/"),
+);
+
+const cleanCommand = Command.make("clean", {}, () =>
+	Effect.gen(function* () {
+		const removed = yield* Effect.promise(() => clean(process.cwd()));
+		yield* Console.log(
+			removed.length === 0
+				? "space clean: nothing to remove"
+				: `space clean: removed ${removed.map((entry) => `.space/${entry}`).join(", ")}`,
+		);
+		yield* Console.log(
+			`  kept ${KEPT.map((entry) => `.space/${entry}`).join(" and ")} (deploy state and local data)`,
+		);
+	}),
+).pipe(Command.withDescription("Delete generated files and builds in .space/"));
 
 const addCommand = Command.make("add").pipe(
 	Command.withDescription("Add an optional file to the app"),
@@ -158,7 +340,18 @@ const addCommand = Command.make("add").pipe(
 
 Command.make("space").pipe(
 	Command.withDescription("spacefn: folder-convention apps on Effect"),
-	Command.withSubcommands([genCommand, dbCommand, addCommand]),
+	Command.withSubcommands([
+		devCommand,
+		buildCommand,
+		deployCommand,
+		destroyCommand,
+		genCommand,
+		dbCommand,
+		doctorCommand,
+		upgradeCommand,
+		cleanCommand,
+		addCommand,
+	]),
 	Command.run({ version: "0.11.0-alpha.0" }),
 	Effect.provide(NodeServices.layer),
 	NodeRuntime.runMain,
