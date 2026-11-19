@@ -2,6 +2,8 @@
 
 Working notes for the `rewrite/effect` branch. This folder is deleted in step 16.
 
+The old code is in `legacy/spacefn` and `legacy/playground`, outside the pnpm workspace and skipped by lint, format and tests. Port from there: bring over the tests and pure logic, and leave the rest.
+
 **Rule:** the core (`spacefn`) never imports a runtime. Cloudflare, Bun and Alchemy each live in their own package, and the core sees only Effect service interfaces. A guard test enforces this.
 
 ## End-user app layout
@@ -38,7 +40,7 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 
 - [x] **0. Repo tooling:** oxlint, oxfmt, vitest, tsdown and tsc from `configs/`; hooks via `core.hooksPath`; CI.
 - [x] **1. Alchemy spike:** see [alchemy-spike.md](alchemy-spike.md).
-- [ ] **2. Package skeletons and the dependency guard test.**
+- [x] **2. Package skeletons and the dependency guard test:** `packages/spacefn/test/boundaries.test.ts` checks dependency fields and `src/` imports for every package. Core runtime files may not use `node:*`; only `src/cli*` and `src/codegen/` may.
 - [ ] **3. `@spacefn/sql`:** port the parser, split, params and infer code with its tests; point the VS Code extension at it.
 - [ ] **4. Core foundations:** tagged errors and HTTP mapping, env via `Config`/Schema, the `configs/space.ts` loader, service interfaces (`SqlClient` from `effect/sql`, Blob, Kv, Bus, Queue), in-memory Layers, `spacefn/testing`.
 - [ ] **5. Scanner and codegen (`space gen`):** router, middleware chain, db modules, queue and cron tables, DO and workflow exports, target entry; watch mode; target checks.
@@ -52,7 +54,7 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - [ ] **13. CLI (`effect/cli`):** dev, build, gen, deploy, destroy, db, doctor, upgrade, clean.
 - [ ] **14. VS Code extension:** read `configs/space.ts` and the new imports; tests on vitest.
 - [ ] **15. Template, playground, docs.**
-- [ ] **16. Finish:** delete the old code and this folder, bump to `0.11.0`, merge to `main`.
+- [ ] **16. Finish:** delete `legacy/`, `scripts/size.sh` (it still points at the old playground) and this folder, bump to `0.11.0`, merge to `main`.
 
 ## Corrections found along the way
 
