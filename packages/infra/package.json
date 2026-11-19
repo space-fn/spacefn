@@ -4,6 +4,9 @@
 	"description": "Infrastructure, local dev and deploy for spacefn apps (via Alchemy)",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
+	"bin": {
+		"space": "./dist/cli.mjs"
+	},
 	"files": [
 		"dist"
 	],
@@ -23,6 +26,9 @@
 		"build": "tsdown",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
+	},
+	"dependencies": {
+		"@effect/platform-node": "catalog:"
 	},
 	"devDependencies": {
 		"@types/node": "^26.6.6",
