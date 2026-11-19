@@ -8,6 +8,7 @@ import { Input } from "../src/http/input.ts";
 import { redirect } from "../src/http/respond.ts";
 import type { ManifestPage } from "../src/manifest.ts";
 import { action, page, pagesLayer, type Page } from "../src/pages/page.ts";
+import { Bus } from "../src/services/bus.ts";
 import { testHttp } from "../src/testing.ts";
 
 const at = (path: `/${string}`, value: unknown, params: string[] = []) =>
@@ -154,6 +155,50 @@ describe("page", () => {
 			expect(error).toMatchObject({ code: "PAGE_EXPORT", file: "app/pages/x.ts" });
 		}),
 	);
+});
+
+describe("live pages", () => {
+	const count = Effect.runSync(Ref.make(0));
+	const counter = page({
+		loader: Ref.get(count),
+		render: (ctx) =>
+			html`<html>
+				<body>
+					<p id="count">${ctx.loaderData}</p>
+				</body>
+			</html>`,
+		live: {
+			topics: ["counter"],
+			render: (ctx) => html`<p id="count">${ctx.loaderData}</p>`,
+		},
+	});
+
+	it("streams the live elements to Datastar and again on each Bus message", async () => {
+		const bus = Effect.runSync(Layer.build(Bus.memory).pipe(Effect.scoped));
+		const app = testHttp({ routes: [at("/counter", counter)] }, Layer.succeedContext(bus));
+
+		expect(await (await app.fetch("/counter")).text()).toContain("<body>");
+
+		const response = await app.fetch("/counter", { headers: { "datastar-request": "true" } });
+		expect(response.headers.get("content-type")).toBe("text/event-stream");
+		const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+		const next = async () => (await reader.read()).value;
+
+		expect(await next()).toBe(
+			'event: datastar-patch-elements\ndata: elements <p id="count">0</p>\n\n',
+		);
+		Effect.runSync(Ref.set(count, 5));
+		await Effect.runPromise(
+			Effect.gen(function* () {
+				yield* (yield* Bus).publish("counter", "changed");
+			}).pipe(Effect.provideContext(bus)),
+		);
+		expect(await next()).toBe(
+			'event: datastar-patch-elements\ndata: elements <p id="count">5</p>\n\n',
+		);
+		await reader.cancel();
+		await app.dispose();
+	});
 });
 
 it("types ctx from the loader and the actions", () => {

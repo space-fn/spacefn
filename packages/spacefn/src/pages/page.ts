@@ -1,4 +1,4 @@
-import { Effect, Layer, Predicate, Schema, SchemaIssue } from "effect";
+import { Effect, Layer, Predicate, Schema, SchemaIssue, Stream } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 
 import { BadRequest, NotFound, SpaceError } from "../errors.ts";
@@ -8,6 +8,8 @@ import { readMultipart, type UploadLimits } from "../http/multipart.ts";
 import { handleErrors, htmlResponse, toResponse } from "../http/respond.ts";
 import { CurrentRoute, METHODS } from "../http/route.ts";
 import type { ManifestRoute, Unchecked } from "../manifest.ts";
+import { Bus } from "../services/bus.ts";
+import { Datastar } from "./datastar.ts";
 
 type Response = HttpServerResponse.HttpServerResponse;
 
@@ -73,6 +75,16 @@ export interface PageDefinition<L, Acts extends Actions> {
 	readonly loader?: Effect.Effect<L, any, any>;
 	readonly actions?: Acts;
 	readonly render: (ctx: PageContext<Exclude<L, Response>, Acts>) => Html;
+	/**
+	 * Keeps the page current over SSE. A Datastar `@get` to the page (e.g.
+	 * `<div data-init="@get(location.href)">`) subscribes to `topics` on the
+	 * Bus, then sends `render`'s elements, and again after each message.
+	 * Top-level elements need an `id` so Datastar can morph them.
+	 */
+	readonly live?: {
+		readonly topics: readonly string[] | Effect.Effect<readonly string[], any, any>;
+		readonly render: (ctx: PageContext<Exclude<L, Response>, Acts>) => Html;
+	};
 }
 
 const PageTypeId = "~spacefn/Page";
@@ -160,6 +172,33 @@ const renderPage = (
 		return htmlResponse(page.render(contextFor(page, request, data, action)), { status });
 	}) as Eff<Response>;
 
+const liveResponse = (page: AnyPage, live: NonNullable<AnyPage["live"]>): Eff<Response> =>
+	Effect.gen(function* () {
+		const request = yield* HttpServerRequest.HttpServerRequest;
+		const bus = yield* Bus;
+		const patch = Effect.map(load(page), (data) =>
+			Datastar.patchElements(live.render(contextFor(page, request, data, undefined))),
+		);
+		const events = Stream.unwrap(
+			Effect.gen(function* () {
+				const topics = Array.isArray(live.topics)
+					? (live.topics as readonly string[])
+					: yield* live.topics as Eff<readonly string[]>;
+				// Subscribed before the first render, so no update in between is missed.
+				const changes = yield* Effect.forEach(topics, (topic) => bus.subscribe(topic));
+				const notices = Stream.mergeAll(changes, { concurrency: "unbounded" }).pipe(
+					// A burst of messages needs one re-render, not one each.
+					Stream.buffer({ capacity: 1, strategy: "sliding" }),
+				);
+				return Stream.concat(
+					Stream.fromEffect(patch),
+					Stream.mapEffect(notices, () => patch),
+				);
+			}),
+		);
+		return yield* Datastar.sse(events);
+	}) as Eff<Response>;
+
 const readInput = (limits: UploadLimits | undefined) =>
 	Effect.gen(function* () {
 		const request = yield* HttpServerRequest.HttpServerRequest;
@@ -217,7 +256,8 @@ const definitionOf = (entry: Unchecked<ManifestRoute>): Effect.Effect<AnyPage, S
 };
 
 /**
- * Registers every page of the manifest: GET renders, POST runs the action named by `?__action=`. A
+ * Registers every page of the manifest: GET renders (or streams, for a live
+ * page asked by Datastar), POST runs the action named by `?__action=`. A
  * failing loader or handler is answered like a route's.
  */
 export const pagesLayer = (
@@ -234,7 +274,18 @@ export const pagesLayer = (
 					handleErrors(Effect.flatMap(effect, toResponse)).pipe(
 						Effect.provideService(CurrentRoute, current),
 					) as Effect.Effect<Response>;
-				yield* router.add("GET", entry.path, serve(renderPage(definition, undefined)));
+				const live = definition.live;
+				yield* router.add(
+					"GET",
+					entry.path,
+					serve(
+						live
+							? Effect.flatMap(Datastar.isRequest, (fromDatastar) =>
+									fromDatastar ? liveResponse(definition, live) : renderPage(definition, undefined),
+								)
+							: renderPage(definition, undefined),
+					),
+				);
 				const allowed = definition.actions ? ["GET", "POST"] : ["GET"];
 				if (definition.actions) yield* router.add("POST", entry.path, serve(runAction(definition)));
 				for (const method of METHODS)
