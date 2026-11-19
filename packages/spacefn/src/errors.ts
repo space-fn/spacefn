@@ -32,6 +32,11 @@ export class PayloadTooLarge extends Schema.TaggedError<PayloadTooLarge>()("Payl
 	limitBytes: Schema.Number,
 }) {}
 
+export class UnsupportedMediaType extends Schema.TaggedError<UnsupportedMediaType>()(
+	"UnsupportedMediaType",
+	{ message: Schema.String },
+) {}
+
 export class TooManyRequests extends Schema.TaggedError<TooManyRequests>()("TooManyRequests", {
 	retryAfterSeconds: Schema.optional(Schema.Number),
 }) {}
@@ -43,6 +48,7 @@ export type HttpError =
 	| NotFound
 	| Conflict
 	| PayloadTooLarge
+	| UnsupportedMediaType
 	| TooManyRequests;
 
 const STATUS: Record<HttpError["_tag"], number> = {
@@ -52,6 +58,7 @@ const STATUS: Record<HttpError["_tag"], number> = {
 	NotFound: 404,
 	Conflict: 409,
 	PayloadTooLarge: 413,
+	UnsupportedMediaType: 415,
 	TooManyRequests: 429,
 };
 

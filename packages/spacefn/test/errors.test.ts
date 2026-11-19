@@ -13,6 +13,7 @@ import {
 	SpaceError,
 	TooManyRequests,
 	Unauthorized,
+	UnsupportedMediaType,
 } from "../src/errors.ts";
 
 describe("httpStatus", () => {
@@ -25,9 +26,10 @@ describe("httpStatus", () => {
 				new NotFound({}),
 				new Conflict({ message: "x" }),
 				new PayloadTooLarge({ limitBytes: 1 }),
+				new UnsupportedMediaType({ message: "x" }),
 				new TooManyRequests({}),
 			].map(httpStatus),
-		).toEqual([400, 401, 403, 404, 409, 413, 429]);
+		).toEqual([400, 401, 403, 404, 409, 413, 415, 429]);
 	});
 
 	it("treats anything else as a 500", () => {

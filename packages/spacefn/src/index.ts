@@ -10,6 +10,7 @@ export {
 	SpaceError,
 	TooManyRequests,
 	Unauthorized,
+	UnsupportedMediaType,
 	type HttpError,
 } from "./errors.ts";
 export { defineEnv, Env, type AppEnv, type AppEnvId, type EnvField, type EnvShape } from "./env.ts";
