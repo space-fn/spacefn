@@ -1,6 +1,11 @@
-import { ConfigProvider, Layer } from "effect";
+import { ConfigProvider, Effect, Layer } from "effect";
 import { HttpRouter, HttpServer } from "effect/http";
+import { Reactivity } from "effect/reactivity";
+import type { SqlError } from "effect/sql";
 
+import { transactional } from "./db/connection.ts";
+import type { DatabaseStatics } from "./db/database.ts";
+import type { MigrationError } from "./db/migrate.ts";
 import { httpLayer } from "./http/app.ts";
 import type { ManifestMiddleware, ManifestRoute, Unchecked } from "./manifest.ts";
 import { Blob } from "./services/blob.ts";
@@ -59,3 +64,27 @@ export const testHttp = <E>(
 		dispose: app.dispose,
 	};
 };
+
+/**
+ * A fresh in-memory SQLite database for a generated database class, with every
+ * migration applied. Each build starts empty.
+ *
+ * ```ts
+ * import { MainDb } from "@space/db/main.ts";
+ * it.effect("adds a todo", () => addTodo("x").pipe(Effect.provide(testDb(MainDb))));
+ * ```
+ *
+ * Runs on Node's built-in `node:sqlite`, loaded only when the layer builds.
+ */
+export const testDb = <Self>(
+	db: DatabaseStatics<Self>,
+): Layer.Layer<Self, SqlError.SqlError | MigrationError> =>
+	db.layer(
+		Effect.gen(function* () {
+			const { SqliteClient } = yield* Effect.promise(() => import("@effect/sql-sqlite-node"));
+			const sql = yield* SqliteClient.make({ filename: ":memory:" }).pipe(
+				Effect.provide(Reactivity.layer),
+			);
+			return transactional(sql);
+		}),
+	);

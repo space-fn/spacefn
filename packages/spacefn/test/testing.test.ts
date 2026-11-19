@@ -2,10 +2,11 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
 import { HttpServerResponse } from "effect/http";
 
+import { database } from "../src/db/database.ts";
 import { middleware } from "../src/http/middleware.ts";
 import { route } from "../src/http/route.ts";
 import { defineEnv, Env, Kv, Queue } from "../src/index.ts";
-import { memoryServices, QueueInbox, testEnv, testHttp } from "../src/testing.ts";
+import { memoryServices, QueueInbox, testDb, testEnv, testHttp } from "../src/testing.ts";
 
 const AppEnv = defineEnv({ FROM: Env.string() });
 
@@ -80,6 +81,77 @@ describe("testHttp", () => {
 		const second = await app.fetch("/count", { method: "POST" });
 		expect(await second.json()).toEqual({ n: 2 });
 		expect(second.headers.get("x-n")).toBe("2");
+		await app.dispose();
+	});
+});
+
+class NotesDb extends database<
+	NotesDb,
+	{
+		addNote: { params: { readonly body: string }; row: never; mode: "exec" };
+		countNotes: { params: Record<string, never>; row: { readonly n: number }; mode: "one" };
+	}
+>()({
+	name: "notes",
+	migrations: [{ id: "0001_notes", sql: "CREATE TABLE notes (body TEXT NOT NULL);" }],
+	queries: {
+		addNote: {
+			mode: "exec",
+			columns: {},
+			parts: [{ sql: "INSERT INTO notes (body) VALUES (?)", params: ["body"], gate: null }],
+		},
+		countNotes: {
+			mode: "one",
+			columns: { n: "number" },
+			parts: [{ sql: "SELECT count(*) AS n FROM notes", params: [], gate: null }],
+		},
+	},
+}) {}
+
+const countNotes = Effect.gen(function* () {
+	const db = yield* NotesDb;
+	return Option.map(yield* db.countNotes(), (row) => row.n);
+});
+
+describe("testDb", () => {
+	it.effect("gives a migrated database", () =>
+		Effect.gen(function* () {
+			const db = yield* NotesDb;
+			yield* db.addNote({ body: "hi" });
+			expect(yield* countNotes).toEqual(Option.some(1));
+		}).pipe(Effect.provide(testDb(NotesDb))),
+	);
+
+	it.effect("starts empty on every build", () =>
+		Effect.gen(function* () {
+			expect(yield* countNotes).toEqual(Option.some(0));
+		}).pipe(Effect.provide(testDb(NotesDb))),
+	);
+
+	it("serves routes that use the database", async () => {
+		const notes = route({
+			POST: Effect.gen(function* () {
+				const db = yield* NotesDb;
+				yield* db.addNote({ body: "from a route" });
+				return yield* countNotes;
+			}).pipe(Effect.map(Option.getOrElse(() => 0))),
+		});
+		const app = testHttp(
+			{
+				routes: [
+					{
+						kind: "route",
+						path: "/notes",
+						params: [],
+						file: "app/routes/notes.ts",
+						module: { default: notes },
+					},
+				],
+			},
+			testDb(NotesDb),
+		);
+		const response = await app.fetch("/notes", { method: "POST" });
+		expect(await response.json()).toBe(1);
 		await app.dispose();
 	});
 });
