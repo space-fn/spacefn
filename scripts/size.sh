@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 cd playground
-vp build >/dev/null 2>&1
+pnpm build >/dev/null 2>&1
 node -e '
 const fs = require("fs");
 const p = ".cloudflare/output/v0/workers/default/bundle/index.js";

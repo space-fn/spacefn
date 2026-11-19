@@ -9,7 +9,7 @@ skipped=0
 failed=0
 
 echo "🔎 Checks"
-vp check
+pnpm check
 
 # The template pins the spacefn version being released.
 spacefn_version=$(node -p "require('./packages/spacefn/package.json').version")
@@ -59,7 +59,7 @@ publish_one() {
 }
 
 # Order matters: spacefn first, then create-spacefn.
-publish_one "packages/spacefn" "pnpm test -- --coverage"
+publish_one "packages/spacefn" "pnpm test --coverage"
 publish_one "packages/create-spacefn" "pnpm test"
 
 echo ""
