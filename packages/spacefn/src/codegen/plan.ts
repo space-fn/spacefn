@@ -2,6 +2,7 @@ import type { AnalyzedQuery, Migration } from "@spacefn/sql";
 import { Effect } from "effect";
 
 import { SpaceError } from "../errors.ts";
+import { isValidSchedule } from "../jobs/cron.ts";
 import {
 	DEFAULT_DB_DRIVER,
 	type DbDriver,
@@ -37,6 +38,13 @@ export interface PlannedClass extends PlannedUnit {
 	readonly className: string;
 }
 
+export interface PlannedCron {
+	readonly name: string;
+	readonly file: string;
+	/** Read from the `cron("...")` literal, since the infra must know it without running the file. */
+	readonly schedule: string;
+}
+
 export interface PlannedDb {
 	readonly name: string;
 	readonly driver: DbDriver;
@@ -59,9 +67,11 @@ export interface AppPlan {
 	/** Middleware files in run order (file name order, numbers compared as numbers). */
 	readonly middleware: readonly string[];
 	readonly queues: readonly PlannedUnit[];
-	readonly crons: readonly Omit<PlannedUnit, "binding">[];
+	readonly crons: readonly PlannedCron[];
 	readonly durableObjects: readonly PlannedClass[];
 	readonly workflows: readonly PlannedClass[];
+	/** Whether the app imports `Kv` / `Blob`, so the infra creates them only when used. */
+	readonly uses: { readonly kv: boolean; readonly blob: boolean };
 	/** Client entry files (scripts and stylesheets). */
 	readonly client: readonly string[];
 	readonly db: readonly PlannedDb[];
@@ -231,6 +241,34 @@ const checkTarget = (target: Target, folder: string, units: readonly PlannedUnit
 			);
 };
 
+const CRON_LITERAL = /\bcron\(\s*(["'`])([^"'`$]*)\1\s*,/;
+
+/** Each cron with the schedule of its `cron("...", job)` call. */
+const planCrons = Effect.fnUntraced(function* (tree: AppTree) {
+	const crons: PlannedCron[] = [];
+	for (const { name, file } of yield* planUnits("crons", tree.crons, "CRON")) {
+		const source = tree.cronSources[file.slice("app/crons/".length)] ?? "";
+		const literal = CRON_LITERAL.exec(source)?.[2];
+		if (literal === undefined)
+			return yield* fail(
+				"CRON_SCHEDULE_LITERAL",
+				"The schedule must be a string literal",
+				'Write it in the file: export default cron("0 3 * * *", job). The infra reads it without running the file.',
+				file,
+			);
+		const schedule = literal.trim().split(/\s+/).join(" ");
+		if (!isValidSchedule(schedule))
+			return yield* fail(
+				"CRON_SCHEDULE",
+				`"${schedule}" is not a five-field cron expression`,
+				"Use minute hour day-of-month month day-of-week, e.g. 0 3 * * *",
+				file,
+			);
+		crons.push({ name, file, schedule });
+	}
+	return crons;
+});
+
 /** Checks the scanned app against the config and works out everything codegen emits. */
 export const planApp = Effect.fnUntraced(function* (
 	tree: AppTree,
@@ -242,7 +280,6 @@ export const planApp = Effect.fnUntraced(function* (
 	const workflows = yield* planClasses("workflows", tree.workflows, "WF");
 	yield* checkTarget(config.target, "durable-objects", durableObjects);
 	yield* checkTarget(config.target, "workflows", workflows);
-	const crons = yield* planUnits("crons", tree.crons, "CRON");
 
 	return {
 		target: config.target,
@@ -255,9 +292,10 @@ export const planApp = Effect.fnUntraced(function* (
 		routes: yield* planRoutes(tree, mode),
 		middleware: unitFiles(tree.middleware).map((file) => `app/middleware/${file}`),
 		queues: yield* planUnits("queues", tree.queues, "QUEUE"),
-		crons: crons.map(({ name, file }) => ({ name, file })),
+		crons: yield* planCrons(tree),
 		durableObjects,
 		workflows,
+		uses: tree.uses,
 		client: yield* planClient(tree.client),
 		db: yield* planDb(tree, config),
 	};

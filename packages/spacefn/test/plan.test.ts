@@ -14,6 +14,8 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	middleware: [],
 	queues: [],
 	crons: [],
+	cronSources: {},
+	uses: { kv: false, blob: false },
 	durableObjects: [],
 	workflows: [],
 	client: [],
@@ -82,6 +84,7 @@ describe("planApp units", () => {
 			tree({
 				queues: ["emails.ts", "notes.md"],
 				crons: ["nightly.ts"],
+				cronSources: { "nightly.ts": 'export default cron(\n\t"0  3 * * *",\n\tjob,\n);' },
 				durableObjects: ["chat-room.ts"],
 				workflows: ["order-flow.ts"],
 			}),
@@ -89,7 +92,9 @@ describe("planApp units", () => {
 		expect(result.queues).toEqual([
 			{ name: "emails", file: "app/queues/emails.ts", binding: "QUEUE_EMAILS" },
 		]);
-		expect(result.crons).toEqual([{ name: "nightly", file: "app/crons/nightly.ts" }]);
+		expect(result.crons).toEqual([
+			{ name: "nightly", file: "app/crons/nightly.ts", schedule: "0 3 * * *" },
+		]);
 		expect(result.durableObjects).toEqual([
 			{
 				name: "chat-room",
@@ -167,4 +172,18 @@ describe("planApp target and config checks", () => {
 		for (const gitignore of [undefined, "dist\n", ".spaceship\n", "# .space\n"])
 			expect(planError(tree({ gitignore })).code, String(gitignore)).toBe("GITIGNORE_SPACE");
 	});
+
+	it.effect("needs each cron schedule as a valid string literal", () =>
+		Effect.gen(function* () {
+			const code = (source: string) =>
+				Effect.flip(
+					planApp(tree({ crons: ["x.ts"], cronSources: { "x.ts": source } }), config(), "dev"),
+				).pipe(Effect.map((error) => error.code));
+			expect(yield* code("export default cron(SCHEDULE, job);")).toBe("CRON_SCHEDULE_LITERAL");
+			expect(yield* code("export default cron(`${m} * * * *`, job);")).toBe(
+				"CRON_SCHEDULE_LITERAL",
+			);
+			expect(yield* code('export default cron("daily", job);')).toBe("CRON_SCHEDULE");
+		}),
+	);
 });

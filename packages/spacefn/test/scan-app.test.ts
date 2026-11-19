@@ -33,6 +33,8 @@ describe("scanApp", () => {
 				middleware: [],
 				queues: [],
 				crons: [],
+				cronSources: {},
+				uses: { kv: false, blob: false },
 				durableObjects: [],
 				workflows: [],
 				client: [],
@@ -95,6 +97,23 @@ describe("scanApp", () => {
 			const error = yield* Effect.flip(scanApp(root));
 			expect(error.file).toBe("app/db/main/queries/bad.sql");
 			expect(error.code).toMatch(/^QUERY_/);
+		}),
+	);
+
+	it.effect("reads cron sources and whether app code imports Kv or Blob", () =>
+		Effect.gen(function* () {
+			yield* write({
+				"app/crons/nightly.ts": 'export default cron("0 3 * * *", job);',
+				"app/routes/a.ts": 'import { route, type Blob, Kv as Store } from "spacefn";',
+				"app/routes/a.test.ts": 'import { Blob } from "spacefn";',
+				"lib/files.ts": 'import {\n\tBlob,\n} from "spacefn";',
+			});
+			const without = yield* scanApp(root);
+			expect(without.cronSources).toEqual({
+				"nightly.ts": 'export default cron("0 3 * * *", job);',
+			});
+			expect(without.uses).toEqual({ kv: true, blob: false });
+			expect((yield* scanApp(root, ["lib"])).uses).toEqual({ kv: true, blob: true });
 		}),
 	);
 });

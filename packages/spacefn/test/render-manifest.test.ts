@@ -14,6 +14,8 @@ const empty: AppTree = {
 	middleware: [],
 	queues: [],
 	crons: [],
+	cronSources: {},
+	uses: { kv: false, blob: false },
 	durableObjects: [],
 	workflows: [],
 	client: [],
@@ -60,6 +62,7 @@ describe("renderManifest", () => {
 				middleware: ["1-auth.ts"],
 				queues: ["emails.ts"],
 				crons: ["nightly.ts"],
+				cronSources: { "nightly.ts": 'export default cron("0 3 * * *", job);' },
 				db: [{ name: "main", migrations: [], queries: [] }],
 			}),
 		).toMatchInlineSnapshot(`

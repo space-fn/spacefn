@@ -6,6 +6,7 @@ import { scanMigrations, scanQueries } from "@spacefn/sql/node";
 import { Effect } from "effect";
 
 import { SpaceError } from "../errors.ts";
+import { CODE_FILE, isTestFile } from "./route-path.ts";
 
 export interface DbFolder {
 	/** Folder name under `app/db/`. */
@@ -36,6 +37,13 @@ export interface AppTree {
 	readonly workflows: readonly string[];
 	readonly client: readonly string[];
 	readonly db: readonly DbFolder[];
+	/** Source of each file in `app/crons/`, for the schedule the infra needs. */
+	readonly cronSources: Readonly<Record<string, string>>;
+	/**
+	 * Whether code in `app/` or the alias folders imports `Kv` or `Blob` from
+	 * spacefn, so the infra creates a KV namespace or an R2 bucket only when used.
+	 */
+	readonly uses: { readonly kv: boolean; readonly blob: boolean };
 	/** The root `.gitignore`, for the check that generated folders are ignored. */
 	readonly gitignore: string | undefined;
 }
@@ -95,9 +103,46 @@ const scanDb = Effect.fnUntraced(function* (dir: string, name: string) {
 	return { name, migrations, queries } satisfies DbFolder;
 });
 
-/** Reads `<root>/app` into an {@link AppTree}. A missing folder is an empty listing. */
+const readText = (file: string) =>
+	Effect.tryPromise({ try: () => readFile(file, "utf8"), catch: io(file) });
+
+const SPACEFN_IMPORT = /import\s*\{([^}]*)\}\s*from\s*["']spacefn["']/g;
+
+/** Value (not type-only) names imported from "spacefn" in `source`. */
+export const spacefnImports = (source: string): Set<string> => {
+	const names = new Set<string>();
+	for (const match of source.matchAll(SPACEFN_IMPORT))
+		for (const part of match[1]!.split(",")) {
+			const name = part
+				.trim()
+				.split(/\s+as\s+/)[0]!
+				.trim();
+			if (name && !name.startsWith("type ")) names.add(name);
+		}
+	return names;
+};
+
+const scanUses = Effect.fnUntraced(function* (root: string, folders: readonly string[]) {
+	const uses = { kv: false, blob: false };
+	for (const folder of ["app", ...folders]) {
+		const dir = join(root, folder);
+		for (const file of yield* listFiles(dir, true)) {
+			if (!CODE_FILE.test(file) || isTestFile(file)) continue;
+			const names = spacefnImports(yield* readText(join(dir, file)));
+			uses.kv ||= names.has("Kv");
+			uses.blob ||= names.has("Blob");
+		}
+	}
+	return uses;
+});
+
+/**
+ * Reads `<root>/app` into an {@link AppTree}. A missing folder is an empty
+ * listing. `folders` (the alias folders) are only read for {@link AppTree.uses}.
+ */
 export const scanApp = Effect.fnUntraced(function* (
 	root: string,
+	folders: readonly string[] = [],
 ): Effect.fn.Return<AppTree, SpaceError> {
 	const app = join(root, "app");
 	const flat = (folder: string) => listFiles(join(app, folder), false);
@@ -110,6 +155,11 @@ export const scanApp = Effect.fnUntraced(function* (
 		catch: io("app/db"),
 	});
 
+	const crons = yield* flat("crons");
+	const cronSources: Record<string, string> = {};
+	for (const file of crons)
+		if (CODE_FILE.test(file)) cronSources[file] = yield* readText(join(app, "crons", file));
+
 	return {
 		env: yield* exists(join(app, "env.ts")),
 		layers: yield* exists(join(app, "layers.ts")),
@@ -118,11 +168,13 @@ export const scanApp = Effect.fnUntraced(function* (
 		pages: yield* listFiles(join(app, "pages"), true),
 		middleware: yield* flat("middleware"),
 		queues: yield* flat("queues"),
-		crons: yield* flat("crons"),
+		crons,
 		durableObjects: yield* flat("durable-objects"),
 		workflows: yield* flat("workflows"),
 		client: yield* flat("client"),
 		db: yield* Effect.forEach(dbNames, (name) => scanDb(join(app, "db", name), name)),
+		cronSources,
+		uses: yield* scanUses(root, folders),
 		gitignore: yield* Effect.tryPromise({
 			try: () => readFile(join(root, ".gitignore"), "utf8").catch(missingIsEmpty(undefined)),
 			catch: io(".gitignore"),

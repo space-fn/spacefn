@@ -15,6 +15,8 @@ const empty: AppTree = {
 	middleware: [],
 	queues: [],
 	crons: [],
+	cronSources: {},
+	uses: { kv: false, blob: false },
 	durableObjects: [],
 	workflows: [],
 	client: [],

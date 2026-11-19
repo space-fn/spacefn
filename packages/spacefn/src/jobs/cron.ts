@@ -96,6 +96,9 @@ const parseSchedule = (schedule: string): Schedule | undefined => {
 	return { fields, anyDayOfMonth: texts[2] === "*", anyDayOfWeek: texts[4] === "*" };
 };
 
+/** Whether `schedule` (whitespace already collapsed) is a five-field expression this runs. */
+export const isValidSchedule = (schedule: string): boolean => parseSchedule(schedule) !== undefined;
+
 /**
  * Whether a five-field schedule fires in the UTC minute of `at`. As in cron,
  * when both day fields are restricted a day matching either one fires.
