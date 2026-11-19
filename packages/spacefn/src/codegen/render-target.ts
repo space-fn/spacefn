@@ -5,7 +5,7 @@ const str = JSON.stringify;
 
 /**
  * The runtime entry for the target. Cloudflare gets one Worker module that also
- * exports the Durable Object and workflow classes. Bun gets a fetch-handler
+ * exports the Durable Object and workflow classes, spacefn's own included. Bun gets a fetch-handler
  * module (`app.ts`, which the Vite dev server loads) and a production server
  * (`server.ts`, bundled by `vite build`).
  */
@@ -40,6 +40,8 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 			'import { manifest } from "./manifest.ts";',
 			"",
 			"export default worker(manifest);",
+			"// The Durable Objects behind Bus and RateLimiter.",
+			'export { SpaceBus, SpaceRateLimiter } from "@spacefn/cloudflare";',
 			...classes,
 			"",
 		].join("\n"),

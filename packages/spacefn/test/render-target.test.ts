@@ -53,6 +53,8 @@ describe("renderApp", () => {
 			import { manifest } from "./manifest.ts";
 
 			export default worker(manifest);
+			// The Durable Objects behind Bus and RateLimiter.
+			export { SpaceBus, SpaceRateLimiter } from "@spacefn/cloudflare";
 			export { default as ChatRoom } from "../app/durable-objects/chat-room.ts";
 			export { default as OrderFlow } from "../app/workflows/order-flow.ts";
 			"
