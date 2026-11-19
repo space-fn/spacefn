@@ -52,9 +52,36 @@ export type EnvShape<Fields extends Record<string, EnvField<any>>> = {
  * export default defineEnv({ GREETING: Env.string({ default: "hi" }), API_KEY: Env.secret() });
  * ```
  */
-export const defineEnv = <const Fields extends Record<string, EnvField<any>>>(fields: Fields) => {
+/** Type-level identity of the app env service. An app has exactly one `app/env.ts`. */
+export interface AppEnvId {
+	readonly "~spacefn/AppEnv": true;
+}
+
+/** What {@link defineEnv} returns: the env service plus its fields, Config and Layer. */
+export type AppEnv<Fields extends Record<string, EnvField<any>>> = Context.Service<
+	AppEnvId,
+	EnvShape<Fields>
+> & {
+	readonly fields: Fields;
+	readonly config: Config.Config<EnvShape<Fields>>;
+	readonly layer: Layer.Layer<AppEnvId, SpaceError>;
+};
+
+/**
+ * Declares the app's env (`app/env.ts`) and returns its service. Values come from
+ * the target's ConfigProvider: Worker vars and secrets on Cloudflare, process env
+ * on Bun, `testEnv` in tests. A missing or invalid value fails at boot with a
+ * SpaceError naming the variable.
+ *
+ * ```ts
+ * export default defineEnv({ GREETING: Env.string({ default: "hi" }), API_KEY: Env.secret() });
+ * ```
+ */
+export const defineEnv = <const Fields extends Record<string, EnvField<any>>>(
+	fields: Fields,
+): AppEnv<Fields> => {
 	type Shape = EnvShape<Fields>;
-	class AppEnv extends Context.Service<AppEnv, Shape>()("spacefn/Env") {}
+	const AppEnv = Context.Service<AppEnvId, Shape>("spacefn/Env");
 	const config = Config.all(
 		Object.fromEntries(Object.entries(fields).map(([name, read]) => [name, read(name)])),
 	) as unknown as Config.Config<Shape>;
