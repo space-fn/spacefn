@@ -8,5 +8,5 @@ files=$(git diff --cached --name-only --diff-filter=ACMR -z | tr '\0' '\n')
 [ -z "$files" ] && exit 0
 
 echo "$files" | tr '\n' '\0' | xargs -0 pnpm --silent fmt --no-error-on-unmatched-pattern
-echo "$files" | grep -E '\.(c|m)?[jt]sx?$' | tr '\n' '\0' | xargs -0 -r pnpm --silent lint --fix
+echo "$files" | grep -E '\.(c|m)?[jt]sx?$' | tr '\n' '\0' | xargs -0 -r pnpm --silent lint --fix --no-error-on-unmatched-pattern
 echo "$files" | tr '\n' '\0' | xargs -0 git add --
