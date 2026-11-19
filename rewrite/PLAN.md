@@ -16,12 +16,13 @@ my-app/
 ├── configs/
 │   ├── space.ts                 # defineSpace: target, db drivers, aliases, auth/tenancy
 │   ├── infra.ts                 # Alchemy extras: stages, domains, extra resources
+│   ├── vite.config.ts           # optional: user Vite plugins (Tailwind, React, ...)
 │   ├── tsconfig.json  oxlint.json  oxfmt.json  vitest.config.ts
 │   └── docker/Dockerfile        # Bun target only (`space add docker`)
 ├── app/  env.ts layers.ts middleware/ routes/ pages/ client/ db/<name>/ queues/ crons/
 │         durable-objects/ workflows/            # last two: Cloudflare only
 ├── modules/  lib/  utils/  docs/spacefn/
-└── .space/                      # generated, gitignored: entry, router, db, alchemy.run.ts, .alchemy/
+└── .space/                      # generated, gitignored: entry, router, db, vite.config.ts, alchemy.run.ts, .alchemy/, dist/
 ```
 
 ## Packages
@@ -32,7 +33,7 @@ my-app/
 | `spacefn`             | Conventions, codegen, CLI, HTTP, pages, Datastar, db runtime, auth, tenancy, tracing, service interfaces, in-memory Layers, testing, and fetch-only adapters (libSQL via `@libsql/client/web`, S3, Kv on SQL) |
 | `@spacefn/cloudflare` | Worker entry, D1, DO SQLite, R2, KV, Queues, crons, DOs, Workflows, Bus relay                                                                                                                                 |
 | `@spacefn/bun`        | Bun server entry, PubSub Bus, in-process queues and crons                                                                                                                                                     |
-| `@spacefn/infra`      | The only package that imports `alchemy`: turns conventions into resources, runs dev and deploy                                                                                                                |
+| `@spacefn/infra`      | The only package that imports `alchemy` or `vite`: the spacefn Vite plugin (`@spacefn/infra/vite`), turns conventions into resources, runs dev, build and deploy                                              |
 
 ## Steps
 
@@ -40,18 +41,19 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 
 - [x] **0. Repo tooling:** oxlint, oxfmt, vitest, tsdown and tsc from `configs/`; hooks via `core.hooksPath`; CI.
 - [x] **1. Alchemy spike:** see [alchemy-spike.md](alchemy-spike.md).
+- [x] **1b. Vite spike:** Vite is the only build system for apps on both targets; see [vite-spike.md](vite-spike.md).
 - [x] **2. Package skeletons and the dependency guard test:** `packages/spacefn/test/boundaries.test.ts` checks dependency fields and `src/` imports for every package. Core runtime files may not use `node:*`; only `src/cli*` and `src/codegen/` may.
 - [x] **3. `@spacefn/sql`:** the root export is pure (split, params, query and migration files, `inferQuery`, `analyzeQuery`); `@spacefn/sql/node` has `scratchDatabase` (`node:sqlite`), `scanMigrations` and `scanQueries`. The VS Code extension uses it. Postgres/PGlite is dropped, since every driver is SQLite.
 - [x] **4. Core foundations:** tagged HTTP errors + `httpStatus`, `SpaceError`; `defineEnv` with `Env.string|number|int|boolean|url|secret|schema` over Effect `Config`; `defineSpace` (`spacefn/config`) and the Node loader in `src/codegen/`; `Kv`, `Blob`, `Bus`, `Queue` services with `.memory` Layers; `spacefn/testing` (`memoryServices`, `testEnv`, `QueueInbox`). The SQL test Layer moves to step 7 with the migration runner.
-- [ ] **5. Scanner and codegen (`space gen`):** router, middleware chain, db modules, queue and cron tables, DO and workflow exports, target entry; watch mode; target checks.
+- [ ] **5. Scanner and codegen (`space gen`):** router, middleware chain, db modules, queue and cron tables, DO and workflow exports, target entry, `.space/vite.config.ts` (merges `configs/vite.config.ts`); watch mode; target checks, including `.space/` in `.gitignore`.
 - [ ] **6. HTTP:** `route()` and `middleware()` on `effect/http` `HttpRouter`; Schema params, query and body; multipart parsing with limits; CSRF; typed error mapping.
 - [ ] **7. Database:** migration runner on `SqlClient` (ledger, checksums, up/down, race retry), Schema-decoded typed queries, `space db doctor|migrate`.
 - [ ] **8. Pages and realtime:** HTML builder, loaders and actions, Datastar SSE as a `Stream`, Bus interface with an in-memory Layer.
 - [ ] **9. Auth, tenancy, tracing (OTLP).**
 - [ ] **10. `@spacefn/cloudflare`.**
-- [ ] **11. `@spacefn/bun`.**
-- [ ] **12. `@spacefn/infra`:** generate `.space/alchemy.run.ts`, merge `configs/infra.ts`, bundle the client with rolldown, Docker image, `space add docker`.
-- [ ] **13. CLI (`effect/cli`):** dev, build, gen, deploy, destroy, db, doctor, upgrade, clean.
+- [ ] **11. `@spacefn/bun`:** fetch-handler app module (dev and prod) plus a `Bun.serve` production entry that serves `dist/client`.
+- [ ] **12. `@spacefn/infra`:** the spacefn Vite plugin (root override, outDirs, watcher ignores, `virtual:space/assets`, client-first build, server-edit reload, Bun dev middleware); generate `.space/alchemy.run.ts` with `Cloudflare.Website.Vite`; merge `configs/infra.ts`; Docker image from `vite build` output; `space add docker`.
+- [ ] **13. CLI (`effect/cli`):** dev (`alchemy dev` for Cloudflare, Vite inside Bun for Bun), build (`vite build`), gen, deploy, destroy, db, doctor, upgrade, clean.
 - [ ] **14. VS Code extension:** read `configs/space.ts` and the new imports; tests on vitest.
 - [ ] **15. Template, playground, docs.**
 - [ ] **16. Finish:** delete `legacy/`, `scripts/size.sh` (it still points at the old playground) and this folder, bump to `0.11.0`, merge to `main`.
