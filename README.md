@@ -1,65 +1,51 @@
-# SpaceFn
+<p align="center"><img src="docs/logo.svg" alt="spacefn" width="96" /></p>
 
-SpaceFn is one TypeScript package for building full-stack apps on Cloudflare Workers. File-based conventions, typed SQL, multi-tenancy, observability and hand-rolled auth primitives.
+# spacefn
 
-## Packages
-
-| Package          | Purpose                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| `spacefn`        | Framework and `space` CLI (`dev`, `build`, `gen`, `deploy`, `db doctor`, `clean`, `doctor`) |
-| `create-spacefn` | Scaffold a project                                                                          |
-
-## Quick start
+Full-stack TypeScript apps from folders of convention files, on [Effect](https://effect.website). Write pages, routes, SQL and jobs in `app/`; spacefn generates the wiring, and the `space` CLI runs, builds and deploys it, to **Cloudflare Workers** or to **Bun** in Docker.
 
 ```sh
 npm create spacefn@latest my-app
-cd my-app
-pnpm install
-pnpm dev
+cd my-app && cp .env.example .env && npm install && npm run dev
 ```
-
-Or use the playground in this repo:
-
-```sh
-pnpm install
-cd playground
-pnpm dev
-```
-
-## Conventions
-
-A project is a folder of convention files. `spacefn` scans them and generates `.space/`.
 
 ```txt
-app/routes/                 HTTP endpoints
-app/pages/                  server-rendered pages with loaders and actions
-app/middleware/             numbered middleware
-app/queues/                 queue consumers
-app/crons/                  scheduled jobs
-app/env.ts                  environment schema
-app/db/<name>/migrations/   SQL migrations
-app/db/<name>/queries/      named, typed SQL queries
-app/durable-objects/        Durable Object classes
-app/workflows/              Workflow classes
+app/pages/          server-rendered pages, with form actions and live updates (Datastar)
+app/routes/         HTTP endpoints
+app/middleware/     runs around every request
+app/db/<name>/      migrations/ and queries/ in SQL, typed for you
+app/queues/         queue consumers
+app/crons/          scheduled jobs
+app/env.ts          the variables the app reads
+configs/            space.ts, and optional vite.config.ts and infra.ts
 ```
 
-## Docs
+Read the [docs](docs/index.md), starting with [Getting started](docs/getting-started.md).
 
-- [Getting started](docs/getting-started/index.md)
-- [Conventions](docs/concepts/conventions.md)
-- [Environment](docs/directory-structure/env.md)
-- [Tracing](docs/guides/tracing.md)
-- [Database](docs/directory-structure/database.md)
-- [Tenancy](docs/guides/tenancy.md)
-- [Auth](docs/guides/auth.md)
-- [Pages](docs/api-reference/pages.md)
-- [CLI](docs/api-reference/cli.md)
+## Packages
 
-## Local development
+| Package               | What it is                                                             |
+| --------------------- | ---------------------------------------------------------------------- |
+| `spacefn`             | The framework: routes, pages, database, services, jobs, auth, testing  |
+| `@spacefn/cloudflare` | Runs an app as a Worker                                                |
+| `@spacefn/bun`        | Runs an app on Bun: web, queue and cron processes                      |
+| `@spacefn/infra`      | The `space` CLI, the Vite plugin and the Alchemy stacks                |
+| `@spacefn/sql`        | Parses and checks migrations and queries                               |
+| `create-spacefn`      | `npm create spacefn`                                                   |
+| `vscode-spacefn`      | VS Code: SQL checked against migrations, Datastar and CSS in templates |
+
+## Working on spacefn
 
 ```sh
 pnpm install
-pnpm check
+pnpm check        # format, lint, typecheck
 pnpm test
-cd playground && pnpm dev
 ```
+
+`playground/cloudflare` and `playground/bun` are apps made from the `create-spacefn` template on the workspace packages: `cd playground/bun && pnpm dev`. After changing the template, `pnpm playground` remakes them (a test fails until you do). Set `SPACE_TEST_DOCKER=1` to include the test that deploys to local Docker.
+
+Config for the repo's tools lives in `configs/`. Commits follow conventional commits.
+
+## License
+
+Apache-2.0

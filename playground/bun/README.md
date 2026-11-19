@@ -1,6 +1,6 @@
 # spacefn app
 
-A [spacefn](https://github.com/wai-lin/space) app: folders of convention files on [Effect](https://effect.website), served on Cloudflare Workers or Bun.
+A [spacefn](https://github.com/space-fn/spacefn) app: folders of convention files on [Effect](https://effect.website), served on Cloudflare Workers or Bun.
 
 ## Commands
 
