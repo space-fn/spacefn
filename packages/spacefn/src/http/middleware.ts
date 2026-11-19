@@ -1,4 +1,4 @@
-import { Effect, Layer, Predicate } from "effect";
+import { Context, Effect, Layer, Predicate } from "effect";
 import { HttpRouter, type HttpServerResponse } from "effect/http";
 
 import { SpaceError } from "../errors.ts";
@@ -54,18 +54,21 @@ const loadMiddleware = (
 /**
  * Applies the app's middleware to every request, with error handling
  * outermost: a failure in middleware, a handler or the router itself (no
- * matching route) becomes a proper response.
+ * matching route) becomes a proper response. `services` is provided to the
+ * middleware (the routes get the same context from `httpLayer`).
  */
 export const middlewareLayer = (
 	entries: readonly Unchecked<ManifestMiddleware>[],
+	services: Context.Context<any> = Context.empty() as Context.Context<any>,
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.unwrap(
 		Effect.gen(function* () {
 			const chain = yield* Effect.forEach(entries, loadMiddleware);
 			const apply = (app: HttpApp): HttpApp =>
 				chain.reduceRight((next, middleware) => middleware.apply(next), app);
-			return HttpRouter.middleware((app) => handleErrors(apply(app)) as never, {
-				global: true,
-			}) as Layer.Layer<never, never, HttpRouter.HttpRouter>;
+			return HttpRouter.middleware(
+				(app) => Effect.provideContext(handleErrors(apply(app)), services) as never,
+				{ global: true },
+			) as Layer.Layer<never, never, HttpRouter.HttpRouter>;
 		}),
 	);
