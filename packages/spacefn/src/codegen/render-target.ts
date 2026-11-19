@@ -82,8 +82,10 @@ export const renderViteConfig = (plan: AppPlan): string => {
  * `configs/space.ts`.
  */
 export const renderTsconfig = (plan: AppPlan): string => {
-	const paths = Object.fromEntries(
-		Object.entries(plan.aliases).map(([alias, dir]) => [`${alias}/*`, [`../${dir}/*`]]),
-	);
+	const paths = Object.fromEntries([
+		// Generated modules app code imports, e.g. `@space/db/main.ts`.
+		["@space/*", ["./*"]],
+		...Object.entries(plan.aliases).map(([alias, dir]) => [`${alias}/*`, [`../${dir}/*`]]),
+	]);
 	return `${JSON.stringify({ compilerOptions: { paths } }, null, "\t")}\n`;
 };

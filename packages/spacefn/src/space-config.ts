@@ -22,7 +22,8 @@ const ALIAS = /^@[\w-]+$/;
 const Aliases = Schema.Record(Schema.String, Schema.String).check(
 	Schema.makeFilter((aliases) => {
 		const bad = Object.keys(aliases).filter((name) => !ALIAS.test(name));
-		return bad.length === 0 || `Alias names start with @, e.g. @modules (got ${bad.join(", ")})`;
+		if (bad.length) return `Alias names start with @, e.g. @modules (got ${bad.join(", ")})`;
+		return !("@space" in aliases) || "@space is reserved for generated code (.space/)";
 	}),
 );
 

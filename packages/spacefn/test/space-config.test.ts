@@ -60,6 +60,19 @@ describe("loadSpaceConfig", () => {
 		}),
 	);
 
+	it.effect("reserves @space for generated code", () =>
+		Effect.gen(function* () {
+			yield* Effect.promise(() =>
+				writeConfig(`export default { target: "bun", aliases: { "@space": "gen" } };`),
+			);
+			const error = yield* Effect.flip(loadSpaceConfig(root));
+			expect([error.code, error.message]).toEqual([
+				"CONFIG_INVALID",
+				expect.stringContaining("@space is reserved"),
+			]);
+		}),
+	);
+
 	it.effect("reads database drivers and rejects unknown ones", () =>
 		Effect.gen(function* () {
 			yield* Effect.promise(() =>

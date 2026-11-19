@@ -117,7 +117,7 @@ describe("renderApp", () => {
 
 	it("declares the aliases as tsconfig paths", () => {
 		expect(JSON.parse(render("bun")["tsconfig.json"] ?? "")).toEqual({
-			compilerOptions: { paths: { "@lib/*": ["../lib/*"] } },
+			compilerOptions: { paths: { "@space/*": ["./*"], "@lib/*": ["../lib/*"] } },
 		});
 	});
 });
