@@ -78,3 +78,12 @@ export {
 	type SessionPolicy,
 	type SessionRecord,
 } from "./auth/session.ts";
+export {
+	clientAddress,
+	rateLimit,
+	RateLimiter,
+	RateLimiterError,
+	type RateHit,
+	type RateLimiterShape,
+	type RateLimitOptions,
+} from "./services/rate-limiter.ts";
