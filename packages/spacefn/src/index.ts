@@ -89,3 +89,12 @@ export {
 } from "./services/rate-limiter.ts";
 export { InvalidToken, SignedToken, type TokenClaims } from "./auth/signed-token.ts";
 export { base32Decode, base32Encode, Totp, type TotpCheck } from "./auth/totp.ts";
+export {
+	OAuth,
+	OAuthError,
+	oauthProvider,
+	type OAuthClient,
+	type OAuthProfile,
+	type OAuthProvider,
+	type OAuthProviderSpec,
+} from "./auth/oauth.ts";
