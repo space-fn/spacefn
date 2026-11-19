@@ -55,8 +55,9 @@ const BOUNDARIES: Record<
 export const importsOf = (source: string): string[] => {
 	const found = new Set<string>();
 	const patterns = [
-		/\b(?:import|export)\s[^"'`;]*?\bfrom\s*["']([^"']+)["']/g,
-		/\bimport\s*["']([^"']+)["']/g,
+		// Static forms start a line, so code inside string literals (codegen templates) is skipped.
+		/^[ \t]*(?:import|export)\s[^"'`;]*?\bfrom\s*["']([^"']+)["']/gm,
+		/^[ \t]*import\s*["']([^"']+)["']/gm,
 		/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,
 		/\brequire\s*\(\s*["']([^"']+)["']\s*\)/g,
 	];
@@ -93,6 +94,7 @@ describe("importsOf", () => {
 			`const m = await import("alchemy");`,
 			`const n = require("node:fs");`,
 			`import {\n  multi,\n  line,\n} from "@effect/platform-bun";`,
+			`const template = 'import { worker } from "@spacefn/cloudflare";';`,
 		].join("\n");
 		expect(importsOf(source).sort()).toEqual(
 			[
