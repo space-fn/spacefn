@@ -45,6 +45,9 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@effect/sql-libsql": "catalog:",
+		"@effect/sql-sqlite-node": "catalog:",
+		"@libsql/client": "catalog:",
 		"@spacefn/sql": "workspace:*"
 	},
 	"devDependencies": {
