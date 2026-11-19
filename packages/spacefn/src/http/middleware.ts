@@ -2,7 +2,7 @@ import { Effect, Layer, Predicate } from "effect";
 import { HttpRouter, type HttpServerResponse } from "effect/http";
 
 import { SpaceError } from "../errors.ts";
-import type { ManifestModule } from "../manifest.ts";
+import type { ManifestMiddleware, Unchecked } from "../manifest.ts";
 import { handleErrors } from "./respond.ts";
 
 /** The rest of the request: later middleware, then the matched route. */
@@ -35,7 +35,9 @@ export const middleware = (apply: (next: HttpApp) => HttpApp): Middleware => ({
 export const isMiddleware = (value: unknown): value is Middleware =>
 	Predicate.hasProperty(value, MiddlewareTypeId);
 
-const loadMiddleware = (entry: ManifestModule): Effect.Effect<Middleware, SpaceError> => {
+const loadMiddleware = (
+	entry: Unchecked<ManifestMiddleware>,
+): Effect.Effect<Middleware, SpaceError> => {
 	const value = (entry.module as { default?: unknown }).default;
 	return isMiddleware(value)
 		? Effect.succeed(value)
@@ -55,7 +57,7 @@ const loadMiddleware = (entry: ManifestModule): Effect.Effect<Middleware, SpaceE
  * matching route) becomes a proper response.
  */
 export const middlewareLayer = (
-	entries: readonly ManifestModule[],
+	entries: readonly Unchecked<ManifestMiddleware>[],
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.unwrap(
 		Effect.gen(function* () {

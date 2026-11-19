@@ -2,7 +2,7 @@ import { Context, Effect, Layer, Predicate } from "effect";
 import { HttpRouter, HttpServerResponse } from "effect/http";
 
 import { SpaceError } from "../errors.ts";
-import type { ManifestRoute } from "../manifest.ts";
+import type { ManifestRoute, Unchecked } from "../manifest.ts";
 import { handleErrors, toResponse } from "./respond.ts";
 
 export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -46,10 +46,10 @@ export class CurrentRoute extends Context.Service<
 	{ readonly file: string; readonly catchAll: string | undefined }
 >()("spacefn/http/CurrentRoute") {}
 
-const routeError = (entry: ManifestRoute, message: string, hint: string) =>
+const routeError = (entry: Unchecked<ManifestRoute>, message: string, hint: string) =>
 	new SpaceError({ code: "ROUTE_EXPORT", message, hint, file: entry.file });
 
-const definitionOf = (entry: ManifestRoute): Effect.Effect<Route, SpaceError> => {
+const definitionOf = (entry: Unchecked<ManifestRoute>): Effect.Effect<Route, SpaceError> => {
 	const value = (entry.module as { default?: unknown }).default;
 	if (!isRoute(value))
 		return Effect.fail(
@@ -83,7 +83,7 @@ const methodNotAllowed = (allowed: readonly Method[]) =>
  * runtime Layers) around the whole router.
  */
 export const routesLayer = (
-	routes: readonly ManifestRoute[],
+	routes: readonly Unchecked<ManifestRoute>[],
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.effectDiscard(
 		Effect.gen(function* () {

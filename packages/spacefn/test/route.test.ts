@@ -5,9 +5,13 @@ import { HttpRouter, HttpServer } from "effect/http";
 import { NotFound } from "../src/errors.ts";
 import { Input } from "../src/http/input.ts";
 import { route, routesLayer } from "../src/http/route.ts";
-import type { ManifestRoute } from "../src/manifest.ts";
+import type { ManifestRoute, Unchecked } from "../src/manifest.ts";
 
-const entry = (path: `/${string}`, value: unknown, catchAll?: string): ManifestRoute => ({
+const entry = (
+	path: `/${string}`,
+	value: unknown,
+	catchAll?: string,
+): Unchecked<ManifestRoute> => ({
 	kind: "route",
 	path,
 	params: [],
@@ -19,7 +23,7 @@ const entry = (path: `/${string}`, value: unknown, catchAll?: string): ManifestR
 let dispose: (() => Promise<void>) | undefined;
 afterEach(() => dispose?.());
 
-const serve = (routes: readonly ManifestRoute[]) => {
+const serve = (routes: readonly Unchecked<ManifestRoute>[]) => {
 	const app = HttpRouter.toWebHandler(
 		routesLayer(routes).pipe(Layer.provide(HttpServer.layerServices)),
 		{ disableLogger: true },
