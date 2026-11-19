@@ -1,11 +1,11 @@
 import * as path from "node:path";
 
-import { scratchDatabase } from "spacefn/db";
+import { scratchDatabase } from "@spacefn/sql/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver/node";
 
 import { taggedTemplates } from "../lib/templates";
-import { extractBadIdentifier, loadDialectAndMigrations, rangeForIdentifier } from "./sql";
+import { extractBadIdentifier, loadMigrations, rangeForIdentifier } from "./sql";
 
 export function findDbDir(filePath: string): string | null {
 	let dir = path.dirname(filePath);
@@ -30,8 +30,8 @@ export async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]>
 
 	const text = doc.getText();
 	const diagnostics: Diagnostic[] = [];
-	let { dialect, migrations } = await loadDialectAndMigrations(targetDb);
-	const scratch = await scratchDatabase(migrations, dialect);
+	const migrations = await loadMigrations(targetDb);
+	const scratch = await scratchDatabase(migrations);
 	for (const tpl of taggedTemplates(text, ["sql", "db"])) {
 		const sql = text.slice(tpl.contentStart, tpl.end).replace(/\$\{[\s\S]*?\}/g, "NULL");
 		const startOffset = tpl.contentStart;

@@ -1,21 +1,15 @@
 import * as path from "node:path";
 
-import { parseQueryFile, scanMigrations, scratchDatabase } from "spacefn/db";
+import { parseQueryFile } from "@spacefn/sql";
+import { scanMigrations, scratchDatabase } from "@spacefn/sql/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver/node";
 
 import { maskSql } from "../lib/sqlScope";
 
-export async function loadDialectAndMigrations(dbDir: string) {
-	let dialect: "sqlite" | "postgres" = "sqlite";
-	try {
-		const cfg = await import(path.join(dbDir, "config.ts"));
-		dialect = (cfg.default ?? cfg).dialect ?? "sqlite";
-	} catch {
-		dialect = "sqlite";
-	}
-	const migrations = await scanMigrations(path.join(dbDir, "migrations"));
-	return { dialect, migrations };
+/** Every spacefn driver (D1, Durable Object SQLite, libSQL) speaks SQLite, so only the migrations matter. */
+export function loadMigrations(dbDir: string) {
+	return scanMigrations(path.join(dbDir, "migrations"));
 }
 
 /** Extracts an identifier from a database error message, for underlining. */
@@ -68,8 +62,8 @@ export async function validateSqlDiagnostics(doc: TextDocument): Promise<Diagnos
 	const dbDir = filePath.replace(/[/\\]queries[/\\].*/, "");
 	const diagnostics: Diagnostic[] = [];
 	try {
-		const { dialect, migrations } = await loadDialectAndMigrations(dbDir);
-		const scratch = await scratchDatabase(migrations, dialect);
+		const migrations = await loadMigrations(dbDir);
+		const scratch = await scratchDatabase(migrations);
 		const text = doc.getText();
 		// structural validation of directive comments (case/when/end, undeclared params)
 		try {

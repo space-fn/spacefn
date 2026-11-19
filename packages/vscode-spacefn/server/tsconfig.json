@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
+		"module": "preserve",
 		"target": "ES2022",
 		"lib": ["ES2022"],
 		"sourceMap": true,
@@ -9,7 +9,9 @@
 		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"types": ["node"]
+		"types": ["node"],
+		"moduleResolution": "bundler",
+		"noEmit": true
 	},
 	"include": ["src"]
 }

@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 
-import { scratchDatabase } from "spacefn/db";
+import { scratchDatabase } from "@spacefn/sql/node";
 import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -20,7 +20,7 @@ import { datastarDocs, datastarActionDocs } from "./completion/data";
 import { validateCssTemplates } from "./diagnostics/css";
 import { validateHtmlDatastar } from "./diagnostics/datastar";
 import { resolveDbDir, validateEmbedded } from "./diagnostics/embedded";
-import { loadDialectAndMigrations, validateSqlDiagnostics } from "./diagnostics/sql";
+import { loadMigrations, validateSqlDiagnostics } from "./diagnostics/sql";
 import { definition } from "./language/definition";
 import { hover } from "./language/hover";
 import {} from "./lib/helpers";
@@ -55,8 +55,8 @@ const schemaCache = new Map<string, SchemaInfo>();
 async function getSchema(dbDir: string, targetDb: string): Promise<SchemaInfo> {
 	const cached = schemaCache.get(targetDb);
 	if (cached) return cached;
-	const { dialect, migrations } = await loadDialectAndMigrations(targetDb);
-	const scratch = await scratchDatabase(migrations, dialect);
+	const migrations = await loadMigrations(targetDb);
+	const scratch = await scratchDatabase(migrations);
 	const tables = await scratch.tables();
 	const columns = new Map<string, ColumnInfo[]>();
 	for (const t of tables) {
