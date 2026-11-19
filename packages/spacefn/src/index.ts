@@ -13,6 +13,14 @@ export {
 	type HttpError,
 } from "./errors.ts";
 export { defineEnv, Env, type AppEnv, type AppEnvId, type EnvField, type EnvShape } from "./env.ts";
+export type {
+	ManifestBound,
+	ManifestDb,
+	ManifestModule,
+	ManifestNamed,
+	ManifestRoute,
+	SpaceManifest,
+} from "./manifest.ts";
 export { defineSpace, type SpaceConfig, type Target } from "./space-config.ts";
 export {
 	Blob,
