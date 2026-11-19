@@ -45,12 +45,14 @@ export {
 	type DatastarEvent,
 	type PatchElementsOptions,
 	type PatchMode,
+	type WatchOutput,
 } from "./pages/datastar.ts";
 export { redirect } from "./http/respond.ts";
 export {
 	action,
 	page,
 	type Action,
+	type ActionMethod,
 	type ActionState,
 	type ActionTarget,
 	type Issue,

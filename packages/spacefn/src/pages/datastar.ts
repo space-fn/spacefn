@@ -2,9 +2,10 @@ import { Effect, Schema, Stream } from "effect";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";
 
 import { BadRequest } from "../errors.ts";
-import type { Html } from "../html.ts";
+import { Html } from "../html.ts";
 import { MiB, readWith, type BodyError } from "../http/body.ts";
 import { badRequestFrom } from "../http/respond.ts";
+import { Bus } from "../services/bus.ts";
 
 /** One server-sent event in Datastar's protocol. */
 export interface DatastarEvent {
@@ -126,6 +127,46 @@ const sse = <E, R>(
 		});
 	});
 
+/** What `watch` sends each time: elements to morph in, or any events. */
+export type WatchOutput = Html | DatastarEvent | readonly DatastarEvent[];
+
+const toEvents = (output: WatchOutput): readonly DatastarEvent[] =>
+	output instanceof Html
+		? [patchElements(output)]
+		: Array.isArray(output)
+			? output
+			: [output as DatastarEvent];
+
+/**
+ * Keeps part of a page current: subscribes to `topics` on the Bus, sends
+ * `render`'s output, and sends it again after each message, until the client
+ * leaves. It subscribes before the first render, so no update in between is
+ * missed, and a burst of messages causes one re-render. Return it from a
+ * `get` action that the page opens with `data-init="@get('${ctx.actions.watch.url}')"`.
+ * Rendered top-level elements need an `id` so Datastar can morph them.
+ */
+const watch = <E, R>(
+	topics: readonly string[],
+	render: Effect.Effect<WatchOutput, E, R>,
+): Effect.Effect<HttpServerResponse.HttpServerResponse, never, Bus | R> =>
+	Effect.gen(function* () {
+		const bus = yield* Bus;
+		const events = Stream.unwrap(
+			Effect.gen(function* () {
+				const changes = yield* Effect.forEach(topics, (topic) => bus.subscribe(topic));
+				const notices = Stream.mergeAll(changes, { concurrency: "unbounded" }).pipe(
+					Stream.buffer({ capacity: 1, strategy: "sliding" }),
+				);
+				const once = Stream.fromIterableEffect(Effect.map(render, toEvents));
+				return Stream.concat(
+					once,
+					Stream.flatMap(notices, () => once),
+				);
+			}),
+		);
+		return yield* sse(events);
+	});
+
 /** Whether the request came from a Datastar action (`@get`, `@post`, ...). */
 const isRequest: Effect.Effect<boolean, never, HttpServerRequest.HttpServerRequest> = Effect.gen(
 	function* () {
@@ -165,6 +206,7 @@ export const Datastar = {
 	patchSignals,
 	executeScript,
 	sse,
+	watch,
 	isRequest,
 	signals,
 } as const;

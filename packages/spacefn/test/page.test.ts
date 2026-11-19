@@ -7,6 +7,7 @@ import { html } from "../src/html.ts";
 import { Input } from "../src/http/input.ts";
 import { redirect } from "../src/http/respond.ts";
 import type { ManifestPage } from "../src/manifest.ts";
+import { Datastar } from "../src/pages/datastar.ts";
 import { action, page, pagesLayer, type Page } from "../src/pages/page.ts";
 import { Bus } from "../src/services/bus.ts";
 import { testHttp } from "../src/testing.ts";
@@ -157,29 +158,48 @@ describe("page", () => {
 	);
 });
 
-describe("live pages", () => {
+describe("get actions", () => {
 	const count = Effect.runSync(Ref.make(0));
 	const counter = page({
 		loader: Ref.get(count),
-		render: (ctx) =>
-			html`<html>
-				<body>
-					<p id="count">${ctx.loaderData}</p>
-				</body>
-			</html>`,
-		live: {
-			topics: ["counter"],
-			render: (ctx) => html`<p id="count">${ctx.loaderData}</p>`,
+		actions: {
+			watch: action({
+				method: "get",
+				input: Schema.Struct({}),
+				handler: () =>
+					Datastar.watch(
+						["counter"],
+						Ref.get(count).pipe(Effect.map((n) => html`<p id="count">${n}</p>`)),
+					),
+			}),
+			search: action({
+				method: "get",
+				input: Schema.Struct({ q: Schema.String }),
+				handler: ({ q }) => Effect.succeed(q.toUpperCase()),
+			}),
 		},
+		render: (ctx) =>
+			html`<p id="count" data-init="@get('${ctx.actions.watch.url}')">${ctx.loaderData}</p>
+				${ctx.action?.name === "search" && ctx.action.ok ? ctx.action.data : ""}`,
 	});
 
-	it("streams the live elements to Datastar and again on each Bus message", async () => {
+	it("runs a get action from the query string; the page itself has no POST", async () => {
+		const app = testHttp({ routes: [at("/counter", counter)] });
+		expect(await markup(await app.fetch("/counter?__action=search&q=hi"))).toMatch(/<\/p>\s*HI/);
+		const post = await app.fetch("/counter?__action=search", form({ q: "x" }));
+		expect([post.status, post.headers.get("allow")]).toEqual([405, "GET"]);
+		await app.dispose();
+	});
+
+	it("keeps elements live with Datastar.watch", async () => {
 		const bus = Effect.runSync(Layer.build(Bus.memory).pipe(Effect.scoped));
 		const app = testHttp({ routes: [at("/counter", counter)] }, Layer.succeedContext(bus));
 
-		expect(await (await app.fetch("/counter")).text()).toContain("<body>");
+		expect(await markup(await app.fetch("/counter"))).toContain(`@get('?__action=watch')`);
 
-		const response = await app.fetch("/counter", { headers: { "datastar-request": "true" } });
+		const response = await app.fetch("/counter?__action=watch", {
+			headers: { "datastar-request": "true" },
+		});
 		expect(response.headers.get("content-type")).toBe("text/event-stream");
 		const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
 		const next = async () => (await reader.read()).value;
@@ -209,12 +229,14 @@ it("types ctx from the loader and the actions", () => {
 				input: Schema.Struct({ a: Schema.String }),
 				handler: (input) => Effect.succeed(input.a.length),
 			}),
+			watch: action({ method: "get", input: Schema.Struct({}), handler: () => Effect.void }),
 		},
 		render: (ctx) => {
 			const n: number = ctx.loaderData.n;
+			const methods: ["post", "get"] = [ctx.actions.save.method, ctx.actions.watch.method];
 			if (ctx.action?.name === "save" && ctx.action.ok) {
 				const length: number = ctx.action.data;
-				return html`${n + length}`;
+				return html`${n + length}${methods}`;
 			}
 			// @ts-expect-error no such action
 			return html`${ctx.actions.remove.url}`;
