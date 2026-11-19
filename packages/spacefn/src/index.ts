@@ -60,3 +60,12 @@ export {
 	type PageContext,
 	type PageDefinition,
 } from "./pages/page.ts";
+export {
+	MAX_ITERATIONS,
+	MAX_PASSWORD_LENGTH,
+	MIN_PASSWORD_LENGTH,
+	Password,
+	WeakPassword,
+	type PasswordCheck,
+	type PasswordOptions,
+} from "./auth/password.ts";
