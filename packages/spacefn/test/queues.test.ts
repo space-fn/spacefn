@@ -1,4 +1,4 @@
-import { afterEach, expect, test, vi } from "vite-plus/test";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { generateWorkerSource } from "../src/entry";
 import { defineQueue, queueBinding, queueConfig, type QueueBatch } from "../src/queues";

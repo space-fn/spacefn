@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
-import { afterEach, expect, test } from "vite-plus/test";
+import { afterEach, expect, test } from "vitest";
 
 import { d1Executor, durableObjectExecutor, runMigrations, type Migration } from "../src/db";
 import { setTracer, type SpanRecord } from "../src/trace";

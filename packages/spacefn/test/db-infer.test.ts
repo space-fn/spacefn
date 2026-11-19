@@ -1,4 +1,4 @@
-import { beforeAll, expect, test } from "vite-plus/test";
+import { beforeAll, expect, test } from "vitest";
 
 import type { Migration } from "../src/db";
 import { inferQuery, scratchDatabase } from "../src/db/infer";

@@ -3,7 +3,7 @@ import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 
 describe("docs examples drift", () => {
 	const docsRoot = resolve(ROOT, "packages/create-spacefn/template/docs/spacefn");

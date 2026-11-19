@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 
 import { tenantResolver, type TenantRecord, type TenantVariables } from "../src/tenancy";
 

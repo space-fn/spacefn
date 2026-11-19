@@ -1,4 +1,4 @@
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 
 import { generateWorkerSource } from "../src/entry";
 import { generateQueuesSource, producerName } from "../src/queues/generate";

@@ -1,4 +1,4 @@
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 
 import { constantTimeEqual, fromBase64Url, toBase64Url } from "../src/auth/encoding";
 

@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, beforeEach, expect, test } from "vite-plus/test";
+import { afterEach, beforeEach, expect, test } from "vitest";
 
 import { runClientBuild } from "../src/client/build";
 import { generateClientManifestSource } from "../src/client/generate";

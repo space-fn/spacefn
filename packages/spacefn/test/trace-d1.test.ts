@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "vite-plus/test";
+import { afterEach, expect, test } from "vitest";
 
 import { setTracer, traceBindings, traceD1, type D1Like, type SpanRecord } from "../src/trace";
 

@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "vite-plus/test";
+import { afterEach, expect, test } from "vitest";
 
 import { createLogger, setLogSink, withSpan, type LogRecord } from "../src/trace";
 

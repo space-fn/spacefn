@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { afterEach, describe, expect, test } from "vitest";
 
 import { applyUpgradeTemplate } from "../src/upgrade";
 

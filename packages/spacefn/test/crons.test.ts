@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, expect, test, vi } from "vite-plus/test";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { cronConfig, defineCron, loadCronJobs } from "../src/crons";
 import { dispatchScheduled } from "../src/crons/dispatch";

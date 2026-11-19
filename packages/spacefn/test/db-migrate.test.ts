@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 
 import {
 	applyMigrations,

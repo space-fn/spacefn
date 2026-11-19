@@ -1,5 +1,5 @@
 import { bindings } from "cf/config";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 
 import { envBindings } from "../src/cloudflare";
 import { boolean, defineEnv, number, secret, string } from "../src/env";

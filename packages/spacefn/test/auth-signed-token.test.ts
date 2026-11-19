@@ -1,4 +1,4 @@
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 
 import { signToken, toBase64Url, TokenError, verifyToken } from "../src/auth";
 

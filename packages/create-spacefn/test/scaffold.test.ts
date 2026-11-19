@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { afterEach, describe, expect, test } from "vitest";
 
 import { scaffold } from "../src/scaffold";
 

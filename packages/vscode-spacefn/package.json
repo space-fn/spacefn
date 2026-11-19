@@ -12,7 +12,8 @@
 		"compile": "tsc -p . && npm run bundle",
 		"package": "vsce package",
 		"bundle": "esbuild server/src/server.ts --bundle --platform=node --outfile=server-out/server.js --external:vscode --external:vscode-languageserver --external:vscode-languageserver-textdocument --external:vscode-html-languageservice --external:vscode-css-languageservice",
-		"test": "vp test"
+		"test": "vitest run",
+		"typecheck": "tsc -p . --noEmit && tsc -p server --noEmit"
 	},
 	"dependencies": {
 		"vscode-css-languageservice": "^6.3.10",
@@ -27,7 +28,7 @@
 		"esbuild": "^0.28.2",
 		"spacefn": "^0.8.0",
 		"typescript": "^7.0.2",
-		"vite-plus": "latest",
+		"vitest": "catalog:",
 		"vsce": "^2.15.0"
 	},
 	"contributes": {

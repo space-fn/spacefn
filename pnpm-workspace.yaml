@@ -15,13 +15,13 @@ minimumReleaseAgeExclude:
   - cf@1.0.0-beta.26
   - spacefn@0.1.1
   - "@cloudflare/workers-types@5.20261030.1"
+  - "@vitest/coverage-v8@5.1.1"
+  - "@vitest/mocker@5.1.1"
+  - "@vitest/spy@5.1.1"
+  - vitest@5.1.1
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-  vite-plus: 1.4.0
-overrides:
-  vite@*: "catalog:"
-peerDependencyRules:
-  allowAny:
-    - vite
-  allowedVersions:
-    vite: "*"
+  vitest: 5.1.1
+  "@vitest/coverage-v8": 5.1.1
+  "@effect/vitest": 4.1.4
+  effect: 4.1.4
+  tsdown: 0.23.7

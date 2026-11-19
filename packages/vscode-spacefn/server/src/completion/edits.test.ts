@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";

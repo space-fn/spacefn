@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 
 import { defineHandler, onError as defaultOnError } from "../src/handler";
 

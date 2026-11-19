@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { afterEach, expect, test, vi } from "vite-plus/test";
+import { afterEach, expect, test, vi } from "vitest";
 
 import {
 	parseTraceparent,

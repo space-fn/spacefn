@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, test } from "vite-plus/test";
+import { describe, expect, expectTypeOf, test } from "vitest";
 
 import { boolean, defineEnv, number, secret, string, type InferEnv } from "../src/env";
 

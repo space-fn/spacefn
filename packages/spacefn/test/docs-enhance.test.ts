@@ -1,4 +1,4 @@
-import { expect, test } from "vite-plus/test";
+import { expect, test } from "vitest";
 
 import { addCallouts, addHeadingAnchors, slugger } from "../src/docs/enhance";
 import { labelFromName, outline } from "../src/docs/tree";

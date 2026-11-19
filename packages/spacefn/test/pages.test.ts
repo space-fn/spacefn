@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { Hono } from "hono";
-import { afterEach, beforeEach, expect, test } from "vite-plus/test";
+import { afterEach, beforeEach, expect, test } from "vitest";
 
 import { defineActions, defineLoader, definePage, html, mountPage, raw } from "../src/pages";
 import { scanPages } from "../src/pages/scan";

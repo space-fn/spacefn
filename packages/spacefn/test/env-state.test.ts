@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 
 import { defineEnv, env, number, string } from "../src/env";
 import { envMiddleware } from "../src/runtime";

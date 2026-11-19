@@ -3,7 +3,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 
 const RUNTIME_FILES = [
 	"src/http.ts",
