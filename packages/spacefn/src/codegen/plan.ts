@@ -80,42 +80,41 @@ const unitFiles = (files: readonly string[]) =>
 /** `/users/:id` and `/users/:userId` match the same requests. */
 const shape = (path: string) => path.replace(/:[^/]+/g, ":");
 
-const planRoutes = (tree: AppTree, mode: Mode) =>
-	Effect.gen(function* () {
-		const routes: PlannedRoute[] = [];
-		const byShape = new Map<string, PlannedRoute>();
-		for (const [kind, folder, files] of [
-			["route", "routes", tree.routes],
-			["page", "pages", tree.pages],
-		] as const) {
-			for (const file of files) {
-				const parsed = yield* parseRoutePath(file).pipe(
-					Effect.mapError(
-						(error) =>
-							new SpaceError({
-								code: error.code,
-								message: error.message,
-								...(error.hint ? { hint: error.hint } : {}),
-								file: `app/${folder}/${file}`,
-							}),
-					),
+const planRoutes = Effect.fnUntraced(function* (tree: AppTree, mode: Mode) {
+	const routes: PlannedRoute[] = [];
+	const byShape = new Map<string, PlannedRoute>();
+	for (const [kind, folder, files] of [
+		["route", "routes", tree.routes],
+		["page", "pages", tree.pages],
+	] as const) {
+		for (const file of files) {
+			const parsed = yield* parseRoutePath(file).pipe(
+				Effect.mapError(
+					(error) =>
+						new SpaceError({
+							code: error.code,
+							message: error.message,
+							...(error.hint ? { hint: error.hint } : {}),
+							file: `app/${folder}/${file}`,
+						}),
+				),
+			);
+			if (!parsed || (parsed.mode && parsed.mode !== mode)) continue;
+			const route: PlannedRoute = { ...parsed, kind, file: `app/${folder}/${file}` };
+			const existing = byShape.get(shape(route.path));
+			if (existing)
+				return yield* fail(
+					"ROUTE_DUP",
+					`${existing.file} and ${route.file} both serve ${route.path}`,
+					"Rename or move one of them.",
+					route.file,
 				);
-				if (!parsed || (parsed.mode && parsed.mode !== mode)) continue;
-				const route: PlannedRoute = { ...parsed, kind, file: `app/${folder}/${file}` };
-				const existing = byShape.get(shape(route.path));
-				if (existing)
-					return yield* fail(
-						"ROUTE_DUP",
-						`${existing.file} and ${route.file} both serve ${route.path}`,
-						"Rename or move one of them.",
-						route.file,
-					);
-				byShape.set(shape(route.path), route);
-				routes.push(route);
-			}
+			byShape.set(shape(route.path), route);
+			routes.push(route);
 		}
-		return routes.sort(compareRoutePaths);
-	});
+	}
+	return routes.sort(compareRoutePaths);
+});
 
 const planUnits = (folder: string, files: readonly string[], prefix: string) =>
 	Effect.forEach(unitFiles(files), (file) =>
@@ -131,30 +130,29 @@ const planClasses = (folder: string, files: readonly string[], prefix: string) =
 		units.map((unit) => ({ ...unit, className: pascalName(unit.name) })),
 	);
 
-const planClient = (files: readonly string[]) =>
-	Effect.gen(function* () {
-		const entries = files.filter(
-			(file) =>
-				(CODE_FILE.test(file) || file.endsWith(".css")) &&
-				!file.startsWith("_") &&
-				!file.endsWith(".d.ts") &&
-				!isTestFile(file),
-		);
-		const seen = new Map<string, string>();
-		for (const file of entries) {
-			const base = file.replace(/\.[^.]+$/, "");
-			const previous = seen.get(base);
-			if (previous)
-				return yield* fail(
-					"CLIENT_DUP_ENTRY",
-					`Entries ${previous} and ${file} share the name "${base}", so their bundles would collide`,
-					"Rename one, or import the stylesheet from the script.",
-					`app/client/${file}`,
-				);
-			seen.set(base, file);
-		}
-		return entries.map((file) => `app/client/${file}`);
-	});
+const planClient = Effect.fnUntraced(function* (files: readonly string[]) {
+	const entries = files.filter(
+		(file) =>
+			(CODE_FILE.test(file) || file.endsWith(".css")) &&
+			!file.startsWith("_") &&
+			!file.endsWith(".d.ts") &&
+			!isTestFile(file),
+	);
+	const seen = new Map<string, string>();
+	for (const file of entries) {
+		const base = file.replace(/\.[^.]+$/, "");
+		const previous = seen.get(base);
+		if (previous)
+			return yield* fail(
+				"CLIENT_DUP_ENTRY",
+				`Entries ${previous} and ${file} share the name "${base}", so their bundles would collide`,
+				"Rename one, or import the stylesheet from the script.",
+				`app/client/${file}`,
+			);
+		seen.set(base, file);
+	}
+	return entries.map((file) => `app/client/${file}`);
+});
 
 /** Types a query file may name in `@column` / `@param`, with `?` for nullable. */
 export const SQL_TYPE = /^(string|number|boolean|bytes|unknown)(\?)?$/;
@@ -174,40 +172,39 @@ const checkParamTypes = (db: AppTree["db"][number]) =>
 
 const CLOUDFLARE_ONLY_DRIVERS: ReadonlySet<DbDriver> = new Set(["d1", "durable-object"]);
 
-const planDb = (tree: AppTree, config: ResolvedSpaceConfig) =>
-	Effect.gen(function* () {
-		const folders = new Set(tree.db.map((db) => db.name));
-		for (const name of Object.keys(config.db))
-			if (!folders.has(name))
+const planDb = Effect.fnUntraced(function* (tree: AppTree, config: ResolvedSpaceConfig) {
+	const folders = new Set(tree.db.map((db) => db.name));
+	for (const name of Object.keys(config.db))
+		if (!folders.has(name))
+			return yield* fail(
+				"DB_UNKNOWN",
+				`configs/space.ts sets a driver for "${name}", but there is no app/db/${name}/ folder`,
+				`Create app/db/${name}/migrations/, or remove "${name}" from db.`,
+				"configs/space.ts",
+			);
+
+	return yield* Effect.forEach(tree.db, (db) =>
+		Effect.gen(function* () {
+			const name = yield* unitName("db", db.name);
+			yield* checkParamTypes(db);
+			const driver = config.db[name] ?? DEFAULT_DB_DRIVER[config.target];
+			if (config.target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
 				return yield* fail(
-					"DB_UNKNOWN",
-					`configs/space.ts sets a driver for "${name}", but there is no app/db/${name}/ folder`,
-					`Create app/db/${name}/migrations/, or remove "${name}" from db.`,
+					"TARGET_UNSUPPORTED",
+					`Database "${name}" uses the ${driver} driver, which only runs on Cloudflare`,
+					`Use "libsql" for target "${config.target}".`,
 					"configs/space.ts",
 				);
-
-		return yield* Effect.forEach(tree.db, (db) =>
-			Effect.gen(function* () {
-				const name = yield* unitName("db", db.name);
-				yield* checkParamTypes(db);
-				const driver = config.db[name] ?? DEFAULT_DB_DRIVER[config.target];
-				if (config.target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
-					return yield* fail(
-						"TARGET_UNSUPPORTED",
-						`Database "${name}" uses the ${driver} driver, which only runs on Cloudflare`,
-						`Use "libsql" for target "${config.target}".`,
-						"configs/space.ts",
-					);
-				return {
-					name,
-					driver,
-					binding: bindingName("DB", name),
-					migrations: db.migrations,
-					queries: db.queries,
-				};
-			}),
-		);
-	});
+			return {
+				name,
+				driver,
+				binding: bindingName("DB", name),
+				migrations: db.migrations,
+				queries: db.queries,
+			};
+		}),
+	);
+});
 
 /** Generated files must be ignored, or Vite and Tailwind watch Alchemy's state and loop. */
 const IGNORES_SPACE = /^\/?\.space\/?$/m;
@@ -235,34 +232,33 @@ const checkTarget = (target: Target, folder: string, units: readonly PlannedUnit
 };
 
 /** Checks the scanned app against the config and works out everything codegen emits. */
-export const planApp = (
+export const planApp = Effect.fnUntraced(function* (
 	tree: AppTree,
 	config: ResolvedSpaceConfig,
 	mode: Mode,
-): Effect.Effect<AppPlan, SpaceError> =>
-	Effect.gen(function* () {
-		yield* checkGitignore(tree);
-		const durableObjects = yield* planClasses("durable-objects", tree.durableObjects, "DO");
-		const workflows = yield* planClasses("workflows", tree.workflows, "WF");
-		yield* checkTarget(config.target, "durable-objects", durableObjects);
-		yield* checkTarget(config.target, "workflows", workflows);
-		const crons = yield* planUnits("crons", tree.crons, "CRON");
+): Effect.fn.Return<AppPlan, SpaceError> {
+	yield* checkGitignore(tree);
+	const durableObjects = yield* planClasses("durable-objects", tree.durableObjects, "DO");
+	const workflows = yield* planClasses("workflows", tree.workflows, "WF");
+	yield* checkTarget(config.target, "durable-objects", durableObjects);
+	yield* checkTarget(config.target, "workflows", workflows);
+	const crons = yield* planUnits("crons", tree.crons, "CRON");
 
-		return {
-			target: config.target,
-			name: config.name,
-			mode,
-			aliases: config.aliases,
-			env: tree.env,
-			layers: tree.layers,
-			viteConfig: tree.viteConfig,
-			routes: yield* planRoutes(tree, mode),
-			middleware: unitFiles(tree.middleware).map((file) => `app/middleware/${file}`),
-			queues: yield* planUnits("queues", tree.queues, "QUEUE"),
-			crons: crons.map(({ name, file }) => ({ name, file })),
-			durableObjects,
-			workflows,
-			client: yield* planClient(tree.client),
-			db: yield* planDb(tree, config),
-		};
-	});
+	return {
+		target: config.target,
+		name: config.name,
+		mode,
+		aliases: config.aliases,
+		env: tree.env,
+		layers: tree.layers,
+		viteConfig: tree.viteConfig,
+		routes: yield* planRoutes(tree, mode),
+		middleware: unitFiles(tree.middleware).map((file) => `app/middleware/${file}`),
+		queues: yield* planUnits("queues", tree.queues, "QUEUE"),
+		crons: crons.map(({ name, file }) => ({ name, file })),
+		durableObjects,
+		workflows,
+		client: yield* planClient(tree.client),
+		db: yield* planDb(tree, config),
+	};
+});

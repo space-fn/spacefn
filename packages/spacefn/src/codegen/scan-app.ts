@@ -83,49 +83,49 @@ const fromSql = (dbName: string, folder: "migrations" | "queries") => (cause: un
 	});
 };
 
-const scanDb = (dir: string, name: string) =>
-	Effect.gen(function* () {
-		const migrations = yield* Effect.tryPromise({
-			try: () => scanMigrations(join(dir, "migrations")),
-			catch: fromSql(name, "migrations"),
-		});
-		const queries = yield* Effect.tryPromise({
-			try: () => scanQueries(join(dir, "queries"), migrations),
-			catch: fromSql(name, "queries"),
-		});
-		return { name, migrations, queries } satisfies DbFolder;
+const scanDb = Effect.fnUntraced(function* (dir: string, name: string) {
+	const migrations = yield* Effect.tryPromise({
+		try: () => scanMigrations(join(dir, "migrations")),
+		catch: fromSql(name, "migrations"),
 	});
+	const queries = yield* Effect.tryPromise({
+		try: () => scanQueries(join(dir, "queries"), migrations),
+		catch: fromSql(name, "queries"),
+	});
+	return { name, migrations, queries } satisfies DbFolder;
+});
 
 /** Reads `<root>/app` into an {@link AppTree}. A missing folder is an empty listing. */
-export const scanApp = (root: string): Effect.Effect<AppTree, SpaceError> =>
-	Effect.gen(function* () {
-		const app = join(root, "app");
-		const flat = (folder: string) => listFiles(join(app, folder), false);
-		const dbNames = yield* Effect.tryPromise({
-			try: async () =>
-				(await readdir(join(app, "db"), { withFileTypes: true }).catch(missingIsEmpty([])))
-					.filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
-					.map((entry) => entry.name)
-					.sort(byName),
-			catch: io("app/db"),
-		});
-
-		return {
-			env: yield* exists(join(app, "env.ts")),
-			layers: yield* exists(join(app, "layers.ts")),
-			viteConfig: yield* exists(join(root, "configs", "vite.config.ts")),
-			routes: yield* listFiles(join(app, "routes"), true),
-			pages: yield* listFiles(join(app, "pages"), true),
-			middleware: yield* flat("middleware"),
-			queues: yield* flat("queues"),
-			crons: yield* flat("crons"),
-			durableObjects: yield* flat("durable-objects"),
-			workflows: yield* flat("workflows"),
-			client: yield* flat("client"),
-			db: yield* Effect.forEach(dbNames, (name) => scanDb(join(app, "db", name), name)),
-			gitignore: yield* Effect.tryPromise({
-				try: () => readFile(join(root, ".gitignore"), "utf8").catch(missingIsEmpty(undefined)),
-				catch: io(".gitignore"),
-			}),
-		};
+export const scanApp = Effect.fnUntraced(function* (
+	root: string,
+): Effect.fn.Return<AppTree, SpaceError> {
+	const app = join(root, "app");
+	const flat = (folder: string) => listFiles(join(app, folder), false);
+	const dbNames = yield* Effect.tryPromise({
+		try: async () =>
+			(await readdir(join(app, "db"), { withFileTypes: true }).catch(missingIsEmpty([])))
+				.filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))
+				.map((entry) => entry.name)
+				.sort(byName),
+		catch: io("app/db"),
 	});
+
+	return {
+		env: yield* exists(join(app, "env.ts")),
+		layers: yield* exists(join(app, "layers.ts")),
+		viteConfig: yield* exists(join(root, "configs", "vite.config.ts")),
+		routes: yield* listFiles(join(app, "routes"), true),
+		pages: yield* listFiles(join(app, "pages"), true),
+		middleware: yield* flat("middleware"),
+		queues: yield* flat("queues"),
+		crons: yield* flat("crons"),
+		durableObjects: yield* flat("durable-objects"),
+		workflows: yield* flat("workflows"),
+		client: yield* flat("client"),
+		db: yield* Effect.forEach(dbNames, (name) => scanDb(join(app, "db", name), name)),
+		gitignore: yield* Effect.tryPromise({
+			try: () => readFile(join(root, ".gitignore"), "utf8").catch(missingIsEmpty(undefined)),
+			catch: io(".gitignore"),
+		}),
+	};
+});

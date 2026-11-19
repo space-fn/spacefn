@@ -34,56 +34,57 @@ export const isTestFile = (file: string): boolean => /\.(?:test|spec)\.[^/]*$/.t
  * Gives `null` for files that are not routes: non-code files, test files, and
  * anything under a segment starting with `_`.
  */
-export const parseRoutePath = (file: string): Effect.Effect<RoutePath | null, SpaceError> =>
-	Effect.gen(function* () {
-		const bare = file.replace(CODE_FILE, "");
-		if (bare === file || isTestFile(file)) return null;
+export const parseRoutePath = Effect.fnUntraced(function* (
+	file: string,
+): Effect.fn.Return<RoutePath | null, SpaceError> {
+	const bare = file.replace(CODE_FILE, "");
+	if (bare === file || isTestFile(file)) return null;
 
-		const mode = MODE_SUFFIX.exec(bare)?.[1] as Mode | undefined;
-		const segments = bare.replace(MODE_SUFFIX, "").split("/");
-		if (segments.some((segment) => segment.startsWith("_"))) return null;
+	const mode = MODE_SUFFIX.exec(bare)?.[1] as Mode | undefined;
+	const segments = bare.replace(MODE_SUFFIX, "").split("/");
+	if (segments.some((segment) => segment.startsWith("_"))) return null;
 
-		const parts: string[] = [];
-		const params: string[] = [];
-		let catchAll: string | undefined;
-		for (const [i, segment] of segments.entries()) {
-			const last = i === segments.length - 1;
-			if (GROUP.test(segment)) continue;
-			if (segment === "index" && last) continue;
+	const parts: string[] = [];
+	const params: string[] = [];
+	let catchAll: string | undefined;
+	for (const [i, segment] of segments.entries()) {
+		const last = i === segments.length - 1;
+		if (GROUP.test(segment)) continue;
+		if (segment === "index" && last) continue;
 
-			const rest = CATCH_ALL.exec(segment)?.[1];
-			const param = DYNAMIC.exec(segment)?.[1];
-			if (rest) {
-				if (!last)
-					return yield* badSegment(
-						file,
-						segment,
-						"a catch-all must be the last segment",
-						"Move [...name] to the file name, e.g. files/[...path].ts.",
-					);
-				parts.push("*");
-				params.push(rest);
-				catchAll = rest;
-			} else if (param) {
-				parts.push(`:${param}`);
-				params.push(param);
-			} else if (segment.includes("[") || segment.includes("]")) {
+		const rest = CATCH_ALL.exec(segment)?.[1];
+		const param = DYNAMIC.exec(segment)?.[1];
+		if (rest) {
+			if (!last)
 				return yield* badSegment(
 					file,
 					segment,
-					"not a valid parameter",
-					"Use [name] or [...name], where name is letters, digits and _ (e.g. [userId]).",
+					"a catch-all must be the last segment",
+					"Move [...name] to the file name, e.g. files/[...path].ts.",
 				);
-			} else parts.push(segment);
-		}
+			parts.push("*");
+			params.push(rest);
+			catchAll = rest;
+		} else if (param) {
+			parts.push(`:${param}`);
+			params.push(param);
+		} else if (segment.includes("[") || segment.includes("]")) {
+			return yield* badSegment(
+				file,
+				segment,
+				"not a valid parameter",
+				"Use [name] or [...name], where name is letters, digits and _ (e.g. [userId]).",
+			);
+		} else parts.push(segment);
+	}
 
-		return {
-			path: `/${parts.join("/")}`,
-			params,
-			...(catchAll ? { catchAll } : {}),
-			...(mode ? { mode } : {}),
-		};
-	});
+	return {
+		path: `/${parts.join("/")}`,
+		params,
+		...(catchAll ? { catchAll } : {}),
+		...(mode ? { mode } : {}),
+	};
+});
 
 const rank = (segment: string) => (segment === "*" ? 2 : segment.startsWith(":") ? 1 : 0);
 

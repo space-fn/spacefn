@@ -9,10 +9,12 @@ import { scanApp } from "./scan-app.ts";
 import { writeGenerated, type WriteResult } from "./write.ts";
 
 /** `space gen`: read the config and `app/`, check them, and write `.space/`. */
-export const gen = (root: string, mode: Mode): Effect.Effect<WriteResult, SpaceError> =>
-	Effect.gen(function* () {
-		const config = yield* loadSpaceConfig(root);
-		const tree = yield* scanApp(root);
-		const plan = yield* planApp(tree, config, mode);
-		return yield* writeGenerated(root, renderApp(plan));
-	});
+export const gen = Effect.fnUntraced(function* (
+	root: string,
+	mode: Mode,
+): Effect.fn.Return<WriteResult, SpaceError> {
+	const config = yield* loadSpaceConfig(root);
+	const tree = yield* scanApp(root);
+	const plan = yield* planApp(tree, config, mode);
+	return yield* writeGenerated(root, renderApp(plan));
+});
