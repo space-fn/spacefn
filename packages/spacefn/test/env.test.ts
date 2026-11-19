@@ -1,3 +1,5 @@
+import { inspect } from "node:util";
+
 import { describe, expect, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Layer, Redacted, Schema } from "effect";
 
@@ -39,7 +41,7 @@ describe("defineEnv", () => {
 	it.effect("keeps secrets out of logs", () =>
 		Effect.gen(function* () {
 			const env = yield* AppEnv;
-			expect(String(env.API_KEY)).not.toContain("k3y");
+			expect(inspect(env)).not.toContain("k3y");
 			expect(JSON.stringify(env)).not.toContain("k3y");
 		}).pipe(Effect.provide(withValues({ API_KEY: "k3y" }))),
 	);
