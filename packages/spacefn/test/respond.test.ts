@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
-import { HttpServerResponse } from "effect/http";
+import { HttpServerRequest, HttpServerResponse } from "effect/http";
 
 import { BadRequest, NotFound, TooManyRequests } from "../src/errors.ts";
 import { badRequestFrom, handleErrors, toResponse } from "../src/http/respond.ts";
@@ -79,4 +79,46 @@ describe("badRequestFrom", () => {
 			{ path: "user.age", message: expect.stringContaining("number") },
 		]);
 	});
+});
+
+describe("error pages", () => {
+	const as = (headers: Record<string, string>) =>
+		Effect.provideService(
+			HttpServerRequest.HttpServerRequest,
+			HttpServerRequest.fromWeb(new Request("http://app/todos/7", { headers })),
+		);
+	const browser = { accept: "text/html,application/xhtml+xml,*/*;q=0.8" };
+
+	it.effect("answers a browser navigation with an HTML page, everyone else with JSON", () =>
+		Effect.gen(function* () {
+			const failing = handleErrors(Effect.fail(new NotFound({ message: "No <todo> 7" })));
+			const page = yield* Effect.promise(() => read(web(Effect.runSync(as(browser)(failing)))));
+			expect(page.status).toBe(404);
+			expect(page.type).toContain("text/html");
+			expect(page.body).toContain("<title>404 Not Found</title>");
+			expect(page.body).toContain("<p>No &lt;todo&gt; 7</p>");
+			const others: Record<string, string>[] = [
+				{ accept: "*/*" },
+				{ ...browser, "datastar-request": "true" },
+				{},
+			];
+			for (const headers of others) {
+				const json = yield* Effect.promise(() => read(web(Effect.runSync(as(headers)(failing)))));
+				expect(json.type).toBe("application/json");
+			}
+		}),
+	);
+
+	it.effect("keeps internals out of the page and Retry-After on a 429", () =>
+		Effect.gen(function* () {
+			const crash = yield* as(browser)(handleErrors(Effect.die(new Error("secret detail"))));
+			const page = yield* Effect.promise(() => read(web(crash)));
+			expect(page.status).toBe(500);
+			expect(page.body).not.toContain("secret");
+			const limited = yield* as(browser)(
+				handleErrors(Effect.fail(new TooManyRequests({ retryAfterSeconds: 30 }))),
+			);
+			expect(limited.headers["retry-after"]).toBe("30");
+		}),
+	);
 });

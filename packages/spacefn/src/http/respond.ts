@@ -1,8 +1,8 @@
 import { Cause, Effect, Option, Schema, SchemaIssue } from "effect";
-import { HttpServerError, HttpServerResponse } from "effect/http";
+import { HttpServerError, HttpServerRequest, HttpServerResponse } from "effect/http";
 
 import { BadRequest, httpStatus, isHttpError, NotFound, type HttpError } from "../errors.ts";
-import { Html } from "../html.ts";
+import { escapeHtml, Html } from "../html.ts";
 
 /** An HTML response. */
 export const htmlResponse = (
@@ -78,6 +78,47 @@ const INTERNAL = HttpServerResponse.jsonUnsafe(
 	{ status: 500 },
 );
 
+const TITLES: Readonly<Record<number, string>> = {
+	400: "Bad Request",
+	401: "Unauthorized",
+	403: "Forbidden",
+	404: "Not Found",
+	405: "Method Not Allowed",
+	409: "Conflict",
+	413: "Payload Too Large",
+	415: "Unsupported Media Type",
+	422: "Unprocessable Content",
+	429: "Too Many Requests",
+	500: "Internal Server Error",
+};
+
+/**
+ * Whether the request is a browser navigating to a page: it asks for HTML
+ * first and isn't a Datastar request. Those get an HTML error page;
+ * `fetch`, Datastar and API clients keep the JSON.
+ */
+export const wantsHtml = (request: HttpServerRequest.HttpServerRequest): boolean =>
+	request.headers["datastar-request"] !== "true" &&
+	(request.headers.accept ?? "").split(",")[0]!.trim().startsWith("text/html");
+
+/** A plain error page with the status, its name and the error's message, if it has one. */
+export const errorPage = (
+	status: number,
+	message: string | undefined,
+): HttpServerResponse.HttpServerResponse => {
+	const title = `${status} ${TITLES[status] ?? "Error"}`;
+	return htmlResponse(
+		new Html(
+			`<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+				`<meta name="viewport" content="width=device-width, initial-scale=1">` +
+				`<title>${title}</title></head><body><main><h1>${title}</h1>` +
+				(message ? `<p>${escapeHtml(message)}</p>` : "") +
+				`</main></body></html>`,
+		),
+		{ status },
+	);
+};
+
 /** The router's own failures, as the matching tagged HTTP error. */
 const fromServerError = (error: unknown): HttpError | undefined => {
 	if (!HttpServerError.isHttpServerError(error)) return undefined;
@@ -92,7 +133,8 @@ const fromServerError = (error: unknown): HttpError | undefined => {
 /**
  * Answers every failure of a handler. Tagged HTTP errors get their status;
  * anything else is logged with its full cause and answered with an opaque 500,
- * so internals never reach the client. Interruption is passed on untouched.
+ * so internals never reach the client. Browser navigations get an HTML page,
+ * everything else JSON. Interruption is passed on untouched.
  */
 export const handleErrors = <R>(
 	effect: Effect.Effect<HttpServerResponse.HttpServerResponse, unknown, R>,
@@ -105,6 +147,20 @@ export const handleErrors = <R>(
 				? found.value
 				: fromServerError(found.value)
 			: undefined;
-		if (error) return Effect.succeed(errorResponse(error));
-		return Effect.as(Effect.logError("Unhandled error in a request", cause), INTERNAL);
+		return Effect.gen(function* () {
+			const request = yield* Effect.serviceOption(HttpServerRequest.HttpServerRequest);
+			const html = Option.isSome(request) && wantsHtml(request.value);
+			if (error) {
+				if (!html) return errorResponse(error);
+				const page = errorPage(
+					httpStatus(error),
+					"message" in error ? (error.message as string | undefined) : undefined,
+				);
+				return error._tag === "TooManyRequests" && error.retryAfterSeconds !== undefined
+					? HttpServerResponse.setHeader(page, "retry-after", String(error.retryAfterSeconds))
+					: page;
+			}
+			yield* Effect.logError("Unhandled error in a request", cause);
+			return html ? errorPage(500, undefined) : INTERNAL;
+		});
 	});
