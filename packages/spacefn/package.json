@@ -12,13 +12,18 @@
 	],
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./config": "./src/space-config.ts"
 	},
 	"publishConfig": {
 		"exports": {
 			".": {
 				"types": "./dist/index.d.mts",
 				"import": "./dist/index.mjs"
+			},
+			"./config": {
+				"types": "./dist/space-config.d.mts",
+				"import": "./dist/space-config.mjs"
 			}
 		}
 	},
