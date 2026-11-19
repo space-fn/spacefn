@@ -14,7 +14,8 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./config": "./src/space-config.ts",
-		"./testing": "./src/testing.ts"
+		"./testing": "./src/testing.ts",
+		"./codegen": "./src/codegen/index.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -29,6 +30,10 @@
 			"./testing": {
 				"types": "./dist/testing.d.mts",
 				"import": "./dist/testing.mjs"
+			},
+			"./codegen": {
+				"types": "./dist/codegen/index.d.mts",
+				"import": "./dist/codegen/index.mjs"
 			}
 		}
 	},
