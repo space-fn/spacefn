@@ -257,6 +257,8 @@ const bun = (options: SpaceViteOptions): Plugin => {
 			);
 		},
 		configureServer(server) {
+			// Vitest runs Vite in test mode; the app's tests serve it themselves.
+			if (server.config.mode === "test") return;
 			const environment = server.environments.ssr;
 			if (!environment || !isRunnableDevEnvironment(environment))
 				throw new Error("spacefn: the ssr environment can't run modules in this process");

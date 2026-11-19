@@ -237,7 +237,7 @@ const buildCommand = Command.make("build", {}, () =>
 		const plan = yield* generate(root, "prod");
 		if (plan.target === "cloudflare")
 			return yield* Console.log("space build: the Worker is built and uploaded by space deploy");
-		yield* Effect.tryPromise({ try: () => buildBun(root), catch: (error) => error });
+		yield* buildBun(root);
 		yield* Console.log(
 			"space build: wrote .space/dist (run it with bun .space/dist/server/index.js)",
 		);
@@ -248,8 +248,7 @@ const deployCommand = Command.make("deploy", { stage: stageFlag, yes: yesFlag },
 	Effect.gen(function* () {
 		const root = process.cwd();
 		const plan = yield* generate(root, "prod");
-		if (plan.target === "bun")
-			yield* Effect.tryPromise({ try: () => buildBun(root), catch: (error) => error });
+		if (plan.target === "bun") yield* buildBun(root);
 		yield* exitCode(
 			yield* runAlchemy(root, "deploy", { stage: Option.getOrUndefined(stage), yes }),
 		);

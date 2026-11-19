@@ -5,7 +5,7 @@
 	"license": "Apache-2.0",
 	"author": "wai-lin",
 	"bin": {
-		"space": "./dist/cli.mjs"
+		"space": "./src/cli.ts"
 	},
 	"files": [
 		"dist",
@@ -19,6 +19,9 @@
 		"./docker": "./src/docker.ts"
 	},
 	"publishConfig": {
+		"bin": {
+			"space": "./dist/cli.mjs"
+		},
 		"exports": {
 			".": {
 				"types": "./dist/index.d.mts",
