@@ -2,6 +2,17 @@ import { Cause, Effect, Option, Schema, SchemaIssue } from "effect";
 import { HttpServerError, HttpServerResponse } from "effect/http";
 
 import { BadRequest, httpStatus, isHttpError, NotFound, type HttpError } from "../errors.ts";
+import { Html } from "../html.ts";
+
+/** An HTML response. */
+export const htmlResponse = (
+	markup: Html,
+	options?: { readonly status?: number },
+): HttpServerResponse.HttpServerResponse =>
+	HttpServerResponse.text(markup.value, {
+		contentType: "text/html; charset=utf-8",
+		...(options?.status ? { status: options.status } : {}),
+	});
 
 const issuesOf = SchemaIssue.makeFormatterStandardSchemaV1();
 
@@ -16,13 +27,14 @@ export const badRequestFrom = (what: string, error: Schema.SchemaError): BadRequ
 	});
 
 /**
- * Turns a handler's value into a response: a response passes through, a string
- * is text, `undefined` is 204 No Content, anything else is JSON.
+ * Turns a handler's value into a response: a response passes through, `html`
+ * is HTML, a string is text, `undefined` is 204 No Content, anything else is JSON.
  */
 export const toResponse = (
 	value: unknown,
 ): Effect.Effect<HttpServerResponse.HttpServerResponse> => {
 	if (HttpServerResponse.isHttpServerResponse(value)) return Effect.succeed(value);
+	if (value instanceof Html) return Effect.succeed(htmlResponse(value));
 	if (typeof value === "string") return Effect.succeed(HttpServerResponse.text(value));
 	if (value === undefined) return Effect.succeed(HttpServerResponse.empty({ status: 204 }));
 	return Effect.orDie(HttpServerResponse.json(value));
