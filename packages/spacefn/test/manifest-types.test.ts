@@ -3,9 +3,11 @@ import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { database } from "../src/db/database.ts";
+import { html } from "../src/html.ts";
 import { middleware } from "../src/http/middleware.ts";
 import { route } from "../src/http/route.ts";
 import type { SpaceManifest } from "../src/manifest.ts";
+import { page } from "../src/pages/page.ts";
 
 const base = { name: "todo", queues: [], crons: [], db: [] };
 const at = { path: "/x", params: [], file: "app/routes/x.ts" } as const;
@@ -40,4 +42,13 @@ it("accepts a generated database class and rejects anything else", () => {
 		{ name: "other", driver: "d1", binding: "DB_OTHER", module: { default: {} } },
 	] as const satisfies SpaceManifest["db"];
 	expect(db).toHaveLength(2);
+});
+
+it("accepts page() for page files and rejects anything else", () => {
+	const routes = [
+		{ kind: "page", ...at, module: { default: page({ render: () => html`<p>hi</p>` }) } },
+		// @ts-expect-error a page file must default-export page()
+		{ kind: "page", ...at, module: { default: { render: () => html`` } } },
+	] as const satisfies SpaceManifest["routes"];
+	expect(routes).toHaveLength(2);
 });

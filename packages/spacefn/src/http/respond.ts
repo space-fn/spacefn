@@ -26,6 +26,12 @@ export const badRequestFrom = (what: string, error: Schema.SchemaError): BadRequ
 		})),
 	});
 
+/** A redirect. The default 303 makes the browser GET `to`, which is right after a form post. */
+export const redirect = (
+	to: string,
+	status: 301 | 302 | 303 | 307 | 308 = 303,
+): HttpServerResponse.HttpServerResponse => HttpServerResponse.redirect(to, { status });
+
 /**
  * Turns a handler's value into a response: a response passes through, `html`
  * is HTML, a string is text, `undefined` is 204 No Content, anything else is JSON.

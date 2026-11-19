@@ -7,6 +7,7 @@
 import type { DatabaseClass } from "./db/database.ts";
 import type { Middleware } from "./http/middleware.ts";
 import type { Route } from "./http/route.ts";
+import type { Page } from "./pages/page.ts";
 import type { DbDriver } from "./space-config.ts";
 
 interface ManifestRouteBase {
@@ -25,10 +26,10 @@ export interface ManifestApiRoute extends ManifestRouteBase {
 	readonly module: { readonly default: Route };
 }
 
-/** A file in `app/pages/`. Typed by the pages step. */
+/** A file in `app/pages/`: its default export is a `page()`. */
 export interface ManifestPage extends ManifestRouteBase {
 	readonly kind: "page";
-	readonly module: unknown;
+	readonly module: { readonly default: Page };
 }
 
 export type ManifestRoute = ManifestApiRoute | ManifestPage;

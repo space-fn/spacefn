@@ -46,3 +46,15 @@ export {
 	type PatchElementsOptions,
 	type PatchMode,
 } from "./pages/datastar.ts";
+export { redirect } from "./http/respond.ts";
+export {
+	action,
+	page,
+	type Action,
+	type ActionState,
+	type ActionTarget,
+	type Issue,
+	type Page,
+	type PageContext,
+	type PageDefinition,
+} from "./pages/page.ts";

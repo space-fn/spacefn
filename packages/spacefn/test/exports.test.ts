@@ -6,7 +6,12 @@ import * as testing from "../src/testing.ts";
 
 describe("public exports", () => {
 	it("gives app code the HTTP API", () => {
-		for (const name of ["route", "middleware", "csrf", "Input", "Upload"] as const)
+		for (const name of ["route", "middleware", "csrf", "Input", "Upload", "redirect"] as const)
+			expect(spacefn[name], name).toBeDefined();
+	});
+
+	it("gives app code pages, HTML and Datastar", () => {
+		for (const name of ["page", "action", "html", "raw", "Datastar"] as const)
 			expect(spacefn[name], name).toBeDefined();
 	});
 
