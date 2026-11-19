@@ -62,6 +62,7 @@ export interface AppPlan {
 	readonly env: boolean;
 	readonly layers: boolean;
 	readonly viteConfig: boolean;
+	readonly infraConfig: boolean;
 	/** Routes and pages together, most specific first. */
 	readonly routes: readonly PlannedRoute[];
 	/** Middleware files in run order (file name order, numbers compared as numbers). */
@@ -289,6 +290,7 @@ export const planApp = Effect.fnUntraced(function* (
 		env: tree.env,
 		layers: tree.layers,
 		viteConfig: tree.viteConfig,
+		infraConfig: tree.infraConfig,
 		routes: yield* planRoutes(tree, mode),
 		middleware: unitFiles(tree.middleware).map((file) => `app/middleware/${file}`),
 		queues: yield* planUnits("queues", tree.queues, "QUEUE"),

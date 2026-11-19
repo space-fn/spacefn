@@ -109,3 +109,49 @@ export const renderAssetsTypes = (): string =>
 		"export declare const head: Html;",
 		"",
 	].join("\n");
+
+/**
+ * `.space/alchemy.run.ts`: the infra, as data for `@spacefn/infra`'s stack,
+ * plus `app/env.ts` (its variables are passed on) and `configs/infra.ts`.
+ * Alchemy runs it for `space dev` on Cloudflare and for deploys.
+ */
+export const renderAlchemy = (plan: AppPlan): string => {
+	const app =
+		plan.target === "cloudflare"
+			? {
+					name: plan.name,
+					db: plan.db.map(({ driver, binding }) => ({ driver, binding })),
+					queues: plan.queues.map(({ name, binding }) => ({ name, binding })),
+					crons: [...new Set(plan.crons.map((cron) => cron.schedule))],
+					durableObjects: plan.durableObjects.map(({ className, binding }) => ({
+						className,
+						binding,
+					})),
+					workflows: plan.workflows.map(({ className, binding }) => ({ className, binding })),
+					uses: plan.uses,
+					folders: Object.values(plan.aliases),
+				}
+			: {
+					name: plan.name,
+					db: plan.db.map(({ driver, binding }) => ({ driver, binding })),
+					folders: Object.values(plan.aliases),
+				};
+	const stack = plan.target === "cloudflare" ? "cloudflareStack" : "dockerStack";
+	const fields = Object.entries(app).map(([key, value]) => `\t\t${key}: ${str(value)},`);
+	return [
+		GENERATED,
+		`import { ${stack} } from "@spacefn/infra/${plan.target === "cloudflare" ? "cloudflare" : "docker"}";`,
+		...(plan.env ? ['import env from "../app/env.ts";'] : []),
+		...(plan.infraConfig ? ['import infra from "../configs/infra.ts";'] : []),
+		"",
+		`export default ${stack}(`,
+		"\t{",
+		fields[0]!,
+		"\t\trootDir: import.meta.dirname,",
+		...fields.slice(1),
+		"\t},",
+		`\t{${[plan.env ? " env" : "", plan.infraConfig ? " infra" : ""].filter(Boolean).join(",")}${plan.env || plan.infraConfig ? " " : ""}},`,
+		");",
+		"",
+	].join("\n");
+};

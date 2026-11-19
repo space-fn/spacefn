@@ -2,6 +2,7 @@ import type { AppPlan } from "./plan.ts";
 import { renderDb } from "./render-db.ts";
 import { renderManifest } from "./render-manifest.ts";
 import {
+	renderAlchemy,
 	renderAssetsTypes,
 	renderEntries,
 	renderTsconfig,
@@ -16,4 +17,5 @@ export const renderApp = (plan: AppPlan): Record<string, string> => ({
 	"vite.config.ts": renderViteConfig(plan),
 	"tsconfig.json": renderTsconfig(plan),
 	"assets.d.ts": renderAssetsTypes(),
+	"alchemy.run.ts": renderAlchemy(plan),
 });

@@ -9,6 +9,7 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	env: false,
 	layers: false,
 	viteConfig: false,
+	infraConfig: false,
 	routes: [],
 	pages: [],
 	middleware: [],

@@ -9,6 +9,7 @@ const empty: AppTree = {
 	env: false,
 	layers: false,
 	viteConfig: false,
+	infraConfig: false,
 	routes: [],
 	pages: [],
 	middleware: [],

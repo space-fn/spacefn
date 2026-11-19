@@ -35,6 +35,7 @@ describe("gen", () => {
 		Effect.gen(function* () {
 			yield* write(app);
 			expect((yield* gen(root, "dev")).written).toEqual([
+				"alchemy.run.ts",
 				"assets.d.ts",
 				"db/main.ts",
 				"entry.ts",
@@ -53,7 +54,8 @@ describe("gen", () => {
 			yield* Effect.promise(() => rm(join(root, "app/db"), { recursive: true }));
 			const result = yield* gen(root, "dev");
 			expect(result.removed).toEqual(["db/main.ts"]);
-			expect(result.written).toEqual(["manifest.ts"]);
+			// The stack no longer declares the database either.
+			expect(result.written).toEqual(["alchemy.run.ts", "manifest.ts"]);
 			expect(yield* Effect.promise(() => readdir(join(root, ".space/db")))).toEqual([]);
 		}),
 	);
