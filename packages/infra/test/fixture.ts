@@ -1,3 +1,4 @@
+import { spawn, spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,3 +28,35 @@ export const fixtureApp = async (name: string) => {
 		cleanup: () => rm(data, { recursive: true, force: true }),
 	};
 };
+
+const cli = join(infra, "src", "cli.ts");
+
+/** Runs the `space` CLI in `cwd`, collecting its output. */
+export const space = (cwd: string, args: readonly string[], env: Record<string, string> = {}) => {
+	let log = "";
+	const child = spawn(process.execPath, [cli, ...args], {
+		cwd,
+		env: { ...process.env, ...env },
+		stdio: ["ignore", "pipe", "pipe"],
+	});
+	child.stdout!.on("data", (chunk) => (log += chunk));
+	child.stderr!.on("data", (chunk) => (log += chunk));
+	const exited = new Promise<number | null>((resolve) => child.once("exit", resolve));
+	return { child, exited, log: () => log };
+};
+
+export const until = async (check: () => Promise<boolean> | boolean, ms = 60_000) => {
+	for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 200)))
+		if (await Promise.resolve(check()).catch(() => false)) return;
+	throw new Error("timed out");
+};
+
+export const text = async (url: string, init?: RequestInit) =>
+	(await (await fetch(url, init)).text()).replace(/\s+/g, " ");
+
+/** Processes whose command line contains `pattern`. */
+export const processes = (pattern: string) =>
+	spawnSync("pgrep", ["-f", pattern], { encoding: "utf8" })
+		.stdout.trim()
+		.split("\n")
+		.filter(Boolean);
