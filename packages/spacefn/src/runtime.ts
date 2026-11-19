@@ -29,3 +29,4 @@ export {
 } from "./db/migrate.ts";
 export { libsql, libsqlConnection, libsqlFromConfig, type LibsqlOptions } from "./db/libsql.ts";
 export { telemetry } from "./telemetry.ts";
+export { envVariables } from "./env.ts";

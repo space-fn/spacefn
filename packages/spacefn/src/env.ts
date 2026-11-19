@@ -22,6 +22,8 @@ const field =
 		return config as Config.Config<Read<A, O>>;
 	};
 
+const SECRET = "~spacefn/secret";
+
 /** Field types for {@link defineEnv}. Each reads the variable of the same name. */
 export const Env = {
 	string: field(Config.String),
@@ -32,7 +34,8 @@ export const Env = {
 	/** A secret: its value is `Redacted`, so it never shows up in logs or errors. */
 	secret: <const O extends { readonly optional?: boolean } = {}>(
 		options?: O,
-	): EnvField<Read<Redacted.Redacted<string>, O>> => field(Config.Redacted)(options),
+	): EnvField<Read<Redacted.Redacted<string>, O>> =>
+		Object.assign(field(Config.Redacted)(options), { [SECRET]: true }),
 	/** Any Effect Schema that decodes from the variable's string value. */
 	schema: <A>(schema: Schema.ConstraintCodec<A, unknown>, options?: Options<A>): EnvField<A> =>
 		field<A>((name) => Config.schema(schema, name))(options) as EnvField<A>,
@@ -103,3 +106,15 @@ export const defineEnv = <const Fields extends Record<string, EnvField<any>>>(
 	);
 	return Object.assign(AppEnv, { fields, config, layer });
 };
+
+/**
+ * The variables an app env reads, and which are secrets: what a deploy passes
+ * to the target (secrets as Worker secrets on Cloudflare).
+ */
+export const envVariables = (env: {
+	readonly fields: Readonly<Record<string, EnvField<any>>>;
+}): ReadonlyArray<{ readonly name: string; readonly secret: boolean }> =>
+	Object.entries(env.fields).map(([name, read]) => ({
+		name,
+		secret: (read as { readonly [SECRET]?: boolean })[SECRET] === true,
+	}));

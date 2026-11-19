@@ -3,7 +3,7 @@ import { inspect } from "node:util";
 import { describe, expect, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Layer, Redacted, Schema } from "effect";
 
-import { defineEnv, Env } from "../src/env.ts";
+import { defineEnv, Env, envVariables } from "../src/env.ts";
 
 const AppEnv = defineEnv({
 	GREETING: Env.string({ default: "hello" }),
@@ -69,4 +69,14 @@ describe("defineEnv", () => {
 			expect(error.message).toContain("MAX_ITEMS");
 		}),
 	);
+});
+
+describe("envVariables", () => {
+	it("lists the variables and which are secrets", () => {
+		const env = defineEnv({ GREETING: Env.string({ default: "hi" }), API_KEY: Env.secret() });
+		expect(envVariables(env)).toEqual([
+			{ name: "GREETING", secret: false },
+			{ name: "API_KEY", secret: true },
+		]);
+	});
 });
