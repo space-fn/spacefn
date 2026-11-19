@@ -1,0 +1,10 @@
+#!/bin/sh
+# Formats and lint-fixes the staged files, then stages the fixes.
+set -e
+
+files=$(git diff --cached --name-only --diff-filter=ACMR -z | tr '\0' '\n')
+[ -z "$files" ] && exit 0
+
+echo "$files" | tr '\n' '\0' | xargs -0 pnpm exec oxfmt -c configs/oxfmt.json --no-error-on-unmatched-pattern
+echo "$files" | grep -E '\.(c|m)?[jt]sx?$' | tr '\n' '\0' | xargs -0 -r pnpm exec oxlint -c configs/oxlint.json --fix
+echo "$files" | tr '\n' '\0' | xargs -0 git add --
