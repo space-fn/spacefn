@@ -28,9 +28,11 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@effect/platform-node": "catalog:"
+		"@effect/platform-node": "catalog:",
+		"@libsql/client": "catalog:"
 	},
 	"devDependencies": {
+		"@effect/vitest": "catalog:",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
 		"spacefn": "workspace:*",
