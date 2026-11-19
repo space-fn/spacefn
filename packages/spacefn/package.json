@@ -100,9 +100,9 @@
 		}
 	},
 	"scripts": {
-		"build": "vp pack",
+		"build": "tsdown",
 		"typecheck": "tsc --noEmit",
-		"test": "vp test"
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"commander": "^12.1.0",
@@ -113,11 +113,12 @@
 		"@cloudflare/workers-types": "^5.20261030.1",
 		"@electric-sql/pglite": "^0.2.0",
 		"@types/node": "^26.6.6",
-		"@vitest/coverage-v8": "^5.0.5",
+		"@vitest/coverage-v8": "catalog:",
 		"cf": "1.0.0-beta.26",
 		"hono": "^4.13.14",
+		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
-		"vite-plus": "^1.4.0"
+		"vitest": "catalog:"
 	},
 	"peerDependencies": {
 		"@cloudflare/vite-plugin": ">=2.0.0-beta.v.1",
