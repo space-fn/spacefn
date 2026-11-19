@@ -44,13 +44,13 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@alchemy.run/cloudflare": "catalog:",
-		"@alchemy.run/docker": "catalog:",
 		"@effect/platform-node": "catalog:",
 		"@libsql/client": "catalog:",
 		"alchemy": "catalog:"
 	},
 	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"@alchemy.run/docker": "catalog:",
 		"@effect/vitest": "catalog:",
 		"@spacefn/bun": "workspace:*",
 		"@spacefn/cloudflare": "workspace:*",
@@ -63,8 +63,18 @@
 		"vitest": "catalog:"
 	},
 	"peerDependencies": {
+		"@alchemy.run/cloudflare": "2.0.0-beta.87",
+		"@alchemy.run/docker": "2.0.0-beta.87",
 		"effect": "^4.1.4",
 		"spacefn": "workspace:^",
 		"vite": "^8.3.8"
+	},
+	"peerDependenciesMeta": {
+		"@alchemy.run/cloudflare": {
+			"optional": true
+		},
+		"@alchemy.run/docker": {
+			"optional": true
+		}
 	}
 }
