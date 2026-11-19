@@ -1,4 +1,4 @@
-import { SqlError } from "./error";
+import { SqlError } from "./error.ts";
 
 export interface Migration {
 	/** File name without extension, e.g. `0001_create_todos`. */

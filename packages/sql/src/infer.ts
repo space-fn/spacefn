@@ -1,6 +1,6 @@
-import { SqlError } from "./error";
-import { namedParams } from "./params";
-import { parseQueryFile, type QueryFile } from "./query-file";
+import { SqlError } from "./error.ts";
+import { namedParams } from "./params.ts";
+import { parseQueryFile, type QueryFile } from "./query-file.ts";
 
 export type ColumnType = "string" | "number" | "boolean" | "bytes" | "unknown";
 

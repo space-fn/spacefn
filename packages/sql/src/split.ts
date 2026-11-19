@@ -1,4 +1,4 @@
-import { SqlError } from "./error";
+import { SqlError } from "./error.ts";
 
 const TRANSACTION_ERROR =
 	"Transaction statements (BEGIN, COMMIT, ROLLBACK, END) are not allowed in migrations: " +

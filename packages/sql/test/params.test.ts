@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { namedParams } from "../src/params";
+import { namedParams } from "../src/params.ts";
 
 test("rewrites named parameters and remembers their order", () => {
 	expect(namedParams("SELECT * FROM t WHERE a = :id AND b = :name AND c = :id")).toEqual({

@@ -1,4 +1,4 @@
-import { SqlError } from "./error";
+import { SqlError } from "./error.ts";
 export interface NamedSql {
 	/** The SQL with each `:name` replaced by `?`. */
 	sql: string;

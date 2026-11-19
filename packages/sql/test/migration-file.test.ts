@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 
-import { SqlError } from "../src/error";
-import { orderMigrationFiles, parseMigrationFile } from "../src/migration-file";
+import { SqlError } from "../src/error.ts";
+import { orderMigrationFiles, parseMigrationFile } from "../src/migration-file.ts";
 
 test("orders migrations by number and skips drafts and other files", () => {
 	expect(orderMigrationFiles(["0010_b.sql", "notes.md", "_draft.sql", "0002_a.sql"])).toEqual([

@@ -1,10 +1,10 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { SqlError } from "../error";
-import { analyzeQuery, type AnalyzedQuery } from "../infer";
-import { orderMigrationFiles, parseMigrationFile, type Migration } from "../migration-file";
-import { scratchDatabase } from "./scratch";
+import { SqlError } from "../error.ts";
+import { analyzeQuery, type AnalyzedQuery } from "../infer.ts";
+import { orderMigrationFiles, parseMigrationFile, type Migration } from "../migration-file.ts";
+import { scratchDatabase } from "./scratch.ts";
 
 const listOrEmpty = (dir: string) =>
 	readdir(dir).catch((error: NodeJS.ErrnoException) => {

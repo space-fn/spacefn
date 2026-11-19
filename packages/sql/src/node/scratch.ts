@@ -1,8 +1,8 @@
 import { DatabaseSync } from "node:sqlite";
 
-import type { ScratchDb, TableColumn } from "../infer";
-import type { Migration } from "../migration-file";
-import { splitStatements } from "../split";
+import type { ScratchDb, TableColumn } from "../infer.ts";
+import type { Migration } from "../migration-file.ts";
+import { splitStatements } from "../split.ts";
 
 /** An in-memory SQLite database with `migrations` applied, for checking queries. */
 export async function scratchDatabase(migrations: readonly Migration[]): Promise<ScratchDb> {

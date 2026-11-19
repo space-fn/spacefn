@@ -1,4 +1,4 @@
-import { SqlError } from "./error";
+import { SqlError } from "./error.ts";
 export type QueryMode = "one" | "many" | "exec";
 
 export interface QueryPart {

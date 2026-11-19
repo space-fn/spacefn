@@ -11,7 +11,8 @@
 		"skipLibCheck": true,
 		"types": ["node"],
 		"moduleResolution": "bundler",
-		"noEmit": true
+		"noEmit": true,
+		"allowImportingTsExtensions": true
 	},
 	"include": ["src"]
 }
