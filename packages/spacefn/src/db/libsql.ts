@@ -21,7 +21,8 @@ export interface LibsqlOptions {
 
 /**
  * A libSQL database over HTTP. It uses the fetch-only client, so it runs the
- * same on Workers and Bun. Closed when the scope closes.
+ * same everywhere; Bun opens `file:` databases with the native client instead.
+ * Closed when the scope closes.
  */
 export const libsql = (options: LibsqlOptions): Effect.Effect<DbConnection, never, Scope.Scope> =>
 	Effect.acquireRelease(

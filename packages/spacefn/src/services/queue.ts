@@ -20,7 +20,7 @@ export interface QueueShape {
 	) => Effect.Effect<void, QueueError>;
 }
 
-/** Background jobs. Cloudflare Queues on Cloudflare, an in-process worker on Bun. */
+/** Background jobs. Cloudflare Queues on Cloudflare, a table consumed by the queue process on Bun. */
 export class Queue extends Context.Service<Queue, QueueShape>()("spacefn/Queue") {
 	/** Records sent messages in {@link QueueInbox} instead of delivering them. */
 	static readonly memory: Layer.Layer<Queue | QueueInbox> = Layer.effectContext(

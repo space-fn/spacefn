@@ -21,7 +21,8 @@ export interface BusShape {
 
 /**
  * Fan-out of change notices to live connections (SSE re-renders). A Durable
- * Object hub on Cloudflare, an in-process PubSub on Bun and in tests.
+ * Object hub on Cloudflare, PubSub plus the state database on Bun (so other
+ * processes reach it), an in-process PubSub in tests.
  */
 export class Bus extends Context.Service<Bus, BusShape>()("spacefn/Bus") {
 	static readonly memory: Layer.Layer<Bus> = Layer.sync(Bus, () => {

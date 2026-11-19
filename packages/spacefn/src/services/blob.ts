@@ -38,7 +38,7 @@ export interface BlobShape {
 
 const encoder = new TextEncoder();
 
-/** Object storage for files and uploads. R2 on Cloudflare, any S3-compatible store on Bun, a Map in tests. */
+/** Object storage for files and uploads. R2 on Cloudflare, a directory on Bun, a Map in tests. */
 export class Blob extends Context.Service<Blob, BlobShape>()("spacefn/Blob") {
 	static readonly memory: Layer.Layer<Blob> = Layer.sync(Blob, () => {
 		const objects = new Map<string, BlobObject>();

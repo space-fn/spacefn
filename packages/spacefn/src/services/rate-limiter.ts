@@ -23,7 +23,7 @@ export interface RateLimiterShape {
 /**
  * Fixed-window counters. Counts must agree across every request, so it needs
  * one source of truth: a Durable Object on Cloudflare (KV is eventually
- * consistent, so it can't be used), process memory on Bun and in tests.
+ * consistent, so it can't be used), the state database on Bun, memory in tests.
  */
 export class RateLimiter extends Context.Service<RateLimiter, RateLimiterShape>()(
 	"spacefn/RateLimiter",

@@ -23,7 +23,7 @@ export interface KvShape {
 
 /**
  * String key-value storage with optional expiry. Workers KV on Cloudflare, a
- * table in the app's libSQL database on Bun, a Map in tests.
+ * table in the state libSQL database on Bun, a Map in tests.
  */
 export class Kv extends Context.Service<Kv, KvShape>()("spacefn/Kv") {
 	/** In-process store; TTLs follow the Effect Clock, so `TestClock` can move time. */
