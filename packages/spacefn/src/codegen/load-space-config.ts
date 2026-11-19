@@ -9,6 +9,10 @@ import { DEFAULT_ALIASES, SpaceConfig, type ResolvedSpaceConfig } from "../space
 
 export const SPACE_CONFIG_FILE = "configs/space.ts";
 
+// Node caches modules by URL. A counter (not a timestamp) makes every load a new URL,
+// so two edits in the same millisecond are both seen.
+let loads = 0;
+
 const fail = (code: string, message: string, hint?: string) =>
 	new SpaceError({ code, message, file: SPACE_CONFIG_FILE, ...(hint ? { hint } : {}) });
 
@@ -26,7 +30,7 @@ const packageName = (root: string) =>
 export const loadSpaceConfig = (root: string): Effect.Effect<ResolvedSpaceConfig, SpaceError> =>
 	Effect.gen(function* () {
 		const url = pathToFileURL(join(root, SPACE_CONFIG_FILE));
-		url.searchParams.set("t", String(Date.now())); // re-read after edits in watch mode
+		url.searchParams.set("load", String(++loads));
 		const module = yield* Effect.tryPromise({
 			try: () => import(url.href) as Promise<{ default?: unknown }>,
 			catch: (cause) => {
@@ -60,5 +64,10 @@ export const loadSpaceConfig = (root: string): Effect.Effect<ResolvedSpaceConfig
 				'Set name in configs/space.ts, e.g. name: "my-app".',
 			);
 
-		return { target: config.target, name, aliases: { ...DEFAULT_ALIASES, ...config.aliases } };
+		return {
+			target: config.target,
+			name,
+			aliases: { ...DEFAULT_ALIASES, ...config.aliases },
+			db: config.db ?? {},
+		};
 	});
