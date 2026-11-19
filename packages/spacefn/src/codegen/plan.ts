@@ -155,6 +155,22 @@ const planClient = (files: readonly string[]) =>
 		return entries.map((file) => `app/client/${file}`);
 	});
 
+/** Types a query file may name in `@column` / `@param`, with `?` for nullable. */
+export const SQL_TYPE = /^(string|number|boolean|bytes|unknown)(\?)?$/;
+
+const checkParamTypes = (db: AppTree["db"][number]) =>
+	Effect.forEach(db.queries, (query) => {
+		const bad = Object.entries(query.paramTypes).find(([, type]) => !SQL_TYPE.test(type));
+		return bad
+			? fail(
+					"DB_PARAM_TYPE",
+					`${query.name}: @param ${bad[0]} has unknown type "${bad[1]}"`,
+					"Use string, number, boolean, bytes or unknown, with ? for nullable.",
+					`app/db/${db.name}/queries`,
+				)
+			: Effect.void;
+	});
+
 const CLOUDFLARE_ONLY_DRIVERS: ReadonlySet<DbDriver> = new Set(["d1", "durable-object"]);
 
 const planDb = (tree: AppTree, config: ResolvedSpaceConfig) =>
@@ -172,6 +188,7 @@ const planDb = (tree: AppTree, config: ResolvedSpaceConfig) =>
 		return yield* Effect.forEach(tree.db, (db) =>
 			Effect.gen(function* () {
 				const name = yield* unitName("db", db.name);
+				yield* checkParamTypes(db);
 				const driver = config.db[name] ?? DEFAULT_DB_DRIVER[config.target];
 				if (config.target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
 					return yield* fail(

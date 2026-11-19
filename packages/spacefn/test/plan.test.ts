@@ -145,6 +145,21 @@ describe("planApp target and config checks", () => {
 		expect(planError(tree({ db }), config({ db: { other: "d1" } })).code).toBe("DB_UNKNOWN");
 	});
 
+	it("rejects a @param type the generated types cannot express", () => {
+		const query = {
+			name: "find",
+			mode: "one" as const,
+			sql: "",
+			boundSql: "",
+			columns: [],
+			paramNames: ["id"],
+			paramTypes: { id: "int" },
+			parts: [],
+		};
+		const error = planError(tree({ db: [{ name: "main", migrations: [], queries: [query] }] }));
+		expect(error).toMatchObject({ code: "DB_PARAM_TYPE", file: "app/db/main/queries" });
+	});
+
 	it("requires .space/ in .gitignore", () => {
 		for (const gitignore of [".space", "/.space/", "dist\n.space/\n"])
 			expect(plan(tree({ gitignore })).target, gitignore).toBe("cloudflare");
