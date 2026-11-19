@@ -1,3 +1,6 @@
+import { mkdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
+
 import { createClient } from "@libsql/client";
 import { Config, Effect, Option, Redacted, type Scope } from "effect";
 import type { PlannedDb } from "spacefn/codegen";
@@ -21,35 +24,52 @@ export type Connect = (
 
 /**
  * libSQL from `<BINDING>_URL` and `<BINDING>_AUTH_TOKEN`. The CLI runs on Node,
- * so it uses the full client, which also opens local `file:` databases.
+ * so it uses the full client, which also opens local `file:` databases. On
+ * Bun the URL defaults to the file the app opens, `<SPACE_DATA_DIR>/<name>.db`
+ * (`.space/data` unless set), in WAL mode like the app's.
  */
-export const connectFromEnv: Connect = (db) => {
-	if (db.driver !== "libsql") return undefined;
-	return Effect.gen(function* () {
-		const url = yield* Config.String(`${db.binding}_URL`).pipe(
-			Effect.mapError(
-				() =>
-					new Error(
-						`Set ${db.binding}_URL to the ${db.name} database's URL (libsql://, https:// or file:)`,
-					),
-			),
-		);
-		const token = yield* Config.Redacted(`${db.binding}_AUTH_TOKEN`).pipe(Config.option);
-		const client = yield* Effect.acquireRelease(
-			Effect.sync(() =>
-				createClient({
-					url,
-					...Option.match(token, {
-						onNone: () => ({}),
-						onSome: (t) => ({ authToken: Redacted.value(t) }),
+export const connectFor =
+	(target: "cloudflare" | "bun", root: string): Connect =>
+	(db) => {
+		if (db.driver !== "libsql") return undefined;
+		return Effect.gen(function* () {
+			const fallback =
+				target === "bun"
+					? `file:${join(process.env.SPACE_DATA_DIR ?? join(root, ".space", "data"), `${db.name}.db`)}`
+					: undefined;
+			const url = yield* Config.String(`${db.binding}_URL`).pipe(
+				fallback === undefined ? (config) => config : Config.withDefault(fallback),
+				Effect.mapError(
+					() =>
+						new Error(
+							`Set ${db.binding}_URL to the ${db.name} database's URL (libsql:// or https://)`,
+						),
+				),
+			);
+			const token = yield* Config.Redacted(`${db.binding}_AUTH_TOKEN`).pipe(Config.option);
+			const local = url.startsWith("file:");
+			if (local)
+				yield* Effect.promise(() => mkdir(dirname(url.slice("file:".length)), { recursive: true }));
+			const client = yield* Effect.acquireRelease(
+				Effect.sync(() =>
+					createClient({
+						url,
+						timeout: 5_000,
+						...Option.match(token, {
+							onNone: () => ({}),
+							onSome: (t) => ({ authToken: Redacted.value(t) }),
+						}),
 					}),
-				}),
-			),
-			(c) => Effect.sync(() => c.close()),
-		);
-		return yield* libsqlConnection(client);
-	});
-};
+				),
+				(c) => Effect.sync(() => c.close()),
+			);
+			if (local) yield* Effect.promise(() => client.execute("PRAGMA journal_mode = WAL"));
+			return yield* libsqlConnection(client);
+		});
+	};
+
+/** libSQL from the environment only, with no local default (the Cloudflare target's rules). */
+export const connectFromEnv: Connect = connectFor("cloudflare", process.cwd());
 
 export type DbReport =
 	| { readonly db: string; readonly kind: "skipped"; readonly driver: string }
