@@ -1,8 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Option } from "effect";
+import { HttpServerResponse } from "effect/http";
 
+import { middleware } from "../src/http/middleware.ts";
+import { route } from "../src/http/route.ts";
 import { defineEnv, Env, Kv, Queue } from "../src/index.ts";
-import { memoryServices, QueueInbox, testEnv } from "../src/testing.ts";
+import { memoryServices, QueueInbox, testEnv, testHttp } from "../src/testing.ts";
 
 const AppEnv = defineEnv({ FROM: Env.string() });
 
@@ -38,4 +41,45 @@ describe("spacefn/testing", () => {
 			expect(yield* sendWelcome("a@example.com")).toBe(true);
 		}).pipe(Effect.provide(TestLayer)),
 	);
+});
+
+describe("testHttp", () => {
+	it("serves routes and middleware with one shared set of services", async () => {
+		const counter = route({
+			POST: Effect.gen(function* () {
+				const kv = yield* Kv;
+				const n = Number(Option.getOrElse(yield* kv.get("n"), () => "0")) + 1;
+				yield* kv.set("n", String(n));
+				return { n };
+			}),
+		});
+		const stamp = middleware((next) =>
+			Effect.gen(function* () {
+				const kv = yield* Kv;
+				const response = yield* next;
+				const n = Option.getOrElse(yield* kv.get("n"), () => "0");
+				return HttpServerResponse.setHeader(response, "x-n", n);
+			}),
+		);
+		const app = testHttp(
+			{
+				routes: [
+					{
+						kind: "route",
+						path: "/count",
+						params: [],
+						file: "app/routes/count.ts",
+						module: { default: counter },
+					},
+				],
+				middleware: [{ file: "app/middleware/stamp.ts", module: { default: stamp } }],
+			},
+			memoryServices,
+		);
+		await app.fetch("/count", { method: "POST" });
+		const second = await app.fetch("/count", { method: "POST" });
+		expect(await second.json()).toEqual({ n: 2 });
+		expect(second.headers.get("x-n")).toBe("2");
+		await app.dispose();
+	});
 });
