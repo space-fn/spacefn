@@ -47,6 +47,14 @@ const renderTypes = (query: AnalyzedQuery) => {
 	];
 };
 
+/** Column types for decoding rows, in `@param` syntax: `{ id: "number", note: "string?" }`. */
+const columnMap = (query: AnalyzedQuery) => {
+	const entries = query.columns.map(
+		(c) => `${str(c.name)}: ${str(c.type + (c.nullable ? "?" : ""))}`,
+	);
+	return entries.length ? `{ ${entries.join(", ")} }` : "{}";
+};
+
 const renderQuery = (query: AnalyzedQuery) => {
 	const parts = query.parts.map(
 		(p) => `\t\t\t{ sql: ${str(p.sql)}, params: ${str(p.paramNames)}, gate: ${str(p.gate)} },`,
@@ -54,7 +62,7 @@ const renderQuery = (query: AnalyzedQuery) => {
 	return [
 		`\t${query.name}: {`,
 		`\t\tmode: ${str(query.mode)},`,
-		`\t\tcolumns: ${str(query.columns.map((c) => c.name))},`,
+		`\t\tcolumns: ${columnMap(query)},`,
 		"\t\tparts: [",
 		...parts,
 		"\t\t],",

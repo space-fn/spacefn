@@ -69,7 +69,7 @@ describe("renderDb", () => {
 			export const queries = {
 				listTodos: {
 					mode: "many",
-					columns: ["id","title","note"],
+					columns: { "id": "number", "title": "string", "note": "string?" },
 					parts: [
 						{ sql: "SELECT id, title, note FROM todos WHERE done = ?", params: ["done"], gate: null },
 						{ sql: "AND title = ?", params: ["title"], gate: ["title"] },
@@ -77,7 +77,7 @@ describe("renderDb", () => {
 				},
 				addTodo: {
 					mode: "exec",
-					columns: [],
+					columns: {},
 					parts: [
 						{ sql: "INSERT INTO todos (title) VALUES (?)", params: ["title"], gate: null },
 					],
