@@ -1,0 +1,29 @@
+:root {
+	color-scheme: light dark;
+	font-family: system-ui, sans-serif;
+}
+body {
+	max-width: 32rem;
+	margin: 3rem auto;
+	padding: 0 1rem;
+	line-height: 1.5;
+}
+form {
+	display: flex;
+	gap: 0.5rem;
+}
+input[name="title"] {
+	flex: 1;
+}
+ul {
+	padding: 0;
+	list-style: none;
+}
+li button {
+	all: unset;
+	cursor: pointer;
+}
+.done {
+	text-decoration: line-through;
+	opacity: 0.6;
+}

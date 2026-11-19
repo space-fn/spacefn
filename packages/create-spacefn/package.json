@@ -1,7 +1,7 @@
 {
 	"name": "create-spacefn",
 	"version": "0.7.0",
-	"description": "Scaffold a spacefn project",
+	"description": "Scaffold a spacefn app for Cloudflare Workers or Bun",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
 	"bin": {
@@ -9,9 +9,7 @@
 	},
 	"files": [
 		"dist",
-		"template",
-		"!template/.space",
-		"!template/.cloudflare"
+		"template"
 	],
 	"type": "module",
 	"main": "./dist/index.js",
@@ -22,11 +20,17 @@
 		"test": "vitest run"
 	},
 	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"@alchemy.run/docker": "catalog:",
+		"@spacefn/bun": "workspace:*",
+		"@spacefn/cloudflare": "workspace:*",
+		"@spacefn/infra": "workspace:*",
 		"@types/node": "^26.6.6",
-		"cf": "1.0.0-beta.26",
+		"effect": "catalog:",
 		"spacefn": "workspace:*",
 		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
+		"vite": "catalog:",
 		"vitest": "catalog:"
 	}
 }
