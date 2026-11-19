@@ -24,10 +24,17 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
+	"dependencies": {
+		"@effect/sql-d1": "catalog:",
+		"@effect/sql-sqlite-do": "catalog:"
+	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20261030.1",
+		"@effect/vitest": "catalog:",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
+		"esbuild": "catalog:",
+		"miniflare": "catalog:",
 		"spacefn": "workspace:*",
 		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
