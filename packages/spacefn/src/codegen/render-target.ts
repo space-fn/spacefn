@@ -22,10 +22,14 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 			].join("\n"),
 			"server.ts": [
 				GENERATED,
+				'import { dirname, join } from "node:path";',
+				'import { fileURLToPath } from "node:url";',
+				"",
 				'import { serve } from "@spacefn/bun";',
 				'import app from "./app.ts";',
 				"",
-				"serve(app);",
+				"// Built to .space/dist/server/index.js, beside .space/dist/client.",
+				'await serve(app, { client: join(dirname(fileURLToPath(import.meta.url)), "..", "client") });',
 				"",
 			].join("\n"),
 		};
@@ -91,3 +95,17 @@ export const renderTsconfig = (plan: AppPlan): string => {
 	]);
 	return `${JSON.stringify({ compilerOptions: { paths } }, null, "\t")}\n`;
 };
+
+/** `.space/assets.d.ts`: the type of `@space/assets`, which the Vite plugin provides. */
+export const renderAssetsTypes = (): string =>
+	[
+		GENERATED,
+		'import type { Html } from "spacefn";',
+		"",
+		"/**",
+		" * The `<script>` and `<link>` tags for the `app/client/` entries: the source",
+		" * files in dev, the hashed build files in production. Put it in `<head>`.",
+		" */",
+		"export declare const head: Html;",
+		"",
+	].join("\n");

@@ -1,7 +1,12 @@
 import type { AppPlan } from "./plan.ts";
 import { renderDb } from "./render-db.ts";
 import { renderManifest } from "./render-manifest.ts";
-import { renderEntries, renderTsconfig, renderViteConfig } from "./render-target.ts";
+import {
+	renderAssetsTypes,
+	renderEntries,
+	renderTsconfig,
+	renderViteConfig,
+} from "./render-target.ts";
 
 /** Every generated file, keyed by its path inside `.space/`. */
 export const renderApp = (plan: AppPlan): Record<string, string> => ({
@@ -10,4 +15,5 @@ export const renderApp = (plan: AppPlan): Record<string, string> => ({
 	...renderEntries(plan),
 	"vite.config.ts": renderViteConfig(plan),
 	"tsconfig.json": renderTsconfig(plan),
+	"assets.d.ts": renderAssetsTypes(),
 });
