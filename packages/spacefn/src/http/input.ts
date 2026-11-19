@@ -2,7 +2,8 @@ import { Effect, Schema } from "effect";
 import { HttpRouter, HttpServerRequest } from "effect/http";
 
 import { NotFound, type BadRequest } from "../errors.ts";
-import { readSimpleBody, type BodyError, type BodyLimits } from "./body.ts";
+import { mediaType, readSimpleBody, type BodyError } from "./body.ts";
+import { readMultipart, type UploadLimits } from "./multipart.ts";
 import { badRequestFrom } from "./respond.ts";
 import { CurrentRoute } from "./route.ts";
 
@@ -48,19 +49,25 @@ const query = <
 	});
 
 /**
- * Reads and decodes the body: JSON, or a URL-encoded form (repeated keys as
- * arrays). Too large is a 413, another content type a 415, and malformed or
- * not matching the schema a 400 that lists the issues.
+ * Reads and decodes the body: JSON, a URL-encoded form, or multipart with
+ * files as `Upload`s (repeated keys as arrays). Too large is a 413, another
+ * content type or a refused file type a 415, and malformed or not matching the
+ * schema a 400 that lists the issues.
  */
 const body = <A, I, RD>(
 	schema: Codec<A, I, RD>,
-	limits?: BodyLimits,
+	limits?: UploadLimits,
 ): Effect.Effect<A, BodyError, HttpServerRequest.HttpServerRequest | RD> =>
-	Effect.flatMap(readSimpleBody(limits), (raw) =>
-		Schema.decodeUnknownEffect(schema)(raw).pipe(
+	Effect.gen(function* () {
+		const request = yield* HttpServerRequest.HttpServerRequest;
+		const raw =
+			mediaType(request) === "multipart/form-data"
+				? yield* readMultipart(limits)
+				: yield* readSimpleBody(limits);
+		return yield* Schema.decodeUnknownEffect(schema)(raw).pipe(
 			Effect.mapError((error) => badRequestFrom("body", error)),
-		),
-	);
+		);
+	});
 
 /** Typed access to the request inside a route handler. */
 export const Input = { params, query, body } as const;
