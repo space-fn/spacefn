@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Context, Duration, Effect, Exit, Layer, Ref, Schema } from "effect";
 
-import { cron, cronOf, runSchedule } from "../src/jobs/cron.ts";
+import { cron, cronMatches, cronOf, runSchedule } from "../src/jobs/cron.ts";
 import { consumeBatch, queue, queueConsumerOf, type Delivery } from "../src/jobs/queue.ts";
 
 class Log extends Context.Service<Log, Ref.Ref<string[]>>()("test/Log") {}
@@ -103,6 +103,43 @@ describe("cron", () => {
 			expect((yield* cronOf(at({ default: cron("0 9 * * MON-FRI", Effect.void) }))).schedule).toBe(
 				"0 9 * * MON-FRI",
 			);
+		}),
+	);
+
+	it("matches schedules by UTC minute", () => {
+		// A Wednesday.
+		const at = (iso: string) => new Date(`2026-11-18T${iso}:00Z`);
+		expect(cronMatches("0 3 * * *", at("03:00"))).toBe(true);
+		expect(cronMatches("0 3 * * *", at("03:01"))).toBe(false);
+		expect(cronMatches("*/15 * * * *", at("10:45"))).toBe(true);
+		expect(cronMatches("*/15 * * * *", at("10:50"))).toBe(false);
+		expect(cronMatches("5/20 * * * *", at("10:45"))).toBe(true);
+		expect(cronMatches("0 9-17 * * MON-FRI", at("12:00"))).toBe(true);
+		expect(cronMatches("0 9 * * SAT,SUN", at("09:00"))).toBe(false);
+		expect(cronMatches("0 9 * NOV 3", at("09:00"))).toBe(true);
+		expect(cronMatches("0 0 * * 7", new Date("2026-11-22T00:00:00Z"))).toBe(true);
+		// Both day fields restricted: either one fires.
+		expect(cronMatches("0 9 1 * WED", at("09:00"))).toBe(true);
+		expect(cronMatches("0 9 18 * MON", at("09:00"))).toBe(true);
+		expect(cronMatches("0 9 1 * MON", at("09:00"))).toBe(false);
+	});
+
+	it.effect("rejects schedules it can't run", () =>
+		Effect.gen(function* () {
+			for (const schedule of [
+				"61 * * * *",
+				"* * * *",
+				"*/0 * * * *",
+				"5-1 * * * *",
+				"* * * FOO *",
+			]) {
+				const entry = {
+					name: "x",
+					file: "app/crons/x.ts",
+					module: { default: cron(schedule, Effect.void) },
+				};
+				expect((yield* Effect.flip(cronOf(entry))).code).toBe("CRON_SCHEDULE");
+			}
 		}),
 	);
 });

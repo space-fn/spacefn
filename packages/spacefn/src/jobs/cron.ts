@@ -28,7 +28,98 @@ export const cron = <E, R>(schedule: string, job: Effect.Effect<void, E, R>): Cr
 
 export const isCron = (value: unknown): value is Cron => Predicate.hasProperty(value, CronTypeId);
 
-const FIELD = /^[\d*,/-]+$|^[A-Za-z]{3}(-[A-Za-z]{3})?$/;
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const DAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+interface Field {
+	readonly min: number;
+	readonly max: number;
+	/** Names for the values from `min` on, e.g. JAN for 1. */
+	readonly names?: readonly string[];
+}
+
+const FIELDS: readonly Field[] = [
+	{ min: 0, max: 59 },
+	{ min: 0, max: 23 },
+	{ min: 1, max: 31 },
+	{ min: 1, max: 12, names: MONTHS },
+	// 7 is Sunday too.
+	{ min: 0, max: 7, names: DAYS },
+];
+
+/** The values a field allows, or undefined when it is malformed. */
+const parseField = (text: string, field: Field): Set<number> | undefined => {
+	const value = (part: string) => {
+		const named = field.names?.indexOf(part.toUpperCase()) ?? -1;
+		if (named >= 0) return field.min + named;
+		if (!/^\d+$/.test(part)) return undefined;
+		const n = Number(part);
+		return n >= field.min && n <= field.max ? n : undefined;
+	};
+	const values = new Set<number>();
+	for (const item of text.split(",")) {
+		const [range = "", stepText, ...rest] = item.split("/");
+		const step = stepText === undefined ? 1 : /^\d+$/.test(stepText) ? Number(stepText) : 0;
+		if (rest.length > 0 || step < 1) return undefined;
+		let from: number | undefined;
+		let to: number | undefined;
+		if (range === "*") [from, to] = [field.min, field.max];
+		else {
+			const [a = "", b, ...more] = range.split("-");
+			if (more.length > 0) return undefined;
+			from = value(a);
+			// `5/15` means from 5 to the end, every 15.
+			to = b === undefined ? (stepText === undefined ? from : field.max) : value(b);
+		}
+		if (from === undefined || to === undefined || from > to) return undefined;
+		for (let n = from; n <= to; n += step) values.add(n);
+	}
+	return values;
+};
+
+interface Schedule {
+	readonly fields: readonly Set<number>[];
+	readonly anyDayOfMonth: boolean;
+	readonly anyDayOfWeek: boolean;
+}
+
+const parseSchedule = (schedule: string): Schedule | undefined => {
+	const texts = schedule.split(" ");
+	if (texts.length !== 5) return undefined;
+	const fields: Set<number>[] = [];
+	for (const [i, text] of texts.entries()) {
+		const values = parseField(text, FIELDS[i]!);
+		if (!values) return undefined;
+		fields.push(values);
+	}
+	if (fields[4]!.delete(7)) fields[4]!.add(0);
+	return { fields, anyDayOfMonth: texts[2] === "*", anyDayOfWeek: texts[4] === "*" };
+};
+
+/**
+ * Whether a five-field schedule fires in the UTC minute of `at`. As in cron,
+ * when both day fields are restricted a day matching either one fires.
+ */
+export const cronMatches = (schedule: string, at: Date): boolean => {
+	const parsed = parseSchedule(schedule);
+	if (!parsed) return false;
+	const [minute, hour, dayOfMonth, month, dayOfWeek] = parsed.fields as [
+		Set<number>,
+		Set<number>,
+		Set<number>,
+		Set<number>,
+		Set<number>,
+	];
+	const domOk = dayOfMonth.has(at.getUTCDate());
+	const dowOk = dayOfWeek.has(at.getUTCDay());
+	const dayOk = parsed.anyDayOfMonth || parsed.anyDayOfWeek ? domOk && dowOk : domOk || dowOk;
+	return (
+		minute.has(at.getUTCMinutes()) &&
+		hour.has(at.getUTCHours()) &&
+		month.has(at.getUTCMonth() + 1) &&
+		dayOk
+	);
+};
 
 /** The job of a manifest entry, or a SpaceError for a wrong export or a malformed schedule. */
 export const cronOf = (entry: Unchecked<ManifestCron>): Effect.Effect<Cron, SpaceError> => {
@@ -42,8 +133,7 @@ export const cronOf = (entry: Unchecked<ManifestCron>): Effect.Effect<Cron, Spac
 				file: entry.file,
 			}),
 		);
-	const fields = value.schedule.split(" ");
-	if (fields.length !== 5 || !fields.every((field) => FIELD.test(field)))
+	if (!parseSchedule(value.schedule))
 		return Effect.fail(
 			new SpaceError({
 				code: "CRON_SCHEDULE",
