@@ -26,6 +26,7 @@ describe("loadSpaceConfig", () => {
 				target: "cloudflare",
 				name: "todo-app",
 				aliases: { "@modules": "modules", "@lib": "lib", "@utils": "utils" },
+				db: {},
 			});
 		}),
 	);
@@ -54,6 +55,22 @@ describe("loadSpaceConfig", () => {
 		Effect.gen(function* () {
 			yield* Effect.promise(() =>
 				writeConfig(`export default { target: "bun", aliases: { ui: "ui" } };`),
+			);
+			expect((yield* Effect.flip(loadSpaceConfig(root))).code).toBe("CONFIG_INVALID");
+		}),
+	);
+
+	it.effect("reads database drivers and rejects unknown ones", () =>
+		Effect.gen(function* () {
+			yield* Effect.promise(() =>
+				writeConfig(
+					`export default { target: "cloudflare", db: { main: "d1", rooms: "durable-object" } };`,
+				),
+			);
+			expect((yield* loadSpaceConfig(root)).db).toEqual({ main: "d1", rooms: "durable-object" });
+
+			yield* Effect.promise(() =>
+				writeConfig(`export default { target: "bun", db: { main: "postgres" } };`),
 			);
 			expect((yield* Effect.flip(loadSpaceConfig(root))).code).toBe("CONFIG_INVALID");
 		}),
