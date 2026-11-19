@@ -1,0 +1,25 @@
+{
+	"name": "playground-cloudflare",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"test": "vitest run --config configs/vitest.config.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@spacefn/cloudflare": "workspace:*",
+		"effect": "catalog:",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"@spacefn/infra": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vitest": "catalog:"
+	}
+}

@@ -1,5 +1,7 @@
 packages:
   - "packages/*"
+  # Apps made from the create-spacefn template; `pnpm playground` remakes them.
+  - "playground/*"
 allowBuilds:
   esbuild: true
   keytar: true
