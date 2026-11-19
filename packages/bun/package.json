@@ -24,7 +24,11 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
+	"dependencies": {
+		"@libsql/client": "catalog:"
+	},
 	"devDependencies": {
+		"@effect/vitest": "catalog:",
 		"@types/bun": "^1.4.4",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",

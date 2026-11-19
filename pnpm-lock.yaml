@@ -216,7 +216,14 @@ importers:
         version: 7.0.2007
 
   packages/bun:
+    dependencies:
+      '@libsql/client':
+        specifier: 'catalog:'
+        version: 0.18.0
     devDependencies:
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.1.4(effect@4.1.4)(vitest@5.1.1)
       '@types/bun':
         specifier: ^1.4.4
         version: 1.4.4
