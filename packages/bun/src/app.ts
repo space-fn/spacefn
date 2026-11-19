@@ -1,13 +1,14 @@
-import { Context, Effect, Layer, ManagedRuntime, Option } from "effect";
+import { Cause, Context, Effect, Fiber, Layer, ManagedRuntime, Option } from "effect";
 import { FetchHttpClient, HttpRouter, HttpServer, HttpServerRequest } from "effect/http";
 import { formatSpaceError, SpaceError, type SpaceManifest } from "spacefn";
 import { appLayer, httpLayer, telemetry } from "spacefn/runtime";
 
 import { blobLayer } from "./blob.ts";
 import { busLayer } from "./bus.ts";
+import { runCrons } from "./cron.ts";
 import { connect } from "./db.ts";
 import { kvLayer } from "./kv.ts";
-import { queueLayer } from "./queue.ts";
+import { consumeQueues, queueLayer } from "./queue.ts";
 import { rateLimiterLayer } from "./rate-limiter.ts";
 import { SpaceState } from "./state.ts";
 
@@ -30,6 +31,11 @@ export interface BunApp {
 	readonly runtime: ManagedRuntime.ManagedRuntime<any, unknown>;
 	/** Answers a request. A failure to start is logged and answered with a 500. */
 	readonly fetch: (request: Request, clientIp?: string) => Promise<Response>;
+	/**
+	 * Runs the queue consumers and crons in this process, for the dev server;
+	 * `serve` runs them in their own processes instead. Returns how to stop them.
+	 */
+	readonly startJobs: () => () => Promise<void>;
 	/** Stops the app: open requests are cut, then services are closed (telemetry is flushed). */
 	readonly dispose: () => Promise<void>;
 }
@@ -72,6 +78,21 @@ export const app = (manifest: SpaceManifest): BunApp => {
 				logError(error);
 				return Response.json({ error: "InternalServerError" }, { status: 500 });
 			}
+		},
+		startJobs: () => {
+			const jobs = runtime.runFork(
+				Effect.all([consumeQueues(manifest), runCrons(manifest)], {
+					concurrency: "unbounded",
+					discard: true,
+				}).pipe(
+					Effect.tapCause((cause) =>
+						Cause.hasInterruptsOnly(cause)
+							? Effect.void
+							: Effect.logError("Queues and crons stopped", cause),
+					),
+				),
+			);
+			return () => Effect.runPromise(Fiber.interrupt(jobs)).then(() => undefined);
 		},
 		dispose: async () => {
 			await http.dispose();
