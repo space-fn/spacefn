@@ -41,7 +41,7 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - [x] **0. Repo tooling:** oxlint, oxfmt, vitest, tsdown and tsc from `configs/`; hooks via `core.hooksPath`; CI.
 - [x] **1. Alchemy spike:** see [alchemy-spike.md](alchemy-spike.md).
 - [x] **2. Package skeletons and the dependency guard test:** `packages/spacefn/test/boundaries.test.ts` checks dependency fields and `src/` imports for every package. Core runtime files may not use `node:*`; only `src/cli*` and `src/codegen/` may.
-- [ ] **3. `@spacefn/sql`:** port the parser, split, params and infer code with its tests; point the VS Code extension at it.
+- [x] **3. `@spacefn/sql`:** the root export is pure (split, params, query and migration files, `inferQuery`, `analyzeQuery`); `@spacefn/sql/node` has `scratchDatabase` (`node:sqlite`), `scanMigrations` and `scanQueries`. The VS Code extension uses it. Postgres/PGlite is dropped, since every driver is SQLite.
 - [ ] **4. Core foundations:** tagged errors and HTTP mapping, env via `Config`/Schema, the `configs/space.ts` loader, service interfaces (`SqlClient` from `effect/sql`, Blob, Kv, Bus, Queue), in-memory Layers, `spacefn/testing`.
 - [ ] **5. Scanner and codegen (`space gen`):** router, middleware chain, db modules, queue and cron tables, DO and workflow exports, target entry; watch mode; target checks.
 - [ ] **6. HTTP:** `route()` and `middleware()` on `effect/http` `HttpRouter`; Schema params, query and body; multipart parsing with limits; CSRF; typed error mapping.
@@ -55,6 +55,11 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - [ ] **14. VS Code extension:** read `configs/space.ts` and the new imports; tests on vitest.
 - [ ] **15. Template, playground, docs.**
 - [ ] **16. Finish:** delete `legacy/`, `scripts/size.sh` (it still points at the old playground) and this folder, bump to `0.11.0`, merge to `main`.
+
+## Conventions
+
+- Workspace `exports` point at `src/*.ts`, so tests, esbuild and tsc need no build step. `publishConfig.exports` swaps in `dist/` when packing.
+- Pure packages throw plain error classes with stable codes (`SqlError.code`). Effect-tagged errors start in the core.
 
 ## Corrections found along the way
 
