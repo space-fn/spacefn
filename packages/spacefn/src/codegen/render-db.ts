@@ -1,5 +1,6 @@
 import type { AnalyzedQuery } from "@spacefn/sql";
 
+import { pascalName } from "./names.ts";
 import { SQL_TYPE, type PlannedDb } from "./plan.ts";
 import { GENERATED } from "./render-manifest.ts";
 
@@ -70,9 +71,13 @@ const renderQuery = (query: AnalyzedQuery) => {
 	];
 };
 
+/** The service class name of a database: `main` gives `MainDb`. */
+export const dbClassName = (name: string): string => `${pascalName(name)}Db`;
+
 /**
- * Source of `.space/db/<name>.ts`: the migrations, each query's SQL parts, and
- * the `Params` / `Row` types of every query. Plain data; the db runtime runs it.
+ * Source of `.space/db/<name>.ts`: the migrations, each query's SQL parts and
+ * `Params` / `Row` types, and the database's service class (`MainDb`), which
+ * is also the default export the runtime reads.
  */
 export const renderDb = (db: PlannedDb): string => {
 	const migrations = db.migrations.map(
@@ -83,8 +88,10 @@ export const renderDb = (db: PlannedDb): string => {
 		(q) =>
 			`\t${q.name}: { params: ${pascal(q.name)}Params; row: ${q.mode === "exec" ? "never" : `${pascal(q.name)}Row`}; mode: ${str(q.mode)} };`,
 	);
+	const className = dbClassName(db.name);
 	return [
 		GENERATED,
+		'import { database } from "spacefn/runtime";',
 		"",
 		...db.queries.flatMap(renderTypes).flatMap((block) => [block, ""]),
 		`export const name = ${str(db.name)};`,
@@ -101,6 +108,10 @@ export const renderDb = (db: PlannedDb): string => {
 		"export interface Queries {",
 		...map,
 		"}",
+		"",
+		`export class ${className} extends database<${className}, Queries>()({ name, migrations, queries }) {}`,
+		"",
+		`export default ${className};`,
 		"",
 	].join("\n");
 };

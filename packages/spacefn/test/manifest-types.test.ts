@@ -2,6 +2,7 @@
 import { expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { database } from "../src/db/database.ts";
 import { middleware } from "../src/http/middleware.ts";
 import { route } from "../src/http/route.ts";
 import type { SpaceManifest } from "../src/manifest.ts";
@@ -28,4 +29,15 @@ it("rejects other defaults at compile time", () => {
 		{ file: "app/middleware/a.ts", module: { default: (next: unknown) => next } },
 	] as const satisfies SpaceManifest["middleware"];
 	expect([routes, chain]).toHaveLength(2);
+});
+
+class MainDb extends database<MainDb, {}>()({ name: "main", migrations: [], queries: {} }) {}
+
+it("accepts a generated database class and rejects anything else", () => {
+	const db = [
+		{ name: "main", driver: "d1", binding: "DB_MAIN", module: { default: MainDb } },
+		// @ts-expect-error a db module must default-export its database class
+		{ name: "other", driver: "d1", binding: "DB_OTHER", module: { default: {} } },
+	] as const satisfies SpaceManifest["db"];
+	expect(db).toHaveLength(2);
 });

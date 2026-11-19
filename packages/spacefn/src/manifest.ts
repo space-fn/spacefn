@@ -4,6 +4,7 @@
  * and `@spacefn/bun` turn it into a running app. Module types make a wrong
  * export a type error in the generated file, so the editor flags it.
  */
+import type { DatabaseClass } from "./db/database.ts";
 import type { Middleware } from "./http/middleware.ts";
 import type { Route } from "./http/route.ts";
 import type { DbDriver } from "./space-config.ts";
@@ -54,8 +55,8 @@ export interface ManifestDb {
 	readonly name: string;
 	readonly driver: DbDriver;
 	readonly binding: string;
-	/** The generated `.space/db/<name>.ts` module. */
-	readonly module: unknown;
+	/** The generated `.space/db/<name>.ts` module; its default export is the database class. */
+	readonly module: { readonly default: DatabaseClass };
 }
 
 /**

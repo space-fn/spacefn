@@ -155,6 +155,9 @@ export interface DatabaseStatics<Self> {
 	) => Layer.Layer<Self, E | SqlError.SqlError | MigrationError, Exclude<R, Scope.Scope>>;
 }
 
+/** Any generated database class, as the manifest and the targets see it. */
+export type DatabaseClass = Context.Key<any, any> & DatabaseStatics<any>;
+
 /**
  * The service class for one database. `space gen` writes, in `.space/db/main.ts`:
  *
