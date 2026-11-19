@@ -8,6 +8,7 @@ import type { AppTree } from "../src/codegen/scan-app.ts";
 const empty: AppTree = {
 	env: false,
 	layers: false,
+	viteConfig: false,
 	routes: [],
 	pages: [],
 	middleware: [],

@@ -53,6 +53,7 @@ export interface AppPlan {
 	readonly aliases: Readonly<Record<string, string>>;
 	readonly env: boolean;
 	readonly layers: boolean;
+	readonly viteConfig: boolean;
 	/** Routes and pages together, most specific first. */
 	readonly routes: readonly PlannedRoute[];
 	/** Middleware files in run order (file name order, numbers compared as numbers). */
@@ -254,6 +255,7 @@ export const planApp = (
 			aliases: config.aliases,
 			env: tree.env,
 			layers: tree.layers,
+			viteConfig: tree.viteConfig,
 			routes: yield* planRoutes(tree, mode),
 			middleware: unitFiles(tree.middleware).map((file) => `app/middleware/${file}`),
 			queues: yield* planUnits("queues", tree.queues, "QUEUE"),

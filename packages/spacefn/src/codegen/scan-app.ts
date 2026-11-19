@@ -22,6 +22,8 @@ export interface DbFolder {
 export interface AppTree {
 	readonly env: boolean;
 	readonly layers: boolean;
+	/** Whether `configs/vite.config.ts` exists, for the generated Vite config to merge. */
+	readonly viteConfig: boolean;
 	/** Every file under `app/routes/`, recursively. */
 	readonly routes: readonly string[];
 	/** Every file under `app/pages/`, recursively. */
@@ -111,6 +113,7 @@ export const scanApp = (root: string): Effect.Effect<AppTree, SpaceError> =>
 		return {
 			env: yield* exists(join(app, "env.ts")),
 			layers: yield* exists(join(app, "layers.ts")),
+			viteConfig: yield* exists(join(root, "configs", "vite.config.ts")),
 			routes: yield* listFiles(join(app, "routes"), true),
 			pages: yield* listFiles(join(app, "pages"), true),
 			middleware: yield* flat("middleware"),

@@ -8,6 +8,7 @@ import type { ResolvedSpaceConfig } from "../src/space-config.ts";
 const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	env: false,
 	layers: false,
+	viteConfig: false,
 	routes: [],
 	pages: [],
 	middleware: [],

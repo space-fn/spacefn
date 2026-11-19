@@ -27,6 +27,7 @@ describe("scanApp", () => {
 			expect(yield* scanApp(root)).toEqual({
 				env: false,
 				layers: false,
+				viteConfig: false,
 				routes: [],
 				pages: [],
 				middleware: [],
