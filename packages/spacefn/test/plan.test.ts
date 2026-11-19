@@ -1,0 +1,154 @@
+import { describe, expect, it } from "@effect/vitest";
+import { Effect } from "effect";
+
+import { planApp } from "../src/codegen/plan.ts";
+import type { AppTree } from "../src/codegen/scan-app.ts";
+import type { ResolvedSpaceConfig } from "../src/space-config.ts";
+
+const tree = (parts: Partial<AppTree> = {}): AppTree => ({
+	env: false,
+	layers: false,
+	routes: [],
+	pages: [],
+	middleware: [],
+	queues: [],
+	crons: [],
+	durableObjects: [],
+	workflows: [],
+	client: [],
+	db: [],
+	gitignore: "node_modules\n.space/\n",
+	...parts,
+});
+
+const config = (parts: Partial<ResolvedSpaceConfig> = {}): ResolvedSpaceConfig => ({
+	target: "cloudflare",
+	name: "todo",
+	aliases: {},
+	db: {},
+	...parts,
+});
+
+const plan = (t: AppTree, c = config(), mode: "dev" | "prod" = "dev") =>
+	Effect.runSync(planApp(t, c, mode));
+const planError = (t: AppTree, c = config(), mode: "dev" | "prod" = "dev") =>
+	Effect.runSync(Effect.flip(planApp(t, c, mode)));
+
+describe("planApp routes", () => {
+	it("merges routes and pages, most specific first, with app-relative files", () => {
+		const result = plan(
+			tree({ routes: ["api/users/[id].ts", "api/users/me.ts", "_util.ts"], pages: ["index.ts"] }),
+		);
+		expect(result.routes.map((r) => [r.kind, r.path, r.file])).toEqual([
+			["page", "/", "app/pages/index.ts"],
+			["route", "/api/users/me", "app/routes/api/users/me.ts"],
+			["route", "/api/users/:id", "app/routes/api/users/[id].ts"],
+		]);
+	});
+
+	it("keeps only the current mode's files", () => {
+		const t = tree({ routes: ["debug.dev.ts", "metrics.prod.ts"] });
+		expect(plan(t, config(), "dev").routes.map((r) => r.path)).toEqual(["/debug"]);
+		expect(plan(t, config(), "prod").routes.map((r) => r.path)).toEqual(["/metrics"]);
+	});
+
+	it("rejects two files that serve the same requests, even with different param names", () => {
+		for (const [routes, pages] of [
+			[["users.ts", "users/index.ts"], []],
+			[["users/[id].ts"], ["users/[userId].ts"]],
+		] as const) {
+			const error = planError(tree({ routes, pages }));
+			expect(error.code).toBe("ROUTE_DUP");
+		}
+	});
+
+	it("points a bad segment at the file under app/", () => {
+		expect(planError(tree({ pages: ["[user-id].ts"] })).file).toBe("app/pages/[user-id].ts");
+	});
+});
+
+describe("planApp units", () => {
+	it("orders middleware by file name, numbers as numbers, skipping private and test files", () => {
+		const result = plan(
+			tree({ middleware: ["10-log.ts", "2-auth.ts", "_x.ts", "2-auth.test.ts"] }),
+		);
+		// The scanner sorts; the planner keeps that order.
+		expect(result.middleware).toEqual(["app/middleware/10-log.ts", "app/middleware/2-auth.ts"]);
+	});
+
+	it("names queues, crons, Durable Objects and workflows from their files", () => {
+		const result = plan(
+			tree({
+				queues: ["emails.ts", "notes.md"],
+				crons: ["nightly.ts"],
+				durableObjects: ["chat-room.ts"],
+				workflows: ["order-flow.ts"],
+			}),
+		);
+		expect(result.queues).toEqual([
+			{ name: "emails", file: "app/queues/emails.ts", binding: "QUEUE_EMAILS" },
+		]);
+		expect(result.crons).toEqual([{ name: "nightly", file: "app/crons/nightly.ts" }]);
+		expect(result.durableObjects).toEqual([
+			{
+				name: "chat-room",
+				file: "app/durable-objects/chat-room.ts",
+				binding: "DO_CHAT_ROOM",
+				className: "ChatRoom",
+			},
+		]);
+		expect(result.workflows[0]).toMatchObject({ className: "OrderFlow", binding: "WF_ORDER_FLOW" });
+	});
+
+	it("accepts scripts and stylesheets as client entries but not two with one name", () => {
+		expect(plan(tree({ client: ["main.ts", "style.css", "types.d.ts"] })).client).toEqual([
+			"app/client/main.ts",
+			"app/client/style.css",
+		]);
+		expect(planError(tree({ client: ["main.css", "main.ts"] })).code).toBe("CLIENT_DUP_ENTRY");
+	});
+});
+
+describe("planApp target and config checks", () => {
+	it("allows Durable Objects and workflows only on Cloudflare", () => {
+		const error = planError(tree({ durableObjects: ["room.ts"] }), config({ target: "bun" }));
+		expect(error).toMatchObject({
+			code: "TARGET_UNSUPPORTED",
+			file: "app/durable-objects/room.ts",
+		});
+		expect(planError(tree({ workflows: ["flow.ts"] }), config({ target: "bun" })).code).toBe(
+			"TARGET_UNSUPPORTED",
+		);
+	});
+
+	it("gives each database the target's default driver unless the config names one", () => {
+		const db = [
+			{ name: "main", migrations: [], queries: [] },
+			{ name: "rooms", migrations: [], queries: [] },
+		];
+		const cf = plan(tree({ db }), config({ db: { rooms: "durable-object" } }));
+		expect(cf.db.map((d) => [d.name, d.driver, d.binding])).toEqual([
+			["main", "d1", "DB_MAIN"],
+			["rooms", "durable-object", "DB_ROOMS"],
+		]);
+		expect(plan(tree({ db }), config({ target: "bun" })).db.map((d) => d.driver)).toEqual([
+			"libsql",
+			"libsql",
+		]);
+	});
+
+	it("rejects Cloudflare-only drivers on Bun and drivers for missing folders", () => {
+		const db = [{ name: "main", migrations: [], queries: [] }];
+		expect(planError(tree({ db }), config({ target: "bun", db: { main: "d1" } })).code).toBe(
+			"TARGET_UNSUPPORTED",
+		);
+		expect(planError(tree({ db }), config({ db: { other: "d1" } })).code).toBe("DB_UNKNOWN");
+	});
+
+	it("requires .space/ in .gitignore", () => {
+		for (const gitignore of [".space", "/.space/", "dist\n.space/\n"])
+			expect(plan(tree({ gitignore })).target, gitignore).toBe("cloudflare");
+		for (const gitignore of [undefined, "dist\n", ".spaceship\n", "# .space\n"])
+			expect(planError(tree({ gitignore })).code, String(gitignore)).toBe("GITIGNORE_SPACE");
+	});
+});
