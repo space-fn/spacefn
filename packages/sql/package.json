@@ -9,13 +9,19 @@
 	],
 	"type": "module",
 	"exports": {
-		".": {
-			"types": "./dist/index.d.mts",
-			"import": "./dist/index.mjs"
-		},
-		"./node": {
-			"types": "./dist/node/index.d.mts",
-			"import": "./dist/node/index.mjs"
+		".": "./src/index.ts",
+		"./node": "./src/node/index.ts"
+	},
+	"publishConfig": {
+		"exports": {
+			".": {
+				"types": "./dist/index.d.mts",
+				"import": "./dist/index.mjs"
+			},
+			"./node": {
+				"types": "./dist/node/index.d.mts",
+				"import": "./dist/node/index.mjs"
+			}
 		}
 	},
 	"scripts": {
