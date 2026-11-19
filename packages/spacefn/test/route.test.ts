@@ -95,3 +95,57 @@ describe("routesLayer", () => {
 		}),
 	);
 });
+
+describe("Input.body", () => {
+	const Todo = Schema.Struct({
+		title: Schema.String,
+		tags: Schema.optional(Schema.Array(Schema.String)),
+	});
+	const create = route({
+		POST: Effect.map(Input.body(Todo, { maxBytes: 64 }), (todo) => ({ created: todo })),
+	});
+	const post = (body: BodyInit, type: string) => ({
+		method: "POST",
+		body,
+		headers: { "content-type": type },
+	});
+
+	it("decodes JSON and URL-encoded forms, with repeated keys as arrays", async () => {
+		const fetch = serve([entry("/todos", create)]);
+		expect((await fetch("/todos", post('{"title":"a"}', "application/json"))).body).toBe(
+			'{"created":{"title":"a"}}',
+		);
+		const form = await fetch(
+			"/todos",
+			post("title=b&tags=x&tags=y", "application/x-www-form-urlencoded"),
+		);
+		expect(form.body).toBe('{"created":{"title":"b","tags":["x","y"]}}');
+	});
+
+	it("answers bad input with 400, too large with 413 and other types with 415", async () => {
+		const fetch = serve([entry("/todos", create)]);
+		const invalid = await fetch("/todos", post('{"title":1}', "application/json"));
+		expect(invalid.status).toBe(400);
+		expect(JSON.parse(invalid.body).issues).toEqual([
+			{ path: "title", message: expect.any(String) },
+		]);
+		expect((await fetch("/todos", post("{nope", "application/json"))).status).toBe(400);
+		const big = JSON.stringify({ title: "x".repeat(100) });
+		expect((await fetch("/todos", post(big, "application/json"))).status).toBe(413);
+		const streamed = new ReadableStream({
+			start(controller) {
+				controller.enqueue(new TextEncoder().encode(big));
+				controller.close();
+			},
+		});
+		expect(
+			(
+				await fetch("/todos", {
+					...post(streamed, "application/json"),
+					duplex: "half",
+				} as RequestInit)
+			).status,
+		).toBe(413);
+		expect((await fetch("/todos", post("title=a", "text/plain"))).status).toBe(415);
+	});
+});
