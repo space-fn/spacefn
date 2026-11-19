@@ -1,13 +1,13 @@
 # spacefn VS Code extension
 
-Language support for spacefn projects: SQL diagnostics in `` sql`...` `` templates, CSS diagnostics/completion/hover inside `` css`...` `` templates, Datastar attribute validation in `` html`...` ``, and custom-property completion from a project's `variables.css`.
+Language support for spacefn projects: SQL diagnostics in query files and `` sql`...` `` templates, CSS diagnostics/completion/hover inside `` css`...` `` templates, Datastar attribute validation in `` html`...` ``, and custom-property completion from a project's `variables.css`.
 
 ## Features
 
-- SQL diagnostics and completion inside tagged template strings
+- SQL diagnostics, completion, hover and go-to-definition in `app/db/<name>/queries/*.sql` and in `` sql`...` `` templates. A template is checked against the database the file imports (`@space/db/<name>.ts`), or the app's only one; templates built with `sql("table")` or `sql.in(...)` are skipped
 - CSS diagnostics, hover, and completion inside `css` templates
 - Datastar HTML validation in `html` tagged templates
-- DB health command for local workspace tooling
+- Commands that run the `space` CLI
 
 ## Installation
 
@@ -29,15 +29,17 @@ pnpm install
 pnpm space dev
 ```
 
-This uses the `create-spacefn` package to generate the project structure and starter files for a Cloudflare Worker app using `spacefn`.
-
 ## Commands
 
-- `spacefn.dbDoctor` — run `npx space db doctor` in a terminal. (Command palette: "space: DB Doctor".)
+Each runs the CLI in a terminal:
+
+- **spacefn: Doctor** — `space doctor`
+- **spacefn: Database Status** — `space db status`
+- **spacefn: Generate .space/** — `space gen`
 
 ## Activation
 
-Activates for workspaces containing `app/db` and for SQL/JS/TS files.
+Activates for workspaces containing `configs/space.ts`, which also marks an app's root, and for SQL/JS/TS files.
 
 ## Grammars
 

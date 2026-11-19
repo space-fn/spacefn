@@ -2,7 +2,7 @@
 	"name": "vscode-spacefn",
 	"displayName": "spacefn",
 	"version": "0.3.0",
-	"description": "spacefn support for VS Code: HTML injection for html tagged templates (Datastar) + SQL diagnostics for db queries.",
+	"description": "spacefn support for VS Code: Datastar in html templates, CSS in css templates, and SQL checked against the app's migrations.",
 	"categories": [
 		"Programming Languages"
 	],
@@ -34,8 +34,18 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "spacefn.dbDoctor",
-				"title": "space: DB Doctor",
+				"command": "spacefn.doctor",
+				"title": "Doctor",
+				"category": "spacefn"
+			},
+			{
+				"command": "spacefn.dbStatus",
+				"title": "Database Status",
+				"category": "spacefn"
+			},
+			{
+				"command": "spacefn.gen",
+				"title": "Generate .space/",
 				"category": "spacefn"
 			}
 		],
@@ -79,7 +89,7 @@
 		"onLanguage:javascript",
 		"onLanguage:sql",
 		"onLanguage:typescript",
-		"workspaceContains:app/db"
+		"workspaceContains:configs/space.ts"
 	],
 	"icon": "./logo.png",
 	"engines": {

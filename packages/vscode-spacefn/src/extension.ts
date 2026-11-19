@@ -28,13 +28,20 @@ export function activate(context: vscode.ExtensionContext): void {
 		},
 	});
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand("spacefn.dbDoctor", async () => {
-			const terminal = vscode.window.createTerminal("space db doctor");
-			terminal.show();
-			terminal.sendText("npx space db doctor");
-		}),
-	);
+	// The CLI does the work; each command runs it in a terminal at the workspace root.
+	const commands: Record<string, string> = {
+		"spacefn.doctor": "space doctor",
+		"spacefn.dbStatus": "space db status",
+		"spacefn.gen": "space gen",
+	};
+	for (const [id, command] of Object.entries(commands))
+		context.subscriptions.push(
+			vscode.commands.registerCommand(id, () => {
+				const terminal = vscode.window.createTerminal(command);
+				terminal.show();
+				terminal.sendText(`npx ${command}`);
+			}),
+		);
 }
 
 export function deactivate(): Promise<void> | undefined {
