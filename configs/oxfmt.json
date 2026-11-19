@@ -4,13 +4,5 @@
 	"trailingComma": "all",
 	"sortImports": true,
 	"sortPackageJson": true,
-	"sortTailwindcss": true,
-	"ignorePatterns": [
-		"**/dist",
-		"**/coverage",
-		"**/.space",
-		"**/out",
-		"**/server-out",
-		"pnpm-lock.yaml"
-	]
+	"sortTailwindcss": true
 }

@@ -1,14 +1,8 @@
 {
 	"$schema": "../node_modules/oxlint/configuration_schema.json",
-	"ignorePatterns": [
-		"packages/create-spacefn/template",
-		"**/dist",
-		"**/coverage",
-		"**/.space",
-		"**/out",
-		"**/server-out"
-	],
-	"options": { "typeAware": true },
+	"options": {
+		"typeAware": true
+	},
 	"rules": {
 		"no-unused-vars": "error",
 		"typescript/no-deprecated": "error"
