@@ -39,3 +39,10 @@ export { Input } from "./http/input.ts";
 export { middleware, type HttpApp, type Middleware } from "./http/middleware.ts";
 export { Upload, type UploadLimits } from "./http/multipart.ts";
 export { route, type Handler, type Method, type Route, type RouteMethods } from "./http/route.ts";
+export { escapeHtml, html, Html, raw, type HtmlValue } from "./html.ts";
+export {
+	Datastar,
+	type DatastarEvent,
+	type PatchElementsOptions,
+	type PatchMode,
+} from "./pages/datastar.ts";
