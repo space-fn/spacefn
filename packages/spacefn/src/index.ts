@@ -87,3 +87,5 @@ export {
 	type RateLimiterShape,
 	type RateLimitOptions,
 } from "./services/rate-limiter.ts";
+export { InvalidToken, SignedToken, type TokenClaims } from "./auth/signed-token.ts";
+export { base32Decode, base32Encode, Totp, type TotpCheck } from "./auth/totp.ts";
