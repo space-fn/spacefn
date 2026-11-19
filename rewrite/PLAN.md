@@ -42,7 +42,7 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - [x] **1. Alchemy spike:** see [alchemy-spike.md](alchemy-spike.md).
 - [x] **2. Package skeletons and the dependency guard test:** `packages/spacefn/test/boundaries.test.ts` checks dependency fields and `src/` imports for every package. Core runtime files may not use `node:*`; only `src/cli*` and `src/codegen/` may.
 - [x] **3. `@spacefn/sql`:** the root export is pure (split, params, query and migration files, `inferQuery`, `analyzeQuery`); `@spacefn/sql/node` has `scratchDatabase` (`node:sqlite`), `scanMigrations` and `scanQueries`. The VS Code extension uses it. Postgres/PGlite is dropped, since every driver is SQLite.
-- [ ] **4. Core foundations:** tagged errors and HTTP mapping, env via `Config`/Schema, the `configs/space.ts` loader, service interfaces (`SqlClient` from `effect/sql`, Blob, Kv, Bus, Queue), in-memory Layers, `spacefn/testing`.
+- [x] **4. Core foundations:** tagged HTTP errors + `httpStatus`, `SpaceError`; `defineEnv` with `Env.string|number|int|boolean|url|secret|schema` over Effect `Config`; `defineSpace` (`spacefn/config`) and the Node loader in `src/codegen/`; `Kv`, `Blob`, `Bus`, `Queue` services with `.memory` Layers; `spacefn/testing` (`memoryServices`, `testEnv`, `QueueInbox`). The SQL test Layer moves to step 7 with the migration runner.
 - [ ] **5. Scanner and codegen (`space gen`):** router, middleware chain, db modules, queue and cron tables, DO and workflow exports, target entry; watch mode; target checks.
 - [ ] **6. HTTP:** `route()` and `middleware()` on `effect/http` `HttpRouter`; Schema params, query and body; multipart parsing with limits; CSRF; typed error mapping.
 - [ ] **7. Database:** migration runner on `SqlClient` (ledger, checksums, up/down, race retry), Schema-decoded typed queries, `space db doctor|migrate`.
@@ -61,7 +61,12 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - Workspace `exports` point at `src/*.ts`, so tests, esbuild and tsc need no build step. `publishConfig.exports` swaps in `dist/` when packing.
 - Pure packages throw plain error classes with stable codes (`SqlError.code`). Effect-tagged errors start in the core.
 
+- Relative imports end in `.ts` (`allowImportingTsExtensions`, `erasableSyntaxOnly`), so plain Node can run workspace source with type stripping. The CLI depends on this to load `configs/space.ts`.
+- Services are `Context.Service` classes with tagged errors and a static `.memory` Layer. Target packages add `.cloudflare` / `.bun` Layers beside them.
+- `Bus.subscribe` is scoped and the subscription is open once it returns, so subscribe → render → stream never drops an update.
+
 ## Corrections found along the way
 
 - Effect 4.1.4 has HTTP, SQL and CLI as stable modules: `effect/http`, `effect/sql`, `effect/cli`. They are not under `effect/unstable/*`.
+- Effect 4: a service class is not an Effect (`yield*` it inside `Effect.gen`), `Stream.runCollect` returns an array, `Schema.Defect()` is a function, and `Schema.Record` does not reject keys that fail the key schema (use a `makeFilter` check).
 - oxlint and oxfmt resolve `ignorePatterns` relative to the config file, and reject `..`. Extra ignores must be CLI flags (`--ignore-pattern`, `'!glob'`). Both tools honor the root `.gitignore`.
