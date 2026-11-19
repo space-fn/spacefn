@@ -35,6 +35,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/vscode-spacefn"
           rsync -a --exclude=node_modules packages/vscode-spacefn/ "$RUNNER_TEMP/vscode-spacefn/"
           cd "$RUNNER_TEMP/vscode-spacefn"
+          # Workspace and catalog devDependencies are already bundled and npm can't resolve them.
+          node -e 'const fs = require("node:fs"); const p = JSON.parse(fs.readFileSync("package.json", "utf8")); delete p.devDependencies; fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");'
           npm install --omit=dev --package-lock=false
       - name: Publish extension
         working-directory: ${{ runner.temp }}/vscode-spacefn
