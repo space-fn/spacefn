@@ -31,6 +31,7 @@
 		"@spacefn/sql": "workspace:*"
 	},
 	"devDependencies": {
+		"@effect/vitest": "catalog:",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
 		"tsdown": "catalog:",
