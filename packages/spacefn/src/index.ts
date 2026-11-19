@@ -69,3 +69,12 @@ export {
 	type PasswordCheck,
 	type PasswordOptions,
 } from "./auth/password.ts";
+export {
+	hashSessionToken,
+	sessionAuth,
+	type NewSession,
+	type SessionAuth,
+	type SessionAuthOptions,
+	type SessionPolicy,
+	type SessionRecord,
+} from "./auth/session.ts";
