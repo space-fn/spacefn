@@ -27,13 +27,13 @@ my-app/
 
 ## Packages
 
-| Package               | Contents                                                                                                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@spacefn/sql`        | SQL parser, splitting, inference. No Effect. Used by the core and the VS Code extension.                                                                                                                      |
-| `spacefn`             | Conventions, codegen, CLI, HTTP, pages, Datastar, db runtime, auth, tenancy, tracing, service interfaces, in-memory Layers, testing, and fetch-only adapters (libSQL via `@libsql/client/web`, S3, Kv on SQL) |
-| `@spacefn/cloudflare` | Worker entry, D1, DO SQLite, R2, KV, Queues, crons, DOs, Workflows, Bus relay                                                                                                                                 |
-| `@spacefn/bun`        | Bun server entry, PubSub Bus, in-process queues and crons                                                                                                                                                     |
-| `@spacefn/infra`      | The only package that imports `alchemy` or `vite`: the spacefn Vite plugin (`@spacefn/infra/vite`), turns conventions into resources, runs dev, build and deploy                                              |
+| Package               | Contents                                                                                                                                                                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@spacefn/sql`        | SQL parser, splitting, inference. No Effect. Used by the core and the VS Code extension.                                                                                                                                                |
+| `spacefn`             | Conventions, codegen (`spacefn/codegen`, Node-only), HTTP, pages, Datastar, db runtime, auth, tenancy, tracing, service interfaces, in-memory Layers, testing, and fetch-only adapters (libSQL via `@libsql/client/web`, S3, Kv on SQL) |
+| `@spacefn/cloudflare` | Worker entry, D1, DO SQLite, R2, KV, Queues, crons, DOs, Workflows, Bus relay                                                                                                                                                           |
+| `@spacefn/bun`        | Bun server entry, PubSub Bus, in-process queues and crons                                                                                                                                                                               |
+| `@spacefn/infra`      | The only package that imports `alchemy` or `vite`: the `space` CLI, the spacefn Vite plugin (`@spacefn/infra/vite`), turns conventions into resources, runs dev, build and deploy                                                       |
 
 ## Steps
 
@@ -45,15 +45,15 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - [x] **2. Package skeletons and the dependency guard test:** `packages/spacefn/test/boundaries.test.ts` checks dependency fields and `src/` imports for every package. Core runtime files may not use `node:*`; only `src/cli*` and `src/codegen/` may.
 - [x] **3. `@spacefn/sql`:** the root export is pure (split, params, query and migration files, `inferQuery`, `analyzeQuery`); `@spacefn/sql/node` has `scratchDatabase` (`node:sqlite`), `scanMigrations` and `scanQueries`. The VS Code extension uses it. Postgres/PGlite is dropped, since every driver is SQLite.
 - [x] **4. Core foundations:** tagged HTTP errors + `httpStatus`, `SpaceError`; `defineEnv` with `Env.string|number|int|boolean|url|secret|schema` over Effect `Config`; `defineSpace` (`spacefn/config`) and the Node loader in `src/codegen/`; `Kv`, `Blob`, `Bus`, `Queue` services with `.memory` Layers; `spacefn/testing` (`memoryServices`, `testEnv`, `QueueInbox`). The SQL test Layer moves to step 7 with the migration runner.
-- [ ] **5. Scanner and codegen (`space gen`):** router, middleware chain, db modules, queue and cron tables, DO and workflow exports, target entry, `.space/vite.config.ts` (merges `configs/vite.config.ts`); watch mode; target checks, including `.space/` in `.gitignore`.
-- [ ] **6. HTTP:** `route()` and `middleware()` on `effect/http` `HttpRouter`; Schema params, query and body; multipart parsing with limits; CSRF; typed error mapping.
+- [x] **5. Scanner and codegen (`space gen`):** `spacefn/codegen` runs scan (Node, `app/` into plain data) → plan (pure Effect, all checks) → render (pure) → write (only changed files, stale generated files removed). It never imports user files, so aliases can't break it. Generated: `manifest.ts` (typed by `SpaceManifest`, modules still `unknown`), `db/<name>.ts` (migrations, query parts, Params/Row types), the target entry, `vite.config.ts` and `tsconfig.json` (alias `paths`). Checks: route conflicts (by shape), names, client entries, Cloudflare-only folders and drivers, unknown db names, `@param` types, `.space/` in `.gitignore`. `watchGen` is a debounced Stream that survives failures. `space gen [--watch] [--prod]` lives in `@spacefn/infra`.
+- [ ] **6. HTTP:** give `ManifestRoute.module` / `ManifestModule` their real types; `route()` and `middleware()` on `effect/http` `HttpRouter`; Schema params, query and body; multipart parsing with limits; CSRF; typed error mapping.
 - [ ] **7. Database:** migration runner on `SqlClient` (ledger, checksums, up/down, race retry), Schema-decoded typed queries, `space db doctor|migrate`.
 - [ ] **8. Pages and realtime:** HTML builder, loaders and actions, Datastar SSE as a `Stream`, Bus interface with an in-memory Layer.
 - [ ] **9. Auth, tenancy, tracing (OTLP).**
-- [ ] **10. `@spacefn/cloudflare`.**
-- [ ] **11. `@spacefn/bun`:** fetch-handler app module (dev and prod) plus a `Bun.serve` production entry that serves `dist/client`.
+- [ ] **10. `@spacefn/cloudflare`:** export `worker(manifest)`, the entry `.space/entry.ts` calls. Durable Object and workflow files default-export their class.
+- [ ] **11. `@spacefn/bun`:** export `app(manifest)` (the fetch handler `.space/app.ts` builds, for dev and prod) and `serve(app)` (`.space/server.ts`: `Bun.serve` plus `dist/client`).
 - [ ] **12. `@spacefn/infra`:** the spacefn Vite plugin (root override, outDirs, watcher ignores, `virtual:space/assets`, client-first build, server-edit reload, Bun dev middleware); generate `.space/alchemy.run.ts` with `Cloudflare.Website.Vite`; merge `configs/infra.ts`; Docker image from `vite build` output; `space add docker`.
-- [ ] **13. CLI (`effect/cli`):** dev (`alchemy dev` for Cloudflare, Vite inside Bun for Bun), build (`vite build`), gen, deploy, destroy, db, doctor, upgrade, clean.
+- [ ] **13. CLI (`effect/cli`, in `@spacefn/infra`):** dev (`alchemy dev` for Cloudflare, Vite inside Bun for Bun), build (`vite build`), gen, deploy, destroy, db, doctor, upgrade, clean.
 - [ ] **14. VS Code extension:** read `configs/space.ts` and the new imports; tests on vitest.
 - [ ] **15. Template, playground, docs.**
 - [ ] **16. Finish:** delete `legacy/`, `scripts/size.sh` (it still points at the old playground) and this folder, bump to `0.11.0`, merge to `main`.
@@ -68,6 +68,9 @@ Each step ends with `pnpm check` and `pnpm test` passing, in small conventional 
 - `Bus.subscribe` is scoped and the subscription is open once it returns, so subscribe → render → stream never drops an update.
 
 ## Corrections found along the way
+
+- The CLI moved from the core to `@spacefn/infra` (step 5): it needs `@effect/platform-node`, which the core must not depend on, and every command but `gen` needs Alchemy or Vite anyway.
+- Route params must be identifiers (`[userId]`, not `[user-id]`): the router treats `-` inside a segment as a separator.
 
 - Effect 4.1.4 has HTTP, SQL and CLI as stable modules: `effect/http`, `effect/sql`, `effect/cli`. They are not under `effect/unstable/*`.
 - Effect 4: a service class is not an Effect (`yield*` it inside `Effect.gen`), `Stream.runCollect` returns an array, `Schema.Defect()` is a function, and `Schema.Record` does not reject keys that fail the key schema (use a `makeFilter` check).
