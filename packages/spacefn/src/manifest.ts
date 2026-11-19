@@ -4,9 +4,14 @@
  * and `@spacefn/bun` turn it into a running app. Module types make a wrong
  * export a type error in the generated file, so the editor flags it.
  */
+import type { Layer } from "effect";
+
 import type { DatabaseClass } from "./db/database.ts";
+import type { AppEnv } from "./env.ts";
 import type { Middleware } from "./http/middleware.ts";
 import type { Route } from "./http/route.ts";
+import type { Cron } from "./jobs/cron.ts";
+import type { QueueConsumer } from "./jobs/queue.ts";
 import type { Page } from "./pages/page.ts";
 import type { DbDriver } from "./space-config.ts";
 
@@ -44,12 +49,32 @@ export interface ManifestMiddleware {
 	readonly module: { readonly default: Middleware };
 }
 
-export interface ManifestNamed extends ManifestModule {
+/** A file in `app/queues/`: its default export is a `queue()` consumer. */
+export interface ManifestQueue {
 	readonly name: string;
+	/** The producer binding, e.g. `QUEUE_EMAILS`. */
+	readonly binding: string;
+	readonly file: string;
+	readonly module: { readonly default: QueueConsumer };
 }
 
-export interface ManifestBound extends ManifestNamed {
-	readonly binding: string;
+/** A file in `app/crons/`: its default export is a `cron()` job. */
+export interface ManifestCron {
+	readonly name: string;
+	readonly file: string;
+	readonly module: { readonly default: Cron };
+}
+
+/** `app/layers.ts`: its default export is a Layer with the app's own services. */
+export interface ManifestLayers {
+	readonly file: string;
+	readonly module: { readonly default: Layer.Any };
+}
+
+/** `app/env.ts`: its default export is the `defineEnv()` service. */
+export interface ManifestEnv {
+	readonly file: string;
+	readonly module: { readonly default: AppEnv<any> };
 }
 
 export interface ManifestDb {
@@ -70,12 +95,12 @@ export type Unchecked<T extends { readonly module: unknown }> = T extends unknow
 
 export interface SpaceManifest {
 	readonly name: string;
-	readonly env?: ManifestModule;
-	readonly layers?: ManifestModule;
+	readonly env?: ManifestEnv;
+	readonly layers?: ManifestLayers;
 	readonly routes: readonly ManifestRoute[];
 	/** In run order; each default-exports a `middleware()`. */
 	readonly middleware: readonly ManifestMiddleware[];
-	readonly queues: readonly ManifestBound[];
-	readonly crons: readonly ManifestNamed[];
+	readonly queues: readonly ManifestQueue[];
+	readonly crons: readonly ManifestCron[];
 	readonly db: readonly ManifestDb[];
 }

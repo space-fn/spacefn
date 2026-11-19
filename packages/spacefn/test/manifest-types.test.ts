@@ -1,11 +1,13 @@
 // Type-level checks, enforced by `tsc`: the generated manifest rejects wrong exports.
 import { expect, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Layer, Schema } from "effect";
 
 import { database } from "../src/db/database.ts";
 import { html } from "../src/html.ts";
 import { middleware } from "../src/http/middleware.ts";
 import { route } from "../src/http/route.ts";
+import { cron } from "../src/jobs/cron.ts";
+import { queue } from "../src/jobs/queue.ts";
 import type { SpaceManifest } from "../src/manifest.ts";
 import { page } from "../src/pages/page.ts";
 
@@ -51,4 +53,37 @@ it("accepts page() for page files and rejects anything else", () => {
 		{ kind: "page", ...at, module: { default: { render: () => html`` } } },
 	] as const satisfies SpaceManifest["routes"];
 	expect(routes).toHaveLength(2);
+});
+
+it("accepts queue(), cron() and a Layer, and rejects anything else", () => {
+	const queues = [
+		{
+			name: "a",
+			binding: "QUEUE_A",
+			file: "app/queues/a.ts",
+			module: { default: queue({ body: Schema.String, handler: () => Effect.void }) },
+		},
+		{
+			name: "b",
+			binding: "QUEUE_B",
+			file: "app/queues/b.ts",
+			// @ts-expect-error a queue file must default-export queue()
+			module: { default: () => Effect.void },
+		},
+	] as const satisfies SpaceManifest["queues"];
+	const crons = [
+		{ name: "a", file: "app/crons/a.ts", module: { default: cron("0 3 * * *", Effect.void) } },
+		// @ts-expect-error a cron file must default-export cron()
+		{ name: "b", file: "app/crons/b.ts", module: { default: Effect.void } },
+	] as const satisfies SpaceManifest["crons"];
+	const layers = {
+		file: "app/layers.ts",
+		module: { default: Layer.empty },
+	} satisfies SpaceManifest["layers"];
+	const notLayers = {
+		file: "app/layers.ts",
+		// @ts-expect-error app/layers.ts must default-export a Layer
+		module: { default: {} },
+	} satisfies SpaceManifest["layers"];
+	expect([queues, crons, layers, notLayers]).toHaveLength(4);
 });

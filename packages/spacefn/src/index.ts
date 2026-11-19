@@ -15,13 +15,22 @@ export {
 } from "./errors.ts";
 export { defineEnv, Env, type AppEnv, type AppEnvId, type EnvField, type EnvShape } from "./env.ts";
 export type {
-	ManifestBound,
+	ManifestCron,
 	ManifestDb,
+	ManifestEnv,
+	ManifestLayers,
 	ManifestModule,
-	ManifestNamed,
+	ManifestQueue,
 	ManifestRoute,
 	SpaceManifest,
 } from "./manifest.ts";
+export { cron, type Cron } from "./jobs/cron.ts";
+export {
+	queue,
+	type QueueConsumer,
+	type QueueConsumerDefinition,
+	type QueueMessage,
+} from "./jobs/queue.ts";
 export { defineSpace, type SpaceConfig, type Target } from "./space-config.ts";
 export {
 	Blob,
