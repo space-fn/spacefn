@@ -63,6 +63,13 @@ describe("the Cloudflare stack under alchemy dev", () => {
 		await until(async () => (await text(`${base}/`)).includes("done in workerd"), 20_000);
 	});
 
+	it("binds R2, since the app imports Blob", async () => {
+		expect(await (await fetch(`${base}/files`)).json()).toEqual({
+			text: "stored in r2",
+			type: "text/plain",
+		});
+	});
+
 	it("binds the Durable Objects behind RateLimiter", async () => {
 		const statuses = [];
 		for (let i = 0; i < 3; i++) statuses.push((await fetch(`${base}/limited`)).status);
