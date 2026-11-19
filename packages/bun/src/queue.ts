@@ -8,8 +8,12 @@ import { SpaceState } from "./state.ts";
 
 /** Messages claimed at once, as on Cloudflare. */
 const BATCH_SIZE = 10;
-/** A claimed message is delivered again if it isn't settled by then (its process died). */
-const LEASE_MILLIS = 15 * 60_000;
+/**
+ * A claimed message is delivered again if it isn't settled by then, i.e. its
+ * process died. The lease is renewed while the handler runs, so a long one
+ * keeps it.
+ */
+const LEASE_MILLIS = 60_000;
 /** Retries before a message is dropped, as on Cloudflare without a dead-letter queue. */
 export const MAX_RETRIES = 3;
 /** How often an idle consumer looks for due messages. */
@@ -93,9 +97,10 @@ export const consumeQueue = (entry: Unchecked<ManifestQueue>) =>
 				RETURNING id, body, attempts, sent_at`;
 			return [...rows].sort((a, b) => Number(a.sent_at) - Number(b.sent_at));
 		});
-		const delivery = (row: Claimed): Delivery => {
+		const delivery = (row: Claimed, unsettled: Set<string>): Delivery => {
 			const attempts = Number(row.attempts);
-			const drop = sql`DELETE FROM space_queue WHERE id = ${row.id}`.pipe(Effect.asVoid);
+			const settle = Effect.sync(() => void unsettled.delete(row.id));
+			const drop = sql`DELETE FROM space_queue WHERE id = ${row.id}`.pipe(Effect.andThen(settle));
 			return {
 				id: row.id,
 				body: bodyOf(row),
@@ -110,16 +115,43 @@ export const consumeQueue = (entry: Unchecked<ManifestQueue>) =>
 								const now = yield* Clock.currentTimeMillis;
 								const at = now + (delay === undefined ? 0 : Duration.toMillis(delay));
 								yield* sql`UPDATE space_queue SET visible_at = ${at} WHERE id = ${row.id}`;
+								yield* settle;
 							})
 					).pipe(Effect.orDie),
 			};
 		};
+		// Only rows still leased: one retried meanwhile keeps its new time.
+		const renew = (unsettled: ReadonlySet<string>) =>
+			Effect.gen(function* () {
+				const now = yield* Clock.currentTimeMillis;
+				for (const id of unsettled)
+					yield* sql`
+						UPDATE space_queue SET visible_at = ${now + LEASE_MILLIS}
+						WHERE id = ${id} AND visible_at > ${now}`;
+			}).pipe(Effect.ignore, Effect.delay(LEASE_MILLIS / 3), Effect.forever);
+		const release = (ids: readonly string[]) =>
+			Effect.forEach(
+				ids,
+				(id) =>
+					sql`UPDATE space_queue SET visible_at = 0, attempts = attempts - 1 WHERE id = ${id}`,
+				{ discard: true },
+			).pipe(Effect.ignore);
 		return yield* Effect.forever(
 			Effect.gen(function* () {
 				const rows = yield* claim;
 				if (rows.length === 0) return yield* Effect.sleep(IDLE_POLL);
-				yield* consumeBatch(entry.name, consumer, rows.map(delivery));
+				const unsettled = new Set(rows.map((row) => row.id));
+				yield* Effect.forkScoped(renew(unsettled));
+				yield* consumeBatch(
+					entry.name,
+					consumer,
+					rows.map((row) => delivery(row, unsettled)),
+				).pipe(
+					// Stopping mid-batch hands the rest back now instead of when the lease ends.
+					Effect.onInterrupt(() => release([...unsettled])),
+				);
 			}).pipe(
+				Effect.scoped,
 				// A database hiccup shouldn't end the consumer.
 				Effect.catchCause((cause) =>
 					Effect.logError(`Queue ${entry.name}: polling failed`, cause).pipe(
