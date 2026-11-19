@@ -4,9 +4,6 @@
 	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
-	"bin": {
-		"space": "./dist/cli.mjs"
-	},
 	"files": [
 		"dist"
 	],

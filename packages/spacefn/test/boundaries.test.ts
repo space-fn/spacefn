@@ -25,8 +25,8 @@ const INFRA = rule("@spacefn/infra", /^@spacefn\/infra(\/.*)?$/);
 const EFFECT = rule("effect", /^(effect|@effect\/.*)(\/.*)?$/);
 const NODE = rule("node builtins", /^node:.*$/);
 
-/** Files in the core that only ever run in Node (CLI, codegen), so they may use node:* builtins. */
-const CORE_NODE_ONLY = /^src\/(cli(\.ts|\/)|codegen\/)/;
+/** Core files that only ever run in Node (codegen, used by the CLI), so they may use node:* builtins. */
+const CORE_NODE_ONLY = /^src\/codegen\//;
 
 const BOUNDARIES: Record<
 	string,
