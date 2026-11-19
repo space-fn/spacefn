@@ -59,7 +59,7 @@ app/workflows/              Workflow classes
 
 ```sh
 pnpm install
-vp check
-vp test run
+pnpm check
+pnpm test
 cd playground && pnpm dev
 ```
