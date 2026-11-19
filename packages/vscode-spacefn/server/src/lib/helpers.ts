@@ -17,7 +17,7 @@ export function findCssTemplateRange(text: string, offset: number): Range | null
 }
 
 export function findSqlTemplateRange(text: string, offset: number): Range | null {
-	return pick(templateAt(text, offset, ["sql", "db"]));
+	return pick(templateAt(text, offset, ["sql"]));
 }
 // Extract signals from data-signals:* attributes in HTML
 

@@ -26,13 +26,13 @@ export function maskSql(sql: string): string {
 
 /**
  * The statement containing `offset`: in a `.sql` file the `;`/`-- name:` separated part of the
- * file, in JS/TS the part of the sql`` or db`` template. Null when the cursor is not in SQL.
+ * file, in JS/TS the part of the sql`` template. Null when the cursor is not in SQL.
  */
 export function statementAt(text: string, offset: number, isSqlFile: boolean): SqlStatement | null {
 	let start = 0;
 	let end = text.length;
 	if (!isSqlFile) {
-		const tpl = templateAt(text, offset, ["sql", "db"]);
+		const tpl = templateAt(text, offset, ["sql"]);
 		if (!tpl) return null;
 		start = tpl.contentStart;
 		end = tpl.end;
