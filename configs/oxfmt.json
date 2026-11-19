@@ -1,0 +1,16 @@
+{
+	"$schema": "../node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"trailingComma": "all",
+	"sortImports": true,
+	"sortPackageJson": true,
+	"sortTailwindcss": true,
+	"ignorePatterns": [
+		"**/dist",
+		"**/coverage",
+		"**/.space",
+		"**/out",
+		"**/server-out",
+		"pnpm-lock.yaml"
+	]
+}

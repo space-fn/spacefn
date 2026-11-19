@@ -1,13 +1,6 @@
 {
+	"extends": "../../configs/tsconfig.base.json",
 	"compilerOptions": {
-		"target": "ES2023",
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"skipLibCheck": true,
-		"verbatimModuleSyntax": true,
-		"noEmit": true,
 		"types": ["node", "@cloudflare/workers-types"]
 	},
 	"include": ["src", "test"]
