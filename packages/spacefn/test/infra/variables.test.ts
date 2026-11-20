@@ -2,7 +2,7 @@ import { Redacted } from "effect";
 import { defineEnv, Env } from "spacefn";
 import { describe, expect, it } from "vitest";
 
-import { deployVariables } from "../src/variables.ts";
+import { deployVariables } from "../../src/infra/variables.ts";
 
 describe("deployVariables", () => {
 	it("passes the app's set variables on, secrets redacted", () => {

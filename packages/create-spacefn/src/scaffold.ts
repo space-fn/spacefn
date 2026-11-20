@@ -7,7 +7,7 @@ const template = resolve(fileURLToPath(new URL(".", import.meta.url)), "..", "te
 export type Target = "cloudflare" | "bun";
 export const TARGETS: readonly Target[] = ["cloudflare", "bun"];
 
-/** The spacefn packages, released together. */
+/** The spacefn release this scaffolder ships with. */
 export const SPACEFN_VERSION = "^0.11.0";
 
 /** Everything else, at the versions this release was tested with. */
@@ -63,7 +63,6 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 		dependencies: sorted(Object.fromEntries([spacefn("spacefn"), other("effect")])),
 		devDependencies: sorted(
 			Object.fromEntries([
-				spacefn("@spacefn/infra"),
 				other(target === "cloudflare" ? "@alchemy.run/cloudflare" : "@alchemy.run/docker"),
 				other("typescript"),
 				other("vite"),

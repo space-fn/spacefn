@@ -27,4 +27,12 @@ export default defineConfig([
 	}),
 	area({ "cloudflare/index": "src/cloudflare/index.ts" }, "tsconfig.cloudflare.json"),
 	area({ "bun/index": "src/bun/index.ts" }, "tsconfig.bun.json"),
+	area({
+		vite: "src/infra/vite.ts",
+		"infra/index": "src/infra/index.ts",
+		"infra/cli": "src/infra/cli.ts",
+		"infra/dev-bun": "src/infra/dev-bun.ts",
+		"infra/cloudflare": "src/infra/cloudflare.ts",
+		"infra/docker": "src/infra/docker.ts",
+	}),
 ]);

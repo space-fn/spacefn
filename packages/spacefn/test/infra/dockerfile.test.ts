@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, expect, it } from "vitest";
 
-import { addDockerfile, DEFAULT_DOCKERFILE, dockerfileFor } from "../src/dockerfile.ts";
+import { addDockerfile, DEFAULT_DOCKERFILE, dockerfileFor } from "../../src/infra/dockerfile.ts";
 
 let root: string;
 beforeEach(async () => {

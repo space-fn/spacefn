@@ -4,11 +4,11 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { alchemyArgs } from "../src/alchemy.ts";
-import { clean } from "../src/clean.ts";
-import { doctor, formatChecks } from "../src/doctor.ts";
-import { addCommand, detectPackageManager } from "../src/package-manager.ts";
-import { providerUpgrades, spacefnUpgrades } from "../src/upgrade.ts";
+import { alchemyArgs } from "../../src/infra/alchemy.ts";
+import { clean } from "../../src/infra/clean.ts";
+import { doctor, formatChecks } from "../../src/infra/doctor.ts";
+import { addCommand, detectPackageManager } from "../../src/infra/package-manager.ts";
+import { providerUpgrades, spacefnUpgrades } from "../../src/infra/upgrade.ts";
 import { fixtureApp } from "./fixture.ts";
 
 let root: string;
@@ -54,17 +54,14 @@ describe("package managers", () => {
 		expect(addCommand("bun", ["a@1"], false)).toEqual(["bun", "add", "a@1"]);
 	});
 
-	it("upgrades spacefn to latest, then the provider to what infra expects", () => {
+	it("upgrades spacefn to latest, then the provider to what spacefn expects", () => {
 		const app = {
-			dependencies: { spacefn: "^0.11.0", "@spacefn/bun": "^0.11.0", effect: "^4.1.4" },
-			devDependencies: { "@spacefn/infra": "^0.11.0", "@alchemy.run/docker": "2.0.0-beta.80" },
+			dependencies: { spacefn: "^0.11.0", effect: "^4.1.4" },
+			devDependencies: { "@alchemy.run/docker": "2.0.0-beta.80" },
 		};
-		expect(spacefnUpgrades("pnpm", app)).toEqual([
-			["pnpm", "add", "spacefn@latest", "@spacefn/bun@latest"],
-			["pnpm", "add", "-D", "@spacefn/infra@latest"],
-		]);
-		const infra = { peerDependencies: { "@alchemy.run/docker": "2.0.0-beta.90" } };
-		expect(providerUpgrades("pnpm", app, infra)).toEqual([
+		expect(spacefnUpgrades("pnpm", app)).toEqual([["pnpm", "add", "spacefn@latest"]]);
+		const spacefn = { peerDependencies: { "@alchemy.run/docker": "2.0.0-beta.90" } };
+		expect(providerUpgrades("pnpm", app, spacefn)).toEqual([
 			["pnpm", "add", "-D", "@alchemy.run/docker@2.0.0-beta.90"],
 		]);
 	});

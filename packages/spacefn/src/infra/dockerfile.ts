@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
 import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+
+import { spacefnDir } from "./process.ts";
 
 /** The Dockerfile used when the app has no `configs/docker/Dockerfile`. */
-export const DEFAULT_DOCKERFILE = fileURLToPath(new URL("../docker/Dockerfile", import.meta.url));
+export const DEFAULT_DOCKERFILE = join(spacefnDir(), "docker", "Dockerfile");
 
 /** Where an app keeps its own Dockerfile, relative to the app root. */
 export const APP_DOCKERFILE = "configs/docker/Dockerfile";

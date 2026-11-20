@@ -7,19 +7,18 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 import { gen } from "spacefn/codegen";
 
-const infra = fileURLToPath(new URL("..", import.meta.url));
+const spacefn = fileURLToPath(new URL("../..", import.meta.url));
 
 /**
- * A fixture app under `test/fixtures/`, generated, with `@spacefn/infra`
- * linked into its node_modules: Vite's config loader doesn't resolve a
- * package's import of itself.
+ * A fixture app under `test/infra/fixtures/`, generated, with spacefn
+ * linked into its node_modules as an installed app would have it.
  */
 export const fixtureApp = async (name: string) => {
-	const root = join(infra, "test", "fixtures", name);
+	const root = join(spacefn, "test", "infra", "fixtures", name);
 	await rm(join(root, ".space"), { recursive: true, force: true });
-	await mkdir(join(root, "node_modules", "@spacefn"), { recursive: true });
-	await rm(join(root, "node_modules", "@spacefn", "infra"), { force: true });
-	await symlink(infra, join(root, "node_modules", "@spacefn", "infra"));
+	await mkdir(join(root, "node_modules"), { recursive: true });
+	await rm(join(root, "node_modules", "spacefn"), { force: true });
+	await symlink(spacefn, join(root, "node_modules", "spacefn"));
 	await Effect.runPromise(gen(root, "dev"));
 	const data = await mkdtemp(join(tmpdir(), `space-${name}-`));
 	return {
@@ -29,7 +28,7 @@ export const fixtureApp = async (name: string) => {
 	};
 };
 
-const cli = join(infra, "src", "cli.ts");
+const cli = join(spacefn, "src", "infra", "cli.ts");
 
 /** Runs the `space` CLI in `cwd`, collecting its output. */
 export const space = (cwd: string, args: readonly string[], env: Record<string, string> = {}) => {

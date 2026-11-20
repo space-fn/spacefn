@@ -1,11 +1,15 @@
 {
 	"name": "spacefn",
 	"version": "0.11.0-alpha.0",
-	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun",
+	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun, with its CLI and deploys",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
+	"bin": {
+		"space": "./src/infra/cli.ts"
+	},
 	"files": [
-		"dist"
+		"dist",
+		"docker"
 	],
 	"type": "module",
 	"exports": {
@@ -17,9 +21,16 @@
 		"./sql": "./src/sql/index.ts",
 		"./sql/node": "./src/sql/node/index.ts",
 		"./cloudflare": "./src/cloudflare/index.ts",
-		"./bun": "./src/bun/index.ts"
+		"./bun": "./src/bun/index.ts",
+		"./vite": "./src/infra/vite.ts",
+		"./infra": "./src/infra/index.ts",
+		"./infra/cloudflare": "./src/infra/cloudflare.ts",
+		"./infra/docker": "./src/infra/docker.ts"
 	},
 	"publishConfig": {
+		"bin": {
+			"space": "./dist/infra/cli.mjs"
+		},
 		"exports": {
 			".": {
 				"types": "./dist/index.d.mts",
@@ -56,6 +67,22 @@
 			"./bun": {
 				"types": "./dist/bun/index.d.mts",
 				"import": "./dist/bun/index.mjs"
+			},
+			"./vite": {
+				"types": "./dist/vite.d.mts",
+				"import": "./dist/vite.mjs"
+			},
+			"./infra": {
+				"types": "./dist/infra/index.d.mts",
+				"import": "./dist/infra/index.mjs"
+			},
+			"./infra/cloudflare": {
+				"types": "./dist/infra/cloudflare.d.mts",
+				"import": "./dist/infra/cloudflare.mjs"
+			},
+			"./infra/docker": {
+				"types": "./dist/infra/docker.d.mts",
+				"import": "./dist/infra/docker.mjs"
 			}
 		}
 	},
@@ -65,13 +92,17 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@effect/platform-node": "catalog:",
 		"@effect/sql-d1": "catalog:",
 		"@effect/sql-libsql": "catalog:",
 		"@effect/sql-sqlite-do": "catalog:",
 		"@effect/sql-sqlite-node": "catalog:",
-		"@libsql/client": "catalog:"
+		"@libsql/client": "catalog:",
+		"alchemy": "catalog:"
 	},
 	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"@alchemy.run/docker": "catalog:",
 		"@cloudflare/workers-types": "^5.20261030.1",
 		"@effect/vitest": "catalog:",
 		"@types/bun": "^1.4.4",
@@ -81,9 +112,21 @@
 		"miniflare": "catalog:",
 		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
+		"vite": "catalog:",
 		"vitest": "catalog:"
 	},
 	"peerDependencies": {
-		"effect": "^4.1.4"
+		"@alchemy.run/cloudflare": "2.0.0-beta.87",
+		"@alchemy.run/docker": "2.0.0-beta.87",
+		"effect": "^4.1.4",
+		"vite": "^8.3.8"
+	},
+	"peerDependenciesMeta": {
+		"@alchemy.run/cloudflare": {
+			"optional": true
+		},
+		"@alchemy.run/docker": {
+			"optional": true
+		}
 	}
 }

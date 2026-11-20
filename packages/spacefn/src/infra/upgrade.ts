@@ -10,7 +10,7 @@ interface PackageJson {
 	readonly peerDependencies?: Readonly<Record<string, string>>;
 }
 
-const isSpacefn = (name: string) => name === "spacefn" || name.startsWith("@spacefn/");
+const isSpacefn = (name: string) => name === "spacefn";
 const isProvider = (name: string) => name.startsWith("@alchemy.run/");
 
 const commandsFor = (
@@ -26,24 +26,24 @@ const commandsFor = (
 		return specs.length > 0 ? [addCommand(manager, specs, field === "devDependencies")] : [];
 	});
 
-/** Step one of `space upgrade`: every spacefn package the app has, to its latest version. */
+/** Step one of `space upgrade`: spacefn, to its latest version. */
 export const spacefnUpgrades = (manager: PackageManager, app: PackageJson) =>
 	commandsFor(manager, app, (name) => (isSpacefn(name) ? "latest" : undefined));
 
 /**
- * Step two, once the new `@spacefn/infra` is installed: the Alchemy provider
- * the app has, to the version that infra expects.
+ * Step two, once the new spacefn is installed: the Alchemy provider
+ * the app has, to the version the new spacefn expects.
  */
-export const providerUpgrades = (manager: PackageManager, app: PackageJson, infra: PackageJson) =>
+export const providerUpgrades = (manager: PackageManager, app: PackageJson, spacefn: PackageJson) =>
 	commandsFor(manager, app, (name) =>
-		isProvider(name) ? infra.peerDependencies?.[name] : undefined,
+		isProvider(name) ? spacefn.peerDependencies?.[name] : undefined,
 	);
 
 export const readPackageJson = async (dir: string): Promise<PackageJson> =>
 	JSON.parse(await readFile(join(dir, "package.json"), "utf8")) as PackageJson;
 
-/** The installed `@spacefn/infra` as the app at `root` sees it. */
-export const installedInfra = async (root: string): Promise<PackageJson | undefined> => {
-	const dir = packageDir(root, "@spacefn/infra");
+/** The installed spacefn as the app at `root` sees it. */
+export const installedSpacefn = async (root: string): Promise<PackageJson | undefined> => {
+	const dir = packageDir(root, "spacefn");
 	return dir ? readPackageJson(dir) : undefined;
 };

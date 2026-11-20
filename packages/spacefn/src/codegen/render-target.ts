@@ -68,7 +68,7 @@ export const renderViteConfig = (plan: AppPlan): string => {
 	const imports = [
 		'import { fileURLToPath } from "node:url";',
 		"",
-		'import { space } from "@spacefn/infra/vite";',
+		'import { space } from "spacefn/vite";',
 		`import { defineConfig${plan.viteConfig ? ", mergeConfig" : ""} } from "vite";`,
 		...(plan.viteConfig ? ['import user from "../configs/vite.config.ts";'] : []),
 	];
@@ -111,7 +111,7 @@ export const renderAssetsTypes = (): string =>
 	].join("\n");
 
 /**
- * `.space/alchemy.run.ts`: the infra, as data for `@spacefn/infra`'s stack,
+ * `.space/alchemy.run.ts`: the infra, as data for spacefn's stack,
  * plus `app/env.ts` (its variables are passed on) and `configs/infra.ts`.
  * Alchemy runs it for `space dev` on Cloudflare and for deploys.
  */
@@ -140,7 +140,7 @@ export const renderAlchemy = (plan: AppPlan): string => {
 	const fields = Object.entries(app).map(([key, value]) => `\t\t${key}: ${str(value)},`);
 	return [
 		GENERATED,
-		`import { ${stack} } from "@spacefn/infra/${plan.target === "cloudflare" ? "cloudflare" : "docker"}";`,
+		`import { ${stack} } from "spacefn/infra/${plan.target === "cloudflare" ? "cloudflare" : "docker"}";`,
 		...(plan.env ? ['import env from "../app/env.ts";'] : []),
 		...(plan.infraConfig ? ['import infra from "../configs/infra.ts";'] : []),
 		"",

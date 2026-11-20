@@ -26,7 +26,7 @@ import { addDockerfile, APP_DOCKERFILE } from "./dockerfile.ts";
 import { doctor, formatChecks } from "./doctor.ts";
 import { detectPackageManager } from "./package-manager.ts";
 import { run } from "./process.ts";
-import { installedInfra, providerUpgrades, readPackageJson, spacefnUpgrades } from "./upgrade.ts";
+import { installedSpacefn, providerUpgrades, readPackageJson, spacefnUpgrades } from "./upgrade.ts";
 
 const summary = (result: WriteResult) => {
 	const changes = [
@@ -296,17 +296,15 @@ const upgradeCommand = Command.make("upgrade", {}, () =>
 		const app = yield* Effect.promise(() => readPackageJson(root));
 		const commands = spacefnUpgrades(manager, app);
 		if (commands.length === 0)
-			return yield* exitWith("space upgrade: no spacefn packages in package.json");
+			return yield* exitWith("space upgrade: spacefn isn't in package.json");
 		if ((yield* runAll(commands)) !== 0) return yield* exitCode(1);
-		const infra = yield* Effect.promise(() => installedInfra(root));
-		if (infra && (yield* runAll(providerUpgrades(manager, app, infra))) !== 0)
+		const spacefn = yield* Effect.promise(() => installedSpacefn(root));
+		if (spacefn && (yield* runAll(providerUpgrades(manager, app, spacefn))) !== 0)
 			return yield* exitCode(1);
 		yield* generate(root, "dev");
 		yield* Console.log("space upgrade: done");
 	}).pipe(Effect.catch(report)),
-).pipe(
-	Command.withDescription("Update the spacefn packages, their Alchemy provider, then .space/"),
-);
+).pipe(Command.withDescription("Update spacefn, its Alchemy provider, then .space/"));
 
 const cleanCommand = Command.make("clean", {}, () =>
 	Effect.gen(function* () {

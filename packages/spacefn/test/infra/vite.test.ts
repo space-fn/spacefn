@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createBuilder, createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { assetTags } from "../src/vite.ts";
+import { assetTags } from "../../src/infra/vite.ts";
 import { fixtureApp } from "./fixture.ts";
 
 const until = async (check: () => Promise<boolean>, ms = 10_000) => {

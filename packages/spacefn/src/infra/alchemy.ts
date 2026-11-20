@@ -50,7 +50,7 @@ export const alchemyArgs = (
 /** Alchemy's CLI script, resolved from this package (the app needn't install Alchemy itself). */
 export const alchemyCli = (): string => {
 	const dir = packageDir(fileURLToPath(new URL(".", import.meta.url)), "alchemy");
-	if (!dir) throw new Error("Alchemy isn't installed. Reinstall @spacefn/infra.");
+	if (!dir) throw new Error("Alchemy isn't installed. Reinstall spacefn.");
 	return join(dir, "bin", "cli.js");
 };
 

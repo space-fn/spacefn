@@ -13,7 +13,7 @@ import {
 	dbStatus,
 	formatReport,
 	isUnhealthy,
-} from "../src/db.ts";
+} from "../../src/infra/db.ts";
 
 let dir: string;
 beforeEach(async () => {

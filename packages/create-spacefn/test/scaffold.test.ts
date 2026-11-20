@@ -13,7 +13,7 @@ const scratch = join(here, ".scratch");
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 const bin = (name: string) => join(here, "node_modules", ".bin", name);
-const space = join(here, "..", "infra", "src", "cli.ts");
+const space = join(here, "..", "spacefn", "src", "infra", "cli.ts");
 const sh = (cwd: string, command: string, args: string[]) => {
 	const result = spawnSync(command, args, { cwd, encoding: "utf8" });
 	return { code: result.status, output: `${result.stdout}${result.stderr}` };

@@ -2,6 +2,7 @@ import { spawn, type ChildProcess, type StdioOptions } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
 
@@ -25,6 +26,26 @@ export const packageDir = (from: string, name: string): string | undefined => {
 			return dir;
 	}
 	return undefined;
+};
+
+let ownDir: string | undefined;
+
+/** spacefn's own folder, found from this file wherever the build put it (src/ or a dist/ chunk). */
+export const spacefnDir = (): string => {
+	if (ownDir) return ownDir;
+	for (
+		let dir = dirname(fileURLToPath(import.meta.url));
+		dir !== dirname(dir);
+		dir = dirname(dir)
+	) {
+		const file = join(dir, "package.json");
+		if (
+			existsSync(file) &&
+			(JSON.parse(readFileSync(file, "utf8")) as { name?: string }).name === "spacefn"
+		)
+			return (ownDir = dir);
+	}
+	throw new Error("spacefn: can't find its own package.json");
 };
 
 export interface RunOptions {
