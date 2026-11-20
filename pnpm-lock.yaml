@@ -260,22 +260,22 @@ importers:
   packages/spacefn:
     dependencies:
       '@effect/platform-node':
-        specifier: 'catalog:'
+        specifier: ^4.1.4
         version: 4.1.4(effect@4.1.4)(redis@6.3.1)
       '@effect/sql-d1':
-        specifier: 'catalog:'
+        specifier: ^4.1.4
         version: 4.1.4(effect@4.1.4)
       '@effect/sql-libsql':
-        specifier: 'catalog:'
+        specifier: ^4.1.4
         version: 4.1.4(effect@4.1.4)
       '@effect/sql-sqlite-do':
-        specifier: 'catalog:'
+        specifier: ^4.1.4
         version: 4.1.4(effect@4.1.4)
       '@effect/sql-sqlite-node':
-        specifier: 'catalog:'
+        specifier: ^4.1.4
         version: 4.1.4(effect@4.1.4)
       '@libsql/client':
-        specifier: 'catalog:'
+        specifier: ^0.18.0
         version: 0.18.0
       alchemy:
         specifier: 'catalog:'

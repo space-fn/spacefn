@@ -29,6 +29,9 @@ describe("scaffold", () => {
 	it("gives each target its runtime and Alchemy provider", () => {
 		const cloudflare = packageJson({ name: "a", target: "cloudflare" });
 		expect(Object.keys(cloudflare.dependencies)).toEqual(["effect", "spacefn"]);
+		// Released together: a new app gets the spacefn of the same release.
+		const released = JSON.parse(readFileSync(join(here, "..", "spacefn", "package.json"), "utf8"));
+		expect(cloudflare.dependencies.spacefn).toBe(`^${released.version}`);
 		expect(cloudflare.devDependencies).toHaveProperty("@alchemy.run/cloudflare");
 		const bun = packageJson({ name: "a", target: "bun", workspace: true });
 		expect(bun.dependencies).toEqual({

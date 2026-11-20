@@ -2,8 +2,22 @@
 	"name": "spacefn",
 	"version": "0.11.0-alpha.0",
 	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun, with its CLI and deploys",
+	"keywords": [
+		"bun",
+		"cloudflare-workers",
+		"datastar",
+		"effect",
+		"framework",
+		"sqlite"
+	],
+	"homepage": "https://github.com/space-fn/spacefn#readme",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/space-fn/spacefn.git",
+		"directory": "packages/spacefn"
+	},
 	"bin": {
 		"space": "./src/infra/cli.ts"
 	},
@@ -92,12 +106,12 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
-		"@effect/platform-node": "catalog:",
-		"@effect/sql-d1": "catalog:",
-		"@effect/sql-libsql": "catalog:",
-		"@effect/sql-sqlite-do": "catalog:",
-		"@effect/sql-sqlite-node": "catalog:",
-		"@libsql/client": "catalog:",
+		"@effect/platform-node": "^4.1.4",
+		"@effect/sql-d1": "^4.1.4",
+		"@effect/sql-libsql": "^4.1.4",
+		"@effect/sql-sqlite-do": "^4.1.4",
+		"@effect/sql-sqlite-node": "^4.1.4",
+		"@libsql/client": "^0.18.0",
 		"alchemy": "catalog:"
 	},
 	"devDependencies": {

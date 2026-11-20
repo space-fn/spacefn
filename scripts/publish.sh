@@ -1,68 +1,43 @@
 #!/bin/bash
-# Publish npm packages in dependency order.
-# Usage: ./scripts/publish.sh
+# Publish spacefn and create-spacefn, released together at one version.
+# pnpm publish turns catalog: and workspace: into real versions and applies
+# publishConfig (dist/ exports and bin); npm publish would do neither.
+# Usage: pnpm run publish
 
-set -e
+set -euo pipefail
 
-published=0
-skipped=0
-failed=0
+version=$(node -p "require('./packages/spacefn/package.json').version")
+create_version=$(node -p "require('./packages/create-spacefn/package.json').version")
+if [ "$version" != "$create_version" ]; then
+  echo "❌ spacefn is $version but create-spacefn is $create_version; release them at one version" >&2
+  exit 1
+fi
 
-echo "🔎 Checks"
+# A prerelease goes to the next tag, so `npm create spacefn` keeps giving the last release.
+tag=latest
+[[ "$version" == *-* ]] && tag=next
+
+echo "🔎 Checks and tests"
 pnpm check
+pnpm test
 
-# The template pins the spacefn version being released.
-spacefn_version=$(node -p "require('./packages/spacefn/package.json').version")
-node -e '
-const fs = require("node:fs");
-const path = "packages/create-spacefn/template/package.json";
-const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
-pkg.dependencies.spacefn = "^" + process.argv[1];
-fs.writeFileSync(path, JSON.stringify(pkg, null, "\t") + "\n");
-' "$spacefn_version"
-echo "📌 template pins spacefn ^$spacefn_version"
+echo "📦 Installing the packed packages into fresh apps"
+node scripts/pack-check.ts
 
-publish_one() {
-  local dir="$1"
-  local test_cmd="$2"
-  local name version
-  name=$(cd "$dir" && node -p "require('./package.json').name")
-  version=$(cd "$dir" && node -p "require('./package.json').version")
+if ! npm whoami >/dev/null 2>&1; then
+  echo "🔐 npm is not logged in; starting npm login"
+  npm login
+fi
 
+# spacefn first: a new create-spacefn scaffolds apps that depend on it.
+for dir in packages/spacefn packages/create-spacefn; do
+  name=$(node -p "require('./$dir/package.json').name")
   if npm view "$name@$version" version >/dev/null 2>&1; then
-    echo "⏭️  $name@$version already published, skipping"
-    skipped=$((skipped + 1))
-    return
+    echo "⏭️  $name@$version is already published"
+    continue
   fi
+  echo "🚀 Publishing $name@$version ($tag)"
+  (cd "$dir" && pnpm build && pnpm publish --access public --tag "$tag")
+done
 
-  echo "🔎 Testing $name@$version"
-  (cd "$dir" && eval "$test_cmd")
-
-  echo "📦 Building $name@$version"
-  (cd "$dir" && npm run build)
-
-  echo "📦 Publishing $name@$version"
-  if ! npm whoami >/dev/null 2>&1; then
-    echo "🔐 npm is not logged in; starting npm login"
-    npm login
-    if ! npm whoami >/dev/null 2>&1; then
-      echo "❌ npm login completed, but npm is still not authenticated" >&2
-      exit 1
-    fi
-  fi
-  if (cd "$dir" && npm publish --access public); then
-    published=$((published + 1))
-  else
-    echo "❌ Failed to publish $name@$version"
-    failed=$((failed + 1))
-  fi
-}
-
-# Order matters: spacefn first, then create-spacefn.
-publish_one "packages/spacefn" "pnpm test --coverage"
-publish_one "packages/create-spacefn" "pnpm test"
-
-echo ""
-echo "Done: $published published, $skipped skipped, $failed failed"
-[ "$failed" -eq 0 ] || exit 1
-echo "To publish vscode-spacefn after the npm packages, run: pnpm publish:vscode"
+echo "Done. To publish vscode-spacefn, run: pnpm publish:vscode"

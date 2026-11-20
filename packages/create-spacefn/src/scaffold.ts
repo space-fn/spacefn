@@ -1,14 +1,15 @@
-import { cpSync, existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const template = resolve(fileURLToPath(new URL(".", import.meta.url)), "..", "template");
+const own = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
+const template = resolve(own, "template");
 
 export type Target = "cloudflare" | "bun";
 export const TARGETS: readonly Target[] = ["cloudflare", "bun"];
 
-/** The spacefn release this scaffolder ships with. */
-export const SPACEFN_VERSION = "^0.11.0";
+/** The spacefn release this scaffolder ships with: they're released together, at one version. */
+export const SPACEFN_VERSION = `^${(JSON.parse(readFileSync(resolve(own, "package.json"), "utf8")) as { version: string }).version}`;
 
 /** Everything else, at the versions this release was tested with. */
 const VERSIONS: Readonly<Record<string, string>> = {
@@ -44,7 +45,6 @@ const sorted = (record: Record<string, string>) =>
 
 /** The app's package.json: its target's runtime and Alchemy provider. */
 export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
-	const spacefn = (pkg: string) => [pkg, workspace ? "workspace:*" : SPACEFN_VERSION] as const;
 	const other = (pkg: string) =>
 		[pkg, workspace && CATALOG.has(pkg) ? "catalog:" : VERSIONS[pkg]!] as const;
 	return {
@@ -60,7 +60,12 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 			test: "vitest run --config configs/vitest.config.ts",
 			typecheck: "tsc --noEmit",
 		},
-		dependencies: sorted(Object.fromEntries([spacefn("spacefn"), other("effect")])),
+		dependencies: sorted(
+			Object.fromEntries([
+				["spacefn", workspace ? "workspace:*" : SPACEFN_VERSION],
+				other("effect"),
+			]),
+		),
 		devDependencies: sorted(
 			Object.fromEntries([
 				other(target === "cloudflare" ? "@alchemy.run/cloudflare" : "@alchemy.run/docker"),

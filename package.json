@@ -15,7 +15,8 @@
 		"publish:vscode": "./scripts/publish-vscode.sh",
 		"typecheck": "pnpm -r --filter './packages/*' typecheck",
 		"test": "pnpm -r --filter './packages/*' test",
-		"playground": "node scripts/playground.ts && pnpm install"
+		"playground": "node scripts/playground.ts && pnpm install",
+		"pack:check": "node scripts/pack-check.ts"
 	},
 	"devDependencies": {
 		"oxfmt": "0.79.0",
