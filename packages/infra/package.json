@@ -56,7 +56,6 @@
 		"@alchemy.run/docker": "catalog:",
 		"@effect/vitest": "catalog:",
 		"@spacefn/bun": "workspace:*",
-		"@spacefn/cloudflare": "workspace:*",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
 		"spacefn": "workspace:*",

@@ -28,11 +28,7 @@ const create = (target: Target) => {
 describe("scaffold", () => {
 	it("gives each target its runtime and Alchemy provider", () => {
 		const cloudflare = packageJson({ name: "a", target: "cloudflare" });
-		expect(Object.keys(cloudflare.dependencies)).toEqual([
-			"@spacefn/cloudflare",
-			"effect",
-			"spacefn",
-		]);
+		expect(Object.keys(cloudflare.dependencies)).toEqual(["effect", "spacefn"]);
 		expect(cloudflare.devDependencies).toHaveProperty("@alchemy.run/cloudflare");
 		const bun = packageJson({ name: "a", target: "bun", workspace: true });
 		expect(bun.dependencies).toEqual({

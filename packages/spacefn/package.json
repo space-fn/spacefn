@@ -15,7 +15,8 @@
 		"./codegen": "./src/codegen/index.ts",
 		"./runtime": "./src/runtime.ts",
 		"./sql": "./src/sql/index.ts",
-		"./sql/node": "./src/sql/node/index.ts"
+		"./sql/node": "./src/sql/node/index.ts",
+		"./cloudflare": "./src/cloudflare/index.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -46,23 +47,32 @@
 			"./sql/node": {
 				"types": "./dist/sql/node/index.d.mts",
 				"import": "./dist/sql/node/index.mjs"
+			},
+			"./cloudflare": {
+				"types": "./dist/cloudflare/index.d.mts",
+				"import": "./dist/cloudflare/index.mjs"
 			}
 		}
 	},
 	"scripts": {
 		"build": "tsdown",
-		"typecheck": "tsc --noEmit",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.cloudflare.json",
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@effect/sql-d1": "catalog:",
 		"@effect/sql-libsql": "catalog:",
+		"@effect/sql-sqlite-do": "catalog:",
 		"@effect/sql-sqlite-node": "catalog:",
 		"@libsql/client": "catalog:"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^5.20261030.1",
 		"@effect/vitest": "catalog:",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
+		"esbuild": "catalog:",
+		"miniflare": "catalog:",
 		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
 		"vitest": "catalog:"

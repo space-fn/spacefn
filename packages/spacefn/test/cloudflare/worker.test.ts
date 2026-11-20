@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Option, Schema } from "effect";
 import { cron, defineEnv, Env, Kv, Queue, queue, route, type SpaceManifest } from "spacefn";
 
-import { worker } from "../src/worker.ts";
+import { worker } from "../../src/cloudflare/worker.ts";
 import { fakeContext, fakeKv, fakeMessage, fakeQueue } from "./fakes.ts";
 
 const AppEnv = defineEnv({ GREETING: Env.string() });

@@ -63,7 +63,7 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 		dependencies: sorted(
 			Object.fromEntries([
 				spacefn("spacefn"),
-				spacefn(target === "cloudflare" ? "@spacefn/cloudflare" : "@spacefn/bun"),
+				...(target === "bun" ? [spacefn("@spacefn/bun")] : []),
 				other("effect"),
 			]),
 		),

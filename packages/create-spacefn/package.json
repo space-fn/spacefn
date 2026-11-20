@@ -23,7 +23,6 @@
 		"@alchemy.run/cloudflare": "catalog:",
 		"@alchemy.run/docker": "catalog:",
 		"@spacefn/bun": "workspace:*",
-		"@spacefn/cloudflare": "workspace:*",
 		"@spacefn/infra": "workspace:*",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",

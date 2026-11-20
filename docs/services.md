@@ -76,4 +76,4 @@ import { Layer } from "effect";
 export default Layer.mergeAll(Mailer.layer);
 ```
 
-On Cloudflare, `CloudflareEnv` from `@spacefn/cloudflare` gives bindings spacefn doesn't wrap, such as your Durable Objects (`DO_CHAT_ROOM` for `app/durable-objects/chat-room.ts`) or ones you add in `configs/infra.ts`.
+On Cloudflare, `CloudflareEnv` from `spacefn/cloudflare` gives bindings spacefn doesn't wrap, such as your Durable Objects (`DO_CHAT_ROOM` for `app/durable-objects/chat-room.ts`) or ones you add in `configs/infra.ts`.

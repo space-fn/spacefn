@@ -28,5 +28,5 @@ export const binding = <T>(env: WorkerEnv, name: string, what: string): T => {
  * `const { ROOM } = yield* CloudflareEnv`.
  */
 export class CloudflareEnv extends Context.Service<CloudflareEnv, WorkerEnv>()(
-	"@spacefn/cloudflare/CloudflareEnv",
+	"spacefn/cloudflare/CloudflareEnv",
 ) {}

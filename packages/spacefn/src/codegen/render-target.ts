@@ -40,12 +40,12 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 	return {
 		"entry.ts": [
 			GENERATED,
-			'import { worker } from "@spacefn/cloudflare";',
+			'import { worker } from "spacefn/cloudflare";',
 			'import { manifest } from "./manifest.ts";',
 			"",
 			"export default worker(manifest);",
 			"// The Durable Objects behind Bus and RateLimiter.",
-			'export { SpaceBus, SpaceRateLimiter } from "@spacefn/cloudflare";',
+			'export { SpaceBus, SpaceRateLimiter } from "spacefn/cloudflare";',
 			...classes,
 			"",
 		].join("\n"),

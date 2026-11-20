@@ -28,7 +28,7 @@ export interface CloudflareStackOptions {
 }
 
 /**
- * The Alchemy stack for a Cloudflare app: every binding `@spacefn/cloudflare`
+ * The Alchemy stack for a Cloudflare app: every binding `spacefn/cloudflare`
  * reads (D1 by `DB_<NAME>`, `KV` and `BLOB` when the app uses them, a queue
  * and its consumer per `app/queues/` file, the `SpaceBus` and
  * `SpaceRateLimiter` Durable Objects, the app's own Durable Objects and

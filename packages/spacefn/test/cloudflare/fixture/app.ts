@@ -14,7 +14,7 @@ import {
 } from "spacefn";
 import { database } from "spacefn/runtime";
 
-import { CloudflareEnv, durableObjectSql, worker } from "../../src/index.ts";
+import { CloudflareEnv, durableObjectSql, worker } from "../../../src/cloudflare/index.ts";
 
 interface NotesQueries {
 	addNote: { params: { readonly text: string }; row: never; mode: "exec" };
@@ -81,7 +81,7 @@ export class Counter {
 	}
 }
 
-export { SpaceBus, SpaceRateLimiter } from "../../src/index.ts";
+export { SpaceBus, SpaceRateLimiter } from "../../../src/cloudflare/index.ts";
 
 const at = (path: `/${string}`) =>
 	({ kind: "route", path, params: [], file: `app/routes${path}.ts` }) as const;
