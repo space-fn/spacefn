@@ -1,4 +1,4 @@
-// The docs reader comes from @spacefn/docs, an app's optional dev dependency, so
+// The docs reader comes from spacefn-docs, an app's optional dev dependency, so
 // spacefn itself never installs Shiki and the docs.
 import { readFileSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -9,12 +9,12 @@ import { pathToFileURL } from "node:url";
 import { addCommand, detectPackageManager } from "./package-manager.ts";
 import { spacefnDir } from "./process.ts";
 
-export const DOCS_PACKAGE = "@spacefn/docs";
+export const DOCS_PACKAGE = "spacefn-docs";
 
 /** Where `space dev` serves the reader. */
 export const DOCS_BASE = "/__space/docs/";
 
-/** What spacefn uses of @spacefn/docs. */
+/** What spacefn uses of spacefn-docs. */
 export interface DocsModule {
 	readonly version: string;
 	readonly appDocs: (options: { readonly root: string; readonly base: string }) => {
@@ -36,7 +36,7 @@ export const spacefnVersion = (): string =>
 	(JSON.parse(readFileSync(join(spacefnDir(), "package.json"), "utf8")) as { version: string })
 		.version;
 
-/** @spacefn/docs as the app at `root` has it installed, if it does. */
+/** spacefn-docs as the app at `root` has it installed, if it does. */
 export const loadDocs = async (root: string): Promise<DocsModule | undefined> => {
 	let entry: string;
 	try {

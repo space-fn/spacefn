@@ -1,5 +1,5 @@
 {
-	"name": "@spacefn/docs",
+	"name": "spacefn-docs",
 	"version": "0.11.0-alpha.0",
 	"description": "spacefn's docs and the reader `space docs` serves them with",
 	"keywords": [

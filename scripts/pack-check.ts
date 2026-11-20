@@ -1,4 +1,4 @@
-// Checks the packages as npm users get them: packs spacefn, @spacefn/docs and
+// Checks the packages as npm users get them: packs spacefn, spacefn-docs and
 // create-spacefn, scaffolds an app per target outside the workspace with the packed
 // scaffolder, installs the packed spacefn and docs with npm, then generates,
 // typechecks and tests the app, serves its docs, and on Bun builds it and serves a request.
@@ -18,7 +18,7 @@ const sh = (command: string, args: readonly string[], options: SpawnSyncOptions 
 	if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} exited ${result.status}`);
 };
 
-/** Packs `packages/<dir>`; `file` is the start of the tarball's name (`spacefn-docs` for @spacefn/docs). */
+/** Packs `packages/<dir>`; `file` is the start of the tarball's name, when it isn't the folder's. */
 const pack = (dir: string, file = dir) => {
 	const cwd = join(repo, "packages", dir);
 	sh("pnpm", ["build"], { cwd });
@@ -94,7 +94,7 @@ try {
 		// The scaffold asks for the release on npm; use the one just packed.
 		const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
 		manifest.dependencies.spacefn = `file:${spacefn}`;
-		manifest.devDependencies["@spacefn/docs"] = `file:${docs}`;
+		manifest.devDependencies["spacefn-docs"] = `file:${docs}`;
 		writeFileSync(join(app, "package.json"), `${JSON.stringify(manifest, null, "\t")}\n`);
 		writeFileSync(join(app, ".env"), readFileSync(join(app, ".env.example")));
 		sh("npm", ["install", "--no-audit", "--no-fund"], { cwd: app });

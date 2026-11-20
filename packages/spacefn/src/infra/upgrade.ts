@@ -39,7 +39,7 @@ export const providerUpgrades = (manager: PackageManager, app: PackageJson, spac
 	commandsFor(manager, app, (name) =>
 		isProvider(name)
 			? spacefn.peerDependencies?.[name]
-			: name === "@spacefn/docs"
+			: name === "spacefn-docs"
 				? spacefn.version
 				: undefined,
 	);

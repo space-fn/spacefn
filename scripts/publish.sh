@@ -1,5 +1,5 @@
 #!/bin/bash
-# Publish spacefn, @spacefn/docs and create-spacefn, released together at one version.
+# Publish spacefn, spacefn-docs and create-spacefn, released together at one version.
 # pnpm publish turns catalog: and workspace: into real versions and applies
 # publishConfig (dist/ exports and bin); npm publish would do neither.
 # Usage: pnpm run publish

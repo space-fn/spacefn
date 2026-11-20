@@ -322,7 +322,7 @@ const docsCommand = Command.make(
 			const docs = yield* Effect.promise(() => loadDocs(root));
 			if (!docs)
 				return yield* exitWith(
-					`space docs: the docs come with @spacefn/docs; add it: ${installDocs(root)}`,
+					`space docs: the docs come with spacefn-docs; add it: ${installDocs(root)}`,
 				);
 			const mismatch = docsMismatch(docs);
 			if (mismatch) yield* Console.error(`space docs: ${mismatch}`);

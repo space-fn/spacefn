@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import * as docsPackage from "@spacefn/docs";
+import * as docsPackage from "spacefn-docs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { alchemyArgs } from "../../src/infra/alchemy.ts";
@@ -59,7 +59,7 @@ describe("package managers", () => {
 	it("upgrades spacefn to latest, then the provider and docs to what spacefn expects", () => {
 		const app = {
 			dependencies: { spacefn: "^0.11.0", effect: "^4.1.4" },
-			devDependencies: { "@alchemy.run/docker": "2.0.0-beta.80", "@spacefn/docs": "^0.11.0" },
+			devDependencies: { "@alchemy.run/docker": "2.0.0-beta.80", "spacefn-docs": "^0.11.0" },
 		};
 		expect(spacefnUpgrades("pnpm", app)).toEqual([["pnpm", "add", "spacefn@latest"]]);
 		const spacefn = {
@@ -67,13 +67,13 @@ describe("package managers", () => {
 			peerDependencies: { "@alchemy.run/docker": "2.0.0-beta.90" },
 		};
 		expect(providerUpgrades("pnpm", app, spacefn)).toEqual([
-			["pnpm", "add", "-D", "@alchemy.run/docker@2.0.0-beta.90", "@spacefn/docs@0.12.0"],
+			["pnpm", "add", "-D", "@alchemy.run/docker@2.0.0-beta.90", "spacefn-docs@0.12.0"],
 		]);
 	});
 });
 
 describe("docs", () => {
-	it("loads with the API spacefn expects of @spacefn/docs", () => {
+	it("loads with the API spacefn expects of spacefn-docs", () => {
 		// spacefn imports it at runtime only, so this keeps the two in step.
 		const docs: DocsModule = docsPackage;
 		expect(typeof docs.serve).toBe("function");

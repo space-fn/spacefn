@@ -17,7 +17,7 @@
 	},
 	"devDependencies": {
 		"@alchemy.run/cloudflare": "catalog:",
-		"@spacefn/docs": "workspace:*",
+		"spacefn-docs": "workspace:*",
 		"typescript": "^7.0.2",
 		"vite": "catalog:",
 		"vitest": "catalog:"

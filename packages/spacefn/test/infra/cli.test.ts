@@ -31,13 +31,13 @@ describe("space docs", () => {
 		}
 	}, 30_000);
 
-	it("says how to install @spacefn/docs when the app doesn't have it", async () => {
+	it("says how to install spacefn-docs when the app doesn't have it", async () => {
 		const root = mkdtempSync(join(tmpdir(), "space-nodocs-"));
 		writeFileSync(join(root, "package-lock.json"), "{}");
 		// pnpm's bin shims set NODE_PATH to its store, where every package resolves.
 		const docs = space(root, ["docs"], { NODE_PATH: "" });
 		expect(await docs.exited).toBe(1);
-		expect(docs.log()).toMatch(/add it: npm install --save-dev @spacefn\/docs@\d/);
+		expect(docs.log()).toMatch(/add it: npm install --save-dev spacefn-docs@\d/);
 	});
 });
 

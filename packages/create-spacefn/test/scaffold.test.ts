@@ -33,14 +33,14 @@ describe("scaffold", () => {
 		const released = JSON.parse(readFileSync(join(here, "..", "spacefn", "package.json"), "utf8"));
 		expect(cloudflare.dependencies.spacefn).toBe(`^${released.version}`);
 		expect(cloudflare.devDependencies).toHaveProperty("@alchemy.run/cloudflare");
-		expect(cloudflare.devDependencies).toHaveProperty("@spacefn/docs", `^${released.version}`);
+		expect(cloudflare.devDependencies).toHaveProperty("spacefn-docs", `^${released.version}`);
 		const bun = packageJson({ name: "a", target: "bun", workspace: true });
 		expect(bun.dependencies).toEqual({
 			effect: "catalog:",
 			spacefn: "workspace:*",
 		});
 		expect(bun.devDependencies).toHaveProperty("@alchemy.run/docker", "catalog:");
-		expect(bun.devDependencies).toHaveProperty("@spacefn/docs", "workspace:*");
+		expect(bun.devDependencies).toHaveProperty("spacefn-docs", "workspace:*");
 	});
 
 	it("writes the app: .gitignore, configs/space.ts and package.json", () => {

@@ -8,5 +8,5 @@ This is a spacefn app. spacefn is built on Effect 4: handlers, loaders and jobs 
 - Pages: `export default page({ loader, actions, render })`; actions are `action({ method?, input: Schema, handler })`. Routes: `export default route({ GET: Effect, POST: Effect })`.
 - Errors: fail with `NotFound`, `BadRequest`, `Unauthorized`, ... from spacefn; they become the right status.
 - `app/env.ts` is imported by deploys, so it may import only `spacefn` and `effect`.
-- spacefn's docs, for the installed version, are Markdown files in `node_modules/@spacefn/docs/content/`. Read them before guessing an API.
+- spacefn's docs, for the installed version, are Markdown files in `node_modules/spacefn-docs/content/`. Read them before guessing an API.
 - Check your work with `npm run typecheck` and `npm test`; `npx space doctor` explains setup problems.

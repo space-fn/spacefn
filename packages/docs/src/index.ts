@@ -1,4 +1,4 @@
-// @spacefn/docs: spacefn's docs, and the reader `space docs` and `space dev` show them with.
+// spacefn-docs: spacefn's docs, and the reader `space docs` and `space dev` show them with.
 import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { join, sep } from "node:path";

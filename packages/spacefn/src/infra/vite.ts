@@ -82,7 +82,7 @@ export const assetTags = (
 	].join("");
 };
 
-/** The docs reader at /__space/docs/, when the app has @spacefn/docs. */
+/** The docs reader at /__space/docs/, when the app has spacefn-docs. */
 const serveDocs = async (dev: ViteDevServer, root: string) => {
 	const docs = await loadDocs(root);
 	if (!docs) return;

@@ -71,7 +71,7 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 			Object.fromEntries([
 				other(target === "cloudflare" ? "@alchemy.run/cloudflare" : "@alchemy.run/docker"),
 				// The reader and spacefn's docs, at spacefn's version.
-				["@spacefn/docs", workspace ? "workspace:*" : SPACEFN_VERSION],
+				["spacefn-docs", workspace ? "workspace:*" : SPACEFN_VERSION],
 				other("typescript"),
 				other("vite"),
 				other("vitest"),
