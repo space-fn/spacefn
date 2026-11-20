@@ -8,10 +8,11 @@ import { Effect } from "effect";
 import { gen } from "spacefn/codegen";
 
 const spacefn = fileURLToPath(new URL("../..", import.meta.url));
+const docs = join(spacefn, "..", "docs");
 
 /**
- * A fixture app under `test/infra/fixtures/`, generated, with spacefn
- * linked into its node_modules as an installed app would have it.
+ * A fixture app under `test/infra/fixtures/`, generated, with spacefn and
+ * @spacefn/docs linked into its node_modules as an installed app has them.
  */
 export const fixtureApp = async (name: string) => {
 	const root = join(spacefn, "test", "infra", "fixtures", name);
@@ -19,6 +20,9 @@ export const fixtureApp = async (name: string) => {
 	await mkdir(join(root, "node_modules"), { recursive: true });
 	await rm(join(root, "node_modules", "spacefn"), { force: true });
 	await symlink(spacefn, join(root, "node_modules", "spacefn"));
+	await mkdir(join(root, "node_modules", "@spacefn"), { recursive: true });
+	await rm(join(root, "node_modules", "@spacefn", "docs"), { force: true });
+	await symlink(docs, join(root, "node_modules", "@spacefn", "docs"));
 	await Effect.runPromise(gen(root, "dev"));
 	const data = await mkdtemp(join(tmpdir(), `space-${name}-`));
 	return {

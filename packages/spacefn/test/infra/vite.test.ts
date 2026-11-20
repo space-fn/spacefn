@@ -66,6 +66,14 @@ describe("the Bun app", () => {
 		});
 		afterAll(() => server.close());
 
+		it("serves the docs reader at /__space/docs/, with the app around it", async () => {
+			const docs = await fetch(`${base}/__space/docs/`);
+			expect(docs.status).toBe(200);
+			expect(await docs.text()).toContain("<title>spacefn docs</title>");
+			expect((await fetch(`${base}/__space/docs/_/reader.css`)).status).toBe(200);
+			expect((await fetch(`${base}/__space/docsx`)).status).not.toBe(302);
+		});
+
 		it("answers with the app and the source tags", async () => {
 			const page = await (await fetch(`${base}/`)).text();
 			expect(page).toContain('<script type="module" src="/@vite/client"></script>');

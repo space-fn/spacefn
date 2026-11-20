@@ -5,6 +5,7 @@ import { addCommand, type PackageManager } from "./package-manager.ts";
 import { packageDir } from "./process.ts";
 
 interface PackageJson {
+	readonly version?: string;
 	readonly dependencies?: Readonly<Record<string, string>>;
 	readonly devDependencies?: Readonly<Record<string, string>>;
 	readonly peerDependencies?: Readonly<Record<string, string>>;
@@ -31,12 +32,16 @@ export const spacefnUpgrades = (manager: PackageManager, app: PackageJson) =>
 	commandsFor(manager, app, (name) => (isSpacefn(name) ? "latest" : undefined));
 
 /**
- * Step two, once the new spacefn is installed: the Alchemy provider
- * the app has, to the version the new spacefn expects.
+ * Step two, once the new spacefn is installed: the Alchemy provider the app
+ * has, to the version the new spacefn expects, and its docs, to its version.
  */
 export const providerUpgrades = (manager: PackageManager, app: PackageJson, spacefn: PackageJson) =>
 	commandsFor(manager, app, (name) =>
-		isProvider(name) ? spacefn.peerDependencies?.[name] : undefined,
+		isProvider(name)
+			? spacefn.peerDependencies?.[name]
+			: name === "@spacefn/docs"
+				? spacefn.version
+				: undefined,
 	);
 
 export const readPackageJson = async (dir: string): Promise<PackageJson> =>

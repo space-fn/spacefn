@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -13,6 +14,32 @@ const interrupt = async (cli: ReturnType<typeof space>) => {
 	await cli.exited;
 	clearTimeout(timer);
 };
+
+describe("space docs", () => {
+	it("serves the app's docs and spacefn's until Ctrl-C", async () => {
+		const app = await fixtureApp("bun-app");
+		const port = 4950 + Math.floor(Math.random() * 40);
+		const docs = space(app.root, ["docs", "--port", String(port)]);
+		try {
+			await until(() => docs.log().includes(`http://localhost:${port}/`), 20_000);
+			expect(await text(`http://localhost:${port}/writing-docs.md`)).toContain(
+				"<title>Writing docs · spacefn docs</title>",
+			);
+		} finally {
+			await interrupt(docs);
+			await app.cleanup();
+		}
+	}, 30_000);
+
+	it("says how to install @spacefn/docs when the app doesn't have it", async () => {
+		const root = mkdtempSync(join(tmpdir(), "space-nodocs-"));
+		writeFileSync(join(root, "package-lock.json"), "{}");
+		// pnpm's bin shims set NODE_PATH to its store, where every package resolves.
+		const docs = space(root, ["docs"], { NODE_PATH: "" });
+		expect(await docs.exited).toBe(1);
+		expect(docs.log()).toMatch(/add it: npm install --save-dev @spacefn\/docs@\d/);
+	});
+});
 
 describe("space dev on Cloudflare (alchemy dev)", () => {
 	let app: Awaited<ReturnType<typeof fixtureApp>>;

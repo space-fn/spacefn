@@ -23,6 +23,7 @@ import {
 } from "./db.ts";
 import { devBun } from "./dev.ts";
 import { addDockerfile, APP_DOCKERFILE } from "./dockerfile.ts";
+import { docsMismatch, installDocs, loadDocs } from "./docs.ts";
 import { doctor, formatChecks } from "./doctor.ts";
 import { detectPackageManager } from "./package-manager.ts";
 import { run } from "./process.ts";
@@ -304,7 +305,45 @@ const upgradeCommand = Command.make("upgrade", {}, () =>
 		yield* generate(root, "dev");
 		yield* Console.log("space upgrade: done");
 	}).pipe(Effect.catch(report)),
-).pipe(Command.withDescription("Update spacefn, its Alchemy provider, then .space/"));
+).pipe(Command.withDescription("Update spacefn, its Alchemy provider and docs, then .space/"));
+
+const docsCommand = Command.make(
+	"docs",
+	{
+		port: Flag.Int("port").pipe(
+			Flag.withAlias("p"),
+			Flag.withDescription("Port for the docs server"),
+			Flag.withDefault(4321),
+		),
+	},
+	({ port }) =>
+		Effect.gen(function* () {
+			const root = process.cwd();
+			const docs = yield* Effect.promise(() => loadDocs(root));
+			if (!docs)
+				return yield* exitWith(
+					`space docs: the docs come with @spacefn/docs; add it: ${installDocs(root)}`,
+				);
+			const mismatch = docsMismatch(docs);
+			if (mismatch) yield* Console.error(`space docs: ${mismatch}`);
+			yield* Effect.acquireRelease(
+				Effect.tryPromise({
+					try: () => docs.serve({ root, port }),
+					catch: (error) =>
+						new Error(`can't serve the docs on port ${port}: ${describeFailure(error)}`),
+				}),
+				(server) => Effect.promise(() => server.close()),
+			).pipe(
+				Effect.tap((server) =>
+					Console.log(
+						`space docs: ${server.url} (your docs/ and spacefn's; pages reload as you edit)`,
+					),
+				),
+				Effect.andThen(Effect.never),
+				Effect.scoped,
+			);
+		}).pipe(Effect.catch(report)),
+).pipe(Command.withDescription("Read your docs/ and spacefn's docs in the browser"));
 
 const cleanCommand = Command.make("clean", {}, () =>
 	Effect.gen(function* () {
@@ -346,6 +385,7 @@ Command.make("space").pipe(
 		dbCommand,
 		doctorCommand,
 		upgradeCommand,
+		docsCommand,
 		cleanCommand,
 		addCommand,
 	]),

@@ -303,6 +303,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(vitest@5.1.1)
+      '@spacefn/docs':
+        specifier: workspace:*
+        version: link:../docs
       '@types/bun':
         specifier: ^1.4.4
         version: 1.4.4

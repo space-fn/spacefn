@@ -12,6 +12,8 @@ import {
 	type ViteDevServer,
 } from "vite";
 
+import { DOCS_BASE, docsMismatch, loadDocs } from "./docs.ts";
+
 export interface SpaceViteOptions {
 	readonly target: "cloudflare" | "bun";
 	/** The app root (where `app/` and `configs/` are). The generated config sits in `.space/`. */
@@ -80,6 +82,24 @@ export const assetTags = (
 	].join("");
 };
 
+/** The docs reader at /__space/docs/, when the app has @spacefn/docs. */
+const serveDocs = async (dev: ViteDevServer, root: string) => {
+	const docs = await loadDocs(root);
+	if (!docs) return;
+	const reader = docs.appDocs({ root, base: DOCS_BASE });
+	// Before Vite's own middleware, so its fallbacks don't answer first.
+	dev.middlewares.use((req, res, next) => void reader.handle(req, res, next));
+	dev.httpServer?.once("close", reader.close);
+	const printUrls = dev.printUrls.bind(dev);
+	dev.printUrls = () => {
+		printUrls();
+		const local = dev.resolvedUrls?.local[0];
+		if (local) dev.config.logger.info(`  ➜  Docs:    ${new URL(DOCS_BASE, local).href}`);
+		const mismatch = docsMismatch(docs);
+		if (mismatch) dev.config.logger.warn(`  ${mismatch}`);
+	};
+};
+
 /** The parts every target shares: root, aliases, output folders, assets, client-first build, reloads. */
 const core = (options: SpaceViteOptions): Plugin => {
 	const { root } = options;
@@ -124,8 +144,9 @@ const core = (options: SpaceViteOptions): Plugin => {
 		configResolved: (resolved) => {
 			config = resolved;
 		},
-		configureServer: (dev) => {
+		configureServer: async (dev) => {
 			server = dev;
+			if (dev.config.mode !== "test") await serveDocs(dev, root);
 		},
 		resolveId: (id) => (id === ASSETS_ID ? RESOLVED_ASSETS_ID : undefined),
 		load: async (id) => {
