@@ -90,14 +90,24 @@ const serveDocs = async (dev: ViteDevServer, root: string) => {
 	// Before Vite's own middleware, so its fallbacks don't answer first.
 	dev.middlewares.use((req, res, next) => void reader.handle(req, res, next));
 	dev.httpServer?.once("close", reader.close);
+	let printed = false;
+	const print = (where: string) => {
+		printed = true;
+		dev.config.logger.info(`  ➜  Docs:    ${where}`);
+		const mismatch = docsMismatch(docs);
+		if (mismatch) dev.config.logger.warn(`  ${mismatch}`);
+	};
+	// Next to Vite's URLs when something prints them (Bun's dev server does)...
 	const printUrls = dev.printUrls.bind(dev);
 	dev.printUrls = () => {
 		printUrls();
 		const local = dev.resolvedUrls?.local[0];
-		if (local) dev.config.logger.info(`  ➜  Docs:    ${new URL(DOCS_BASE, local).href}`);
-		const mismatch = docsMismatch(docs);
-		if (mismatch) dev.config.logger.warn(`  ${mismatch}`);
+		if (local) print(new URL(DOCS_BASE, local).href);
 	};
+	// ...else once the server listens. Alchemy serves it behind its own URL, so only the path is known.
+	dev.httpServer?.once("listening", () => {
+		setTimeout(() => printed || print(`${DOCS_BASE} on the app's URL`), 1_000).unref();
+	});
 };
 
 /** The parts every target shares: root, aliases, output folders, assets, client-first build, reloads. */
