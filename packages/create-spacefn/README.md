@@ -16,7 +16,7 @@ npm install
 npm run dev
 ```
 
-See the [docs](https://github.com/space-fn/spacefn/blob/main/docs/getting-started.md).
+See the [docs](https://github.com/space-fn/spacefn/blob/main/packages/docs/content/getting-started.md).
 
 ## License
 

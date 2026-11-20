@@ -21,7 +21,7 @@ This one package has everything: the framework, both targets, the Vite plugin, t
 | `spacefn/vite`                                                          | The Vite plugin; the generated `.space/vite.config.ts` adds it    |
 | `spacefn/runtime`, `codegen`, `sql`, `infra/cloudflare`, `infra/docker` | Generated code, the CLI and the editor extension                  |
 
-Read the [docs](https://github.com/space-fn/spacefn/blob/main/docs/index.md).
+Read the [docs](https://github.com/space-fn/spacefn/blob/main/packages/docs/content/index.md).
 
 ## License
 

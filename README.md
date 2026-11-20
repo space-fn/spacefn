@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/logo.svg" alt="spacefn" width="96" /></p>
+<p align="center"><img src="packages/docs/content/logo.svg" alt="spacefn" width="96" /></p>
 
 # spacefn
 
@@ -20,7 +20,7 @@ app/env.ts          the variables the app reads
 configs/            space.ts, and optional vite.config.ts and infra.ts
 ```
 
-Read the [docs](docs/index.md), starting with [Getting started](docs/getting-started.md).
+Read the [docs](packages/docs/content/index.md), starting with [Getting started](packages/docs/content/getting-started.md).
 
 ## Packages
 
