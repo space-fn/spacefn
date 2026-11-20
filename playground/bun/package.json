@@ -7,6 +7,7 @@
 		"dev": "space dev",
 		"build": "space build",
 		"deploy": "space deploy",
+		"docs": "space docs",
 		"test": "vitest run --config configs/vitest.config.ts",
 		"typecheck": "tsc --noEmit"
 	},
@@ -16,6 +17,7 @@
 	},
 	"devDependencies": {
 		"@alchemy.run/docker": "catalog:",
+		"@spacefn/docs": "workspace:*",
 		"typescript": "^7.0.2",
 		"vite": "catalog:",
 		"vitest": "catalog:"
