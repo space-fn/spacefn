@@ -27,6 +27,7 @@ Read the [docs](packages/docs/content/index.md), starting with [Getting started]
 | Package          | What it is                                                                                    |
 | ---------------- | --------------------------------------------------------------------------------------------- |
 | `spacefn`        | Everything an app installs: the framework, both targets, the Vite plugin, the stacks, the CLI |
+| `@spacefn/docs`  | spacefn's docs and the reader `space docs` shows them with, a dev dependency of every app     |
 | `create-spacefn` | `npm create spacefn`                                                                          |
 | `vscode-spacefn` | VS Code: SQL checked against migrations, Datastar and CSS in templates                        |
 
@@ -54,7 +55,9 @@ pnpm test
 
 Config for the repo's tools lives in `configs/`. Commits follow conventional commits.
 
-`pnpm pack:check` packs `spacefn` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. `pnpm run publish` runs it before publishing both packages at one version.
+The docs are in `packages/docs/content/`. `cd playground/bun && pnpm docs` shows them as you write them, and their edit links open the files in your editor.
+
+`pnpm pack:check` packs `spacefn`, `@spacefn/docs` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. `pnpm run publish` runs it before publishing the three at one version.
 
 ## License
 

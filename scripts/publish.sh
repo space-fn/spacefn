@@ -1,17 +1,20 @@
 #!/bin/bash
-# Publish spacefn and create-spacefn, released together at one version.
+# Publish spacefn, @spacefn/docs and create-spacefn, released together at one version.
 # pnpm publish turns catalog: and workspace: into real versions and applies
 # publishConfig (dist/ exports and bin); npm publish would do neither.
 # Usage: pnpm run publish
 
 set -euo pipefail
 
+packages=(packages/spacefn packages/docs packages/create-spacefn)
 version=$(node -p "require('./packages/spacefn/package.json').version")
-create_version=$(node -p "require('./packages/create-spacefn/package.json').version")
-if [ "$version" != "$create_version" ]; then
-  echo "❌ spacefn is $version but create-spacefn is $create_version; release them at one version" >&2
-  exit 1
-fi
+for dir in "${packages[@]}"; do
+  other=$(node -p "require('./$dir/package.json').version")
+  if [ "$other" != "$version" ]; then
+    echo "❌ spacefn is $version but $dir is $other; release them at one version" >&2
+    exit 1
+  fi
+done
 
 # A prerelease goes to the next tag, so `npm create spacefn` keeps giving the last release.
 tag=latest
@@ -29,8 +32,8 @@ if ! npm whoami >/dev/null 2>&1; then
   npm login
 fi
 
-# spacefn first: a new create-spacefn scaffolds apps that depend on it.
-for dir in packages/spacefn packages/create-spacefn; do
+# create-spacefn last: the apps it scaffolds depend on the other two.
+for dir in "${packages[@]}"; do
   name=$(node -p "require('./$dir/package.json').name")
   if npm view "$name@$version" version >/dev/null 2>&1; then
     echo "⏭️  $name@$version is already published"
