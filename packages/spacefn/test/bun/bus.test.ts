@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Fiber, Layer, Stream } from "effect";
 import { Bus } from "spacefn";
 
-import { busLayer } from "../src/bus.ts";
+import { busLayer } from "../../src/bun/bus.ts";
 import { build, stateAt } from "./helpers.ts";
 
 describe("bus", () => {

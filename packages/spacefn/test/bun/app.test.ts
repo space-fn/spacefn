@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { clientAddress, route, type SpaceManifest } from "spacefn";
 import { database } from "spacefn/runtime";
 
-import { app } from "../src/app.ts";
+import { app } from "../../src/bun/app.ts";
 import { dir } from "./helpers.ts";
 
 process.env.SPACE_DATA_DIR = `${dir}/app`;

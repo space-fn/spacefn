@@ -2,7 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Fiber, Layer, Schema } from "effect";
 import { Queue, queue } from "spacefn";
 
-import { consumeQueue, MAX_RETRIES, queueLayer } from "../src/queue.ts";
+import { consumeQueue, MAX_RETRIES, queueLayer } from "../../src/bun/queue.ts";
 import { build, stateAt } from "./helpers.ts";
 
 describe("queue", () => {

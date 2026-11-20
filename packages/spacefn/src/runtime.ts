@@ -1,4 +1,4 @@
-// For generated code and the target packages (spacefn/cloudflare, @spacefn/bun), not for app code.
+// For generated code and the target packages (spacefn/cloudflare, spacefn/bun), not for app code.
 export { httpLayer } from "./http/app.ts";
 export { appLayer, type AppLayerOptions } from "./app-layer.ts";
 export { cronMatches, cronOf, runSchedule } from "./jobs/cron.ts";

@@ -227,37 +227,6 @@ importers:
         specifier: 7.0.2007
         version: 7.0.2007
 
-  packages/bun:
-    dependencies:
-      '@libsql/client':
-        specifier: 'catalog:'
-        version: 0.18.0
-    devDependencies:
-      '@effect/vitest':
-        specifier: 'catalog:'
-        version: 4.1.4(effect@4.1.4)(vitest@5.1.1)
-      '@types/bun':
-        specifier: ^1.4.4
-        version: 1.4.4
-      '@types/node':
-        specifier: ^26.6.6
-        version: 26.6.6
-      effect:
-        specifier: 'catalog:'
-        version: 4.1.4
-      spacefn:
-        specifier: workspace:*
-        version: link:../spacefn
-      tsdown:
-        specifier: 'catalog:'
-        version: 0.23.7(typescript@7.0.2)
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.0.5)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
-
   packages/create-spacefn:
     devDependencies:
       '@alchemy.run/cloudflare':
@@ -266,9 +235,6 @@ importers:
       '@alchemy.run/docker':
         specifier: 'catalog:'
         version: 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0))(effect@4.1.4)
-      '@spacefn/bun':
-        specifier: workspace:*
-        version: link:../bun
       '@spacefn/infra':
         specifier: workspace:*
         version: link:../infra
@@ -315,9 +281,6 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(vitest@5.1.1)
-      '@spacefn/bun':
-        specifier: workspace:*
-        version: link:../bun
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -364,6 +327,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.1.4(effect@4.1.4)(vitest@5.1.1)
+      '@types/bun':
+        specifier: ^1.4.4
+        version: 1.4.4
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -428,9 +394,6 @@ importers:
 
   playground/bun:
     dependencies:
-      '@spacefn/bun':
-        specifier: workspace:*
-        version: link:../../packages/bun
       effect:
         specifier: 'catalog:'
         version: 4.1.4

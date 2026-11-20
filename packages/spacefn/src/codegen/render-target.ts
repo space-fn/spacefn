@@ -14,7 +14,7 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 		return {
 			"app.ts": [
 				GENERATED,
-				'import { app } from "@spacefn/bun";',
+				'import { app } from "spacefn/bun";',
 				'import { manifest } from "./manifest.ts";',
 				"",
 				"export default app(manifest);",
@@ -25,7 +25,7 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 				'import { dirname, join } from "node:path";',
 				'import { fileURLToPath } from "node:url";',
 				"",
-				'import { serve } from "@spacefn/bun";',
+				'import { serve } from "spacefn/bun";',
 				'import app from "./app.ts";',
 				"",
 				"// Built to .space/dist/server/index.js, beside .space/dist/client.",

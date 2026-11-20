@@ -4,7 +4,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Option } from "effect";
 import { Blob } from "spacefn";
 
-import { blobLayer } from "../src/blob.ts";
+import { blobLayer } from "../../src/bun/blob.ts";
 import { dir } from "./helpers.ts";
 
 describe("blob", () => {

@@ -27,7 +27,7 @@ const SCHEMA = [
  * Configured by `SPACE_STATE_URL`; locally `file:<SPACE_DATA_DIR>/state.db`.
  */
 export class SpaceState extends Context.Service<SpaceState, SqlClient.SqlClient>()(
-	"@spacefn/bun/SpaceState",
+	"spacefn/bun/SpaceState",
 ) {
 	static readonly layer = Layer.effect(
 		SpaceState,

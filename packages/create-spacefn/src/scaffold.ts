@@ -60,13 +60,7 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 			test: "vitest run --config configs/vitest.config.ts",
 			typecheck: "tsc --noEmit",
 		},
-		dependencies: sorted(
-			Object.fromEntries([
-				spacefn("spacefn"),
-				...(target === "bun" ? [spacefn("@spacefn/bun")] : []),
-				other("effect"),
-			]),
-		),
+		dependencies: sorted(Object.fromEntries([spacefn("spacefn"), other("effect")])),
 		devDependencies: sorted(
 			Object.fromEntries([
 				spacefn("@spacefn/infra"),

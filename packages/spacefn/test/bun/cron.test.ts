@@ -3,7 +3,7 @@ import { Clock, Effect, Fiber } from "effect";
 import { TestClock } from "effect/testing";
 import { cron } from "spacefn";
 
-import { runCrons } from "../src/cron.ts";
+import { runCrons } from "../../src/bun/cron.ts";
 
 describe("runCrons", () => {
 	it.effect("runs each job at the start of the minutes its schedule matches, failing or not", () =>

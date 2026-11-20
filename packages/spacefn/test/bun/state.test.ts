@@ -3,8 +3,8 @@ import { Effect, Layer, Option } from "effect";
 import { TestClock } from "effect/testing";
 import { Kv, RateLimiter } from "spacefn";
 
-import { kvLayer } from "../src/kv.ts";
-import { rateLimiterLayer } from "../src/rate-limiter.ts";
+import { kvLayer } from "../../src/bun/kv.ts";
+import { rateLimiterLayer } from "../../src/bun/rate-limiter.ts";
 import { stateAt } from "./helpers.ts";
 
 describe("state database", () => {

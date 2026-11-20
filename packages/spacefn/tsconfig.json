@@ -5,5 +5,5 @@
 	},
 	"include": ["src", "test"],
 	// The targets check with their runtime's globals: tsconfig.<target>.json.
-	"exclude": ["src/cloudflare", "test/cloudflare"]
+	"exclude": ["src/cloudflare", "test/cloudflare", "src/bun", "test/bun"]
 }

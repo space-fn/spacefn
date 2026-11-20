@@ -32,7 +32,6 @@ describe("scaffold", () => {
 		expect(cloudflare.devDependencies).toHaveProperty("@alchemy.run/cloudflare");
 		const bun = packageJson({ name: "a", target: "bun", workspace: true });
 		expect(bun.dependencies).toEqual({
-			"@spacefn/bun": "workspace:*",
 			effect: "catalog:",
 			spacefn: "workspace:*",
 		});

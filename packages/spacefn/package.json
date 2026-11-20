@@ -16,7 +16,8 @@
 		"./runtime": "./src/runtime.ts",
 		"./sql": "./src/sql/index.ts",
 		"./sql/node": "./src/sql/node/index.ts",
-		"./cloudflare": "./src/cloudflare/index.ts"
+		"./cloudflare": "./src/cloudflare/index.ts",
+		"./bun": "./src/bun/index.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -51,12 +52,16 @@
 			"./cloudflare": {
 				"types": "./dist/cloudflare/index.d.mts",
 				"import": "./dist/cloudflare/index.mjs"
+			},
+			"./bun": {
+				"types": "./dist/bun/index.d.mts",
+				"import": "./dist/bun/index.mjs"
 			}
 		}
 	},
 	"scripts": {
-		"build": "tsdown",
-		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.cloudflare.json",
+		"build": "rm -rf dist && tsdown",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.cloudflare.json && tsc --noEmit -p tsconfig.bun.json",
 		"test": "vitest run"
 	},
 	"dependencies": {
@@ -69,6 +74,7 @@
 	"devDependencies": {
 		"@cloudflare/workers-types": "^5.20261030.1",
 		"@effect/vitest": "catalog:",
+		"@types/bun": "^1.4.4",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",
 		"esbuild": "catalog:",

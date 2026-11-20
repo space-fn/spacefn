@@ -22,7 +22,6 @@
 	"devDependencies": {
 		"@alchemy.run/cloudflare": "catalog:",
 		"@alchemy.run/docker": "catalog:",
-		"@spacefn/bun": "workspace:*",
 		"@spacefn/infra": "workspace:*",
 		"@types/node": "^26.6.6",
 		"effect": "catalog:",

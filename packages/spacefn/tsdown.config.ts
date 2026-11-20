@@ -10,22 +10,21 @@ const area = (entry: Record<string, string>, tsconfig = "tsconfig.json"): UserCo
 	tsconfig,
 	format: "esm",
 	dts: true,
+	// The builds run in parallel; `pnpm build` empties dist/ first.
 	clean: false,
 	deps: { neverBundle: [/^spacefn(\/|$)/] },
 });
 
 export default defineConfig([
-	{
-		...area({
-			index: "src/index.ts",
-			"space-config": "src/space-config.ts",
-			testing: "src/testing.ts",
-			"codegen/index": "src/codegen/index.ts",
-			runtime: "src/runtime.ts",
-			"sql/index": "src/sql/index.ts",
-			"sql/node/index": "src/sql/node/index.ts",
-		}),
-		clean: true,
-	},
+	area({
+		index: "src/index.ts",
+		"space-config": "src/space-config.ts",
+		testing: "src/testing.ts",
+		"codegen/index": "src/codegen/index.ts",
+		runtime: "src/runtime.ts",
+		"sql/index": "src/sql/index.ts",
+		"sql/node/index": "src/sql/node/index.ts",
+	}),
 	area({ "cloudflare/index": "src/cloudflare/index.ts" }, "tsconfig.cloudflare.json"),
+	area({ "bun/index": "src/bun/index.ts" }, "tsconfig.bun.json"),
 ]);

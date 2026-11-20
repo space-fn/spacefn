@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { ConfigProvider, Context, Effect, Layer } from "effect";
 
-import { SpaceState } from "../src/state.ts";
+import { SpaceState } from "../../src/bun/state.ts";
 
 export const dir = await mkdtemp(join(tmpdir(), "spacefn-bun-"));
 process.on("exit", () => void rm(dir, { recursive: true, force: true }));

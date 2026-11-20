@@ -1,7 +1,7 @@
 /**
  * The contract between generated code and the target packages. `space gen`
  * writes `.space/manifest.ts` as a value of this type; `spacefn/cloudflare`
- * and `@spacefn/bun` turn it into a running app. Module types make a wrong
+ * and `spacefn/bun` turn it into a running app. Module types make a wrong
  * export a type error in the generated file, so the editor flags it.
  */
 import type { Layer } from "effect";

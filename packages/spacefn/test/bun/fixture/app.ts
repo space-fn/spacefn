@@ -13,7 +13,7 @@ import {
 } from "spacefn";
 import { database } from "spacefn/runtime";
 
-import { app } from "../../src/index.ts";
+import { app } from "../../../src/bun/index.ts";
 
 interface NotesQueries {
 	addNote: { params: { readonly text: string }; row: never; mode: "exec" };

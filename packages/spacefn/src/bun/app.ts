@@ -23,7 +23,7 @@ export const platformLayer = (manifest: Pick<SpaceManifest, "name" | "queues">) 
 	);
 
 /** The client's address from the server, for `clientAddress`. */
-class ClientIp extends Context.Service<ClientIp, string | undefined>()("@spacefn/bun/ClientIp") {}
+class ClientIp extends Context.Service<ClientIp, string | undefined>()("spacefn/bun/ClientIp") {}
 
 export interface BunApp {
 	readonly manifest: SpaceManifest;
