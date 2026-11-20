@@ -24,15 +24,23 @@ Read the [docs](docs/index.md), starting with [Getting started](docs/getting-sta
 
 ## Packages
 
-| Package               | What it is                                                             |
-| --------------------- | ---------------------------------------------------------------------- |
-| `spacefn`             | The framework: routes, pages, database, services, jobs, auth, testing  |
-| `@spacefn/cloudflare` | Runs an app as a Worker                                                |
-| `@spacefn/bun`        | Runs an app on Bun: web, queue and cron processes                      |
-| `@spacefn/infra`      | The `space` CLI, the Vite plugin and the Alchemy stacks                |
-| `@spacefn/sql`        | Parses and checks migrations and queries                               |
-| `create-spacefn`      | `npm create spacefn`                                                   |
-| `vscode-spacefn`      | VS Code: SQL checked against migrations, Datastar and CSS in templates |
+| Package          | What it is                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| `spacefn`        | Everything an app installs: the framework, both targets, the Vite plugin, the stacks, the CLI |
+| `create-spacefn` | `npm create spacefn`                                                                          |
+| `vscode-spacefn` | VS Code: SQL checked against migrations, Datastar and CSS in templates                        |
+
+Inside `packages/spacefn/src/`, each area is a folder, and `test/boundaries.test.ts` keeps them apart:
+
+| Folder        | Import                                             | What it is                                                       |
+| ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
+| (the rest)    | `spacefn`, …                                       | The core: routes, pages, database, services, jobs, auth, codegen |
+| `sql/`        | `spacefn/sql`                                      | Parses and checks migrations and queries, with no dependencies   |
+| `cloudflare/` | `spacefn/cloudflare`                               | Runs an app as a Worker                                          |
+| `bun/`        | `spacefn/bun`                                      | Runs an app on Bun: web, queue and cron processes                |
+| `infra/`      | `spacefn/vite`, `spacefn/infra/*`, the `space` bin | The CLI, the Vite plugin and the Alchemy stacks                  |
+
+The core never imports a target or the infra. The targets and the infra import the core by its package name (`spacefn/runtime`), not by relative path, so a build shares one copy of it.
 
 ## Working on spacefn
 
@@ -45,6 +53,8 @@ pnpm test
 `playground/cloudflare` and `playground/bun` are apps made from the `create-spacefn` template on the workspace packages: `cd playground/bun && pnpm dev`. After changing the template, `pnpm playground` remakes them (a test fails until you do). Set `SPACE_TEST_DOCKER=1` to include the test that deploys to local Docker.
 
 Config for the repo's tools lives in `configs/`. Commits follow conventional commits.
+
+`pnpm pack:check` packs `spacefn` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. `pnpm run publish` runs it before publishing both packages at one version.
 
 ## License
 

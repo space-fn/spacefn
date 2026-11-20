@@ -62,7 +62,7 @@ export default defineConfig({ plugins: [tailwind()] });
 What spacefn can't guess about your infrastructure:
 
 ```ts
-import { defineInfra } from "@spacefn/infra";
+import { defineInfra } from "spacefn/infra";
 
 export default defineInfra({
 	cloudflare: {

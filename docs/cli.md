@@ -1,6 +1,6 @@
 # CLI
 
-`space` comes with `@spacefn/infra`. Run it with `npx space <command>`, or through the app's scripts (`npm run dev`).
+`space` comes with `spacefn`. Run it with `npx space <command>`, or through the app's scripts (`npm run dev`).
 
 | Command                                                      | What it does                                                                                                                                                          |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
