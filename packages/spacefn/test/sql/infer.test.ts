@@ -1,9 +1,9 @@
 import { beforeAll, expect, test } from "vitest";
 
-import { inferQuery } from "../src/infer.ts";
-import type { Migration } from "../src/migration-file.ts";
-import { scratchDatabase } from "../src/node/scratch.ts";
-import { parseQueryFile } from "../src/query-file.ts";
+import { inferQuery } from "../../src/sql/infer.ts";
+import type { Migration } from "../../src/sql/migration-file.ts";
+import { scratchDatabase } from "../../src/sql/node/scratch.ts";
+import { parseQueryFile } from "../../src/sql/query-file.ts";
 
 const migrations: Migration[] = [
 	{

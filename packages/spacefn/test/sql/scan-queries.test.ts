@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, expect, test } from "vitest";
 
-import { scanQueries } from "../src/node/scan.ts";
+import { scanQueries } from "../../src/sql/node/scan.ts";
 
 const migrations = [
 	{ id: "0001", sql: "CREATE TABLE todos (id INTEGER PRIMARY KEY, title TEXT NOT NULL);" },

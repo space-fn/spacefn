@@ -1,11 +1,11 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 
-import type { AnalyzedQuery, Migration } from "@spacefn/sql";
-import { scanMigrations, scanQueries } from "@spacefn/sql/node";
 import { Effect } from "effect";
 
 import { SpaceError } from "../errors.ts";
+import type { AnalyzedQuery, Migration } from "../sql/index.ts";
+import { scanMigrations, scanQueries } from "../sql/node/index.ts";
 import { CODE_FILE, isTestFile } from "./route-path.ts";
 
 export interface DbFolder {

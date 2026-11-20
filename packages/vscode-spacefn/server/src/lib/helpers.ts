@@ -1,4 +1,4 @@
-import { parseQueryFile } from "@spacefn/sql";
+import { parseQueryFile } from "spacefn/sql";
 import { Position } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 

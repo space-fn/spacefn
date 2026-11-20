@@ -2,6 +2,8 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: [
+		"src/sql/index.ts",
+		"src/sql/node/index.ts",
 		"src/index.ts",
 		"src/space-config.ts",
 		"src/testing.ts",

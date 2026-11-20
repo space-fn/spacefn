@@ -1,7 +1,7 @@
-import { splitStatements, type Migration } from "@spacefn/sql";
 import { Effect, Schema } from "effect";
 import type { SqlError } from "effect/sql";
 
+import { splitStatements, type Migration } from "../sql/index.ts";
 import type { DbConnection, SqlStatement } from "./connection.ts";
 
 export type { Migration };

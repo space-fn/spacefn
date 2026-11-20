@@ -1,7 +1,7 @@
-import type { Migration, QueryMode } from "@spacefn/sql";
 import { Context, Effect, Layer, Option, Schema, SchemaTransformation, type Scope } from "effect";
 import type { SqlError } from "effect/sql";
 
+import type { Migration, QueryMode } from "../sql/index.ts";
 import type { DbConnection } from "./connection.ts";
 import { applyMigrations, type MigrationError } from "./migrate.ts";
 

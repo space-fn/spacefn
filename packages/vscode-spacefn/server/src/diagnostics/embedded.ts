@@ -1,4 +1,4 @@
-import { scratchDatabase } from "@spacefn/sql/node";
+import { scratchDatabase } from "spacefn/sql/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver/node";
 

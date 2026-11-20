@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import { analyzeQuery } from "@spacefn/sql";
-import { scratchDatabase } from "@spacefn/sql/node";
 
 import { renderDb } from "../src/codegen/render-db.ts";
+import { analyzeQuery } from "../src/sql/index.ts";
+import { scratchDatabase } from "../src/sql/node/index.ts";
 
 const migrations = [
 	{

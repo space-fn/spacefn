@@ -1,7 +1,7 @@
 import { beforeAll, expect, test } from "vitest";
 
-import { analyzeQuery, type ScratchDb } from "../src/infer.ts";
-import { scratchDatabase } from "../src/node/scratch.ts";
+import { analyzeQuery, type ScratchDb } from "../../src/sql/infer.ts";
+import { scratchDatabase } from "../../src/sql/node/scratch.ts";
 
 let scratch: ScratchDb;
 beforeAll(async () => {

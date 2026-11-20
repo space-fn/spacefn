@@ -1,7 +1,7 @@
 import * as path from "node:path";
 
-import { parseQueryFile } from "@spacefn/sql";
-import { scanMigrations, scratchDatabase } from "@spacefn/sql/node";
+import { parseQueryFile } from "spacefn/sql";
+import { scanMigrations, scratchDatabase } from "spacefn/sql/node";
 import type { TextDocument } from "vscode-languageserver-textdocument";
 import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver/node";
 

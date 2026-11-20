@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { splitStatements } from "../src/split.ts";
+import { splitStatements } from "../../src/sql/split.ts";
 
 test("splits on semicolons", () => {
 	expect(splitStatements("CREATE TABLE a (x); INSERT INTO a VALUES (1);")).toEqual([

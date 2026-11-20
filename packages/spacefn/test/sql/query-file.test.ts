@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { parseQueryFile } from "../src/query-file.ts";
+import { parseQueryFile } from "../../src/sql/query-file.ts";
 
 test("reads the header, annotations and SQL", () => {
 	const query = parseQueryFile(

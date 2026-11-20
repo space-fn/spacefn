@@ -1,5 +1,5 @@
 #!/bin/bash
-# Publish vscode-spacefn. @spacefn/sql comes from the workspace and is bundled into the server.
+# Publish vscode-spacefn. spacefn/sql comes from the workspace and is bundled into the server.
 # Usage: pnpm publish:vscode
 
 set -euo pipefail

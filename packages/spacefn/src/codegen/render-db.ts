@@ -1,5 +1,4 @@
-import type { AnalyzedQuery } from "@spacefn/sql";
-
+import type { AnalyzedQuery } from "../sql/index.ts";
 import { pascalName } from "./names.ts";
 import { SQL_TYPE, type PlannedDb } from "./plan.ts";
 import { GENERATED } from "./render-manifest.ts";

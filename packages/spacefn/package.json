@@ -13,7 +13,9 @@
 		"./config": "./src/space-config.ts",
 		"./testing": "./src/testing.ts",
 		"./codegen": "./src/codegen/index.ts",
-		"./runtime": "./src/runtime.ts"
+		"./runtime": "./src/runtime.ts",
+		"./sql": "./src/sql/index.ts",
+		"./sql/node": "./src/sql/node/index.ts"
 	},
 	"publishConfig": {
 		"exports": {
@@ -36,6 +38,14 @@
 			"./runtime": {
 				"types": "./dist/runtime.d.mts",
 				"import": "./dist/runtime.mjs"
+			},
+			"./sql": {
+				"types": "./dist/sql/index.d.mts",
+				"import": "./dist/sql/index.mjs"
+			},
+			"./sql/node": {
+				"types": "./dist/sql/node/index.d.mts",
+				"import": "./dist/sql/node/index.mjs"
 			}
 		}
 	},
@@ -47,8 +57,7 @@
 	"dependencies": {
 		"@effect/sql-libsql": "catalog:",
 		"@effect/sql-sqlite-node": "catalog:",
-		"@libsql/client": "catalog:",
-		"@spacefn/sql": "workspace:*"
+		"@libsql/client": "catalog:"
 	},
 	"devDependencies": {
 		"@effect/vitest": "catalog:",

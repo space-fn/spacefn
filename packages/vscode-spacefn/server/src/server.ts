@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 
-import { scratchDatabase } from "@spacefn/sql/node";
+import { scratchDatabase } from "spacefn/sql/node";
 import * as cssService from "vscode-css-languageservice";
 import * as htmlService from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";

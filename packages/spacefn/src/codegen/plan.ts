@@ -1,4 +1,3 @@
-import type { AnalyzedQuery, Migration } from "@spacefn/sql";
 import { Effect } from "effect";
 
 import { SpaceError } from "../errors.ts";
@@ -9,6 +8,7 @@ import {
 	type ResolvedSpaceConfig,
 	type Target,
 } from "../space-config.ts";
+import type { AnalyzedQuery, Migration } from "../sql/index.ts";
 import { bindingName, pascalName, unitName } from "./names.ts";
 import {
 	CODE_FILE,

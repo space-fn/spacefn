@@ -33,7 +33,7 @@ export interface TableColumn {
 }
 
 /**
- * A migrated SQLite schema to check queries against. `@spacefn/sql/node` has one
+ * A migrated SQLite schema to check queries against. `spacefn/sql/node` has one
  * on `node:sqlite`; any SQLite that reports result-column origins works.
  */
 export interface ScratchDb {
