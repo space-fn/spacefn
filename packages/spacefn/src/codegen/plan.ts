@@ -151,6 +151,13 @@ const planClasses = (folder: string, files: readonly string[], prefix: string) =
 		units.map((unit) => ({ ...unit, className: pascalName(unit.name) })),
 	);
 
+/** A client entry's name for `assets(...)`: `app/client/main.ts` → `main`. */
+export const clientEntryName = (file: string): string =>
+	file
+		.split("/")
+		.pop()!
+		.replace(/\.[^.]+$/, "");
+
 /**
  * The URLs a `public/` file answers: its path, and for HTML what Cloudflare's
  * assets also serve it at (`about.html` at `/about`, `docs/index.html` at `/docs/`).

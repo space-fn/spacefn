@@ -36,6 +36,7 @@ describe("gen", () => {
 		Effect.gen(function* () {
 			yield* write(app);
 			expect((yield* gen(root, "dev", "cloudflare")).written).toEqual([
+				"assets.d.ts",
 				"db/main.ts",
 				"entry.ts",
 				"infra.ts",

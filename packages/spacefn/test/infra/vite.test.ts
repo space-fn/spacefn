@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createBuilder, createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { assetTags } from "../../src/infra/vite.ts";
+import { assetsModule, entryTags } from "../../src/infra/vite.ts";
 import { fixtureApp } from "./fixture.ts";
 
 const until = async (check: () => Promise<boolean>, ms = 10_000) => {
@@ -15,14 +15,21 @@ const until = async (check: () => Promise<boolean>, ms = 10_000) => {
 	throw new Error("timed out");
 };
 
-describe("assetTags", () => {
-	it("points at the sources in dev, behind the Vite client", () => {
-		expect(assetTags(["app/client/main.ts", "app/client/style.css"], "/", undefined)).toBe(
-			'<script type="module" src="/@vite/client"></script>' +
-				'<script type="module" src="/app/client/main.ts"></script>' +
-				'<link rel="stylesheet" href="/app/client/style.css">',
-		);
-		expect(assetTags([], "/", undefined)).toBe("");
+/** The `assets` that `assetsModule` exports, with `raw` as plain text. */
+const assetsOf = (tags: Record<string, string[]>) =>
+	// oxlint-disable-next-line typescript/no-implied-eval -- runs the generated module's own code
+	new Function(
+		assetsModule(tags)
+			.replace('import { raw } from "spacefn";', "const raw = (text) => text;")
+			.replace("export const assets =", "return"),
+	)() as (...names: string[]) => string;
+
+describe("entryTags", () => {
+	it("points at the source in dev, behind the Vite client", () => {
+		expect(entryTags("app/client/style.css", "/", undefined)).toEqual([
+			'<script type="module" src="/@vite/client"></script>',
+			'<link rel="stylesheet" href="/app/client/style.css">',
+		]);
 	});
 
 	it("points at the hashed files of a build, with their CSS and preloads", () => {
@@ -34,14 +41,32 @@ describe("assetTags", () => {
 				isEntry: true,
 			},
 			"_shared.js": { file: "assets/shared-3.js" },
-			"app/client/style.css": { file: "assets/style-4.css", isEntry: true },
 		};
-		expect(assetTags(["app/client/main.ts", "app/client/style.css"], "/", manifest)).toBe(
-			'<link rel="stylesheet" href="/assets/main-2.css">' +
-				'<link rel="stylesheet" href="/assets/style-4.css">' +
-				'<link rel="modulepreload" href="/assets/shared-3.js">' +
-				'<script type="module" src="/assets/main-1.js"></script>',
+		expect(entryTags("app/client/main.ts", "/", manifest)).toEqual([
+			'<link rel="stylesheet" href="/assets/main-2.css">',
+			'<link rel="modulepreload" href="/assets/shared-3.js">',
+			'<script type="module" src="/assets/main-1.js"></script>',
+		]);
+	});
+});
+
+describe("assets", () => {
+	const assets = assetsOf({
+		site: ["<vite>", "<site.css>"],
+		main: ["<vite>", "<shared.css>", "<main.js>"],
+		admin: ["<vite>", "<shared.css>", "<admin.js>"],
+	});
+
+	it("joins the entries' tags in the order asked, each tag once", () => {
+		expect(assets("site", "main", "admin")).toBe("<vite><site.css><shared.css><main.js><admin.js>");
+		expect(assets("admin")).toBe("<vite><shared.css><admin.js>");
+	});
+
+	it("names the entries when asked for one that isn't", () => {
+		expect(() => assets("mian")).toThrow(
+			"there's no client entry \"mian\"; the entries are app/client/'s files: site, main, admin",
 		);
+		expect(() => assets("toString")).toThrow("no client entry");
 	});
 });
 

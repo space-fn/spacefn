@@ -1,6 +1,6 @@
 import { Effect, Option, Redacted } from "effect";
 import { html, Kv, route } from "spacefn";
-import { head } from "spacefn/assets";
+import { assets } from "spacefn/assets";
 
 import Env from "#configs/env.ts";
 import MainDb from "#space/db/main.ts";
@@ -15,7 +15,7 @@ export default route({
 		const secret = Redacted.value(env.API_KEY).length;
 		return html`<html>
 			<head>
-				${head}
+				${assets("main")}
 			</head>
 			<body>
 				${env.GREETING} ${notes} ${job} ${secret}

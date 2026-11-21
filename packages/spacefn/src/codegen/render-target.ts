@@ -1,4 +1,4 @@
-import type { AppPlan } from "./plan.ts";
+import { type AppPlan, clientEntryName } from "./plan.ts";
 import { fromSpace, GENERATED } from "./render-manifest.ts";
 
 const str = JSON.stringify;
@@ -100,3 +100,17 @@ export const renderInfra = (plan: AppPlan): string => {
 		"",
 	].join("\n");
 };
+
+/** `.space/assets.d.ts`: the client entries' names, so `assets("main")` is checked. */
+export const renderAssetTypes = (plan: AppPlan): string =>
+	[
+		GENERATED,
+		"export {};",
+		"",
+		'declare module "spacefn/assets" {',
+		"\tinterface ClientEntries {",
+		...plan.client.map((file) => `\t\t${str(clientEntryName(file))}: ${str(file)};`),
+		"\t}",
+		"}",
+		"",
+	].join("\n");

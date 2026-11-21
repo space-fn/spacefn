@@ -7,7 +7,7 @@ import { Readable } from "node:stream";
 
 import { Cause, Effect, Exit } from "effect";
 import { formatSpaceError, SpaceError, type Target } from "spacefn";
-import { genPlan } from "spacefn/internal/codegen";
+import { clientEntryName, genPlan } from "spacefn/internal/codegen";
 import {
 	isRunnableDevEnvironment,
 	type Manifest,
@@ -74,42 +74,56 @@ const installedVersion = async (resolve: (id: string) => string, name: string) =
 	throw new Error(`spacefn: can't find the installed version of ${name}`);
 };
 
-/** The tags for the client entries: their sources in dev, the hashed build files from the manifest. */
-export const assetTags = (
-	entries: readonly string[],
+/**
+ * One client entry's tags, in load order: its source in dev (after Vite's
+ * client), else its CSS, the chunks it imports, and the script, from the manifest.
+ */
+export const entryTags = (
+	entry: string,
 	base: string,
 	manifest: Manifest | undefined,
-): string => {
-	if (!manifest) {
-		const tags =
-			entries.length > 0 ? [`<script type="module" src="${base}@vite/client"></script>`] : [];
-		for (const entry of entries)
-			tags.push(
-				entry.endsWith(".css")
-					? `<link rel="stylesheet" href="${base}${entry}">`
-					: `<script type="module" src="${base}${entry}"></script>`,
-			);
-		return tags.join("");
-	}
+): string[] => {
+	if (!manifest)
+		return [
+			`<script type="module" src="${base}@vite/client"></script>`,
+			entry.endsWith(".css")
+				? `<link rel="stylesheet" href="${base}${entry}">`
+				: `<script type="module" src="${base}${entry}"></script>`,
+		];
 	const styles = new Set<string>();
-	const scripts: string[] = [];
 	const preloads = new Set<string>();
-	const visit = (key: string, entry: boolean) => {
+	let script: string | undefined;
+	const visit = (key: string, top: boolean) => {
 		const chunk = manifest[key];
 		if (!chunk) return;
 		if (chunk.file.endsWith(".css")) styles.add(chunk.file);
-		else if (entry) scripts.push(chunk.file);
+		else if (top) script = chunk.file;
 		else preloads.add(chunk.file);
 		for (const css of chunk.css ?? []) styles.add(css);
 		for (const imported of chunk.imports ?? []) visit(imported, false);
 	};
-	for (const entry of entries) visit(entry, true);
+	visit(entry, true);
 	return [
 		...[...styles].map((file) => `<link rel="stylesheet" href="${base}${file}">`),
 		...[...preloads].map((file) => `<link rel="modulepreload" href="${base}${file}">`),
-		...scripts.map((file) => `<script type="module" src="${base}${file}"></script>`),
-	].join("");
+		...(script ? [`<script type="module" src="${base}${script}"></script>`] : []),
+	];
 };
+
+/** `spacefn/assets` for the app: `assets(...names)` joins those entries' tags, each tag once. */
+export const assetsModule = (tags: Readonly<Record<string, readonly string[]>>): string =>
+	`import { raw } from "spacefn";
+const tags = ${JSON.stringify(tags)};
+export const assets = (...names) => {
+	const seen = new Set();
+	for (const name of names) {
+		const entry = Object.hasOwn(tags, name) ? tags[name] : undefined;
+		if (!entry) throw new Error(\`spacefn/assets: there's no client entry "\${name}"; the entries are app/client/'s files: \${Object.keys(tags).join(", ") || "none"}\`);
+		for (const tag of entry) seen.add(tag);
+	}
+	return raw([...seen].join(""));
+};
+`;
 
 /** The docs reader at /__space/docs/, when the app has spacefn-docs. */
 const serveDocs = async (dev: ViteDevServer, root: string) => {
@@ -207,8 +221,11 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 							await readFile(join(clientOut(), ".vite", "manifest.json"), "utf8"),
 						) as Manifest)
 					: undefined;
-			const tags = assetTags(app.client, config.base, manifest);
-			return `import { raw } from "spacefn";\nexport const head = raw(${JSON.stringify(tags)});\n`;
+			return assetsModule(
+				Object.fromEntries(
+					app.client.map((file) => [clientEntryName(file), entryTags(file, config.base, manifest)]),
+				),
+			);
 		},
 		buildApp: {
 			// The server bundles embed the client manifest, so the client goes first.
