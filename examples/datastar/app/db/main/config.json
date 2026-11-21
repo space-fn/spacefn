@@ -1,0 +1,5 @@
+{
+	"$schema": "../../../node_modules/spacefn/schemas/db.json",
+	"driver": "d1",
+	"migrateOn": "startup"
+}

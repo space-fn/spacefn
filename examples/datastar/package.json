@@ -1,0 +1,33 @@
+{
+	"name": "datastar",
+	"private": true,
+	"description": "A live poll with Datastar: html components, namespaced signals, live updates over the Bus, and a Rocket custom element.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"docs": "space docs",
+		"test": "vitest run --config configs/vitest.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"effect": "catalog:",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vitest": "catalog:"
+	}
+}
