@@ -1,12 +1,19 @@
 #!/bin/bash
-# Publish spacefn, spacefn-docs and create-spacefn, released together at one version.
+# Publish spacefn, spacefn-docs and create-spacefn, released together at one version:
+# an app scaffolded by create-spacefn@X depends on spacefn@^X and spacefn-docs@^X.
 # pnpm publish turns catalog: and workspace: into real versions and applies
 # publishConfig (dist/ exports and bin); npm publish would do neither.
+# vscode-spacefn has its own version and its own script: pnpm publish:vscode.
 # Usage: pnpm run publish
 
 set -euo pipefail
 
+root_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root_dir"
+
+# In publish order: create-spacefn last, since the apps it scaffolds need the other two.
 packages=(packages/spacefn packages/docs packages/create-spacefn)
+
 version=$(node -p "require('./packages/spacefn/package.json').version")
 for dir in "${packages[@]}"; do
   other=$(node -p "require('./$dir/package.json').version")
@@ -16,9 +23,27 @@ for dir in "${packages[@]}"; do
   fi
 done
 
+# A release is what's committed on main, so the tag below names exactly what was published.
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" != "main" ]; then
+  echo "❌ On $branch: publish from main" >&2
+  exit 1
+fi
+if [ -n "$(git status --porcelain)" ]; then
+  echo "❌ The working tree has changes: commit or stash them first" >&2
+  exit 1
+fi
+
 # A prerelease goes to the next tag, so `npm create spacefn` keeps giving the last release.
 tag=latest
 [[ "$version" == *-* ]] && tag=next
+
+echo "📋 Releasing $version ($tag):"
+for dir in "${packages[@]}"; do
+  name=$(node -p "require('./$dir/package.json').name")
+  current=$(npm view "$name" dist-tags.latest 2>/dev/null || true)
+  echo "   $name: ${current:-not on npm yet} → $version"
+done
 
 echo "🔎 Checks and tests"
 pnpm check
@@ -32,7 +57,6 @@ if ! npm whoami >/dev/null 2>&1; then
   npm login
 fi
 
-# create-spacefn last: the apps it scaffolds depend on the other two.
 for dir in "${packages[@]}"; do
   name=$(node -p "require('./$dir/package.json').name")
   if npm view "$name@$version" version >/dev/null 2>&1; then
@@ -40,7 +64,16 @@ for dir in "${packages[@]}"; do
     continue
   fi
   echo "🚀 Publishing $name@$version ($tag)"
-  (cd "$dir" && pnpm build && pnpm publish --access public --tag "$tag")
+  # --access public: a package's first publish (spacefn-docs) would otherwise ask.
+  (cd "$dir" && pnpm build && pnpm publish --access public --tag "$tag" --no-git-checks)
 done
 
-echo "Done. To publish vscode-spacefn, run: pnpm publish:vscode"
+if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+  echo "⏭️  Tag v$version already exists"
+else
+  git tag -a "v$version" -m "spacefn $version"
+  echo "🏷️  Tagged v$version; push it with: git push origin v$version"
+fi
+
+vscode=$(node -p "require('./packages/vscode-spacefn/package.json').version")
+echo "Done. vscode-spacefn is at $vscode; to publish it, run: pnpm publish:vscode"
