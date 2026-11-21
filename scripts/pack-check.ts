@@ -66,7 +66,7 @@ const serveDocs = async (app: string) => {
 	const space = join(app, "node_modules", ".bin", "space");
 	const docs = spawn(space, ["docs", "--port", port], { cwd: app, stdio: "inherit" });
 	try {
-		await answers(`http://localhost:${port}/spacefn/writing-docs.md`, "space docs");
+		await answers(`http://localhost:${port}/spacefn/reference/writing-docs.md`, "space docs");
 	} finally {
 		docs.kill("SIGTERM");
 	}
