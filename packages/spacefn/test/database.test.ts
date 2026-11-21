@@ -127,6 +127,14 @@ describe("database", () => {
 		}).pipe(Effect.provide(Main)),
 	);
 
+	it.effect("runs each query as a static of the class, namespaces included", () =>
+		Effect.gen(function* () {
+			yield* MainDb.addTodo({ title: "a", note: null, done: true, icon: null });
+			expect(yield* MainDb.listTodos()).toEqual([{ id: 1, title: "a", note: null, done: true }]);
+			expect(yield* MainDb.todos.stats.countDone()).toEqual(Option.some({ n: 1 }));
+		}).pipe(Effect.provide(Main)),
+	);
+
 	it.effect("nests the queries of a folder under its name", () =>
 		Effect.gen(function* () {
 			const db = yield* MainDb;

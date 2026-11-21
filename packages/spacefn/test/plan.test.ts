@@ -199,6 +199,23 @@ describe("planApp target and config checks", () => {
 		expect(error).toMatchObject({ code: "DB_PARAM_TYPE", file: "app/db/main/queries" });
 	});
 
+	it("rejects a query or folder named like a static of the database class", () => {
+		for (const name of ["layer", "migrate.all"]) {
+			const query = {
+				name,
+				mode: "exec" as const,
+				sql: "",
+				boundSql: "",
+				columns: [],
+				paramNames: [],
+				paramTypes: {},
+				parts: [],
+			};
+			const error = planError(tree({ db: [{ ...dbFolder("main"), queries: [query] }] }));
+			expect(error).toMatchObject({ code: "DB_QUERY_RESERVED", file: "app/db/main/queries" });
+		}
+	});
+
 	it("requires .space/ in .gitignore", () => {
 		for (const gitignore of [".space", "/.space/", "dist\n.space/\n"])
 			expect(plan(tree({ gitignore })).target, gitignore).toBe("cloudflare");

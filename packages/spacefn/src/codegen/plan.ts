@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { DbDriver, type AppConfig, type Target } from "../app-config.ts";
-import type { MigrateOn } from "../db/database.ts";
+import { RESERVED_QUERY_NAMES, type MigrateOn } from "../db/database.ts";
 import { SpaceError } from "../errors.ts";
 import { isValidSchedule } from "../jobs/cron.ts";
 import type { AnalyzedQuery, Migration } from "../sql/index.ts";
@@ -191,6 +191,20 @@ const checkParamTypes = (db: AppTree["db"][number]) =>
 			: Effect.void;
 	});
 
+/** A query (or its folder) named like a static of the database class would hide that static. */
+const checkQueryNames = (db: AppTree["db"][number]) =>
+	Effect.forEach(db.queries, (query) => {
+		const top = query.name.split(".")[0]!;
+		return RESERVED_QUERY_NAMES.includes(top)
+			? fail(
+					"DB_QUERY_RESERVED",
+					`${query.name}: "${top}" is taken by the database class (${pascalName(db.name)}Db.${top})`,
+					"Rename the query file or its folder.",
+					`app/db/${db.name}/queries`,
+				)
+			: Effect.void;
+	});
+
 const CLOUDFLARE_ONLY_DRIVERS: ReadonlySet<DbDriver> = new Set(["d1", "durable-object"]);
 
 /** `app/db/<name>/config.json`. */
@@ -233,6 +247,7 @@ const planDb = Effect.fnUntraced(function* (tree: AppTree, target: Target) {
 		Effect.gen(function* () {
 			const name = yield* unitName("db", db.name);
 			yield* checkParamTypes(db);
+			yield* checkQueryNames(db);
 			const { driver, migrateOn } = yield* dbConfigOf(db, target);
 			if (target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
 				return yield* fail(

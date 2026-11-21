@@ -69,6 +69,40 @@ export type Database<Q extends Record<keyof Q, QueryTypes>> = {
 	readonly [N in Namespaces<Q>]: Database<Inside<Q, N> & Record<keyof Inside<Q, N>, QueryTypes>>;
 };
 
+/**
+ * The queries as statics of the database class, each needing the database:
+ * `yield* MainDb.listTodos()`, `yield* MainDb.todos.markDone({ id })`.
+ */
+export type DatabaseAccessors<D, Self> = {
+	readonly [K in keyof D]: D[K] extends (
+		...args: infer A
+	) => Effect.Effect<infer X, infer E, infer R>
+		? (...args: A) => Effect.Effect<X, E, R | Self>
+		: DatabaseAccessors<D[K], Self>;
+};
+
+/**
+ * Names a query can't have: the database class's own statics and the
+ * service's. Codegen refuses a query file with one of them.
+ */
+export const RESERVED_QUERY_NAMES: readonly string[] = [
+	"definition",
+	"layer",
+	"migrate",
+	"key",
+	"of",
+	"context",
+	"use",
+	"useSync",
+	"pipe",
+	"toJSON",
+	"stack",
+	"name",
+	"length",
+	"prototype",
+	"constructor",
+];
+
 // SQLite has no boolean or blob types it returns consistently: booleans are
 // 0/1, and drivers return blobs as Uint8Array or ArrayBuffer.
 const SqliteBoolean = Schema.Union([Schema.Number, Schema.Boolean]).pipe(
@@ -193,6 +227,25 @@ export interface DatabaseStatics<Self> {
 	>;
 }
 
+/** Accessors for every query of `definition`, through the database service `service`. */
+const makeAccessors = (
+	service: {
+		readonly use: (f: (db: any) => Effect.Effect<any, any, any>) => Effect.Effect<any, any, any>;
+	},
+	definition: DbDefinition,
+) => {
+	const root: Record<string, unknown> = {};
+	for (const name of Object.keys(definition.queries)) {
+		const path = name.split(".");
+		let level = root;
+		for (const folder of path.slice(0, -1))
+			level = (level[folder] ??= {}) as Record<string, unknown>;
+		level[path.at(-1)!] = (params?: unknown) =>
+			service.use((db) => path.reduce((at, key) => at[key], db)(params));
+	}
+	return root;
+};
+
 /** Any generated database class, as the manifest and the targets see it. */
 export type DatabaseClass = Context.Key<any, any> & DatabaseStatics<any>;
 
@@ -203,8 +256,8 @@ export type DatabaseClass = Context.Key<any, any> & DatabaseStatics<any>;
  * export class MainDb extends database<MainDb, Queries>()({ name, migrations, queries }) {}
  * ```
  *
- * and handlers use it like any service: `const db = yield* MainDb`, then
- * `yield* db.listTodos({ done: false })`. Targets provide it with `MainDb.layer(connection)`.
+ * and handlers call its queries as statics, `yield* MainDb.listTodos({ done: false })`,
+ * or get them all with `const db = yield* MainDb`. Targets provide it with `MainDb.layer(connection)`.
  */
 export const database =
 	<Self, Q extends Record<keyof Q, QueryTypes>>() =>
@@ -227,5 +280,9 @@ export const database =
 				const db = yield* Service;
 				return yield* applyMigrations(connections.get(db as object)!, definition.migrations);
 			});
-		return Object.assign(Service, { definition, layer, migrate } satisfies DatabaseStatics<Self>);
+		return Object.assign(
+			Service,
+			makeAccessors(Service, definition) as DatabaseAccessors<Database<Q>, Self>,
+			{ definition, layer, migrate } satisfies DatabaseStatics<Self>,
+		);
 	};
