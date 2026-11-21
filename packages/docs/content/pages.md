@@ -30,10 +30,10 @@ export default page({
 	},
 	render: (ctx) =>
 		layout(
-			ctx.loaderData.title,
+			ctx.data.title,
 			html`<form method="post" action="${ctx.actions.rename.url}">
-				<input type="hidden" name="id" value="${ctx.loaderData.id}" />
-				<input name="title" value="${ctx.loaderData.title}" />
+				<input type="hidden" name="id" value="${ctx.data.id}" />
+				<input name="title" value="${ctx.data.title}" />
 				<button>Rename</button>
 			</form>`,
 		),
@@ -44,7 +44,7 @@ Keep `loader` and `actions` before `render`, so TypeScript can type `ctx`. Write
 
 ## The loader
 
-An `Effect` that reads input (`Input.params`, `Input.query`), uses services, and returns `ctx.loaderData`. It can fail with the errors of [Routes](routes.md) (`NotFound` is a 404 page), or return a response to answer instead of rendering, such as `redirect("/login")`.
+An `Effect` that reads input (`Input.params`, `Input.query`), uses services, and returns `ctx.data`. It can fail with the errors of [Routes](routes.md) (`NotFound` is a 404 page), or return a response to answer instead of rendering, such as `redirect("/login")`.
 
 ## Actions
 
@@ -53,15 +53,16 @@ Each action is `action({ method?, input, handler })`, reached at `ctx.actions.<n
 - **`post`** (the default) decodes the form, a multipart body, or the JSON a Datastar `@post` sends.
 - **`get`** decodes the query string, or the signals of a Datastar `@get`.
 
-When the input decodes, `handler` runs. Return a response such as `redirect(...)` to send it, which is right after a form post (the browser then reloads the page with `GET`). Return anything else and the page renders again with `ctx.action = { name, ok: true, data }`.
+When the input decodes, `handler` runs. Return a response such as `redirect(...)` to send it, which is right after a form post (the browser then reloads the page with `GET`). Return anything else and the page renders again with it as `ctx.actions.<name>.data`.
 
-When the input doesn't decode, the page renders again with status `422` and `ctx.action = { name, ok: false, issues, values }`: each issue has a `path` and `message`, and `values` holds what was sent, so the form can show it back:
+When the input doesn't decode, the page renders again with status `422` and `ctx.actions.<name>.error`, typed from the action's input. `fields` holds the first message for each field, `issues` every issue with its dotted `path`, and `values` what was sent, so the form can show it back:
 
 ```ts
-${ctx.action?.name === "rename" && !ctx.action.ok
-	? ctx.action.issues.map((issue) => html`<p role="alert">${issue.path}: ${issue.message}</p>`)
-	: ""}
+<input name="title" value="${ctx.actions.rename.error?.values.title ?? ctx.data.title}" />
+${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.rename.error.fields.title}</p>`}
 ```
+
+Outside the render that answers a submission, `error` and `data` are `undefined`.
 
 ## HTML
 
@@ -89,7 +90,7 @@ live: action({
 ```
 
 ```ts
-html`<main data-init="@get('${ctx.actions.live.url}')">${ctx.loaderData.list}</main>`;
+html`<main data-init="@get('${ctx.actions.live.url}')">${ctx.data.list}</main>`;
 ```
 
 When the page loads, Datastar opens the action. `watch` subscribes to the `todos` topic on the [Bus](services.md), sends `todoList`'s HTML, and sends it again after each message, until the tab closes. Datastar swaps elements in by `id`, so give the rendered elements one. Anything that changes the todos publishes the topic, from a page, a route, a queue consumer or a cron:

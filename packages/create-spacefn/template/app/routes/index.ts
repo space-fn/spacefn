@@ -62,13 +62,13 @@ export default page({
 		layout(
 			"Todos",
 			html`<main data-init="@get('${ctx.actions.live.url}')">
-				<h1>${ctx.loaderData.greeting}</h1>
+				<h1>${ctx.data.greeting}</h1>
 				<form method="post" action="${ctx.actions.add.url}">
 					<input name="title" placeholder="What needs doing?" autofocus />
 					<button>Add</button>
 				</form>
-				${ctx.action?.name === "add" && !ctx.action.ok ? html`<p role="alert">Give the todo a title.</p>` : ""}
-				${ctx.loaderData.list}
+				${ctx.actions.add.error ? html`<p role="alert">Give the todo a title.</p>` : ""}
+				${ctx.data.list}
 			</main>`,
 		),
 });
