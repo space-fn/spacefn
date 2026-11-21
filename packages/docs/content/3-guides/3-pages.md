@@ -1,41 +1,62 @@
 # Pages
 
-A file in `app/routes/` whose default export is a `page(...)` is a server-rendered page. `page` takes a `loader` (what the page needs), `actions` (what its forms do) and `render` (the HTML):
+A file in `app/routes/` whose default export is a `page(...)` is a server-rendered page. `page` takes a `loader` (what the page needs), `actions` (what its forms do) and `render` (the HTML). The page connects them to the feature's code in `modules/`: what to do with todos, and how they look.
 
-```ts
+```ts [modules/todos/todos.ts]
 import { Effect, Option, Schema } from "effect";
-import { action, html, Input, NotFound, page, redirect } from "spacefn";
+import { NotFound } from "spacefn";
 
-import { layout } from "#lib/ui/layout.ts";
-// app/routes/todos/[id].ts → /todos/:id
 import MainDb from "#space/db/main.ts";
 
+export const Rename = Schema.Struct({ id: Schema.FiniteFromString, title: Schema.NonEmptyString });
+
+export const find = (id: number) =>
+	Effect.flatMap(MainDb.findTodo({ id }), (todo) =>
+		Option.isSome(todo)
+			? Effect.succeed(todo.value)
+			: Effect.fail(new NotFound({ message: `No todo ${id}` })),
+	);
+
+export const rename = ({ id, title }: typeof Rename.Type) => MainDb.renameTodo({ id, title });
+```
+
+```ts [modules/todos/views.ts]
+import { html } from "spacefn";
+
+/** A form to rename the todo, posting to `rename`. */
+export const renameForm = (props: {
+	readonly todo: { readonly id: number; readonly title: string };
+	readonly rename: string;
+}) =>
+	html`<form method="post" action="${props.rename}">
+		<input type="hidden" name="id" value="${props.todo.id}" />
+		<input name="title" value="${props.todo.title}" />
+		<button>Rename</button>
+	</form>`;
+```
+
+```ts [app/routes/todos/[id].ts]
+import { Effect, Schema } from "effect";
+import { action, Input, page, redirect } from "spacefn";
+
+import { layout } from "#lib/ui/layout.ts";
+import * as Todos from "#modules/todos/todos.ts";
+import { renameForm } from "#modules/todos/views.ts";
+
+// /todos/:id
 export default page({
 	loader: Effect.gen(function* () {
 		const { id } = yield* Input.params(Schema.Struct({ id: Schema.FiniteFromString }));
-		const todo = yield* MainDb.findTodo({ id });
-		if (Option.isNone(todo)) return yield* new NotFound({ message: `No todo ${id}` });
-		return todo.value;
+		return yield* Todos.find(id);
 	}),
 	actions: {
 		rename: action({
-			input: Schema.Struct({ id: Schema.FiniteFromString, title: Schema.NonEmptyString }),
-			handler: ({ id, title }) =>
-				Effect.gen(function* () {
-					yield* MainDb.renameTodo({ id, title });
-					return redirect(`/todos/${id}`);
-				}),
+			input: Todos.Rename,
+			handler: (todo) => Effect.as(Todos.rename(todo), redirect(`/todos/${todo.id}`)),
 		}),
 	},
 	render: (ctx) =>
-		layout(
-			ctx.data.title,
-			html`<form method="post" action="${ctx.actions.rename.url}">
-				<input type="hidden" name="id" value="${ctx.data.id}" />
-				<input name="title" value="${ctx.data.title}" />
-				<button>Rename</button>
-			</form>`,
-		),
+		layout(ctx.data.title, renameForm({ todo: ctx.data, rename: ctx.actions.rename.url })),
 });
 ```
 

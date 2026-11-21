@@ -4,21 +4,31 @@
 
 A file in `app/queues/` consumes the queue of its name. Its body is decoded with a schema before your handler sees it:
 
-```ts
-// app/queues/emails.ts
-import { Effect, Schema } from "effect";
-import { queue } from "spacefn";
+```ts [modules/emails/emails.ts]
+import { Schema } from "effect";
+import { Queue } from "spacefn";
 
 import { Mailer } from "#lib/mailer.ts";
 
-export default queue({
-	body: Schema.Struct({ to: Schema.String, subject: Schema.String }),
-	handler: ({ to, subject }, message) => Mailer.send(to, subject),
-	retryDelay: "30 seconds",
-});
+/** What the `emails` queue carries. */
+export const Email = Schema.Struct({ to: Schema.String, subject: Schema.String });
+
+/** Sends it later: puts it on the queue. */
+export const later = (email: typeof Email.Type) => Queue.send("emails", email);
+
+/** Sends it now: the queue's consumer. */
+export const send = ({ to, subject }: typeof Email.Type) => Mailer.send(to, subject);
 ```
 
-Send to it from anywhere with `Queue.send("emails", { to, subject })`.
+```ts [app/queues/emails.ts]
+import { queue } from "spacefn";
+
+import * as Emails from "#modules/emails/emails.ts";
+
+export default queue({ body: Emails.Email, handler: Emails.send, retryDelay: "30 seconds" });
+```
+
+Send to it from anywhere with `Emails.later({ to, subject })`, which calls `Queue.send("emails", ...)`. The handler also gets the message as a second argument, `(body, message)`.
 
 - Each message is acknowledged once its handler succeeds and retried when it fails, so one bad message doesn't redeliver the batch. A body that doesn't decode is retried too.
 - After 3 retries a message is dropped; on Bun with an error in the log, on Cloudflare as the consumer's `settings` in `configs/infra.ts` say (`maxRetries`, `deadLetterQueue`).
@@ -32,11 +42,10 @@ On Cloudflare it's a Cloudflare Queue and a consumer, which `configs/infra.ts` c
 
 A file in `app/crons/` runs a job on a schedule:
 
-```ts
-// app/crons/nightly.ts
+```ts [app/crons/nightly.ts]
 import { cron } from "spacefn";
 
-import { Sessions } from "#lib/sessions.ts";
+import * as Sessions from "#modules/accounts/sessions.ts";
 
 export default cron("0 3 * * *", Sessions.deleteExpired);
 ```

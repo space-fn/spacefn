@@ -64,7 +64,43 @@ Counts are fixed windows, and every process and instance agrees on them. `client
 
 ## Your own services
 
-List your own layers in the entry's `services`, after spacefn's. They can use the env, the databases and the services above, and everything in the app can use them:
+A service of your own is an Effect `Context.Service` with a layer, in `lib/` when every feature can use it, or in its feature's `modules/` folder. Here a mailer, over the `HttpClient` that `platform(manifest)` gives:
+
+```ts [lib/mailer.ts]
+import { Context, Effect, Layer } from "effect";
+import { HttpClient, HttpClientRequest } from "effect/http";
+
+import Env from "#configs/env.ts";
+
+export class Mailer extends Context.Service<
+	Mailer,
+	{ readonly send: (to: string, subject: string) => Effect.Effect<void, unknown> }
+>()("app/Mailer") {
+	static readonly layer = Layer.effect(
+		Mailer,
+		Effect.gen(function* () {
+			const env = yield* Env;
+			const http = yield* HttpClient.HttpClient;
+			return {
+				send: (to, subject) =>
+					HttpClientRequest.post("https://api.mail.example/send").pipe(
+						HttpClientRequest.bearerToken(env.MAIL_TOKEN),
+						HttpClientRequest.bodyJsonUnsafe({ to, subject }),
+						http.execute,
+						Effect.asVoid,
+					),
+			};
+		}),
+	);
+
+	static readonly send = (to: string, subject: string) =>
+		Mailer.use((mailer) => mailer.send(to, subject));
+}
+```
+
+The static `send` lets code call `Mailer.send(to, subject)`, as spacefn's own services are called. In a test, provide `Layer.succeed(Mailer)({ send: ... })` instead.
+
+List the layer in the entry's `services`, after spacefn's. It can use the env, the databases and the services above, and everything in the app can use it:
 
 ```ts [app/entry.ts]
 import { Mailer } from "#lib/mailer.ts";

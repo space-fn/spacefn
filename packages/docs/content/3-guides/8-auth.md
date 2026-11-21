@@ -15,11 +15,9 @@ PBKDF2-SHA256 at 100,000 iterations, the most Workers allow. That is below OWASP
 
 `sessionAuth` gives cookie sessions over your own sessions table. Only a hash of each token is stored, so a leaked table signs nobody in.
 
-```ts
-import { Effect } from "effect";
+```ts [modules/accounts/sessions.ts]
 import { sessionAuth } from "spacefn";
 
-// lib/auth.ts
 import MainDb from "#space/db/main.ts";
 
 export const auth = sessionAuth({
@@ -71,23 +69,39 @@ HMAC-signed, with a purpose, an expiry and a unique `jti` you can record to make
 
 ## Sign in with Google, GitHub or Facebook
 
-```ts
-const google = OAuth.google({
-	clientId,
-	clientSecret,
-	redirectUri: "https://todo.example.com/auth/google",
-});
+```ts [modules/accounts/google.ts]
+import { Effect } from "effect";
+import { OAuth, redirect } from "spacefn";
 
-// app/routes/auth/google.ts
-export default route({
-	GET: Effect.gen(function* () {
-		if (!(yield* google.isCallback)) return yield* google.start;
-		const profile = yield* google.finish; // { provider, id, email, emailVerified, name, avatarUrl }
-		// find or create the user by profile.provider + profile.id, then:
-		const session = yield* auth.create;
-		return google.clear(auth.signIn(redirect("/"), session.token));
+import Env from "#configs/env.ts";
+
+import { auth } from "./sessions.ts";
+
+const google = Effect.map(Env, (env) =>
+	OAuth.google({
+		clientId: env.GOOGLE_CLIENT_ID,
+		clientSecret: env.GOOGLE_CLIENT_SECRET,
+		redirectUri: `${env.ORIGIN}/auth/google`,
 	}),
+);
+
+/** Sends the browser to Google, or, on its way back, signs the user in. */
+export const signIn = Effect.gen(function* () {
+	const provider = yield* google;
+	if (!(yield* provider.isCallback)) return yield* provider.start;
+	const profile = yield* provider.finish; // { provider, id, email, emailVerified, name, avatarUrl }
+	// find or create the user by profile.provider + profile.id, then:
+	const session = yield* auth.create;
+	return provider.clear(auth.signIn(redirect("/"), session.token));
 });
+```
+
+```ts [app/routes/auth/google.ts]
+import { route } from "spacefn";
+
+import { signIn } from "#modules/accounts/google.ts";
+
+export default route({ GET: signIn });
 ```
 
 The code flow with PKCE and a state cookie, so a callback only completes a sign-in this browser started. `OAuth.github` and `OAuth.facebook` work the same, and `oauthProvider(spec, client)` builds others. Match existing accounts by email only when `emailVerified` is true; Facebook never says so.

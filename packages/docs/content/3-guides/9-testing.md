@@ -1,6 +1,6 @@
 # Testing
 
-Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, through `configs/vitest.ts`, which merges `configs/vite.ts` so the spacefn plugin runs too). They run in Node, in memory: no Worker, no Docker, no database server.
+Tests sit next to the code they test, as `*.test.ts`: a feature's in its `modules/<feature>/` folder, shared code's in `lib/`. `npm test` runs every one in `app/`, `modules/` and `lib/` with Vitest, through `configs/vitest.ts`, which merges `configs/vite.ts` so the spacefn plugin runs too. They run in Node, in memory: no Worker, no Docker, no database server.
 
 `spacefn/testing` has what you need:
 
@@ -13,9 +13,11 @@ Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, thr
 | `testEnv(values)`             | Values for `configs/env.ts`                                                       |
 | `QueueInbox`                  | What was sent to `Queue.memory`, to assert on                                     |
 
-## A page or a route
+## A feature through its pages
 
-```ts
+Test a feature as a browser uses it: through the pages and routes that wire it up.
+
+```ts [modules/todos/todos.test.ts]
 import { Layer } from "effect";
 import { form, memoryServices, testApp, testDb, testEnv } from "spacefn/testing";
 import { expect, it } from "vitest";
@@ -37,19 +39,28 @@ it("adds a todo", async () => {
 
 `testApp` takes the generated manifest, so every page, route and `_middleware.ts` is served as in the app; pass `{ routes: [...] }` instead to serve only some. The services are what the entry's `services` would give, in memory. Each `testApp` builds them once, so a fresh one gives a fresh database, and `await using` releases them at the end of the test.
 
-## Effects directly
+## A feature's code directly
 
-For a query or a service, provide the layers to the effect. `it.effect` comes from `@effect/vitest` (add it to your dev dependencies):
+The functions in `modules/` are Effects, so a test can run them without HTTP: provide the layers they use. `it.effect` comes from `@effect/vitest` (add it to your dev dependencies):
 
-```ts
+```ts [modules/todos/todos.test.ts]
 import { it } from "@effect/vitest";
+import { Effect, Layer } from "effect";
+import { memoryServices, testDb } from "spacefn/testing";
+import { expect } from "vitest";
 
-it.effect("lists todos", () =>
+import MainDb from "#space/db/main.ts";
+
+import * as Todos from "./todos.ts";
+
+it.effect("adds a todo, and lists it", () =>
 	Effect.gen(function* () {
-		yield* MainDb.addTodo({ title: "Ship" });
-		expect((yield* MainDb.listTodos()).map((todo) => todo.title)).toEqual(["Ship"]);
-	}).pipe(Effect.provide(testDb(MainDb))),
+		yield* Todos.add({ title: "Ship" });
+		expect((yield* Todos.list).map((todo) => todo.title)).toEqual(["Ship"]);
+	}).pipe(Effect.provide(Layer.mergeAll(testDb(MainDb), memoryServices))),
 );
 ```
+
+`memoryServices` is there because `Todos.add` publishes on the `Bus`.
 
 Time-based code (TTLs, rate-limit windows, cron schedules) follows Effect's `Clock`, so `TestClock.adjust("2 minutes")` moves it.
