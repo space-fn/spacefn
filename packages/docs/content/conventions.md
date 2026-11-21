@@ -13,6 +13,7 @@ app/workflows/        Workflow classes              (Cloudflare only)
 app/entry.ts          what runs with the rest       → The entry
 configs/              env.ts (the variables the app reads), infra.ts (the Alchemy stack), vite.ts, vitest.ts, tsconfig.json; Dockerfile on Bun
 lib/                  your code, imported as #lib/...
+public/               files served as they are at /  → Pages
 .space/               generated
 ```
 
@@ -54,6 +55,6 @@ Imports from the app root are [subpath imports](https://nodejs.org/api/packages.
 
 - `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
 - `#lib/...` is your own code in `lib/`. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
-- `spacefn/assets` gives `head`, the `<script>` and `<link>` tags of `app/client/` (see [Pages](pages.md)). The Vite plugin provides it.
+- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Pages](pages.md#scripts-styles-and-public-files)). The Vite plugin provides it.
 
 Use relative imports with the `.ts` extension inside a folder.

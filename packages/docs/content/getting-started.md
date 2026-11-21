@@ -31,7 +31,8 @@ app/
   routes/_middleware.ts     refuses cross-site form posts, on every request
   db/main/migrations/       the schema, in SQL
   db/main/queries/          one SQL query per file, typed for you
-  client/site.css           bundled by Vite
+  client/site.css           bundled by Vite, loaded by assets("site") in the layout
+public/favicon.svg          served as it is, at /favicon.svg
 configs/
   env.ts                    the variables the app reads
   infra.ts                  what a deploy creates: a plain Alchemy stack

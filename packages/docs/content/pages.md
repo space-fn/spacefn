@@ -68,14 +68,27 @@ ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.r
 
 `` html`...` `` escapes every value, so user input is safe to interpolate. Arrays render each item, and `null`, `undefined` and `false` render nothing. `raw(string)` inserts markup you trust as it is. Routes can return `html` too.
 
-The layout puts `head` from `spacefn/assets` in `<head>`: the `<script>` and `<link>` tags of every file in `app/client/`. In dev they point at the sources and Vite's live reload; in a build, at the hashed files, with their CSS and preloads.
+## Scripts, styles and public files
 
-```ts
-import { head } from "spacefn/assets";
+Each file directly in `app/client/` is an entry, named after the file: `app/client/main.ts` is `main`, `app/client/site.css` is `site`. A file starting with `_` isn't one; entries import it. `assets(...)` from `spacefn/assets` gives the `<script>` and `<link>` tags of the entries you name, in that order:
+
+```ts [app/routes/_layout.ts]
+import { assets } from "spacefn/assets";
+
 html`<head>
-	${head}
+	${assets("site", "main")}
 </head>`;
 ```
+
+A page that needs more than the layout loads it itself, so a heavy script is only on the pages that use it:
+
+```ts
+layout("Admin", html`${assets("admin")} ...`);
+```
+
+In dev the tags point at the sources and Vite's live reload; in a build, at the hashed files, with their CSS and preloads. A tag two entries share comes once. The names are typed: `assets("mian")` is a type error, and so is loading an entry that was deleted.
+
+Files in `public/`, at the app root, are served as they are at `/`: `public/favicon.svg` is `/favicon.svg`. They are copied into the build, and on both targets answered before the app runs, so a public file at a route's URL is an error from `space gen`. Put files there that need a fixed URL (icons, `robots.txt`, images linked from outside); import the rest from `app/client/`, so they get hashed names.
 
 ## Live updates with Datastar
 
