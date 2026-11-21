@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -83,14 +84,15 @@ describe("docs", () => {
 describe("clean", () => {
 	it("removes generated files and builds, never deploy state or local data", async () => {
 		for (const file of [
-			"manifest.ts",
-			"db/main.ts",
+			".space/manifest.ts",
+			".space/db/main.ts",
+			".space/.alchemy/state/x",
+			".space/data/main.db",
 			"dist/server/index.js",
-			".alchemy/state/x",
-			"data/main.db",
 		])
-			await touch(`.space/${file}`);
-		expect(await clean(root)).toEqual(["db", "dist", "manifest.ts"]);
+			await touch(file);
+		expect(await clean(root)).toEqual([".space/db", ".space/manifest.ts", "dist"]);
+		expect(existsSync(join(root, "dist"))).toBe(false);
 		expect((await readdir(join(root, ".space"))).sort()).toEqual([".alchemy", "data"]);
 		expect(await clean(join(root, "missing"))).toEqual([]);
 	});

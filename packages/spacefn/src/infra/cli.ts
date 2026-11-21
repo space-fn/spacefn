@@ -246,11 +246,9 @@ const buildCommand = Command.make("build", {}, () =>
 		if (plan.target === "cloudflare")
 			return yield* Console.log("space build: the Worker is built and uploaded by space deploy");
 		yield* buildBun(root);
-		yield* Console.log(
-			"space build: wrote .space/dist (run it with bun .space/dist/server/index.js)",
-		);
+		yield* Console.log("space build: wrote dist/ (run it with bun dist/server/index.js)");
 	}).pipe(Effect.catch(report)),
-).pipe(Command.withDescription("Build for production (Bun: .space/dist)"));
+).pipe(Command.withDescription("Build for production (Bun: dist/)"));
 
 const deployCommand = Command.make("deploy", { stage: stageFlag, yes: yesFlag }, ({ stage, yes }) =>
 	Effect.gen(function* () {
@@ -358,7 +356,7 @@ const cleanCommand = Command.make("clean", {}, () =>
 		yield* Console.log(
 			removed.length === 0
 				? "space clean: nothing to remove"
-				: `space clean: removed ${removed.map((entry) => `.space/${entry}`).join(", ")}`,
+				: `space clean: removed ${removed.join(", ")}`,
 		);
 		yield* Console.log(
 			`  kept ${KEPT.map((entry) => `.space/${entry}`).join(" and ")} (deploy state and local data)`,

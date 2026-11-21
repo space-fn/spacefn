@@ -89,7 +89,7 @@ describe("renderApp", () => {
 			import { serve } from "spacefn/bun";
 			import app from "./app.ts";
 
-			// Built to .space/dist/server/index.js, beside .space/dist/client.
+			// Built to dist/server/index.js, beside dist/client.
 			await serve(app, { client: join(dirname(fileURLToPath(import.meta.url)), "..", "client") });
 			"
 		`);

@@ -114,11 +114,11 @@ describe("the Bun app", () => {
 
 		it("is one server bundle that serves the hashed client", async () => {
 			const manifest = JSON.parse(
-				await readFile(join(app.root, ".space/dist/server/package.json"), "utf8"),
+				await readFile(join(app.root, "dist/server/package.json"), "utf8"),
 			);
 			expect(Object.keys(manifest.dependencies)).toEqual(["@libsql/client"]);
 			const port = 4800 + Math.floor(Math.random() * 100);
-			const server = spawn("bun", [join(app.root, ".space/dist/server/index.js")], {
+			const server = spawn("bun", [join(app.root, "dist/server/index.js")], {
 				env: { ...process.env, PORT: String(port), SPACE_DATA_DIR: join(app.data, "built") },
 				stdio: "ignore",
 			});

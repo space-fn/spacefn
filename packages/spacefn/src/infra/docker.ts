@@ -12,7 +12,7 @@ import { deployVariables } from "./variables.ts";
 /** What codegen knows about the app, as `.space/alchemy.run.ts` passes it. */
 export interface DockerApp {
 	readonly name: string;
-	/** `.space/`; the image is built from `.space/dist`. */
+	/** `.space/`; the image is built from `dist/`, beside it. */
 	readonly rootDir: string;
 	readonly db: readonly { readonly driver: string; readonly binding: string }[];
 	readonly folders: readonly string[];
@@ -24,7 +24,7 @@ export interface DockerStackOptions {
 }
 
 /**
- * The Alchemy stack for a Bun app: an image built from `.space/dist` (so run
+ * The Alchemy stack for a Bun app: an image built from `dist/` (so run
  * `space build` first), a volume for `/data` (file databases, the state
  * database, blobs) and one container, restarted unless stopped. With
  * `docker.host` in `configs/infra.ts` it all happens on that Docker host.
@@ -35,9 +35,9 @@ export const dockerStack = (app: DockerApp, options: DockerStackOptions = {}) =>
 		{ providers: Docker.providers(), state: Alchemy.localState() },
 		Effect.gen(function* () {
 			const infra = options.infra?.docker ?? {};
-			const dist = join(app.rootDir, "dist");
+			const dist = join(app.rootDir, "..", "dist");
 			if (!existsSync(join(dist, "server", "index.js")))
-				return yield* Effect.die(new Error("No build in .space/dist. Run space build first."));
+				return yield* Effect.die(new Error("No build in dist/. Run space build first."));
 			const context = infra.host
 				? { context: yield* Docker.Context("Host", { docker: `host=${infra.host}` }) }
 				: {};

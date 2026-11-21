@@ -103,8 +103,8 @@ describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("space dev and bui
 		try {
 			const build = space(app.root, ["build"]);
 			expect(await build.exited).toBe(0);
-			expect(build.log()).toContain("wrote .space/dist");
-			expect(existsSync(join(app.root, ".space/dist/server/index.js"))).toBe(true);
+			expect(build.log()).toContain("wrote dist/");
+			expect(existsSync(join(app.root, "dist/server/index.js"))).toBe(true);
 		} finally {
 			await app.cleanup();
 		}

@@ -1,4 +1,4 @@
-# The image for a spacefn app on Bun. Its build context is .space/dist (what
+# The image for a spacefn app on Bun. Its build context is dist/ (what
 # `space build` writes), so no source or dev dependency gets in. Run
 # `space add docker` to copy this file to configs/docker/Dockerfile and change it.
 ARG BUN_VERSION=1.4.4

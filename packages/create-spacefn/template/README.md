@@ -8,7 +8,7 @@ A [spacefn](https://github.com/space-fn/spacefn) app: folders of convention file
 | ------------------ | ------------------------------------------------------------------------- |
 | `npm run dev`      | Runs the app locally, reloading on every change                           |
 | `npm test`         | Runs the tests in `app/`                                                  |
-| `npm run build`    | Builds for production (Bun: `.space/dist`)                                |
+| `npm run build`    | Builds for production (Bun: `dist/`)                                      |
 | `npm run deploy`   | Deploys (Cloudflare: your account; Bun: a Docker container), stage `prod` |
 | `npm run docs`     | Shows `docs/` and spacefn's docs in the browser                           |
 | `npx space doctor` | Checks what dev and deploy need                                           |

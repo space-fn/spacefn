@@ -63,7 +63,7 @@ const serveDocs = async (app: string) => {
 
 const serveOnce = async (app: string) => {
 	const port = String(4700 + Math.floor(Math.random() * 100));
-	const server = spawn("bun", [".space/dist/server/index.js"], {
+	const server = spawn("bun", ["dist/server/index.js"], {
 		cwd: app,
 		env: { ...process.env, PORT: port, SPACE_DATA_DIR: join(app, ".space", "data") },
 		stdio: "inherit",

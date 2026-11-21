@@ -137,7 +137,7 @@ const serveDocs = async (dev: ViteDevServer, root: string) => {
 
 /** The parts every target shares: root, output folders, assets, client-first build, reloads. */
 const core = (options: SpaceViteOptions, app: App): Plugin => {
-	const clientOut = () => join(app.root, ".space", "dist", "client");
+	const clientOut = () => join(app.root, "dist", "client");
 	let config: ResolvedConfig;
 	let server: ViteDevServer | undefined;
 	return {
@@ -153,7 +153,7 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			).client;
 			return {
 				root,
-				build: { outDir: join(root, ".space", "dist") },
+				build: { outDir: join(root, "dist") },
 				environments: {
 					client: {
 						build: {
@@ -169,7 +169,7 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 				server: {
 					watch: {
 						// Vite's watcher doesn't read .gitignore; Alchemy's log would reload pages in a loop.
-						ignored: ["**/.space/.alchemy/**", "**/.space/dist/**", "**/.space/data/**"],
+						ignored: ["**/.space/.alchemy/**", "**/.space/data/**", `${join(root, "dist")}/**`],
 					},
 				},
 			};
@@ -264,10 +264,10 @@ declare module "node:http" {
  * Bun: the dev server answers with `.space/app.ts`, loaded through the `ssr`
  * environment so server edits apply on the next request, and runs its queues
  * and crons in-process (production gives them their own processes). A build
- * bundles `.space/server.ts` into `.space/dist/server/index.js`.
+ * bundles `.space/server.ts` into `dist/server/index.js`.
  */
 const bun = (app: App): Plugin => {
-	const serverOut = () => join(app.root, ".space", "dist", "server");
+	const serverOut = () => join(app.root, "dist", "server");
 	const require = createRequire(import.meta.url);
 	return {
 		name: "spacefn:bun",

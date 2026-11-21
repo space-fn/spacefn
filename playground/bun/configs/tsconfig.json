@@ -12,5 +12,5 @@
 		"types": []
 	},
 	"include": ["../app", "../lib", "../configs", "../.space"],
-	"exclude": ["../.space/dist", "../.space/.alchemy"]
+	"exclude": ["../.space/.alchemy"]
 }

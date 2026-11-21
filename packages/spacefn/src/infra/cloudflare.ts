@@ -87,7 +87,7 @@ export const cloudflareStack = (app: CloudflareApp, options: CloudflareStackOpti
 						"../package.json",
 						...app.folders.map((folder) => `../${folder}/**`),
 					],
-					exclude: [".alchemy/**", "dist/**", "data/**"],
+					exclude: [".alchemy/**", "data/**", "../dist/**"],
 					lockfile: true,
 				},
 				...extra?.worker,

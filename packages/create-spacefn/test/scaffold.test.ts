@@ -76,7 +76,7 @@ describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("a new Bun app, bu
 		const dir = create("bun");
 		expect(sh(dir, process.execPath, [space, "build"]).code).toBe(0);
 		const port = 4950 + Math.floor(Math.random() * 40);
-		const server = spawn("bun", [".space/dist/server/index.js"], {
+		const server = spawn("bun", ["dist/server/index.js"], {
 			cwd: dir,
 			env: { ...process.env, PORT: String(port), SPACE_DATA_DIR: join(dir, ".space", "data") },
 			stdio: "ignore",

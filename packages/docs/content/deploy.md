@@ -26,7 +26,7 @@ The first deploy asks you to sign in to Cloudflare. Set a domain, routes and oth
 
 The app runs as three kinds of process: the **web** server, the **queue** consumers and the **crons**. By default the web process starts the other two as children and restarts one that crashes, so a slow or failing job never blocks or takes down a request. `SIGTERM` stops all three; a queue process stopped mid-batch hands its messages back.
 
-`space deploy` builds `.space/dist` (one server bundle plus the client files) and an image from it, then runs one container with a volume on `/data`. It uses local Docker, or the host in `configs/infra.ts`:
+`space deploy` builds `dist/` (one server bundle plus the client files) and an image from it, then runs one container with a volume on `/data`. It uses local Docker, or the host in `configs/infra.ts`:
 
 ```ts
 export default defineInfra({ docker: { host: "ssh://deploy@server.example.com", port: 3000 } });
@@ -44,7 +44,7 @@ export default defineInfra({ docker: { host: "ssh://deploy@server.example.com", 
 
 To run more than one machine, point `SPACE_STATE_URL` and the databases at a shared libSQL server (Turso or `sqld`), run several `SPACE_ROLE=web` and `SPACE_ROLE=queues` processes, and exactly one `SPACE_ROLE=crons`. Blob stays a local folder for now, so it needs a shared volume.
 
-Without Docker, `space build` then `bun .space/dist/server/index.js` runs the same thing.
+Without Docker, `space build` then `bun dist/server/index.js` runs the same thing.
 
 ## Telemetry
 
