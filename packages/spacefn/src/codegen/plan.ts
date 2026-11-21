@@ -1,13 +1,9 @@
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
+import type { MigrateOn } from "../db/database.ts";
 import { SpaceError } from "../errors.ts";
 import { isValidSchedule } from "../jobs/cron.ts";
-import {
-	DEFAULT_DB_DRIVER,
-	type DbDriver,
-	type ResolvedSpaceConfig,
-	type Target,
-} from "../space-config.ts";
+import { DbDriver, type ResolvedSpaceConfig, type Target } from "../space-config.ts";
 import type { AnalyzedQuery, Migration } from "../sql/index.ts";
 import { bindingName, pascalName, unitName } from "./names.ts";
 import {
@@ -53,6 +49,7 @@ export interface PlannedCron {
 export interface PlannedDb {
 	readonly name: string;
 	readonly driver: DbDriver;
+	readonly migrateOn: MigrateOn;
 	readonly binding: string;
 	readonly migrations: readonly Migration[];
 	readonly queries: readonly AnalyzedQuery[];
@@ -201,32 +198,58 @@ const checkParamTypes = (db: AppTree["db"][number]) =>
 
 const CLOUDFLARE_ONLY_DRIVERS: ReadonlySet<DbDriver> = new Set(["d1", "durable-object"]);
 
-const planDb = Effect.fnUntraced(function* (tree: AppTree, config: ResolvedSpaceConfig) {
-	const folders = new Set(tree.db.map((db) => db.name));
-	for (const name of Object.keys(config.db))
-		if (!folders.has(name))
-			return yield* fail(
-				"DB_UNKNOWN",
-				`configs/space.ts sets a driver for "${name}", but there is no app/db/${name}/ folder`,
-				`Create app/db/${name}/migrations/, or remove "${name}" from db.`,
-				"configs/space.ts",
-			);
+/** `app/db/<name>/config.json`. */
+const DbConfig = Schema.Struct({
+	$schema: Schema.optional(Schema.String),
+	driver: DbDriver,
+	migrateOn: Schema.Literals(["startup", "call"]),
+});
 
+const dbConfigOf = Effect.fnUntraced(function* (db: AppTree["db"][number], target: Target) {
+	const file = `app/db/${db.name}/config.json`;
+	const example = `{ "driver": "${target === "cloudflare" ? "d1" : "libsql"}", "migrateOn": "startup" }`;
+	if (db.config === undefined)
+		return yield* fail(
+			"DB_CONFIG_MISSING",
+			`app/db/${db.name}/ has no config.json`,
+			`Create it: ${example}`,
+			file,
+		);
+	const json = yield* Effect.try({
+		try: () => JSON.parse(db.config!) as unknown,
+		catch: (cause) =>
+			new SpaceError({ code: "DB_CONFIG_INVALID", message: `Not JSON: ${String(cause)}`, file }),
+	});
+	return yield* Schema.decodeUnknownEffect(DbConfig)(json, { onExcessProperty: "error" }).pipe(
+		Effect.mapError(
+			(error) =>
+				new SpaceError({
+					code: "DB_CONFIG_INVALID",
+					message: error.message,
+					hint: `driver is d1, durable-object or libsql; migrateOn is startup or call. E.g. ${example}`,
+					file,
+				}),
+		),
+	);
+});
+
+const planDb = Effect.fnUntraced(function* (tree: AppTree, target: Target) {
 	return yield* Effect.forEach(tree.db, (db) =>
 		Effect.gen(function* () {
 			const name = yield* unitName("db", db.name);
 			yield* checkParamTypes(db);
-			const driver = config.db[name] ?? DEFAULT_DB_DRIVER[config.target];
-			if (config.target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
+			const { driver, migrateOn } = yield* dbConfigOf(db, target);
+			if (target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
 				return yield* fail(
 					"TARGET_UNSUPPORTED",
 					`Database "${name}" uses the ${driver} driver, which only runs on Cloudflare`,
-					`Use "libsql" for target "${config.target}".`,
-					"configs/space.ts",
+					`Use "libsql" for target "${target}".`,
+					`app/db/${db.name}/config.json`,
 				);
 			return {
 				name,
 				driver,
+				migrateOn,
 				binding: bindingName("DB", name),
 				migrations: db.migrations,
 				queries: db.queries,
@@ -317,6 +340,6 @@ export const planApp = Effect.fnUntraced(function* (
 		workflows,
 		uses: tree.uses,
 		client: yield* planClient(tree.client),
-		db: yield* planDb(tree, config),
+		db: yield* planDb(tree, config.target),
 	};
 });

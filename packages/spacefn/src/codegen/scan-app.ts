@@ -14,6 +14,8 @@ export interface DbFolder {
 	readonly migrations: readonly Migration[];
 	/** Queries already checked against the migrated schema. */
 	readonly queries: readonly AnalyzedQuery[];
+	/** The text of `config.json`, if the folder has one; the planner checks it. */
+	readonly config: string | undefined;
 }
 
 /**
@@ -99,7 +101,11 @@ const scanDb = Effect.fnUntraced(function* (dir: string, name: string) {
 		try: () => scanQueries(join(dir, "queries"), migrations),
 		catch: fromSql(name, "queries"),
 	});
-	return { name, migrations, queries } satisfies DbFolder;
+	const config = yield* Effect.tryPromise({
+		try: () => readFile(join(dir, "config.json"), "utf8").catch(missingIsEmpty(undefined)),
+		catch: io(`app/db/${name}/config.json`),
+	});
+	return { name, migrations, queries, config } satisfies DbFolder;
 });
 
 const readText = (file: string) =>

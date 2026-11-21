@@ -93,6 +93,13 @@ interface Queries {
 
 class MainDb extends database<MainDb, Queries>()({ name: "main", migrations, queries }) {}
 
+class LaterDb extends database<LaterDb, Queries>()({
+	name: "later",
+	migrations,
+	queries,
+	migrateOn: "call",
+}) {}
+
 const Sqlite = SqliteClient.layer({ filename: ":memory:" }).pipe(Layer.provide(Reactivity.layer));
 const connect = Effect.gen(function* () {
 	return transactional(yield* SqlClient.SqlClient);
@@ -148,6 +155,16 @@ describe("database", () => {
 				"Query main.badRow returned rows that don't match its generated types",
 			);
 		}).pipe(Effect.provide(Main)),
+	);
+
+	it.effect("migrates only on migrate() with migrateOn: call", () =>
+		Effect.gen(function* () {
+			const db = yield* LaterDb;
+			expect((yield* Effect.flip(db.listTodos()))._tag).toBe("SqlError");
+			expect(yield* LaterDb.migrate()).toEqual(["0001_todos"]);
+			expect(yield* LaterDb.migrate()).toEqual([]);
+			expect(yield* db.listTodos()).toEqual([]);
+		}).pipe(Effect.provide(LaterDb.layer(connect).pipe(Layer.provide(Sqlite)))),
 	);
 
 	it.effect("skips migrations with migrate: false", () =>

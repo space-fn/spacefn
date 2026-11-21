@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 
 import { createClient } from "@libsql/client";
 import { Config, Effect, Option, Redacted, type Scope } from "effect";
-import type { PlannedDb } from "spacefn/codegen";
+import { dbClassName, type PlannedDb } from "spacefn/codegen";
 import {
 	applyMigrations,
 	libsqlConnection,
@@ -72,7 +72,12 @@ export const connectFor =
 export const connectFromEnv: Connect = connectFor("cloudflare", process.cwd());
 
 export type DbReport =
-	| { readonly db: string; readonly kind: "skipped"; readonly driver: string }
+	| {
+			readonly db: string;
+			readonly kind: "skipped";
+			readonly driver: string;
+			readonly migrateOn: "startup" | "call";
+	  }
 	| { readonly db: string; readonly kind: "status"; readonly status: MigrationStatus }
 	| {
 			readonly db: string;
@@ -88,7 +93,13 @@ const each = <A>(
 ) =>
 	Effect.forEach(dbs, (db) => {
 		const open = connect(db);
-		if (!open) return Effect.succeed<DbReport>({ db: db.name, kind: "skipped", driver: db.driver });
+		if (!open)
+			return Effect.succeed<DbReport>({
+				db: db.name,
+				kind: "skipped",
+				driver: db.driver,
+				migrateOn: db.migrateOn,
+			});
 		return Effect.scoped(
 			open.pipe(
 				Effect.flatMap((connection) => run(connection, db)),
@@ -129,7 +140,11 @@ export const isUnhealthy = (report: DbReport): boolean =>
 export const formatReport = (report: DbReport): string => {
 	switch (report.kind) {
 		case "skipped":
-			return `${report.db} (${report.driver}): migrates when the app starts; nothing to do from the CLI`;
+			return `${report.db} (${report.driver}): the CLI can't reach it; it migrates ${
+				report.migrateOn === "startup"
+					? "when the app starts"
+					: `when the app calls ${dbClassName(report.db)}.migrate()`
+			}`;
 		case "applied":
 		case "rolled-back": {
 			const verb = report.kind === "applied" ? "applied" : "rolled back";

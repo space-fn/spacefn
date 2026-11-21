@@ -1,4 +1,4 @@
 import { defineSpace } from "spacefn/config";
 
-// The app's name comes from package.json. See the docs for database drivers.
+// The app's name comes from package.json.
 export default defineSpace({ target: "bun" });

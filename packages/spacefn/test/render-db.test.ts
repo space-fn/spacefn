@@ -27,6 +27,7 @@ describe("renderDb", () => {
 		const source = renderDb({
 			name: "main",
 			driver: "d1",
+			migrateOn: "startup",
 			binding: "DB_MAIN",
 			migrations,
 			// As scanQueries names queries/todos/mark-done.sql.
@@ -43,6 +44,7 @@ describe("renderDb", () => {
 		const source = renderDb({
 			name: "main",
 			driver: "d1",
+			migrateOn: "startup",
 			binding: "DB_MAIN",
 			migrations,
 			queries: await queries({
@@ -79,6 +81,7 @@ describe("renderDb", () => {
 
 			export const name = "main";
 			export const driver = "d1";
+			export const migrateOn = "startup";
 
 			export const migrations = [
 				{ id: "0001_todos", sql: "CREATE TABLE todos (id INTEGER PRIMARY KEY, title TEXT NOT NULL, note TEXT, done INTEGER NOT NULL DEFAULT 0);", down: "DROP TABLE todos;" },
@@ -107,7 +110,7 @@ describe("renderDb", () => {
 				addTodo: { params: AddTodoParams; row: never; mode: "exec" };
 			}
 
-			export class MainDb extends database<MainDb, Queries>()({ name, migrations, queries }) {}
+			export class MainDb extends database<MainDb, Queries>()({ name, migrations, queries, migrateOn }) {}
 
 			export default MainDb;
 			"

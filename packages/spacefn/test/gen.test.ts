@@ -27,6 +27,7 @@ const app = {
 	"configs/space.ts": `export default { target: "cloudflare" as const };`,
 	"app/routes/index.ts": "",
 	"app/durable-objects/room.ts": "",
+	"app/db/main/config.json": '{ "driver": "d1", "migrateOn": "startup" }',
 	"app/db/main/migrations/0001_todos.sql": "-- up\nCREATE TABLE todos (id INTEGER PRIMARY KEY);",
 };
 

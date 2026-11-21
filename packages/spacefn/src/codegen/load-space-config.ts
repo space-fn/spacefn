@@ -86,6 +86,5 @@ export const loadSpaceConfig = Effect.fnUntraced(function* (
 		target: config.target,
 		name,
 		folders: importFolders(pkg.imports),
-		db: config.db ?? {},
 	};
 });

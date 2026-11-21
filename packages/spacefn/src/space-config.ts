@@ -5,17 +5,11 @@ export const Target = Schema.Literals(["cloudflare", "bun"]);
 export type Target = typeof Target.Type;
 
 /**
- * How a database in `app/db/<name>/` is reached. `durable-object` is SQLite
- * inside each Durable Object instance (Cloudflare only).
+ * How a database in `app/db/<name>/` is reached, from its `config.json`.
+ * `durable-object` is SQLite inside each Durable Object instance (Cloudflare only).
  */
 export const DbDriver = Schema.Literals(["d1", "durable-object", "libsql"]);
 export type DbDriver = typeof DbDriver.Type;
-
-/** The driver a database gets when `configs/space.ts` does not name one. */
-export const DEFAULT_DB_DRIVER: Readonly<Record<Target, DbDriver>> = {
-	cloudflare: "d1",
-	bun: "libsql",
-};
 
 /** The shape of `configs/space.ts`. */
 export const SpaceConfig = Schema.Struct({
@@ -26,8 +20,6 @@ export const SpaceConfig = Schema.Struct({
 			Schema.isPattern(/^[a-z][a-z0-9-]*$/, { message: "Use lowercase letters, digits and -" }),
 		),
 	),
-	/** Driver per database folder, e.g. `{ main: "d1", rooms: "durable-object" }`. */
-	db: Schema.optional(Schema.Record(Schema.String, DbDriver)),
 });
 export type SpaceConfig = typeof SpaceConfig.Type;
 
@@ -40,8 +32,6 @@ export interface ResolvedSpaceConfig {
 	 * (`.space` aside). Read with `app/` where all the app's code is wanted.
 	 */
 	readonly folders: readonly string[];
-	/** Drivers named in the config. Folders not listed get {@link DEFAULT_DB_DRIVER}. */
-	readonly db: Readonly<Record<string, DbDriver>>;
 }
 
 /**

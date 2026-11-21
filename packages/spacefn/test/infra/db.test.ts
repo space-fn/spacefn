@@ -24,6 +24,7 @@ afterEach(() => rm(dir, { recursive: true, force: true }));
 const main: PlannedDb = {
 	name: "main",
 	driver: "libsql",
+	migrateOn: "startup",
 	binding: "DB_MAIN",
 	migrations: [
 		{
@@ -50,7 +51,7 @@ describe("space db", () => {
 			const migrated = yield* dbMigrate([main, edge], connectFromEnv);
 			expect(migrated.map(formatReport)).toEqual([
 				"main:\n  applied 0001_todos\n  applied 0002_tags",
-				"edge (d1): migrates when the app starts; nothing to do from the CLI",
+				"edge (d1): the CLI can't reach it; it migrates when the app starts",
 			]);
 			expect((yield* dbMigrate([main], connectFromEnv)).map(formatReport)).toEqual([
 				"main: up to date",

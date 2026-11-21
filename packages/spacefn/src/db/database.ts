@@ -18,10 +18,15 @@ export interface QueryDefinition {
 	}[];
 }
 
+/** When a database applies its migrations, from `migrateOn` in `app/db/<name>/config.json`. */
+export type MigrateOn = "startup" | "call";
+
 export interface DbDefinition {
 	readonly name: string;
 	readonly migrations: readonly Migration[];
 	readonly queries: Readonly<Record<string, QueryDefinition>>;
+	/** `startup`: as its layer builds. `call`: only through `migrate()`. Default `startup`. */
+	readonly migrateOn?: MigrateOn;
 }
 
 /** The generated types of one query. */
@@ -145,6 +150,9 @@ const makeQuery = (connection: DbConnection, db: string, name: string, query: Qu
 	};
 };
 
+/** The connection each built database runs on, for `migrate()`, without widening its type. */
+const connections = new WeakMap<object, DbConnection>();
+
 /** Typed functions for every query of `definition`, running on `connection`. */
 export const makeDatabase = <Q extends Record<keyof Q, QueryTypes>>(
 	connection: DbConnection,
@@ -162,7 +170,7 @@ export const makeDatabase = <Q extends Record<keyof Q, QueryTypes>>(
 };
 
 export interface DatabaseLayerOptions {
-	/** Apply pending migrations while the layer builds. Default `true`. */
+	/** Apply pending migrations while the layer builds. Default: whether `migrateOn` is `startup`. */
 	readonly migrate?: boolean;
 }
 
@@ -174,6 +182,15 @@ export interface DatabaseStatics<Self> {
 		connect: Effect.Effect<DbConnection, E, R>,
 		options?: DatabaseLayerOptions,
 	) => Layer.Layer<Self, E | SqlError.SqlError | MigrationError, Exclude<R, Scope.Scope>>;
+	/**
+	 * Applies pending migrations now and gives their ids, for a database with
+	 * `migrateOn: "call"`: from a route, a cron or a script of your own.
+	 */
+	readonly migrate: () => Effect.Effect<
+		readonly string[],
+		SqlError.SqlError | MigrationError,
+		Self
+	>;
 }
 
 /** Any generated database class, as the manifest and the targets see it. */
@@ -198,9 +215,17 @@ export const database =
 				Service,
 				Effect.gen(function* () {
 					const connection = yield* connect;
-					if (options.migrate !== false) yield* applyMigrations(connection, definition.migrations);
-					return makeDatabase<Q>(connection, definition);
+					if (options.migrate ?? (definition.migrateOn ?? "startup") === "startup")
+						yield* applyMigrations(connection, definition.migrations);
+					const db = makeDatabase<Q>(connection, definition);
+					connections.set(db, connection);
+					return db;
 				}),
 			);
-		return Object.assign(Service, { definition, layer } satisfies DatabaseStatics<Self>);
+		const migrate: DatabaseStatics<Self>["migrate"] = () =>
+			Effect.gen(function* () {
+				const db = yield* Service;
+				return yield* applyMigrations(connections.get(db as object)!, definition.migrations);
+			});
+		return Object.assign(Service, { definition, layer, migrate } satisfies DatabaseStatics<Self>);
 	};

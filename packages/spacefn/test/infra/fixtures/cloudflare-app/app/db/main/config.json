@@ -1,0 +1,4 @@
+{
+	"driver": "d1",
+	"migrateOn": "startup"
+}

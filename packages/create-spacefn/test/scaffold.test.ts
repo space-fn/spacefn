@@ -48,6 +48,10 @@ describe("scaffold", () => {
 		expect(readFileSync(join(dir, ".gitignore"), "utf8")).toContain(".space/");
 		expect(existsSync(join(dir, "gitignore"))).toBe(false);
 		expect(readFileSync(join(dir, "configs/space.ts"), "utf8")).toContain('target: "bun"');
+		expect(JSON.parse(readFileSync(join(dir, "app/db/main/config.json"), "utf8"))).toMatchObject({
+			driver: "libsql",
+			migrateOn: "startup",
+		});
 		expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).name).toBe("my-bun-app");
 		expect(() => scaffold(dir, { name: "x", target: "bun" })).toThrow("already exists");
 	});

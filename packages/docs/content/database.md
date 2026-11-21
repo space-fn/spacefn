@@ -4,11 +4,29 @@ Each folder in `app/db/` is a SQLite database: `app/db/main/` is `main`. You wri
 
 ```txt
 app/db/main/
+  config.json
   migrations/0001_todos.sql
   migrations/0002_due_dates.sql
   queries/list-todos.sql
   queries/add-todo.sql
 ```
+
+## `config.json`
+
+Each database says how it's reached and when it migrates:
+
+```json [app/db/main/config.json]
+{
+	"$schema": "../../../node_modules/spacefn/schemas/db.json",
+	"driver": "d1",
+	"migrateOn": "startup"
+}
+```
+
+- `driver`: `d1`, `durable-object` or `libsql`; see [Drivers](#drivers). A driver the target doesn't have stops `space gen`.
+- `migrateOn`: `startup` applies pending migrations as the app starts. `call` never migrates by itself: your code calls `MainDb.migrate()`, or you run `space db migrate`.
+
+The file is required, so each database's settings are written down, not guessed from the target. `$schema` gives completion and checks in the editor.
 
 ## Migrations
 
@@ -28,7 +46,16 @@ DROP TABLE todos;
 
 A migration runs all at once or not at all, so don't write `BEGIN` or `COMMIT`. Applied migrations are recorded with a checksum in a `space_migrations` table, and a migration edited after it ran is refused, so add a new one instead. Files starting with `_` are drafts and are skipped.
 
-Databases migrate when the app starts, on every target. On Bun you can also run them yourself with `space db` (below).
+With `"migrateOn": "startup"`, a database migrates when the app starts, on every target. To migrate at a time you choose instead, set `"call"` and run them yourself: with `space db migrate` for a libSQL database (below), or from your own code, such as a route behind admin middleware:
+
+```ts [app/routes/admin/migrate.ts]
+import { route } from "spacefn";
+
+import MainDb from "#space/db/main.ts";
+
+// POST /admin/migrate, guarded by app/routes/admin/_middleware.ts. Answers the ids it applied.
+export default route({ POST: MainDb.migrate() });
+```
 
 ## Queries
 
@@ -96,17 +123,13 @@ Queries fail with Effect's `SqlError`, which says why (a constraint, for example
 
 ## Drivers
 
-Every driver is SQLite, so the same SQL runs everywhere. Pick one per database in `configs/space.ts`:
+Every driver is SQLite, so the same SQL runs everywhere. Each database names its own in `config.json`, so one app can mix them: `main` on D1 and `rooms` inside Durable Objects, say.
 
-```ts
-export default defineSpace({ target: "cloudflare", db: { main: "d1", rooms: "durable-object" } });
-```
-
-| Driver           | Target     | Where the data is                                                                              |
-| ---------------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| `d1`             | Cloudflare | A D1 database, created on deploy. The default on Cloudflare.                                   |
-| `durable-object` | Cloudflare | Inside each Durable Object: `MainDb.layer(durableObjectSql(ctx.storage))` in its constructor.  |
-| `libsql`         | both       | `DB_<NAME>_URL` (and `DB_<NAME>_AUTH_TOKEN`): Turso, `sqld`, or a `file:`. The default on Bun. |
+| Driver           | Target     | Where the data is                                                                             |
+| ---------------- | ---------- | --------------------------------------------------------------------------------------------- |
+| `d1`             | Cloudflare | A D1 database, created on deploy.                                                             |
+| `durable-object` | Cloudflare | Inside each Durable Object: `MainDb.layer(durableObjectSql(ctx.storage))` in its constructor. |
+| `libsql`         | both       | `DB_<NAME>_URL` (and `DB_<NAME>_AUTH_TOKEN`): Turso, `sqld`, or a `file:`.                    |
 
 On Bun, a libSQL database without a URL is a local file, `.space/data/<name>.db` (or `$SPACE_DATA_DIR/<name>.db`), in WAL mode so the web, queue and cron processes share it. D1 has no transactions, so spacefn runs atomic work there as one batch.
 

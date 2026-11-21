@@ -23,7 +23,8 @@
 	},
 	"files": [
 		"dist",
-		"docker"
+		"docker",
+		"schemas"
 	],
 	"type": "module",
 	"exports": {

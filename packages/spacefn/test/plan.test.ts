@@ -27,8 +27,19 @@ const config = (parts: Partial<ResolvedSpaceConfig> = {}): ResolvedSpaceConfig =
 	target: "cloudflare",
 	name: "todo",
 	folders: [],
-	db: {},
 	...parts,
+});
+
+/** A database folder with its config.json: an object, raw text, or `null` for none. */
+const dbFolder = (
+	name: string,
+	config: object | string | null = { driver: "d1", migrateOn: "startup" },
+) => ({
+	name,
+	migrations: [],
+	queries: [],
+	config:
+		config === null ? undefined : typeof config === "string" ? config : JSON.stringify(config),
 });
 
 const plan = (t: AppTree, c = config(), mode: "dev" | "prod" = "dev") =>
@@ -141,28 +152,39 @@ describe("planApp target and config checks", () => {
 		);
 	});
 
-	it("gives each database the target's default driver unless the config names one", () => {
-		const db = [
-			{ name: "main", migrations: [], queries: [] },
-			{ name: "rooms", migrations: [], queries: [] },
-		];
-		const cf = plan(tree({ db }), config({ db: { rooms: "durable-object" } }));
-		expect(cf.db.map((d) => [d.name, d.driver, d.binding])).toEqual([
-			["main", "d1", "DB_MAIN"],
-			["rooms", "durable-object", "DB_ROOMS"],
-		]);
-		expect(plan(tree({ db }), config({ target: "bun" })).db.map((d) => d.driver)).toEqual([
-			"libsql",
-			"libsql",
+	it("reads each database's driver and migrateOn from its config.json", () => {
+		const result = plan(
+			tree({
+				db: [
+					dbFolder("main"),
+					dbFolder("rooms", { $schema: "x.json", driver: "durable-object", migrateOn: "call" }),
+				],
+			}),
+		);
+		expect(result.db.map((d) => [d.name, d.driver, d.migrateOn, d.binding])).toEqual([
+			["main", "d1", "startup", "DB_MAIN"],
+			["rooms", "durable-object", "call", "DB_ROOMS"],
 		]);
 	});
 
-	it("rejects Cloudflare-only drivers on Bun and drivers for missing folders", () => {
-		const db = [{ name: "main", migrations: [], queries: [] }];
-		expect(planError(tree({ db }), config({ target: "bun", db: { main: "d1" } })).code).toBe(
-			"TARGET_UNSUPPORTED",
+	it("requires a valid config.json, and a driver the target has", () => {
+		const error = (json: object | string | null, target: "cloudflare" | "bun" = "cloudflare") =>
+			planError(tree({ db: [dbFolder("main", json)] }), config({ target }));
+		expect(error(null)).toMatchObject({
+			code: "DB_CONFIG_MISSING",
+			file: "app/db/main/config.json",
+			hint: 'Create it: { "driver": "d1", "migrateOn": "startup" }',
+		});
+		expect(error("{ nope")).toMatchObject({ code: "DB_CONFIG_INVALID" });
+		expect(error({ driver: "postgres", migrateOn: "startup" }).code).toBe("DB_CONFIG_INVALID");
+		expect(error({ driver: "d1" }).code).toBe("DB_CONFIG_INVALID");
+		expect(error({ driver: "d1", "migrate-on": "startup", migrateOn: "startup" }).code).toBe(
+			"DB_CONFIG_INVALID",
 		);
-		expect(planError(tree({ db }), config({ db: { other: "d1" } })).code).toBe("DB_UNKNOWN");
+		expect(error({ driver: "d1", migrateOn: "startup" }, "bun")).toMatchObject({
+			code: "TARGET_UNSUPPORTED",
+			file: "app/db/main/config.json",
+		});
 	});
 
 	it("rejects a @param type the generated types cannot express", () => {
@@ -176,7 +198,7 @@ describe("planApp target and config checks", () => {
 			paramTypes: { id: "int" },
 			parts: [],
 		};
-		const error = planError(tree({ db: [{ name: "main", migrations: [], queries: [query] }] }));
+		const error = planError(tree({ db: [{ ...dbFolder("main"), queries: [query] }] }));
 		expect(error).toMatchObject({ code: "DB_PARAM_TYPE", file: "app/db/main/queries" });
 	});
 

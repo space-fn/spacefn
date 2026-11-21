@@ -11,7 +11,7 @@ cd my-app && cp .env.example .env && npm install && npm run dev
 
 ```txt
 app/routes/         pages and HTTP endpoints, and _middleware.ts around them
-app/db/<name>/      migrations/ and queries/ in SQL, typed for you
+app/db/<name>/      config.json, migrations/ and queries/ in SQL, typed for you
 app/queues/         queue consumers
 app/crons/          scheduled jobs
 app/env.ts          the variables the app reads

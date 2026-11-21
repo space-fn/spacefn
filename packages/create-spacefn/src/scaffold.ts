@@ -86,10 +86,22 @@ const spaceConfig = (target: Target) =>
 	[
 		'import { defineSpace } from "spacefn/config";',
 		"",
-		"// The app's name comes from package.json. See the docs for database drivers.",
+		"// The app's name comes from package.json.",
 		`export default defineSpace({ target: ${JSON.stringify(target)} });`,
 		"",
 	].join("\n");
+
+/** The database's settings: D1 on Cloudflare, a libSQL file or server on Bun. */
+const dbConfig = (target: Target) =>
+	`${JSON.stringify(
+		{
+			$schema: "../../../node_modules/spacefn/schemas/db.json",
+			driver: target === "cloudflare" ? "d1" : "libsql",
+			migrateOn: "startup",
+		},
+		null,
+		"\t",
+	)}\n`;
 
 /** Copies the template into `dir` and sets it up for `options.target`. */
 export function scaffold(dir: string, options: ScaffoldOptions): void {
@@ -103,4 +115,5 @@ export function scaffold(dir: string, options: ScaffoldOptions): void {
 		`${JSON.stringify(packageJson(options), null, "\t")}\n`,
 	);
 	writeFileSync(resolve(dir, "configs", "space.ts"), spaceConfig(options.target));
+	writeFileSync(resolve(dir, "app", "db", "main", "config.json"), dbConfig(options.target));
 }

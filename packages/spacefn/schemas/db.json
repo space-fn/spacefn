@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "spacefn database",
+	"description": "app/db/<name>/config.json: how this database is reached and when it migrates.",
+	"type": "object",
+	"properties": {
+		"$schema": { "type": "string" },
+		"driver": {
+			"description": "d1: a D1 database (Cloudflare). durable-object: SQLite inside each Durable Object (Cloudflare). libsql: DB_<NAME>_URL, e.g. Turso, sqld or a file: (both targets).",
+			"enum": ["d1", "durable-object", "libsql"]
+		},
+		"migrateOn": {
+			"description": "startup: pending migrations apply when the app starts. call: only when your code calls <Name>Db.migrate(), or space db migrate runs.",
+			"enum": ["startup", "call"]
+		}
+	},
+	"required": ["driver", "migrateOn"],
+	"additionalProperties": false
+}

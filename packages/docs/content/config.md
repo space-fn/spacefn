@@ -10,11 +10,10 @@ import { defineSpace } from "spacefn/config";
 export default defineSpace({
 	target: "cloudflare", // or "bun"
 	name: "todo", // default: package.json `name`; names the Worker, the container and the deploy
-	db: { main: "d1", rooms: "durable-object" }, // a driver per app/db/ folder
 });
 ```
 
-Imports such as `#lib/...` are declared in `package.json`; see [Conventions](conventions.md#imports). Default drivers are `d1` on Cloudflare and `libsql` on Bun; see [Database](database.md).
+Imports such as `#lib/...` are declared in `package.json`; see [Conventions](conventions.md#imports). Each database's driver is in its own `app/db/<name>/config.json`; see [Database](database.md#configjson).
 
 ## `app/env.ts`
 
