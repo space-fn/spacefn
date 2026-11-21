@@ -9,5 +9,6 @@ Apps that show spacefn's conventions in full: `app/` only wires, the code is in 
 | `services-cloudflare` | Cloudflare | Every binding a deploy creates in use: D1, KV, R2, a queue, a cron, the rate limiter |
 | `services-bun`        | Bun        | KV, a queue, a cron, `public/` and the client build, deployed to Docker              |
 | `datastar`            | Cloudflare | A live poll: html components with fixed ids, signals under `poll.`, a Rocket element |
+| `tailwind`            | Bun        | Tailwind v4: design tokens in `@theme`, a UI kit in `lib/ui/`, a live search         |
 
 In the repo, `pnpm examples` remakes the starters from the `create-spacefn` template, and `pnpm install` gives every example the workspace's packages. Run one with `cd examples/<name> && pnpm dev`.

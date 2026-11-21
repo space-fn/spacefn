@@ -1,0 +1,35 @@
+{
+	"name": "tailwind",
+	"private": true,
+	"description": "Tailwind CSS v4 through its Vite plugin: design tokens in lib/ui/theme.css, components from utility classes, a live search with Datastar.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"docs": "space docs",
+		"test": "vitest run --config configs/vitest.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"effect": "catalog:",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/docker": "catalog:",
+		"@tailwindcss/vite": "4.3.5",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"tailwindcss": "4.3.5",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vitest": "catalog:"
+	}
+}

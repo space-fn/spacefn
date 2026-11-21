@@ -1,0 +1,2 @@
+/* The site's stylesheet, loaded by assets("site"): Tailwind, with the app's theme. */
+@import "#lib/ui/theme.css";
