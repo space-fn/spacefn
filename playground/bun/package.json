@@ -3,6 +3,7 @@
 	"private": true,
 	"type": "module",
 	"imports": {
+		"#configs/*": "./configs/*",
 		"#lib/*": "./lib/*",
 		"#space/*": "./.space/*"
 	},

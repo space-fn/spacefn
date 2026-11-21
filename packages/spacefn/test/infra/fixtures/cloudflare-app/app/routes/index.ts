@@ -2,9 +2,8 @@ import { Effect, Option, Redacted } from "effect";
 import { html, Kv, route } from "spacefn";
 import { head } from "spacefn/assets";
 
+import Env from "#configs/env.ts";
 import MainDb from "#space/db/main.ts";
-
-import Env from "../env.ts";
 
 export default route({
 	GET: Effect.gen(function* () {

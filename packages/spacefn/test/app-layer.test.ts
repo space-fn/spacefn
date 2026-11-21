@@ -53,7 +53,7 @@ describe("appLayer", () => {
 		Effect.gen(function* () {
 			const services = appLayer(
 				{
-					env: { file: "app/env.ts", module: { default: AppEnv } },
+					env: { file: "configs/env.ts", module: { default: AppEnv } },
 					layers: { file: "app/layers.ts", module: { default: Layers } },
 					db: [db],
 				},
@@ -91,7 +91,7 @@ describe("appLayer", () => {
 			expect(error.message).toContain("no binding DB_MAIN");
 
 			const missingEnv = appLayer(
-				{ env: { file: "app/env.ts", module: { default: AppEnv } }, db: [] },
+				{ env: { file: "configs/env.ts", module: { default: AppEnv } }, db: [] },
 				{ platform: testEnv({}), connect: () => undefined },
 			);
 			expect((yield* Effect.flip(Layer.build(missingEnv))).code).toBe("ENV_INVALID");

@@ -56,7 +56,11 @@ describe("defineEnv", () => {
 	it.effect("fails with a SpaceError naming the missing variable", () =>
 		Effect.gen(function* () {
 			const error = yield* Effect.flip(readEnv.pipe(Effect.provide(withValues({}))));
-			expect(error).toMatchObject({ _tag: "SpaceError", code: "ENV_INVALID", file: "app/env.ts" });
+			expect(error).toMatchObject({
+				_tag: "SpaceError",
+				code: "ENV_INVALID",
+				file: "configs/env.ts",
+			});
 			expect(error.message).toContain("API_KEY");
 		}),
 	);

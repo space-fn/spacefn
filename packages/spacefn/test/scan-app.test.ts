@@ -46,7 +46,7 @@ describe("scanApp", () => {
 	it.effect("lists routes recursively and flat folders one level deep, sorted", () =>
 		Effect.gen(function* () {
 			yield* write({
-				"app/env.ts": "",
+				"configs/env.ts": "",
 				"app/routes/index.ts": "",
 				"app/routes/users/[id].ts": "",
 				"app/routes/users/_shared/x.ts": "",

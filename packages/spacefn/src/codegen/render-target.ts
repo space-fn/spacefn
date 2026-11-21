@@ -83,7 +83,7 @@ export const renderViteConfig = (plan: AppPlan): string => {
 
 /**
  * `.space/alchemy.run.ts`: the infra, as data for spacefn's stack,
- * plus `app/env.ts` (its variables are passed on) and `configs/infra.ts`.
+ * plus `configs/env.ts` (its variables are passed on) and `configs/infra.ts`.
  * Alchemy runs it for `space dev` on Cloudflare and for deploys.
  */
 export const renderAlchemy = (plan: AppPlan): string => {
@@ -112,7 +112,7 @@ export const renderAlchemy = (plan: AppPlan): string => {
 	return [
 		GENERATED,
 		`import { ${stack} } from "spacefn/infra/${plan.target === "cloudflare" ? "cloudflare" : "docker"}";`,
-		...(plan.env ? ['import env from "../app/env.ts";'] : []),
+		...(plan.env ? ['import env from "../configs/env.ts";'] : []),
 		...(plan.infraConfig ? ['import infra from "../configs/infra.ts";'] : []),
 		"",
 		`export default ${stack}(`,

@@ -106,7 +106,7 @@ describe("doctor", () => {
 			expect(text).toContain("✓ .space/ is up to date");
 			expect(text).toContain("✓ @alchemy.run/cloudflare is installed");
 			// The fixture's .env doesn't exist, so GREETING is missing.
-			expect(text).toMatch(/! app\/env.ts doesn't read in dev .*GREETING/);
+			expect(text).toMatch(/! configs\/env.ts doesn't read in dev .*GREETING/);
 		} finally {
 			await app.cleanup();
 		}

@@ -75,12 +75,12 @@ describe("renderManifest", () => {
 			import * as queue0 from "../app/queues/emails.ts";
 			import * as cron0 from "../app/crons/nightly.ts";
 			import * as db0 from "./db/main.ts";
-			import * as env from "../app/env.ts";
+			import * as env from "../configs/env.ts";
 			import * as layers from "../app/layers.ts";
 
 			export const manifest = {
 				name: "todo",
-				env: { file: "app/env.ts", module: env },
+				env: { file: "configs/env.ts", module: env },
 				layers: { file: "app/layers.ts", module: layers },
 				routes: [
 					{ path: "/", params: [], file: "app/routes/index.ts", module: route0 },

@@ -65,14 +65,14 @@ const checkTools = (plan: AppPlan): Check[] =>
 
 /**
  * Whether the app's env reads from `.env` and the environment as dev would.
- * `app/env.ts` is imported, as a deploy imports it.
+ * `configs/env.ts` is imported, as a deploy imports it.
  */
 const checkEnv = async (root: string, plan: AppPlan): Promise<Check> => {
-	if (!plan.env) return ok("No app/env.ts");
+	if (!plan.env) return ok("No configs/env.ts");
 	const file = join(root, ".env");
 	const local = existsSync(file) ? parseEnv(await readFile(file, "utf8")) : {};
 	try {
-		const env = (await import(pathToFileURL(join(root, "app", "env.ts")).href)) as {
+		const env = (await import(pathToFileURL(join(root, "configs", "env.ts")).href)) as {
 			default: { config: Config.Config<unknown> };
 		};
 		const provider = ConfigProvider.fromUnknown({ ...process.env, ...local });
@@ -81,12 +81,14 @@ const checkEnv = async (root: string, plan: AppPlan): Promise<Check> => {
 				yield* env.default.config;
 			}).pipe(Effect.provide(ConfigProvider.layer(provider))),
 		);
-		return ok("app/env.ts reads from .env and the environment");
+		return ok("configs/env.ts reads from .env and the environment");
 	} catch (error) {
 		const detail = String(error instanceof Error ? error.message || error : error)
 			.replace(/^ConfigError\((SchemaError\()?|\)+$/g, "")
 			.replace(/\s+/g, " ");
-		return warn(`app/env.ts doesn't read in dev (set it in .env or give it a default): ${detail}`);
+		return warn(
+			`configs/env.ts doesn't read in dev (set it in .env or give it a default): ${detail}`,
+		);
 	}
 };
 

@@ -11,7 +11,7 @@ const at = (path: `/${string}`) => ({ path, params: [], file: `app/routes${path}
 
 const manifest = {
 	name: "todo",
-	env: { file: "app/env.ts", module: { default: AppEnv } },
+	env: { file: "configs/env.ts", module: { default: AppEnv } },
 	routes: [
 		{
 			...at("/hello"),

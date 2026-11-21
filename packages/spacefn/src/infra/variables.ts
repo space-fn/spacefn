@@ -2,7 +2,7 @@ import { Redacted } from "effect";
 import { envVariables } from "spacefn/runtime";
 
 export interface VariableSources {
-	/** `app/env.ts`'s default export, if the app has one. */
+	/** `configs/env.ts`'s default export, if the app has one. */
 	readonly env?: { readonly fields: Readonly<Record<string, unknown>> } | undefined;
 	/** libSQL databases, whose `<BINDING>_URL` and `<BINDING>_AUTH_TOKEN` the app reads. */
 	readonly libsql: readonly string[];
@@ -10,7 +10,7 @@ export interface VariableSources {
 
 /**
  * The variables a deploy passes to the app, from this process's environment
- * (the CLI loads `.env` files): `app/env.ts`'s fields, libSQL URLs and tokens,
+ * (the CLI loads `.env` files): `configs/env.ts`'s fields, libSQL URLs and tokens,
  * and `OTEL_*`. Secrets come back `Redacted` (Worker secrets on Cloudflare).
  * Unset ones are left out; the app names them when it fails to start.
  */

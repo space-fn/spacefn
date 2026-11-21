@@ -1,6 +1,6 @@
 # Configuration
 
-Everything you configure is in `configs/`, plus `app/env.ts` for the variables the app reads.
+Everything you configure is in `configs/`, including `configs/env.ts`, the variables the app reads.
 
 ## `configs/space.ts`
 
@@ -15,7 +15,7 @@ export default defineSpace({
 
 Imports such as `#lib/...` are declared in `package.json`; see [Conventions](conventions.md#imports). Each database's driver is in its own `app/db/<name>/config.json`; see [Database](database.md#configjson).
 
-## `app/env.ts`
+## `configs/env.ts`
 
 The variables the app reads, checked when it starts:
 
@@ -33,7 +33,7 @@ export default defineEnv({
 
 Read it as a service: `const env = yield* Env` (the default export) gives typed values. A secret is `Redacted`, so it never shows up in logs; `Redacted.value(env.STRIPE_KEY)` reads it. `Env.schema(schema)` takes any Effect Schema that decodes from a string. A missing or invalid variable stops the app at start with an error naming it.
 
-Deploys import `app/env.ts` to know which variables to pass on, so import only `spacefn` and `effect` there.
+Deploys import `configs/env.ts` to know which variables to pass on, so import only `spacefn` and `effect` there.
 
 ## `.env` files
 
@@ -42,7 +42,7 @@ Deploys import `app/env.ts` to know which variables to pass on, so import only `
 | `.env`         | `space dev` and `space db`                           |
 | `.env.<stage>` | `space deploy --stage <stage>` (default `.env.prod`) |
 
-A deploy never reads `.env`, so local values can't reach production. Variables already in the environment, as CI sets them, are passed on too. A deploy passes the fields of `app/env.ts` (secrets as Worker secrets on Cloudflare), the `DB_<NAME>_URL` and `_AUTH_TOKEN` of libSQL databases, and `OTEL_*`. Commit `.env.example`, never `.env`.
+A deploy never reads `.env`, so local values can't reach production. Variables already in the environment, as CI sets them, are passed on too. A deploy passes the fields of `configs/env.ts` (secrets as Worker secrets on Cloudflare), the `DB_<NAME>_URL` and `_AUTH_TOKEN` of libSQL databases, and `OTEL_*`. Commit `.env.example`, never `.env`.
 
 ## `configs/vite.config.ts` (optional)
 

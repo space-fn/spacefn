@@ -43,7 +43,7 @@ export const renderManifest = (plan: AppPlan): string => {
 		(d, i) =>
 			`\t\t{ name: ${str(d.name)}, driver: ${str(d.driver)}, binding: ${str(d.binding)}, module: ${use(`db${i}`, `./db/${d.name}.ts`)} },`,
 	);
-	const env = plan.env ? [`\tenv: ${ref("env", "app/env.ts")},`] : [];
+	const env = plan.env ? [`\tenv: ${ref("env", "configs/env.ts")},`] : [];
 	const layers = plan.layers ? [`\tlayers: ${ref("layers", "app/layers.ts")},`] : [];
 	const list = (key: string, lines: string[]) =>
 		lines.length === 0 ? [`\t${key}: [],`] : [`\t${key}: [`, ...lines, "\t],"];

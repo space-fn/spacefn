@@ -85,7 +85,7 @@ const startError =
 
 /**
  * Every service the app's code can use, for a target to provide to HTTP, queue
- * consumers and crons: the target's `platform`, then `app/env.ts`, then each
+ * consumers and crons: the target's `platform`, then `configs/env.ts`, then each
  * database (migrated as it starts), then `app/layers.ts`, each able to use the
  * ones before. Fails when a convention file exports the wrong thing.
  */

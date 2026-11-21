@@ -69,7 +69,7 @@ export interface ManifestLayers {
 	readonly module: { readonly default: Layer.Any };
 }
 
-/** `app/env.ts`: its default export is the `defineEnv()` service. */
+/** `configs/env.ts`: its default export is the `defineEnv()` service. */
 export interface ManifestEnv {
 	readonly file: string;
 	readonly module: { readonly default: AppEnv<any> };

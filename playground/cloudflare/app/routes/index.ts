@@ -1,9 +1,9 @@
 import { Effect, Schema } from "effect";
 import { action, Bus, Datastar, html, page, redirect } from "spacefn";
 
+import Env from "#configs/env.ts";
 import MainDb from "#space/db/main.ts";
 
-import Env from "../env.ts";
 import { layout } from "./_layout.ts";
 
 /** The Bus topic every change to the todos is announced on. */

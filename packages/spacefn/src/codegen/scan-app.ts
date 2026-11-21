@@ -166,7 +166,7 @@ export const scanApp = Effect.fnUntraced(function* (
 		if (CODE_FILE.test(file)) cronSources[file] = yield* readText(join(app, "crons", file));
 
 	return {
-		env: yield* exists(join(app, "env.ts")),
+		env: yield* exists(join(root, "configs", "env.ts")),
 		layers: yield* exists(join(app, "layers.ts")),
 		viteConfig: yield* exists(join(root, "configs", "vite.config.ts")),
 		infraConfig: yield* exists(join(root, "configs", "infra.ts")),

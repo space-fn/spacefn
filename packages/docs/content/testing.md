@@ -9,7 +9,7 @@ Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, thr
 | `testHttp(manifest, services)` | Serves pages, routes and middleware in memory; `fetch` it like a server |
 | `testDb(MainDb)`               | A fresh in-memory SQLite database with every migration applied          |
 | `memoryServices`               | `Kv`, `Blob`, `Queue`, `Bus` and `RateLimiter` in memory                |
-| `testEnv(values)`              | Values for `app/env.ts`                                                 |
+| `testEnv(values)`              | Values for `configs/env.ts`                                             |
 | `QueueInbox`                   | What was sent to `Queue.memory`, to assert on                           |
 
 ## A page or a route

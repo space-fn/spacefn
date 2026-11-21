@@ -46,7 +46,7 @@ export type EnvShape<Fields extends Record<string, EnvField<any>>> = {
 };
 
 /**
- * Declares the app's env (`app/env.ts`) and returns its service. Values come from
+ * Declares the app's env (`configs/env.ts`) and returns its service. Values come from
  * the target's ConfigProvider: Worker vars and secrets on Cloudflare, process env
  * on Bun, `testEnv` in tests. A missing or invalid value fails at boot with a
  * SpaceError naming the variable.
@@ -55,7 +55,7 @@ export type EnvShape<Fields extends Record<string, EnvField<any>>> = {
  * export default defineEnv({ GREETING: Env.string({ default: "hi" }), API_KEY: Env.secret() });
  * ```
  */
-/** Type-level identity of the app env service. An app has exactly one `app/env.ts`. */
+/** Type-level identity of the app env service. An app has exactly one `configs/env.ts`. */
 export interface AppEnvId {
 	readonly "~spacefn/AppEnv": true;
 }
@@ -71,7 +71,7 @@ export type AppEnv<Fields extends Record<string, EnvField<any>>> = Context.Servi
 };
 
 /**
- * Declares the app's env (`app/env.ts`) and returns its service. Values come from
+ * Declares the app's env (`configs/env.ts`) and returns its service. Values come from
  * the target's ConfigProvider: Worker vars and secrets on Cloudflare, process env
  * on Bun, `testEnv` in tests. A missing or invalid value fails at boot with a
  * SpaceError naming the variable.
@@ -98,7 +98,7 @@ export const defineEnv = <const Fields extends Record<string, EnvField<any>>>(
 					new SpaceError({
 						code: "ENV_INVALID",
 						message: `Invalid environment: ${cause.message}`,
-						file: "app/env.ts",
+						file: "configs/env.ts",
 						hint: "Set the variable (Worker vars/secrets on Cloudflare, process env on Bun) or give the field a default.",
 					}),
 			),
