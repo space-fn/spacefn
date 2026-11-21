@@ -21,11 +21,12 @@ import { rateLimiterLayer } from "./rate-limiter.ts";
 import { blobLayer, kvLayer, queueLayer } from "./storage.ts";
 
 /**
- * Maps deployed queue names to the app's (`{ "todo-prod-emails": "emails" }`),
- * since queue names are unique per account. Set by the infra; without it a
- * queue's deployed name is its name.
+ * What `configs/infra.ts` puts before each queue's name (`todo-prod-` for
+ * `todo-prod-emails`), since queue names are unique per account. The Worker
+ * strips it to find the queue's file in `app/queues/`; without it a queue's
+ * deployed name is its name.
  */
-export const QUEUE_NAMES_VAR = "SPACE_QUEUE_NAMES";
+export const QUEUE_PREFIX_VAR = "SPACE_QUEUE_PREFIX";
 
 /**
  * The Cloudflare target's services, for the entry's `services` (through
@@ -66,10 +67,11 @@ const makeApp = (space: SpaceApp, env: WorkerEnv) => {
 		}).pipe(Layer.provide(HttpServer.layerServices)),
 		{ memoMap: runtime.memoMap },
 	);
-	const queueNames: Record<string, string> = (() => {
-		const names = env[QUEUE_NAMES_VAR];
-		return typeof names === "string" ? JSON.parse(names) : {};
-	})();
+	const prefix = env[QUEUE_PREFIX_VAR];
+	const queueName = (deployed: string) =>
+		typeof prefix === "string" && deployed.startsWith(prefix)
+			? deployed.slice(prefix.length)
+			: deployed;
 	const flush = (ctx: ExecutionContext) =>
 		ctx.waitUntil(
 			runtime
@@ -82,7 +84,7 @@ const makeApp = (space: SpaceApp, env: WorkerEnv) => {
 				)
 				.catch(() => {}),
 		);
-	return { runtime, http, queueNames, flush };
+	return { runtime, http, queueName, flush };
 };
 
 const logError = (error: unknown) =>
@@ -139,7 +141,7 @@ export const worker = (space: SpaceApp): ExportedHandler<WorkerEnv> => {
 
 		async queue(batch, env, ctx) {
 			const app = appFor(env);
-			const name = app.queueNames[batch.queue] ?? batch.queue;
+			const name = app.queueName(batch.queue);
 			try {
 				await app.runtime.runPromise(
 					Effect.gen(function* () {

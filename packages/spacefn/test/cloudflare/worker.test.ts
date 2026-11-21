@@ -110,7 +110,7 @@ describe("worker", () => {
 		const { ctx, settle } = fakeContext();
 		await app.queue!(
 			{ queue: "todo-prod-emails", messages: [ok.message, bad.message] } as any,
-			{ ...env, SPACE_QUEUE_NAMES: JSON.stringify({ "todo-prod-emails": "emails" }) },
+			{ ...env, SPACE_QUEUE_PREFIX: "todo-prod-" },
 			ctx,
 		);
 		await settle();

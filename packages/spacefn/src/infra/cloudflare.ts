@@ -1,6 +1,5 @@
 import * as Cloudflare from "@alchemy.run/cloudflare";
 import * as Alchemy from "alchemy";
-import * as Output from "alchemy/Output";
 import { Effect } from "effect";
 
 import type { InfraConfig } from "./infra-config.ts";
@@ -44,19 +43,15 @@ export const cloudflareStack = (app: CloudflareApp, options: CloudflareStackOpti
 				if (db.driver === "d1") bindings[db.binding] = yield* Cloudflare.D1.Database(db.binding);
 			if (app.uses.kv) bindings.KV = yield* Cloudflare.KV.Namespace("KV");
 			if (app.uses.blob) bindings.BLOB = yield* Cloudflare.R2.Bucket("BLOB");
-			const queues: { name: string; binding: string; queue: Cloudflare.Queues.Queue }[] = [];
+			const queues: { binding: string; queue: Cloudflare.Queues.Queue }[] = [];
+			// Queue names are unique per account, so they carry the app and stage; the Worker strips it.
+			const prefix = `${app.name}-${yield* Alchemy.Stage}-`.toLowerCase();
+			if (app.queues.length > 0) bindings.SPACE_QUEUE_PREFIX = prefix;
 			for (const { name, binding } of app.queues) {
-				const queue = yield* Cloudflare.Queues.Queue(binding);
+				const queue = yield* Cloudflare.Queues.Queue(binding, { name: prefix + name });
 				bindings[binding] = queue;
-				queues.push({ name, binding, queue });
+				queues.push({ binding, queue });
 			}
-			if (queues.length > 0)
-				// Deployed queue names carry the app and stage; the Worker maps them back.
-				bindings.SPACE_QUEUE_NAMES = Output.map(
-					Output.all(...queues.map(({ queue }) => queue.queueName)),
-					(names: readonly string[]) =>
-						JSON.stringify(Object.fromEntries(names.map((name, i) => [name, queues[i]!.name]))),
-				);
 			bindings.SPACE_BUS = Cloudflare.DurableObject("SpaceBus");
 			bindings.SPACE_RATE_LIMITER = Cloudflare.DurableObject("SpaceRateLimiter");
 			for (const { className, binding } of app.durableObjects)
