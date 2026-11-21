@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { Effect, Schema } from "effect";
 
 import { SpaceError } from "../errors.ts";
-import { DEFAULT_ALIASES, SpaceConfig, type ResolvedSpaceConfig } from "../space-config.ts";
+import { SpaceConfig, type ResolvedSpaceConfig } from "../space-config.ts";
 
 export const SPACE_CONFIG_FILE = "configs/space.ts";
 
@@ -16,12 +16,27 @@ let loads = 0;
 const fail = (code: string, message: string, hint?: string) =>
 	new SpaceError({ code, message, file: SPACE_CONFIG_FILE, ...(hint ? { hint } : {}) });
 
-const packageName = (root: string) =>
+interface PackageJson {
+	readonly name?: unknown;
+	readonly imports?: unknown;
+}
+
+const readPackage = (root: string) =>
 	Effect.tryPromise(() => readFile(join(root, "package.json"), "utf8")).pipe(
-		Effect.map((text) => (JSON.parse(text) as { name?: unknown }).name),
-		Effect.map((name) => (typeof name === "string" ? name.replace(/^@[^/]+\//, "") : undefined)),
-		Effect.orElseSucceed(() => undefined),
+		Effect.map((text) => JSON.parse(text) as PackageJson),
+		Effect.orElseSucceed((): PackageJson => ({})),
 	);
+
+/** `"#lib/*": "./lib/*"` gives `lib`. Generated `.space/` is not the app's own code. */
+export const importFolders = (imports: unknown): string[] => {
+	if (typeof imports !== "object" || imports === null) return [];
+	const folders = new Set<string>();
+	for (const target of Object.values(imports)) {
+		const folder = typeof target === "string" ? /^\.\/([^*]+?)\/\*$/.exec(target)?.[1] : undefined;
+		if (folder && folder !== ".space") folders.add(folder);
+	}
+	return [...folders];
+};
 
 /**
  * Loads `configs/space.ts` from the app root with Node's built-in TypeScript
@@ -57,7 +72,9 @@ export const loadSpaceConfig = Effect.fnUntraced(function* (
 	const config = yield* Schema.decodeUnknownEffect(SpaceConfig)(module.default).pipe(
 		Effect.mapError((error) => fail("CONFIG_INVALID", error.message)),
 	);
-	const name = config.name ?? (yield* packageName(root));
+	const pkg = yield* readPackage(root);
+	const name =
+		config.name ?? (typeof pkg.name === "string" ? pkg.name.replace(/^@[^/]+\//, "") : undefined);
 	if (!name || !/^[a-z][a-z0-9-]*$/.test(name))
 		return yield* fail(
 			"CONFIG_NAME",
@@ -68,7 +85,7 @@ export const loadSpaceConfig = Effect.fnUntraced(function* (
 	return {
 		target: config.target,
 		name,
-		aliases: { ...DEFAULT_ALIASES, ...config.aliases },
+		folders: importFolders(pkg.imports),
 		db: config.db ?? {},
 	};
 });

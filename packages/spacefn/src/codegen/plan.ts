@@ -63,7 +63,8 @@ export interface AppPlan {
 	readonly target: Target;
 	readonly name: string;
 	readonly mode: Mode;
-	readonly aliases: Readonly<Record<string, string>>;
+	/** The app's own code folders beside `app/`, from `package.json` `imports`. */
+	readonly folders: readonly string[];
 	readonly env: boolean;
 	readonly layers: boolean;
 	readonly viteConfig: boolean;
@@ -303,7 +304,7 @@ export const planApp = Effect.fnUntraced(function* (
 		target: config.target,
 		name: config.name,
 		mode,
-		aliases: config.aliases,
+		folders: config.folders,
 		env: tree.env,
 		layers: tree.layers,
 		viteConfig: tree.viteConfig,

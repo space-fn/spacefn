@@ -1,6 +1,6 @@
-// Files starting with _ are private: no page is made from this one.
-import { head } from "@space/assets";
 import { html, type HtmlValue } from "spacefn";
+// Files starting with _ are private: no page is made from this one.
+import { head } from "spacefn/assets";
 
 /** Datastar's client, for live updates. Or install it and import it from app/client/. */
 const DATASTAR = "https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.5/bundles/datastar.js";

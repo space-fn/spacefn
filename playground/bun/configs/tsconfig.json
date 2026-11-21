@@ -1,5 +1,4 @@
 {
-	"extends": "../.space/tsconfig.json",
 	"compilerOptions": {
 		"target": "ES2022",
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -12,6 +11,6 @@
 		"skipLibCheck": true,
 		"types": []
 	},
-	"include": ["../app", "../lib", "../modules", "../utils", "../configs", "../.space"],
+	"include": ["../app", "../lib", "../configs", "../.space"],
 	"exclude": ["../.space/dist", "../.space/.alchemy"]
 }

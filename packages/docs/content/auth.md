@@ -16,10 +16,11 @@ PBKDF2-SHA256 at 100,000 iterations, the most Workers allow. That is below OWASP
 `sessionAuth` gives cookie sessions over your own sessions table. Only a hash of each token is stored, so a leaked table signs nobody in.
 
 ```ts
-// lib/auth.ts
-import MainDb from "@space/db/main.ts";
 import { Effect } from "effect";
 import { sessionAuth } from "spacefn";
+
+// lib/auth.ts
+import MainDb from "#space/db/main.ts";
 
 export const auth = sessionAuth({
 	lookup: (tokenHash) => Effect.flatMap(MainDb, (db) => db.findSession({ tokenHash })),

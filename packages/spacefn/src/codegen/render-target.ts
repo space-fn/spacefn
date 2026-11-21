@@ -62,7 +62,6 @@ export const renderViteConfig = (plan: AppPlan): string => {
 		`target: ${str(plan.target)}`,
 		'root: fileURLToPath(new URL("..", import.meta.url))',
 		`client: ${str(plan.client)}`,
-		`aliases: ${str(plan.aliases)}`,
 	];
 	const spacePlugin = `{ plugins: [space({ ${options.join(", ")} })] }`;
 	const imports = [
@@ -83,34 +82,6 @@ export const renderViteConfig = (plan: AppPlan): string => {
 };
 
 /**
- * `.space/tsconfig.json`: the import aliases as `paths`. The app's
- * `configs/tsconfig.json` extends it, so aliases are declared once, in
- * `configs/space.ts`.
- */
-export const renderTsconfig = (plan: AppPlan): string => {
-	const paths = Object.fromEntries([
-		// Generated modules app code imports, e.g. `@space/db/main.ts`.
-		["@space/*", ["./*"]],
-		...Object.entries(plan.aliases).map(([alias, dir]) => [`${alias}/*`, [`../${dir}/*`]]),
-	]);
-	return `${JSON.stringify({ compilerOptions: { paths } }, null, "\t")}\n`;
-};
-
-/** `.space/assets.d.ts`: the type of `@space/assets`, which the Vite plugin provides. */
-export const renderAssetsTypes = (): string =>
-	[
-		GENERATED,
-		'import type { Html } from "spacefn";',
-		"",
-		"/**",
-		" * The `<script>` and `<link>` tags for the `app/client/` entries: the source",
-		" * files in dev, the hashed build files in production. Put it in `<head>`.",
-		" */",
-		"export declare const head: Html;",
-		"",
-	].join("\n");
-
-/**
  * `.space/alchemy.run.ts`: the infra, as data for spacefn's stack,
  * plus `app/env.ts` (its variables are passed on) and `configs/infra.ts`.
  * Alchemy runs it for `space dev` on Cloudflare and for deploys.
@@ -129,12 +100,12 @@ export const renderAlchemy = (plan: AppPlan): string => {
 					})),
 					workflows: plan.workflows.map(({ className, binding }) => ({ className, binding })),
 					uses: plan.uses,
-					folders: Object.values(plan.aliases),
+					folders: plan.folders,
 				}
 			: {
 					name: plan.name,
 					db: plan.db.map(({ driver, binding }) => ({ driver, binding })),
-					folders: Object.values(plan.aliases),
+					folders: plan.folders,
 				};
 	const stack = plan.target === "cloudflare" ? "cloudflareStack" : "dockerStack";
 	const fields = Object.entries(app).map(([key, value]) => `\t\t${key}: ${str(value)},`);

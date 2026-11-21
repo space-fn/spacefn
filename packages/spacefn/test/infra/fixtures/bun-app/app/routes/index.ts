@@ -1,6 +1,6 @@
-import { head } from "@space/assets";
 import { Effect } from "effect";
 import { html, Kv, route } from "spacefn";
+import { head } from "spacefn/assets";
 
 export default route({
 	GET: Effect.gen(function* () {

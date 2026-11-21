@@ -20,6 +20,7 @@ export default defineConfig([
 		index: "src/index.ts",
 		"space-config": "src/space-config.ts",
 		testing: "src/testing.ts",
+		assets: "src/assets.ts",
 		"codegen/index": "src/codegen/index.ts",
 		runtime: "src/runtime.ts",
 		"sql/index": "src/sql/index.ts",

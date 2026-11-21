@@ -36,11 +36,9 @@ describe("gen", () => {
 			yield* write(app);
 			expect((yield* gen(root, "dev")).written).toEqual([
 				"alchemy.run.ts",
-				"assets.d.ts",
 				"db/main.ts",
 				"entry.ts",
 				"manifest.ts",
-				"tsconfig.json",
 				"vite.config.ts",
 			]);
 			expect(yield* gen(root, "dev")).toEqual({ written: [], removed: [] });

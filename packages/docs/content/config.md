@@ -10,12 +10,11 @@ import { defineSpace } from "spacefn/config";
 export default defineSpace({
 	target: "cloudflare", // or "bun"
 	name: "todo", // default: package.json `name`; names the Worker, the container and the deploy
-	aliases: { "@lib": "lib", "@ui": "src/ui" }, // import aliases, alias → folder
 	db: { main: "d1", rooms: "durable-object" }, // a driver per app/db/ folder
 });
 ```
 
-The default aliases are `@lib`, `@modules` and `@utils`. `@space` is reserved for generated code. Default drivers are `d1` on Cloudflare and `libsql` on Bun; see [Database](database.md).
+Imports such as `#lib/...` are declared in `package.json`; see [Conventions](conventions.md#imports). Default drivers are `d1` on Cloudflare and `libsql` on Bun; see [Database](database.md).
 
 ## `app/env.ts`
 

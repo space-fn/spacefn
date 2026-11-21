@@ -72,7 +72,7 @@ ORDER BY id;
 Import the generated class and use it as a service:
 
 ```ts
-import MainDb from "@space/db/main.ts";
+import MainDb from "#space/db/main.ts";
 
 const todos = yield * (yield * MainDb).listTodos();
 yield * (yield * MainDb).addTodo({ title: "Ship" });

@@ -2,6 +2,10 @@
 	"name": "playground-cloudflare",
 	"private": true,
 	"type": "module",
+	"imports": {
+		"#lib/*": "./lib/*",
+		"#space/*": "./.space/*"
+	},
 	"scripts": {
 		"postinstall": "space gen",
 		"dev": "space dev",

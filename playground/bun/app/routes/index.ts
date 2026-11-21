@@ -1,6 +1,7 @@
-import MainDb from "@space/db/main.ts";
 import { Effect, Schema } from "effect";
 import { action, Bus, Datastar, html, page, redirect } from "spacefn";
+
+import MainDb from "#space/db/main.ts";
 
 import Env from "../env.ts";
 import { layout } from "./_layout.ts";

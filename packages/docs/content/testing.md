@@ -1,6 +1,6 @@
 # Testing
 
-Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, through `configs/vitest.config.ts`, which reuses the generated Vite config so `@space/*` imports work). They run in Node, in memory: no Worker, no Docker, no database server.
+Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, through `configs/vitest.config.ts`, which reuses the generated Vite config so `spacefn/assets` works). They run in Node, in memory: no Worker, no Docker, no database server.
 
 `spacefn/testing` has what you need:
 
@@ -15,10 +15,11 @@ Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, thr
 ## A page or a route
 
 ```ts
-import MainDb from "@space/db/main.ts";
 import { Layer } from "effect";
 import { memoryServices, testDb, testEnv, testHttp } from "spacefn/testing";
 import { expect, it } from "vitest";
+
+import MainDb from "#space/db/main.ts";
 
 import Env from "../env.ts";
 import todos from "./index.ts";

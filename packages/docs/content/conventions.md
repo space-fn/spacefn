@@ -13,7 +13,7 @@ app/workflows/        Workflow classes              (Cloudflare only)
 app/env.ts            the variables the app reads   → Configuration
 app/layers.ts         your own services             → Services
 configs/              space.ts, and optional vite.config.ts and infra.ts
-lib/ modules/ utils/  your code, imported as @lib/..., @modules/..., @utils/...
+lib/                  your code, imported as #lib/...
 .space/               generated
 ```
 
@@ -42,8 +42,19 @@ Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for
 
 ## Imports
 
-- `@space/db/<name>.ts` is the generated database for `app/db/<name>/`.
-- `@space/assets` gives `head`, the `<script>` and `<link>` tags of `app/client/` (see [Pages](pages.md)).
-- `@lib/...`, `@modules/...` and `@utils/...` point at those folders. Change the list with `aliases` in `configs/space.ts`.
+Imports from the app root are [subpath imports](https://nodejs.org/api/packages.html#subpath-imports), declared in `package.json`. Node, TypeScript, Vite, Vitest and Bun all read them, so nothing else needs configuring:
+
+```json [package.json]
+{
+	"imports": {
+		"#lib/*": "./lib/*",
+		"#space/*": "./.space/*"
+	}
+}
+```
+
+- `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
+- `#lib/...` is your own code in `lib/`. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
+- `spacefn/assets` gives `head`, the `<script>` and `<link>` tags of `app/client/` (see [Pages](pages.md)). The Vite plugin provides it.
 
 Use relative imports with the `.ts` extension inside a folder.

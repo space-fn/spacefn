@@ -1,7 +1,8 @@
-import MainDb from "@space/db/main.ts";
 import { Layer } from "effect";
 import { memoryServices, testDb, testEnv, testHttp } from "spacefn/testing";
 import { describe, expect, it } from "vitest";
+
+import MainDb from "#space/db/main.ts";
 
 import Env from "../env.ts";
 import todos from "./index.ts";

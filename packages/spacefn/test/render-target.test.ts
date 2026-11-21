@@ -26,11 +26,7 @@ const empty: AppTree = {
 const render = (target: Target, tree: Partial<AppTree> = {}) =>
 	renderApp(
 		Effect.runSync(
-			planApp(
-				{ ...empty, ...tree },
-				{ target, name: "todo", aliases: { "@lib": "lib" }, db: {} },
-				"dev",
-			),
+			planApp({ ...empty, ...tree }, { target, name: "todo", folders: ["lib"], db: {} }, "dev"),
 		),
 	);
 
@@ -43,11 +39,9 @@ describe("renderApp", () => {
 		});
 		expect(Object.keys(files).sort()).toEqual([
 			"alchemy.run.ts",
-			"assets.d.ts",
 			"db/main.ts",
 			"entry.ts",
 			"manifest.ts",
-			"tsconfig.json",
 			"vite.config.ts",
 		]);
 		expect(files["entry.ts"]).toMatchInlineSnapshot(`
@@ -69,10 +63,8 @@ describe("renderApp", () => {
 		expect(Object.keys(files).sort()).toEqual([
 			"alchemy.run.ts",
 			"app.ts",
-			"assets.d.ts",
 			"manifest.ts",
 			"server.ts",
-			"tsconfig.json",
 			"vite.config.ts",
 		]);
 		expect(files["app.ts"]).toMatchInlineSnapshot(`
@@ -105,7 +97,7 @@ describe("renderApp", () => {
 			import { space } from "spacefn/vite";
 			import { defineConfig } from "vite";
 
-			export default defineConfig({ plugins: [space({ target: "bun", root: fileURLToPath(new URL("..", import.meta.url)), client: ["app/client/main.ts"], aliases: {"@lib":"lib"} })] });
+			export default defineConfig({ plugins: [space({ target: "bun", root: fileURLToPath(new URL("..", import.meta.url)), client: ["app/client/main.ts"] })] });
 			"
 		`);
 	});
@@ -120,16 +112,10 @@ describe("renderApp", () => {
 			import user from "../configs/vite.config.ts";
 
 			export default defineConfig(async (env) =>
-				mergeConfig(typeof user === "function" ? await user(env) : await user, { plugins: [space({ target: "cloudflare", root: fileURLToPath(new URL("..", import.meta.url)), client: [], aliases: {"@lib":"lib"} })] }),
+				mergeConfig(typeof user === "function" ? await user(env) : await user, { plugins: [space({ target: "cloudflare", root: fileURLToPath(new URL("..", import.meta.url)), client: [] })] }),
 			);
 			"
 		`);
-	});
-
-	it("declares the aliases as tsconfig paths", () => {
-		expect(JSON.parse(render("bun")["tsconfig.json"] ?? "")).toEqual({
-			compilerOptions: { paths: { "@space/*": ["./*"], "@lib/*": ["../lib/*"] } },
-		});
 	});
 
 	it("gives each target an Alchemy stack of plain data, with the env and infra config", () => {

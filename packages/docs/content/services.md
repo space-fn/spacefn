@@ -69,9 +69,10 @@ Counts are fixed windows, and every process and instance agrees on them. `client
 `app/layers.ts` default-exports a `Layer` of your own services. It can use the env, the databases and the services above, and everything in the app can use it:
 
 ```ts
-import { Mailer } from "@lib/mailer.ts";
 // app/layers.ts
 import { Layer } from "effect";
+
+import { Mailer } from "#lib/mailer.ts";
 
 export default Layer.mergeAll(Mailer.layer);
 ```

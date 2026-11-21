@@ -67,7 +67,7 @@ export const testHttp = <E>(
  * migration applied. Each build starts empty.
  *
  * ```ts
- * import { MainDb } from "@space/db/main.ts";
+ * import { MainDb } from "#space/db/main.ts";
  * it.effect("adds a todo", () => addTodo("x").pipe(Effect.provide(testDb(MainDb))));
  * ```
  *

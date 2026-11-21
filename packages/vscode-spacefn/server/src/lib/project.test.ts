@@ -42,15 +42,15 @@ describe("resolveDb", () => {
 		});
 	});
 
-	it("follows the @space/db import when there are several", () => {
+	it("follows the #space/db import when there are several", () => {
 		mkdirSync(path.join(root, "app/db/audit"), { recursive: true });
 		const file = at("lib/report.ts");
 		expect(resolveDb(file, "")).toBeNull();
-		expect(resolveDb(file, 'import AuditDb from "@space/db/audit.ts";')?.targetDb).toBe(
+		expect(resolveDb(file, 'import AuditDb from "#space/db/audit.ts";')?.targetDb).toBe(
 			path.join(root, "app/db/audit"),
 		);
-		expect(importedDb("import x from '@space/db/main';")).toBe("main");
-		expect(importedDb('import x from "@space/assets";')).toBeNull();
+		expect(importedDb("import x from '#space/db/main';")).toBe("main");
+		expect(importedDb('import x from "spacefn/assets";')).toBeNull();
 	});
 });
 

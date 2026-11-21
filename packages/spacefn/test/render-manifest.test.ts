@@ -27,7 +27,7 @@ const render = (tree: Partial<AppTree>) =>
 		Effect.runSync(
 			planApp(
 				{ ...empty, ...tree },
-				{ target: "cloudflare", name: "todo", aliases: {}, db: {} },
+				{ target: "cloudflare", name: "todo", folders: [], db: {} },
 				"dev",
 			),
 		),

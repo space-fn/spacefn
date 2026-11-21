@@ -3,10 +3,11 @@
 A file in `app/routes/` whose default export is a `page(...)` is a server-rendered page. `page` takes a `loader` (what the page needs), `actions` (what its forms do) and `render` (the HTML):
 
 ```ts
-// app/routes/todos/[id].ts → /todos/:id
-import MainDb from "@space/db/main.ts";
 import { Effect, Option, Schema } from "effect";
 import { action, html, Input, NotFound, page, redirect } from "spacefn";
+
+// app/routes/todos/[id].ts → /todos/:id
+import MainDb from "#space/db/main.ts";
 
 import { layout } from "../_layout.ts";
 
@@ -66,10 +67,10 @@ ${ctx.action?.name === "rename" && !ctx.action.ok
 
 `` html`...` `` escapes every value, so user input is safe to interpolate. Arrays render each item, and `null`, `undefined` and `false` render nothing. `raw(string)` inserts markup you trust as it is. Routes can return `html` too.
 
-The layout puts `head` from `@space/assets` in `<head>`: the `<script>` and `<link>` tags of every file in `app/client/`. In dev they point at the sources and Vite's live reload; in a build, at the hashed files, with their CSS and preloads.
+The layout puts `head` from `spacefn/assets` in `<head>`: the `<script>` and `<link>` tags of every file in `app/client/`. In dev they point at the sources and Vite's live reload; in a build, at the hashed files, with their CSS and preloads.
 
 ```ts
-import { head } from "@space/assets";
+import { head } from "spacefn/assets";
 html`<head>
 	${head}
 </head>`;

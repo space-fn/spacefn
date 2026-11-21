@@ -5,10 +5,11 @@
 A file in `app/queues/` consumes the queue of its name. Its body is decoded with a schema before your handler sees it:
 
 ```ts
-import { Mailer } from "@lib/mailer.ts";
 // app/queues/emails.ts
 import { Effect, Schema } from "effect";
 import { queue } from "spacefn";
+
+import { Mailer } from "#lib/mailer.ts";
 
 export default queue({
 	body: Schema.Struct({ to: Schema.String, subject: Schema.String }),
@@ -32,9 +33,10 @@ On Cloudflare it's a Cloudflare Queue and a consumer, created on deploy. On Bun 
 A file in `app/crons/` runs a job on a schedule:
 
 ```ts
-import { Sessions } from "@lib/sessions.ts";
 // app/crons/nightly.ts
 import { cron } from "spacefn";
+
+import { Sessions } from "#lib/sessions.ts";
 
 export default cron("0 3 * * *", Sessions.deleteExpired);
 ```

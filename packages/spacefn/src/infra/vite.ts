@@ -20,12 +20,10 @@ export interface SpaceViteOptions {
 	readonly root: string;
 	/** Client entries, e.g. `app/client/main.ts`, relative to the root. */
 	readonly client: readonly string[];
-	/** Import aliases, alias → folder relative to the root. */
-	readonly aliases: Readonly<Record<string, string>>;
 }
 
 /** What server code imports for the client's `<script>` and `<link>` tags. */
-export const ASSETS_ID = "@space/assets";
+export const ASSETS_ID = "spacefn/assets";
 const RESOLVED_ASSETS_ID = "\0space:assets";
 
 /** Packages with native code: left out of the Bun server bundle and installed beside it. */
@@ -42,8 +40,6 @@ const installedVersion = async (resolve: (id: string) => string, name: string) =
 	}
 	throw new Error(`spacefn: can't find the installed version of ${name}`);
 };
-
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** The tags for the client entries: their sources in dev, the hashed build files from the manifest. */
 export const assetTags = (
@@ -110,7 +106,7 @@ const serveDocs = async (dev: ViteDevServer, root: string) => {
 	});
 };
 
-/** The parts every target shares: root, aliases, output folders, assets, client-first build, reloads. */
+/** The parts every target shares: root, output folders, assets, client-first build, reloads. */
 const core = (options: SpaceViteOptions): Plugin => {
 	const { root } = options;
 	const space = join(root, ".space");
@@ -119,18 +115,11 @@ const core = (options: SpaceViteOptions): Plugin => {
 	let server: ViteDevServer | undefined;
 	return {
 		name: "spacefn",
+		// Before Vite's resolver, which would find the real spacefn/assets (a stub) in node_modules.
+		enforce: "pre",
 		config: () => ({
 			// Alchemy roots Vite where the config is (.space/); the app is one level up.
 			root,
-			resolve: {
-				alias: [
-					{ find: /^@space\/(?!assets$)/, replacement: `${space}/` },
-					...Object.entries(options.aliases).map(([alias, dir]) => ({
-						find: new RegExp(`^${escapeRegExp(alias)}/`),
-						replacement: `${join(root, dir)}/`,
-					})),
-				],
-			},
 			build: { outDir: join(space, "dist") },
 			environments: {
 				client: {

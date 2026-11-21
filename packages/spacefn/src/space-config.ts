@@ -17,16 +17,6 @@ export const DEFAULT_DB_DRIVER: Readonly<Record<Target, DbDriver>> = {
 	bun: "libsql",
 };
 
-const ALIAS = /^@[\w-]+$/;
-
-const Aliases = Schema.Record(Schema.String, Schema.String).check(
-	Schema.makeFilter((aliases) => {
-		const bad = Object.keys(aliases).filter((name) => !ALIAS.test(name));
-		if (bad.length) return `Alias names start with @, e.g. @modules (got ${bad.join(", ")})`;
-		return !("@space" in aliases) || "@space is reserved for generated code (.space/)";
-	}),
-);
-
 /** The shape of `configs/space.ts`. */
 export const SpaceConfig = Schema.Struct({
 	target: Target,
@@ -36,8 +26,6 @@ export const SpaceConfig = Schema.Struct({
 			Schema.isPattern(/^[a-z][a-z0-9-]*$/, { message: "Use lowercase letters, digits and -" }),
 		),
 	),
-	/** Import aliases, alias → folder relative to the app root. */
-	aliases: Schema.optional(Aliases),
 	/** Driver per database folder, e.g. `{ main: "d1", rooms: "durable-object" }`. */
 	db: Schema.optional(Schema.Record(Schema.String, DbDriver)),
 });
@@ -47,16 +35,14 @@ export type SpaceConfig = typeof SpaceConfig.Type;
 export interface ResolvedSpaceConfig {
 	readonly target: Target;
 	readonly name: string;
-	readonly aliases: Readonly<Record<string, string>>;
+	/**
+	 * Folders `package.json` `imports` maps, e.g. `lib` for `"#lib/*": "./lib/*"`
+	 * (`.space` aside). Read with `app/` where all the app's code is wanted.
+	 */
+	readonly folders: readonly string[];
 	/** Drivers named in the config. Folders not listed get {@link DEFAULT_DB_DRIVER}. */
 	readonly db: Readonly<Record<string, DbDriver>>;
 }
-
-export const DEFAULT_ALIASES: Readonly<Record<string, string>> = {
-	"@modules": "modules",
-	"@lib": "lib",
-	"@utils": "utils",
-};
 
 /**
  * Declares the framework settings in `configs/space.ts`.

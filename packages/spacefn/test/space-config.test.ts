@@ -19,26 +19,42 @@ afterEach(() => rm(root, { recursive: true, force: true }));
 const writeConfig = (body: string) => writeFile(join(root, "configs/space.ts"), body);
 
 describe("loadSpaceConfig", () => {
-	it.effect("applies defaults: name from package.json and the standard aliases", () =>
-		Effect.gen(function* () {
-			yield* Effect.promise(() => writeConfig(`export default { target: "cloudflare" as const };`));
-			expect(yield* loadSpaceConfig(root)).toEqual({
-				target: "cloudflare",
-				name: "todo-app",
-				aliases: { "@modules": "modules", "@lib": "lib", "@utils": "utils" },
-				db: {},
-			});
-		}),
+	it.effect(
+		"applies defaults: the name from package.json, and no code folders without imports",
+		() =>
+			Effect.gen(function* () {
+				yield* Effect.promise(() =>
+					writeConfig(`export default { target: "cloudflare" as const };`),
+				);
+				expect(yield* loadSpaceConfig(root)).toEqual({
+					target: "cloudflare",
+					name: "todo-app",
+					folders: [],
+					db: {},
+				});
+			}),
 	);
 
-	it.effect("takes the name and extra aliases from the config", () =>
+	it.effect("takes the name from the config, and code folders from package.json imports", () =>
 		Effect.gen(function* () {
-			yield* Effect.promise(() =>
-				writeConfig(`export default { target: "bun", name: "todos", aliases: { "@ui": "ui" } };`),
-			);
+			yield* Effect.promise(async () => {
+				await writeFile(
+					join(root, "package.json"),
+					JSON.stringify({
+						name: "todo-app",
+						imports: {
+							"#lib/*": "./lib/*",
+							"#ui/*": "./src/ui/*",
+							"#space/*": "./.space/*",
+							"#env": "./configs/env.ts",
+							"#dup/*": "./lib/*",
+						},
+					}),
+				);
+				await writeConfig(`export default { target: "bun", name: "todos" };`);
+			});
 			const config = yield* loadSpaceConfig(root);
-			expect(config).toMatchObject({ target: "bun", name: "todos" });
-			expect(config.aliases["@ui"]).toBe("ui");
+			expect(config).toMatchObject({ target: "bun", name: "todos", folders: ["lib", "src/ui"] });
 		}),
 	);
 
@@ -48,28 +64,6 @@ describe("loadSpaceConfig", () => {
 			const error = yield* Effect.flip(loadSpaceConfig(root));
 			expect(error).toMatchObject({ code: "CONFIG_INVALID", file: "configs/space.ts" });
 			expect(error.message).toContain("target");
-		}),
-	);
-
-	it.effect("rejects an alias without @", () =>
-		Effect.gen(function* () {
-			yield* Effect.promise(() =>
-				writeConfig(`export default { target: "bun", aliases: { ui: "ui" } };`),
-			);
-			expect((yield* Effect.flip(loadSpaceConfig(root))).code).toBe("CONFIG_INVALID");
-		}),
-	);
-
-	it.effect("reserves @space for generated code", () =>
-		Effect.gen(function* () {
-			yield* Effect.promise(() =>
-				writeConfig(`export default { target: "bun", aliases: { "@space": "gen" } };`),
-			);
-			const error = yield* Effect.flip(loadSpaceConfig(root));
-			expect([error.code, error.message]).toEqual([
-				"CONFIG_INVALID",
-				expect.stringContaining("@space is reserved"),
-			]);
 		}),
 	);
 

@@ -30,6 +30,7 @@
 		".": "./src/index.ts",
 		"./config": "./src/space-config.ts",
 		"./testing": "./src/testing.ts",
+		"./assets": "./src/assets.ts",
 		"./codegen": "./src/codegen/index.ts",
 		"./runtime": "./src/runtime.ts",
 		"./sql": "./src/sql/index.ts",
@@ -57,6 +58,10 @@
 			"./testing": {
 				"types": "./dist/testing.d.mts",
 				"import": "./dist/testing.mjs"
+			},
+			"./assets": {
+				"types": "./dist/assets.d.mts",
+				"import": "./dist/assets.mjs"
 			},
 			"./codegen": {
 				"types": "./dist/codegen/index.d.mts",

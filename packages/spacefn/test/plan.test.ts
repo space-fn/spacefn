@@ -26,7 +26,7 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 const config = (parts: Partial<ResolvedSpaceConfig> = {}): ResolvedSpaceConfig => ({
 	target: "cloudflare",
 	name: "todo",
-	aliases: {},
+	folders: [],
 	db: {},
 	...parts,
 });

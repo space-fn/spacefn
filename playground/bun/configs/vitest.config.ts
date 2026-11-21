@@ -1,7 +1,7 @@
 import type { UserConfig, UserConfigFnPromise } from "vite";
 import { defineConfig, mergeConfig } from "vitest/config";
 
-// The generated Vite config: the folder aliases, @space/* and @space/assets.
+// The generated Vite config, with the spacefn plugin (it provides spacefn/assets).
 import space from "../.space/vite.config.ts";
 
 export default defineConfig(async (env) => {

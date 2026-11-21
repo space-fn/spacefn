@@ -5,10 +5,11 @@
 A file in `app/routes/` answers HTTP requests. Give `route` one `Effect` per method:
 
 ```ts
-// app/routes/todos/[id].ts → /todos/:id
-import MainDb from "@space/db/main.ts";
 import { Effect, Option, Schema } from "effect";
 import { Input, NotFound, route } from "spacefn";
+
+// app/routes/todos/[id].ts → /todos/:id
+import MainDb from "#space/db/main.ts";
 
 export default route({
 	GET: Effect.gen(function* () {

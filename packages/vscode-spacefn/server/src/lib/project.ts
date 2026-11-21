@@ -24,9 +24,9 @@ export function dbNames(dbDir: string): string[] {
 	}
 }
 
-const IMPORTED_DB = /["']@space\/db\/([A-Za-z0-9_-]+)(?:\.ts)?["']/;
+const IMPORTED_DB = /["']#space\/db\/([A-Za-z0-9_-]+)(?:\.ts)?["']/;
 
-/** The database a source imports from generated code (`@space/db/main.ts`), if any. */
+/** The database a source imports from generated code (`#space/db/main.ts`), if any. */
 export function importedDb(source: string): string | null {
 	return IMPORTED_DB.exec(source)?.[1] ?? null;
 }
@@ -40,7 +40,7 @@ export interface ResolvedDb {
 
 /**
  * Which database a file's SQL runs against: the one whose `queries/` holds
- * it; else, anywhere in the app, the one it imports from `@space/db/`; else
+ * it; else, anywhere in the app, the one it imports from `#space/db/`; else
  * the app's only database. Null when that can't be told.
  */
 export function resolveDb(filePath: string, source?: string): ResolvedDb | null {

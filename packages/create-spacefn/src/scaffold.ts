@@ -51,6 +51,8 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 		name,
 		private: true,
 		type: "module",
+		// Imports from the app root: your own code in lib/, and the code space gen writes.
+		imports: { "#lib/*": "./lib/*", "#space/*": "./.space/*" },
 		scripts: {
 			// .space/ is generated; make it as soon as dependencies are in.
 			postinstall: "space gen",
@@ -84,7 +86,7 @@ const spaceConfig = (target: Target) =>
 	[
 		'import { defineSpace } from "spacefn/config";',
 		"",
-		"// The app's name comes from package.json. See the docs for aliases and database drivers.",
+		"// The app's name comes from package.json. See the docs for database drivers.",
 		`export default defineSpace({ target: ${JSON.stringify(target)} });`,
 		"",
 	].join("\n");

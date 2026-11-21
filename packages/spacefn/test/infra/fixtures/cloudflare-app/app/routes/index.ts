@@ -1,7 +1,8 @@
-import { head } from "@space/assets";
-import MainDb from "@space/db/main.ts";
 import { Effect, Option, Redacted } from "effect";
 import { html, Kv, route } from "spacefn";
+import { head } from "spacefn/assets";
+
+import MainDb from "#space/db/main.ts";
 
 import Env from "../env.ts";
 
