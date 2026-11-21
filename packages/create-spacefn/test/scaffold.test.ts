@@ -108,7 +108,7 @@ describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("a new Bun app, bu
 	}, 120_000);
 });
 
-describe("the repo's playgrounds", () => {
+describe("the repo's starter examples", () => {
 	const files = (dir: string, prefix = ""): string[] =>
 		readdirSync(join(dir, prefix), { withFileTypes: true }).flatMap((entry) => {
 			const path = prefix ? `${prefix}/${entry.name}` : entry.name;
@@ -117,14 +117,14 @@ describe("the repo's playgrounds", () => {
 		});
 
 	it.each(["cloudflare", "bun"] as const)(
-		"playground/%s is the template; run pnpm playground",
+		"examples/starter-%s is the template; run pnpm examples",
 		(target) => {
-			const playground = join(here, "..", "..", "playground", target);
-			const fresh = join(scratch, `playground-${target}-${Date.now()}`);
-			scaffold(fresh, { name: `playground-${target}`, target, workspace: true });
-			expect(files(playground).sort()).toEqual(files(fresh).sort());
+			const starter = join(here, "..", "..", "examples", `starter-${target}`);
+			const fresh = join(scratch, `starter-${target}-${Date.now()}`);
+			scaffold(fresh, { name: `starter-${target}`, target, workspace: true });
+			expect(files(starter).sort()).toEqual(files(fresh).sort());
 			for (const file of files(fresh))
-				expect(readFileSync(join(playground, file), "utf8"), file).toBe(
+				expect(readFileSync(join(starter, file), "utf8"), file).toBe(
 					readFileSync(join(fresh, file), "utf8"),
 				);
 		},

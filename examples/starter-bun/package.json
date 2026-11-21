@@ -1,5 +1,5 @@
 {
-	"name": "playground-cloudflare",
+	"name": "starter-bun",
 	"private": true,
 	"type": "module",
 	"imports": {
@@ -22,7 +22,7 @@
 		"spacefn": "workspace:*"
 	},
 	"devDependencies": {
-		"@alchemy.run/cloudflare": "catalog:",
+		"@alchemy.run/docker": "catalog:",
 		"alchemy": "catalog:",
 		"spacefn-docs": "workspace:*",
 		"typescript": "^7.0.2",

@@ -24,7 +24,7 @@ const VERSIONS: Readonly<Record<string, string>> = {
 	"@alchemy.run/docker": "2.0.0-beta.87",
 };
 
-/** The ones the spacefn repo's catalog pins, for the playground. */
+/** The ones the spacefn repo's catalog pins, for the starter examples. */
 const CATALOG = new Set([
 	"alchemy",
 	"effect",
@@ -39,7 +39,7 @@ export interface ScaffoldOptions {
 	readonly target: Target;
 	/**
 	 * Inside the spacefn repo: spacefn packages as `workspace:*` and the
-	 * cataloged ones from the catalog, for the playground.
+	 * cataloged ones from the catalog, for the starter examples.
 	 */
 	readonly workspace?: boolean;
 }

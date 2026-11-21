@@ -9,7 +9,7 @@ const { values, positionals } = parseArgs({
 	allowPositionals: true,
 	options: {
 		target: { type: "string", short: "t" },
-		// Inside the spacefn repo, for the playground: workspace and catalog versions.
+		// Inside the spacefn repo, for the starter examples: workspace and catalog versions.
 		workspace: { type: "boolean" },
 	},
 });

@@ -209,6 +209,62 @@ importers:
         specifier: 7.0.2007
         version: 7.0.2007
 
+  examples/starter-bun:
+    dependencies:
+      effect:
+        specifier: 'catalog:'
+        version: 4.1.4
+      spacefn:
+        specifier: workspace:*
+        version: link:../../packages/spacefn
+    devDependencies:
+      '@alchemy.run/docker':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0))(effect@4.1.4)
+      alchemy:
+        specifier: 'catalog:'
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0)
+      spacefn-docs:
+        specifier: workspace:*
+        version: link:../../packages/docs
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.0.5)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
+
+  examples/starter-cloudflare:
+    dependencies:
+      effect:
+        specifier: 'catalog:'
+        version: 4.1.4
+      spacefn:
+        specifier: workspace:*
+        version: link:../../packages/spacefn
+    devDependencies:
+      '@alchemy.run/cloudflare':
+        specifier: 'catalog:'
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(@effect/sql-libsql@4.1.4(effect@4.1.4))(@types/node@26.6.6)(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0))(effect@4.1.4)(typescript@7.0.2)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
+      alchemy:
+        specifier: 'catalog:'
+        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0)
+      spacefn-docs:
+        specifier: workspace:*
+        version: link:../../packages/docs
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.0.5)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
+
   packages/create-spacefn:
     devDependencies:
       '@alchemy.run/cloudflare':
@@ -376,62 +432,6 @@ importers:
       vsce:
         specifier: ^2.15.0
         version: 2.15.0
-
-  playground/bun:
-    dependencies:
-      effect:
-        specifier: 'catalog:'
-        version: 4.1.4
-      spacefn:
-        specifier: workspace:*
-        version: link:../../packages/spacefn
-    devDependencies:
-      '@alchemy.run/docker':
-        specifier: 'catalog:'
-        version: 2.0.0-beta.87(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0))(effect@4.1.4)
-      alchemy:
-        specifier: 'catalog:'
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0)
-      spacefn-docs:
-        specifier: workspace:*
-        version: link:../../packages/docs
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1)
-      vitest:
-        specifier: 'catalog:'
-        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.0.5)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
-
-  playground/cloudflare:
-    dependencies:
-      effect:
-        specifier: 'catalog:'
-        version: 4.1.4
-      spacefn:
-        specifier: workspace:*
-        version: link:../../packages/spacefn
-    devDependencies:
-      '@alchemy.run/cloudflare':
-        specifier: 'catalog:'
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(@effect/sql-libsql@4.1.4(effect@4.1.4))(@types/node@26.6.6)(alchemy@2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0))(effect@4.1.4)(typescript@7.0.2)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
-      alchemy:
-        specifier: 'catalog:'
-        version: 2.0.0-beta.87(@effect/platform-node@4.1.4(effect@4.1.4)(redis@6.3.1))(effect@4.1.4)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))(ws@8.23.0)
-      spacefn-docs:
-        specifier: workspace:*
-        version: link:../../packages/docs
-      typescript:
-        specifier: ^7.0.2
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1)
-      vitest:
-        specifier: 'catalog:'
-        version: 5.1.1(@types/node@26.6.6)(@vitest/browser-preview@5.0.5)(@vitest/coverage-v8@5.1.1)(@vitest/ui@5.0.5)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(yaml@2.9.1))
 
 packages:
 
