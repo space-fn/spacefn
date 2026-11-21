@@ -33,4 +33,13 @@ describe("the CSS examples build", () => {
 			expect(css).toContain(rule);
 		expect(css).toContain("--color-brand-600:");
 	}, 60_000);
+
+	it("lightningcss: nesting, custom media from another file and light-dark(), lowered", async () => {
+		const css = await builtCss("lightningcss");
+		expect(css).toContain(".releases h2{");
+		expect(css).toContain("@media (width<40rem){.releases time{");
+		expect(css).toContain("--lightningcss-dark");
+		for (const left of ["&", "@custom-media", "--narrow", "light-dark("])
+			expect(css).not.toContain(left);
+	}, 60_000);
 });

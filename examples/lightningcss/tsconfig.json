@@ -1,0 +1,4 @@
+{
+	"//": "Editors and tsc look for this file here; the settings are in configs/tsconfig.json.",
+	"extends": "./configs/tsconfig.json"
+}
