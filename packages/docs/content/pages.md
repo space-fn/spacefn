@@ -69,25 +69,7 @@ ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.r
 
 ## Scripts, styles and public files
 
-Each file directly in `app/client/` is an entry, named after the file: `app/client/main.ts` is `main`, `app/client/site.css` is `site`. A file starting with `_` isn't one; entries import it. `assets(...)` from `spacefn/assets` gives the `<script>` and `<link>` tags of the entries you name, in that order:
-
-```ts [lib/ui/layout.ts]
-import { assets } from "spacefn/assets";
-
-html`<head>
-	${assets("site", "main")}
-</head>`;
-```
-
-A page that needs more than the layout loads it itself, so a heavy script is only on the pages that use it:
-
-```ts
-layout("Admin", html`${assets("admin")} ...`);
-```
-
-In dev the tags point at the sources and Vite's live reload; in a build, at the hashed files, with their CSS and preloads. A tag two entries share comes once. The names are typed: `assets("mian")` is a type error, and so is loading an entry that was deleted.
-
-Files in `public/`, at the app root, are served as they are at `/`: `public/favicon.svg` is `/favicon.svg`. They are copied into the build, and on both targets answered before the app runs, so a public file at a route's URL is an error from `space gen`. Put files there that need a fixed URL (icons, `robots.txt`, images linked from outside); import the rest from `app/client/`, so they get hashed names.
+A page loads the browser code it needs with `assets("name")`, for the entries in `app/client/`. [Frontend](frontend.md) covers them, `public/`, CSS, client components from React, Vue, Solid or Svelte, and how to write Datastar components.
 
 ## Live updates with Datastar
 
@@ -111,7 +93,7 @@ When the page loads, Datastar opens the action. `watch` subscribes to the `todos
 yield * Bus.publish("todos", "changed");
 ```
 
-A burst of messages causes one re-render. For more control, `Datastar.sse(stream)` sends your own events, built with `Datastar.patchElements`, `removeElements`, `patchSignals` and `executeScript`. `Datastar.signals(schema)` decodes the signals a request sent, and `Datastar.isRequest` tells a Datastar request from a plain one.
+A burst of messages causes one re-render. How to name the ids and signals, and split the markup into components, is in [Frontend](frontend.md#datastar). For more control, `Datastar.sse(stream)` sends your own events, built with `Datastar.patchElements`, `removeElements`, `patchSignals` and `executeScript`. `Datastar.signals(schema)` decodes the signals a request sent, and `Datastar.isRequest` tells a Datastar request from a plain one.
 
 ## Error pages
 
