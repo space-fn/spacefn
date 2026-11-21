@@ -20,7 +20,7 @@ export interface Action<A = any, B = any, E = any, R = any, M extends ActionMeth
 	/** `post` (the default) reads the body; `get` reads the query string or Datastar's signals. */
 	readonly method?: M;
 	readonly input: Schema.Codec<A, any, any>;
-	/** Return data to re-render the page with `ctx.action.data`, or a response (e.g. `redirect`). */
+	/** Return data to re-render the page with `ctx.actions.<name>.data`, or a response (e.g. `redirect`). */
 	readonly handler: (input: A) => Effect.Effect<B, E, R>;
 	/** Body limits, as for `Input.body`. */
 	readonly limits?: UploadLimits;
@@ -49,35 +49,37 @@ export interface Issue {
 	readonly message: string;
 }
 
-type ActionData<T> = T extends Action<any, infer B> ? Exclude<B, Response> : never;
+/** Why a submission didn't decode, typed from the action's input `A`. */
+export interface ActionError<A = Record<string, unknown>> {
+	/** Every issue, with its dotted path. */
+	readonly issues: readonly Issue[];
+	/** The first message for each field: `${ctx.actions.add.error?.fields.title}`. */
+	readonly fields: { readonly [K in keyof A]?: string };
+	/** What was submitted, to fill the form again. */
+	readonly values: { readonly [K in keyof A]?: unknown };
+}
 
-/** What the last submission did, for `render`: its data, or the issues that stopped it. */
-export type ActionState<Acts extends Actions> = {
-	[K in keyof Acts & string]:
-		| { readonly name: K; readonly ok: true; readonly data: ActionData<Acts[K]> }
-		| {
-				readonly name: K;
-				readonly ok: false;
-				readonly issues: readonly Issue[];
-				/** What was submitted, to fill the form again. */
-				readonly values: Readonly<Record<string, unknown>>;
-		  };
-}[keyof Acts & string];
-
-export interface ActionTarget<M extends ActionMethod = ActionMethod> {
+/** One action, for `render`: where it goes, and what its submission did when this render answers one. */
+export interface ActionContext<A = any, B = unknown, M extends ActionMethod = ActionMethod> {
 	/** `?__action=<name>`: relative, so it goes to the page itself. */
 	readonly url: string;
 	readonly method: M;
+	/** Set when this render answers a submission of this action that didn't decode (status 422). */
+	readonly error: ActionError<A> | undefined;
+	/** What the handler returned, when this render answers its submission. */
+	readonly data: B | undefined;
 }
 
-type MethodOf<T> = T extends Action<any, any, any, any, infer M> ? M : never;
+type ContextOf<T> =
+	T extends Action<infer A, infer B, any, any, infer M>
+		? ActionContext<A, Exclude<B, Response>, M>
+		: never;
 
 export interface PageContext<L, Acts extends Actions> {
-	readonly loaderData: L;
-	/** Set when this render answers a submission. */
-	readonly action: ActionState<Acts> | undefined;
-	/** Where each action goes: `<form method="${ctx.actions.add.method}" action="${ctx.actions.add.url}">`. */
-	readonly actions: { readonly [K in keyof Acts]: ActionTarget<MethodOf<Acts[K]>> };
+	/** What the loader returned. */
+	readonly data: L;
+	/** Each action: `<form method="${ctx.actions.add.method}" action="${ctx.actions.add.url}">`. */
+	readonly actions: { readonly [K in keyof Acts]: ContextOf<Acts[K]> };
 	readonly url: URL;
 }
 
@@ -98,7 +100,7 @@ export interface Page<L = any, Acts extends Actions = any> {
 /**
  * Declares a file in `app/pages/`. Keep `loader` and `actions` before `render`
  * so their types reach `ctx`. Write the loader with `Effect.gen` or `.pipe`:
- * TypeScript can't infer `loaderData` through the data-first
+ * TypeScript can't infer `ctx.data` through the data-first
  * `Effect.map(effect, (x) => ...)`.
  *
  * ```ts
@@ -113,8 +115,10 @@ export interface Page<L = any, Acts extends Actions = any> {
  *     }),
  *   },
  *   render: (ctx) => html`
- *     <form method="post" action="${ctx.actions.add.url}"><input name="title" /></form>
- *     <ul>${ctx.loaderData.todos.map((todo) => html`<li>${todo.title}</li>`)}</ul>`,
+ *     <form method="post" action="${ctx.actions.add.url}">
+ *       <input name="title" />${ctx.actions.add.error?.fields.title}
+ *     </form>
+ *     <ul>${ctx.data.todos.map((todo) => html`<li>${todo.title}</li>`)}</ul>`,
  * });
  * ```
  */
@@ -142,34 +146,66 @@ type Eff<A> = Effect.Effect<A, unknown, any>;
 const load = (page: AnyPage): Eff<unknown> =>
 	(page.loader ?? Effect.succeed(undefined)) as Eff<unknown>;
 
+/** What a submission did, for the render that answers it. */
+type Submission =
+	| { readonly name: string; readonly ok: true; readonly data: unknown }
+	| {
+			readonly name: string;
+			readonly ok: false;
+			readonly issues: readonly Issue[];
+			readonly values: Readonly<Record<string, unknown>>;
+	  };
+
+/** The first message per top-level field; issues about the whole input have no field. */
+const fieldsOf = (issues: readonly Issue[]) => {
+	const fields: Record<string, string> = {};
+	for (const issue of issues) {
+		const field = issue.path.split(".")[0]!;
+		if (field !== "" && !(field in fields)) fields[field] = issue.message;
+	}
+	return fields;
+};
+
 const contextFor = (
 	page: AnyPage,
 	request: HttpServerRequest.HttpServerRequest,
-	loaderData: unknown,
-	action: ActionState<Actions> | undefined,
+	data: unknown,
+	submission: Submission | undefined,
 ): PageContext<unknown, Actions> => ({
-	loaderData,
-	action,
+	data,
 	actions: Object.fromEntries(
-		Object.entries(page.actions ?? {}).map(([name, action]) => [
-			name,
-			{ url: `?${ACTION_PARAM}=${encodeURIComponent(name)}`, method: action.method ?? "post" },
-		]),
-	),
+		Object.entries(page.actions ?? {}).map(([name, action]) => {
+			const answered = submission?.name === name ? submission : undefined;
+			const context: ActionContext = {
+				url: `?${ACTION_PARAM}=${encodeURIComponent(name)}`,
+				method: action.method ?? "post",
+				error:
+					answered && !answered.ok
+						? {
+								issues: answered.issues,
+								fields: fieldsOf(answered.issues),
+								values: answered.values,
+							}
+						: undefined,
+				data: answered?.ok ? answered.data : undefined,
+			};
+			return [name, context];
+		}),
+	) as PageContext<unknown, Actions>["actions"],
 	url: new URL(request.originalUrl, "http://localhost"),
 });
 
 /** Runs the loader, then renders; a loader that returns a response answers instead. */
 const renderPage = (
 	page: AnyPage,
-	action: ActionState<Actions> | undefined,
+	submission: Submission | undefined,
 	status?: number,
 ): Eff<Response> =>
 	Effect.gen(function* () {
 		const request = yield* HttpServerRequest.HttpServerRequest;
 		const data = yield* load(page);
 		if (HttpServerResponse.isHttpServerResponse(data)) return data;
-		return htmlResponse(page.render(contextFor(page, request, data, action)), { status });
+		return htmlResponse(page.render(contextFor(page, request, data, submission)), { status });
 	}) as Eff<Response>;
 
 const readInput = (method: ActionMethod, limits: UploadLimits | undefined) =>

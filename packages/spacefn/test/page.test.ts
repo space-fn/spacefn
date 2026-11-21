@@ -47,19 +47,18 @@ const todos = page({
 	},
 	render: (ctx) =>
 		html`<form action="${ctx.actions.add.url}">
+				${ctx.actions.add.data ? html`<p>Added ${ctx.actions.add.data.added}</p>` : ""}
 				${
-					ctx.action?.name === "add"
-						? ctx.action.ok
-							? html`<p>Added ${ctx.action.data.added}</p>`
-							: html`<p>
-									${ctx.action.issues.map((i) => `${i.path}: ${i.message}`)}
-									(${String(ctx.action.values.title)})
-								</p>`
+					ctx.actions.add.error
+						? html`<p>
+								title: ${ctx.actions.add.error.fields.title}
+								(${String(ctx.actions.add.error.values.title)})
+							</p>`
 						: ""
 				}
 			</form>
 			<ul>
-				${ctx.loaderData.items.map((item) => html`<li>${item}</li>`)}
+				${ctx.data.items.map((item) => html`<li>${item}</li>`)}
 			</ul>`,
 });
 
@@ -139,7 +138,7 @@ describe("page", () => {
 				if (id !== 1) return yield* new NotFound({ message: "No such todo" });
 				return { id };
 			}),
-			render: (ctx) => html`<h1>Todo ${ctx.loaderData.id}</h1>`,
+			render: (ctx) => html`<h1>Todo ${ctx.data.id}</h1>`,
 		});
 		const app = testHttp({ routes: [at("/todos/:id", todo, ["id"])] });
 		expect(await (await app.fetch("/todos/1")).text()).toBe("<h1>Todo 1</h1>");
@@ -199,8 +198,8 @@ describe("get actions", () => {
 			}),
 		},
 		render: (ctx) =>
-			html`<p id="count" data-init="@get('${ctx.actions.watch.url}')">${ctx.loaderData}</p>
-				${ctx.action?.name === "search" && ctx.action.ok ? ctx.action.data : ""}`,
+			html`<p id="count" data-init="@get('${ctx.actions.watch.url}')">${ctx.data}</p>
+				${ctx.actions.search.data ?? ""}`,
 	});
 
 	it("runs a get action from the query string; the page itself has no POST", async () => {
@@ -252,12 +251,13 @@ it("types ctx from the loader and the actions", () => {
 			watch: action({ method: "get", input: Schema.Struct({}), handler: () => Effect.void }),
 		},
 		render: (ctx) => {
-			const n: number = ctx.loaderData.n;
+			const n: number = ctx.data.n;
 			const methods: ["post", "get"] = [ctx.actions.save.method, ctx.actions.watch.method];
-			if (ctx.action?.name === "save" && ctx.action.ok) {
-				const length: number = ctx.action.data;
-				return html`${n + length}${methods}`;
-			}
+			const field: string | undefined = ctx.actions.save.error?.fields.a;
+			// @ts-expect-error the input has no field b
+			void ctx.actions.save.error?.fields.b;
+			const length: number | undefined = ctx.actions.save.data;
+			if (length !== undefined) return html`${n + length}${methods}${field}`;
 			// @ts-expect-error no such action
 			return html`${ctx.actions.remove.url}`;
 		},
