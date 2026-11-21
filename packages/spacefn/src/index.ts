@@ -69,6 +69,7 @@ export {
 export { redirect } from "./http/respond.ts";
 export {
 	action,
+	actionUrl,
 	page,
 	type Action,
 	type ActionMethod,

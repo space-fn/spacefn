@@ -9,7 +9,7 @@ import { redirect } from "../src/http/respond.ts";
 import { route } from "../src/http/route.ts";
 import type { ManifestRoute } from "../src/manifest.ts";
 import { Datastar } from "../src/pages/datastar.ts";
-import { action, page, pagesLayer, type Page } from "../src/pages/page.ts";
+import { action, actionUrl, page, pagesLayer, type Page } from "../src/pages/page.ts";
 import { Bus } from "../src/services/bus.ts";
 import { testApp } from "../src/testing.ts";
 
@@ -88,6 +88,13 @@ describe("page", () => {
 		expect(response.status).toBe(200);
 		expect(await markup(response)).toContain("<p>Added Ship</p><");
 		expect(await markup(await app.fetch("/todos"))).toContain("<li>Write</li><li>Ship</li>");
+		await app.dispose();
+	});
+
+	it("gives an action's URL with actionUrl, as ctx does", async () => {
+		const app = testApp({ routes: [at("/todos", todos)] });
+		expect(await markup(await app.fetch("/todos"))).toContain(`action="${actionUrl("add")}"`);
+		expect(actionUrl("a b")).toBe("?__action=a%20b");
 		await app.dispose();
 	});
 

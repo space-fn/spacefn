@@ -135,6 +135,13 @@ export const isPage = (value: unknown): value is Page => Predicate.hasProperty(v
 
 const ACTION_PARAM = "__action";
 
+/**
+ * Where a page's action `name` is reached: `?__action=<name>`, relative, so it
+ * goes to the page itself. `ctx.actions.<name>.url` in `render`; this, where
+ * there's no `ctx`, as in a live action that renders part of the page again.
+ */
+export const actionUrl = (name: string): string => `?${ACTION_PARAM}=${encodeURIComponent(name)}`;
+
 const issuesOf = SchemaIssue.makeFormatterStandardSchemaV1();
 
 const toIssues = (error: Schema.SchemaError): Issue[] =>
@@ -182,7 +189,7 @@ const contextFor = (
 		Object.entries(page.actions ?? {}).map(([name, action]) => {
 			const answered = submission?.name === name ? submission : undefined;
 			const context: ActionContext = {
-				url: `?${ACTION_PARAM}=${encodeURIComponent(name)}`,
+				url: actionUrl(name),
 				method: action.method ?? "post",
 				ok: answered?.ok,
 				error:
