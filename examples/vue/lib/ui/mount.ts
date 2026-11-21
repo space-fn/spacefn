@@ -4,5 +4,6 @@
  */
 export const mountIsland = <P>(id: string, start: (element: HTMLElement, props: P) => void) => {
 	const element = document.getElementById(id);
-	if (element) start(element, JSON.parse(element.dataset.props ?? "{}") as P);
+	const props = document.getElementById(`${id}-props`)?.textContent ?? "{}";
+	if (element) start(element, JSON.parse(props) as P);
 };

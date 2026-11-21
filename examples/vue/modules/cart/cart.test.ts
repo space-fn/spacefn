@@ -12,8 +12,9 @@ describe("the shop", () => {
 	it("renders the cart's island with its props, and loads its entry", async () => {
 		await using shop = app();
 		const page = await (await shop.fetch("/")).text();
-		expect(page).toContain(
-			'<div id="cart" data-props="{&quot;products&quot;:[{&quot;id&quot;:&quot;mug&quot;',
+		expect(page).toContain('<div id="cart"></div>');
+		expect(page).toMatch(
+			/<script type="application\/json" id="cart-props">\s*\{"products":\[\{"id":"mug"/,
 		);
 		expect(page).toContain('<script type="module" src="/app/client/cart.ts"></script>');
 	});

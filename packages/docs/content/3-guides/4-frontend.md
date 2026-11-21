@@ -99,22 +99,28 @@ export default defineConfig({ plugins: [tailwindcss(), space({ target: "bun" })]
 
 ## Client components
 
-A component from React, Vue, Solid or Svelte runs as an island: the server renders an element with the component's props, and a client entry starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
+A component from React, Vue, Solid or Svelte runs as an island: the server renders an element and the component's props as JSON, and a client entry starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
 
 1. Add the framework's Vite plugin beside spacefn's in `configs/vite.ts`.
 2. Render the island from the page's view, with a small helper in `lib/ui/`:
 
 ```ts [lib/ui/island.ts]
-import { html } from "spacefn";
+import { html, raw } from "spacefn";
 
+// The props go in a JSON script, not a data- attribute, which Datastar would read as its own.
+// `<` is escaped so no string in the props can close the script.
 export const island = (id: string, props: unknown) =>
-	html`<div id="${id}" data-props="${JSON.stringify(props)}"></div>`;
+	html`<div id="${id}"></div>
+		<script type="application/json" id="${id}-props">
+			${raw(JSON.stringify(props).replaceAll("<", "\\u003c"))}
+		</script>`;
 ```
 
 ```ts [lib/ui/mount.ts]
 export const mountIsland = <P>(id: string, start: (element: HTMLElement, props: P) => void) => {
 	const element = document.getElementById(id);
-	if (element) start(element, JSON.parse(element.dataset.props ?? "{}") as P);
+	const props = document.getElementById(`${id}-props`)?.textContent ?? "{}";
+	if (element) start(element, JSON.parse(props) as P);
 };
 ```
 
