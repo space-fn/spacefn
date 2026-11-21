@@ -10,7 +10,7 @@ spacefn gives every app five services. Get one with `yield*` and use it the same
 | `Bus`         | change notices to live pages            | a Durable Object per topic | the state database, plus memory |
 | `RateLimiter` | counting hits per key                   | a Durable Object per key   | the state database              |
 
-On Cloudflare, `space deploy` creates what the app uses: a KV namespace only if the app imports `Kv`, and an R2 bucket only if it imports `Blob` (R2 must be enabled on the account).
+On Cloudflare, `configs/infra.ts` creates the KV namespace and the R2 bucket behind `Kv` and `Blob` (R2 must be enabled on the account); remove the one the app doesn't use.
 
 On Bun, the web server, the queue consumers and the crons run in separate processes, so these services keep their data in a shared libSQL **state database**: `.space/data/state.db` locally, or `SPACE_STATE_URL` (and `SPACE_STATE_AUTH_TOKEN`) for a remote one. See [Deploying](deploy.md).
 

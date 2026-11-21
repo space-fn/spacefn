@@ -77,4 +77,4 @@ npm test           # the tests next to your code
 npm run deploy     # stage `prod`
 ```
 
-On Cloudflare, `deploy` creates the D1 database, the queues and the rest in your account; Alchemy asks you to sign in the first time. On Bun it builds an image and runs it in Docker, locally or on a server you name in `configs/infra.ts`. See [Deploying](deploy.md).
+`deploy` runs `configs/infra.ts`, a plain Alchemy stack. On Cloudflare it creates the D1 database, the queues and the rest in your account; Alchemy asks you to sign in the first time. On Bun it builds an image with `configs/Dockerfile` and runs it in Docker. See [Deploying](deploy.md).

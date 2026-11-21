@@ -56,26 +56,8 @@ Deploys import `configs/env.ts` to know which variables to pass on, so import on
 | `.env`         | `space dev` and `space db`                           |
 | `.env.<stage>` | `space deploy --stage <stage>` (default `.env.prod`) |
 
-A deploy never reads `.env`, so local values can't reach production. Variables already in the environment, as CI sets them, are passed on too. A deploy passes the fields of `configs/env.ts` (secrets as Worker secrets on Cloudflare), the `DB_<NAME>_URL` and `_AUTH_TOKEN` of libSQL databases, and `OTEL_*`. Commit `.env.example`, never `.env`.
+A deploy never reads `.env`, so local values can't reach production. Variables already in the environment, as CI sets them, are passed on too. `configs/infra.ts` passes on what it lists: the scaffolded one passes the fields of `configs/env.ts` (secrets as Worker secrets on Cloudflare), the `DB_<NAME>_URL` and `_AUTH_TOKEN` of libSQL databases, and `OTEL_EXPORTER_OTLP_ENDPOINT` and `_HEADERS`. Commit `.env.example`, never `.env`.
 
-## `configs/infra.ts` (optional)
+## `configs/infra.ts`
 
-What spacefn can't guess about your infrastructure:
-
-```ts
-import { defineInfra } from "spacefn/infra";
-
-export default defineInfra({
-	cloudflare: {
-		// Worker settings spacefn leaves alone: domain, routes, observability, limits...
-		worker: { domain: "todo.example.com" },
-		// Bindings spacefn doesn't make, read with CloudflareEnv.
-		// bindings: Effect.gen(function* () { return { AI: yield* Cloudflare.Ai("AI") }; }),
-	},
-	docker: {
-		host: "ssh://deploy@server.example.com", // default: local Docker
-		port: 8080, // default 3000
-		env: { TZ: "UTC" },
-	},
-});
-```
+A plain Alchemy stack: what `space deploy` and, on Cloudflare, `space dev` run. It loops over `#space/infra.ts` for the resources the file conventions need and passes the variables on with `variables(...)`. See [Deploying](deploy.md).

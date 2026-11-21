@@ -11,7 +11,7 @@ app/client/           browser scripts and styles    → Pages
 app/durable-objects/  Durable Object classes        (Cloudflare only)
 app/workflows/        Workflow classes              (Cloudflare only)
 app/entry.ts          what runs with the rest       → The entry
-configs/              env.ts (the variables the app reads), vite.ts, vitest.ts, tsconfig.json, optional infra.ts
+configs/              env.ts (the variables the app reads), infra.ts (the Alchemy stack), vite.ts, vitest.ts, tsconfig.json; Dockerfile on Bun
 lib/                  your code, imported as #lib/...
 .space/               generated
 ```
