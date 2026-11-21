@@ -63,7 +63,6 @@ export interface AppPlan {
 	/** The app's own code folders beside `app/`, from `package.json` `imports`. */
 	readonly folders: readonly string[];
 	readonly env: boolean;
-	readonly infraConfig: boolean;
 	/** Files in `app/routes/` (routes and pages), most specific first. */
 	readonly routes: readonly PlannedRoute[];
 	/** `_middleware.ts` files in `app/routes/`, outer folders first. */
@@ -72,8 +71,6 @@ export interface AppPlan {
 	readonly crons: readonly PlannedCron[];
 	readonly durableObjects: readonly PlannedClass[];
 	readonly workflows: readonly PlannedClass[];
-	/** Whether the app imports `Kv` / `Blob`, so the infra creates them only when used. */
-	readonly uses: { readonly kv: boolean; readonly blob: boolean };
 	/** Client entry files (scripts and stylesheets). */
 	readonly client: readonly string[];
 	readonly db: readonly PlannedDb[];
@@ -334,14 +331,12 @@ export const planApp = Effect.fnUntraced(function* (
 		mode,
 		folders: config.folders,
 		env: tree.env,
-		infraConfig: tree.infraConfig,
 		routes: yield* planRoutes(tree, mode),
 		middleware: planMiddleware(tree.routes),
 		queues: yield* planUnits("queues", tree.queues, "QUEUE"),
 		crons: yield* planCrons(tree),
 		durableObjects,
 		workflows,
-		uses: tree.uses,
 		client: yield* planClient(tree.client),
 		db: yield* planDb(tree, config.target),
 	};

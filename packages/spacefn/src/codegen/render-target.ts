@@ -68,48 +68,35 @@ export const renderViteConfig = (): string =>
 		"",
 	].join("\n");
 
+/** A list for `.space/infra.ts`, one item a line. */
+const list = (items: readonly unknown[]) =>
+	items.length === 0 ? "[]" : `[\n${items.map((item) => `\t\t${str(item)},`).join("\n")}\n\t]`;
+
 /**
- * `.space/alchemy.run.ts`: the infra, as data for spacefn's stack,
- * plus `configs/env.ts` (its variables are passed on) and `configs/infra.ts`.
- * Alchemy runs it for `space dev` on Cloudflare and for deploys.
+ * `.space/infra.ts`: what the file conventions ask of the infra, as plain
+ * data, for the loops in `configs/infra.ts`. It imports no app code, so a
+ * deploy doesn't load the app in Node.
  */
-export const renderAlchemy = (plan: AppPlan): string => {
-	const app =
-		plan.target === "cloudflare"
-			? {
-					name: plan.name,
-					db: plan.db.map(({ driver, binding }) => ({ driver, binding })),
-					queues: plan.queues.map(({ name, binding }) => ({ name, binding })),
-					crons: [...new Set(plan.crons.map((cron) => cron.schedule))],
-					durableObjects: plan.durableObjects.map(({ className, binding }) => ({
-						className,
-						binding,
-					})),
-					workflows: plan.workflows.map(({ className, binding }) => ({ className, binding })),
-					uses: plan.uses,
-					folders: plan.folders,
-				}
-			: {
-					name: plan.name,
-					db: plan.db.map(({ driver, binding }) => ({ driver, binding })),
-					folders: plan.folders,
-				};
-	const stack = plan.target === "cloudflare" ? "cloudflareStack" : "dockerStack";
-	const fields = Object.entries(app).map(([key, value]) => `\t\t${key}: ${str(value)},`);
+export const renderInfra = (plan: AppPlan): string => {
+	const app = {
+		name: plan.name,
+		folders: plan.folders,
+		databases: plan.db.map(({ name, binding, driver }) => ({ name, binding, driver })),
+		queues: plan.queues.map(({ name, binding }) => ({ name, binding })),
+		crons: [...new Set(plan.crons.map((cron) => cron.schedule))],
+		durableObjects: plan.durableObjects.map(({ className, binding }) => ({ className, binding })),
+		workflows: plan.workflows.map(({ className, binding }) => ({ className, binding })),
+	};
 	return [
 		GENERATED,
-		`import { ${stack} } from "spacefn/infra/${plan.target === "cloudflare" ? "cloudflare" : "docker"}";`,
-		...(plan.env ? ['import env from "../configs/env.ts";'] : []),
-		...(plan.infraConfig ? ['import infra from "../configs/infra.ts";'] : []),
+		'import type { InfraApp } from "spacefn/infra";',
 		"",
-		`export default ${stack}(`,
-		"\t{",
-		fields[0]!,
-		"\t\trootDir: import.meta.dirname,",
-		...fields.slice(1),
-		"\t},",
-		`\t{${[plan.env ? " env" : "", plan.infraConfig ? " infra" : ""].filter(Boolean).join(",")}${plan.env || plan.infraConfig ? " " : ""}},`,
-		");",
+		"/** The app as configs/infra.ts loops over it: from package.json and app/. */",
+		"export const app: InfraApp = {",
+		...Object.entries(app).map(([key, value]) =>
+			typeof value === "string" ? `\t${key}: ${str(value)},` : `\t${key}: ${list(value)},`,
+		),
+		"};",
 		"",
 	].join("\n");
 };

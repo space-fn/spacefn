@@ -27,12 +27,10 @@ describe("scanApp", () => {
 			expect(yield* scanApp(root)).toEqual({
 				env: false,
 				entry: false,
-				infraConfig: false,
 				routes: [],
 				queues: [],
 				crons: [],
 				cronSources: {},
-				uses: { kv: false, blob: false },
 				durableObjects: [],
 				workflows: [],
 				client: [],
@@ -100,20 +98,12 @@ describe("scanApp", () => {
 		}),
 	);
 
-	it.effect("reads cron sources and whether app code imports Kv or Blob", () =>
+	it.effect("reads cron sources", () =>
 		Effect.gen(function* () {
-			yield* write({
-				"app/crons/nightly.ts": 'export default cron("0 3 * * *", job);',
-				"app/routes/a.ts": 'import { route, type Blob, Kv as Store } from "spacefn";',
-				"app/routes/a.test.ts": 'import { Blob } from "spacefn";',
-				"lib/files.ts": 'import {\n\tBlob,\n} from "spacefn";',
-			});
-			const without = yield* scanApp(root);
-			expect(without.cronSources).toEqual({
+			yield* write({ "app/crons/nightly.ts": 'export default cron("0 3 * * *", job);' });
+			expect((yield* scanApp(root)).cronSources).toEqual({
 				"nightly.ts": 'export default cron("0 3 * * *", job);',
 			});
-			expect(without.uses).toEqual({ kv: true, blob: false });
-			expect((yield* scanApp(root, ["lib"])).uses).toEqual({ kv: true, blob: true });
 		}),
 	);
 });
