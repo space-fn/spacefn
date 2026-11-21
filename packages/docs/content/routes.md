@@ -65,24 +65,46 @@ The body is JSON, `{ "error": "NotFound", "message": "No todo 7" }`. A browser n
 
 ## Middleware
 
-A file in `app/middleware/` wraps every request, pages and routes alike. `next` is the rest of the request: run code before it, change its response after, or answer without it.
+A `_middleware.ts` file wraps requests. `next` is the rest of the request: run code before it, change its response after, or answer without it.
 
 ```ts
-// app/middleware/2-headers.ts
+// app/routes/_middleware.ts
 import { Effect } from "effect";
 import { HttpServerResponse } from "effect/http";
-import { middleware } from "spacefn";
+import { csrf, middleware } from "spacefn";
+
+export default [
+	csrf(),
+	middleware((next) => Effect.map(next, HttpServerResponse.setHeader("x-frame-options", "DENY"))),
+];
+```
+
+Export one middleware, or an array that runs in order, the first outermost.
+
+- `app/routes/_middleware.ts` wraps every request, pages and routes alike, and the 404 for a URL nothing serves.
+- One in a folder below wraps only the pages and routes in that folder and its subfolders, inside the outer ones. `app/routes/admin/_middleware.ts` guards `/admin/...` and nothing else:
+
+```ts
+// app/routes/admin/_middleware.ts
+import { Effect } from "effect";
+import { HttpServerRequest } from "effect/http";
+import { middleware, Unauthorized } from "spacefn";
 
 export default middleware((next) =>
-	Effect.map(next, HttpServerResponse.setHeader("x-frame-options", "DENY")),
+	Effect.gen(function* () {
+		const request = yield* HttpServerRequest.HttpServerRequest;
+		if (request.headers["x-admin-key"] !== "let-me-in")
+			return yield* new Unauthorized({ message: "Admins only" });
+		return yield* next;
+	}),
 );
 ```
 
-Files run in name order, the first outermost.
+A `(group)` folder works too, so `(account)/_middleware.ts` covers its pages without adding to their URLs.
 
 ### CSRF
 
-New apps have `app/middleware/1-csrf.ts`:
+New apps have it in `app/routes/_middleware.ts`:
 
 ```ts
 export default csrf();

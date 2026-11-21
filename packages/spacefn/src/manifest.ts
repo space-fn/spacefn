@@ -35,9 +35,16 @@ export interface ManifestModule {
 	readonly module: unknown;
 }
 
+/**
+ * A `_middleware.ts` in `app/routes/` or a folder below it: one `middleware()`
+ * or an array of them, the first outermost. The root one wraps every request;
+ * a deeper one wraps the routes and pages in its folder.
+ */
 export interface ManifestMiddleware {
+	/** The folder it covers, from the app root, e.g. `app/routes/admin`. */
+	readonly folder: string;
 	readonly file: string;
-	readonly module: { readonly default: Middleware };
+	readonly module: { readonly default: Middleware | readonly Middleware[] };
 }
 
 /** A file in `app/queues/`: its default export is a `queue()` consumer. */
@@ -89,7 +96,7 @@ export interface SpaceManifest {
 	readonly env?: ManifestEnv;
 	readonly layers?: ManifestLayers;
 	readonly routes: readonly ManifestRoute[];
-	/** In run order; each default-exports a `middleware()`. */
+	/** Outer folders first. */
 	readonly middleware: readonly ManifestMiddleware[];
 	readonly queues: readonly ManifestQueue[];
 	readonly crons: readonly ManifestCron[];

@@ -4,7 +4,6 @@ An app is a folder. spacefn reads it (without running your code) and writes the 
 
 ```txt
 app/routes/           pages and HTTP endpoints      → Pages, Routes
-app/middleware/       wraps every request           → Routes and middleware
 app/db/<name>/        migrations/ and queries/      → Database
 app/queues/           one consumer per file         → Queues and crons
 app/crons/            one scheduled job per file    → Queues and crons
@@ -38,7 +37,7 @@ Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for
 - **Private files:** a file or folder starting with `_` is never a page, route or job. Use it for helpers next to the code that uses them, like `app/routes/_layout.ts`.
 - **Tests:** `*.test.ts` and `*.spec.ts` files are skipped too, so tests sit next to what they test.
 - **Dev-only and prod-only files:** `debug.dev.ts` exists only in `space dev`, `banner.prod.ts` only in builds and deploys.
-- **Middleware** runs in file-name order, numbers compared as numbers: `1-auth.ts`, `2-log.ts`, `10-cache.ts`.
+- **Middleware:** `_middleware.ts` in `app/routes/` wraps every request; in a folder below, it wraps that folder's pages and routes. See [Routes](routes.md#middleware).
 - **Queues and crons** are named after their file: `app/queues/emails.ts` is the queue `emails`.
 
 ## Imports

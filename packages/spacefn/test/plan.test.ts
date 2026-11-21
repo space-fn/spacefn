@@ -11,7 +11,6 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	viteConfig: false,
 	infraConfig: false,
 	routes: [],
-	middleware: [],
 	queues: [],
 	crons: [],
 	cronSources: {},
@@ -71,12 +70,27 @@ describe("planApp routes", () => {
 });
 
 describe("planApp units", () => {
-	it("orders middleware by file name, numbers as numbers, skipping private and test files", () => {
+	it("finds _middleware.ts in app/routes/, outer folders first, skipping private folders", () => {
 		const result = plan(
-			tree({ middleware: ["10-log.ts", "2-auth.ts", "_x.ts", "2-auth.test.ts"] }),
+			tree({
+				routes: [
+					"admin/users/_middleware.ts",
+					"_middleware.ts",
+					"admin/_middleware.ts",
+					"(shop)/_middleware.ts",
+					"_shared/_middleware.ts",
+					"admin/_middleware.test.ts",
+					"admin/index.ts",
+				],
+			}),
 		);
-		// The scanner sorts; the planner keeps that order.
-		expect(result.middleware).toEqual(["app/middleware/10-log.ts", "app/middleware/2-auth.ts"]);
+		expect(result.middleware).toEqual([
+			{ folder: "app/routes", file: "app/routes/_middleware.ts" },
+			{ folder: "app/routes/(shop)", file: "app/routes/(shop)/_middleware.ts" },
+			{ folder: "app/routes/admin", file: "app/routes/admin/_middleware.ts" },
+			{ folder: "app/routes/admin/users", file: "app/routes/admin/users/_middleware.ts" },
+		]);
+		expect(result.routes.map((r) => r.file)).toEqual(["app/routes/admin/index.ts"]);
 	});
 
 	it("names queues, crons, Durable Objects and workflows from their files", () => {

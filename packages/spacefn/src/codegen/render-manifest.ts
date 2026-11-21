@@ -27,7 +27,10 @@ export const renderManifest = (plan: AppPlan): string => {
 		];
 		return `\t\t{ ${fields.join(", ")} },`;
 	});
-	const middleware = plan.middleware.map((file, i) => `\t\t${ref(`middleware${i}`, file)},`);
+	const middleware = plan.middleware.map(
+		({ folder, file }, i) =>
+			`\t\t{ folder: ${str(folder)}, file: ${str(file)}, module: ${use(`middleware${i}`, fromSpace(file))} },`,
+	);
 	const queues = plan.queues.map(
 		(q, i) =>
 			`\t\t{ name: ${str(q.name)}, binding: ${str(q.binding)}, file: ${str(q.file)}, module: ${use(`queue${i}`, fromSpace(q.file))} },`,

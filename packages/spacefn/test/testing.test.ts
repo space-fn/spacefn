@@ -72,7 +72,9 @@ describe("testHttp", () => {
 						module: { default: counter },
 					},
 				],
-				middleware: [{ file: "app/middleware/stamp.ts", module: { default: stamp } }],
+				middleware: [
+					{ folder: "app/routes", file: "app/routes/_middleware.ts", module: { default: stamp } },
+				],
 			},
 			memoryServices,
 		);

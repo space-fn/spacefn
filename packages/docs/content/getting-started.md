@@ -27,7 +27,7 @@ app/
   routes/_layout.ts         the HTML around every page (private: no page of its own)
   routes/index.test.ts      its test
   routes/health.ts          GET /health
-  middleware/1-csrf.ts      refuses cross-site form posts
+  routes/_middleware.ts     refuses cross-site form posts, on every request
   db/main/migrations/       the schema, in SQL
   db/main/queries/          one SQL query per file, typed for you
   client/site.css           bundled by Vite

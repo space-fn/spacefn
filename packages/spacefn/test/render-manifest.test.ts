@@ -11,7 +11,6 @@ const empty: AppTree = {
 	viteConfig: false,
 	infraConfig: false,
 	routes: [],
-	middleware: [],
 	queues: [],
 	crons: [],
 	cronSources: {},
@@ -57,8 +56,7 @@ describe("renderManifest", () => {
 			render({
 				env: true,
 				layers: true,
-				routes: ["index.ts", "files/[...path].ts", "users/[id].ts"],
-				middleware: ["1-auth.ts"],
+				routes: ["index.ts", "files/[...path].ts", "users/[id].ts", "_middleware.ts"],
 				queues: ["emails.ts"],
 				crons: ["nightly.ts"],
 				cronSources: { "nightly.ts": 'export default cron("0 3 * * *", job);' },
@@ -70,7 +68,7 @@ describe("renderManifest", () => {
 			import * as route0 from "../app/routes/index.ts";
 			import * as route1 from "../app/routes/files/[...path].ts";
 			import * as route2 from "../app/routes/users/[id].ts";
-			import * as middleware0 from "../app/middleware/1-auth.ts";
+			import * as middleware0 from "../app/routes/_middleware.ts";
 			import * as queue0 from "../app/queues/emails.ts";
 			import * as cron0 from "../app/crons/nightly.ts";
 			import * as db0 from "./db/main.ts";
@@ -87,7 +85,7 @@ describe("renderManifest", () => {
 					{ path: "/users/:id", params: ["id"], file: "app/routes/users/[id].ts", module: route2 },
 				],
 				middleware: [
-					{ file: "app/middleware/1-auth.ts", module: middleware0 },
+					{ folder: "app/routes", file: "app/routes/_middleware.ts", module: middleware0 },
 				],
 				queues: [
 					{ name: "emails", binding: "QUEUE_EMAILS", file: "app/queues/emails.ts", module: queue0 },

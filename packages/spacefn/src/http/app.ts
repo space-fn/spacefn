@@ -4,7 +4,7 @@ import { HttpRouter } from "effect/http";
 import type { SpaceError } from "../errors.ts";
 import type { ManifestMiddleware, ManifestRoute, Unchecked } from "../manifest.ts";
 import { isPage, pagesLayer } from "../pages/page.ts";
-import { middlewareLayer } from "./middleware.ts";
+import { middlewareLayer, ROUTES_FOLDER, scopedMiddleware } from "./middleware.ts";
 import { routesLayer } from "./route.ts";
 
 /**
@@ -30,10 +30,17 @@ export const httpLayer = <E = never>(
 			// One tree: a file's export decides whether it is served as a page or a route.
 			const isPageFile = (entry: Unchecked<ManifestRoute>) =>
 				isPage((entry.module as { default?: unknown }).default);
+			const root = manifest.middleware.filter((entry) => entry.folder === ROUTES_FOLDER);
+			const around = yield* scopedMiddleware(
+				manifest.middleware.filter((entry) => entry.folder !== ROUTES_FOLDER),
+			);
 			return Layer.mergeAll(
-				routesLayer(manifest.routes.filter((entry) => !isPageFile(entry))).pipe(provided),
-				pagesLayer(manifest.routes.filter(isPageFile)).pipe(provided),
-				middlewareLayer(manifest.middleware, context),
+				routesLayer(
+					manifest.routes.filter((entry) => !isPageFile(entry)),
+					around,
+				).pipe(provided),
+				pagesLayer(manifest.routes.filter(isPageFile), around).pipe(provided),
+				middlewareLayer(root, context),
 			) as Layer.Layer<never, SpaceError, HttpRouter.HttpRouter>;
 		}),
 	);

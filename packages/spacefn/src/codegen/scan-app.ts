@@ -27,10 +27,9 @@ export interface AppTree {
 	readonly viteConfig: boolean;
 	/** Whether `configs/infra.ts` exists, for the generated infra to merge. */
 	readonly infraConfig: boolean;
-	/** Every file under `app/routes/`, recursively: routes, pages and their private files. */
+	/** Every file under `app/routes/`, recursively: routes, pages, `_middleware.ts` and private files. */
 	readonly routes: readonly string[];
 	/** Files directly inside each folder. */
-	readonly middleware: readonly string[];
 	readonly queues: readonly string[];
 	readonly crons: readonly string[];
 	readonly durableObjects: readonly string[];
@@ -166,7 +165,6 @@ export const scanApp = Effect.fnUntraced(function* (
 		viteConfig: yield* exists(join(root, "configs", "vite.config.ts")),
 		infraConfig: yield* exists(join(root, "configs", "infra.ts")),
 		routes: yield* listFiles(join(app, "routes"), true),
-		middleware: yield* flat("middleware"),
 		queues: yield* flat("queues"),
 		crons,
 		durableObjects: yield* flat("durable-objects"),

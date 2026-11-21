@@ -3,6 +3,7 @@ import { HttpRouter, HttpServerResponse } from "effect/http";
 
 import { SpaceError } from "../errors.ts";
 import type { ManifestRoute, Unchecked } from "../manifest.ts";
+import { noMiddleware, type AroundRoute } from "./middleware.ts";
 import { handleErrors, toResponse } from "./respond.ts";
 
 export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -84,6 +85,7 @@ const methodNotAllowed = (allowed: readonly Method[]) =>
  */
 export const routesLayer = (
 	routes: readonly Unchecked<ManifestRoute>[],
+	around: AroundRoute = noMiddleware,
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.effectDiscard(
 		Effect.gen(function* () {
@@ -97,9 +99,12 @@ export const routesLayer = (
 					yield* router.add(
 						method,
 						entry.path,
-						handleErrors(Effect.flatMap(handler, toResponse)).pipe(
+						// The folders' middleware wraps the handler; its own failures are answered too.
+						handleErrors(
+							around(entry.file, handleErrors(Effect.flatMap(handler, toResponse))),
+						).pipe(
 							Effect.provideService(CurrentRoute, current),
-						),
+						) as Effect.Effect<HttpServerResponse.HttpServerResponse>, // see the note above
 					);
 				}
 				const notAllowed = methodNotAllowed(allowed);

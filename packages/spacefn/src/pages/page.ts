@@ -4,6 +4,7 @@ import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import { BadRequest, NotFound, SpaceError } from "../errors.ts";
 import type { Html } from "../html.ts";
 import { mediaType, readSimpleBody } from "../http/body.ts";
+import { noMiddleware, type AroundRoute } from "../http/middleware.ts";
 import { readMultipart, type UploadLimits } from "../http/multipart.ts";
 import { handleErrors, htmlResponse, toResponse } from "../http/respond.ts";
 import { CurrentRoute, METHODS } from "../http/route.ts";
@@ -242,6 +243,7 @@ const definitionOf = (entry: Unchecked<ManifestRoute>): Effect.Effect<AnyPage, S
  */
 export const pagesLayer = (
 	routes: readonly Unchecked<ManifestRoute>[],
+	around: AroundRoute = noMiddleware,
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.effectDiscard(
 		Effect.gen(function* () {
@@ -250,7 +252,7 @@ export const pagesLayer = (
 				const definition = yield* definitionOf(entry);
 				const current = CurrentRoute.of({ file: entry.file, catchAll: entry.catchAll });
 				const serve = (effect: Eff<Response>) =>
-					handleErrors(Effect.flatMap(effect, toResponse)).pipe(
+					handleErrors(around(entry.file, handleErrors(Effect.flatMap(effect, toResponse)))).pipe(
 						Effect.provideService(CurrentRoute, current),
 					) as Effect.Effect<Response>;
 				const get = Effect.flatMap(HttpServerRequest.ParsedSearchParams, (search) =>

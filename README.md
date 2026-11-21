@@ -10,8 +10,7 @@ cd my-app && cp .env.example .env && npm install && npm run dev
 ```
 
 ```txt
-app/routes/         HTTP endpoints
-app/middleware/     runs around every request
+app/routes/         pages and HTTP endpoints, and _middleware.ts around them
 app/db/<name>/      migrations/ and queries/ in SQL, typed for you
 app/queues/         queue consumers
 app/crons/          scheduled jobs

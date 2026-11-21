@@ -22,7 +22,13 @@ const serve = (options?: CsrfOptions) => {
 					},
 				},
 			],
-			middleware: [{ file: "app/middleware/csrf.ts", module: { default: csrf(options) } }],
+			middleware: [
+				{
+					folder: "app/routes",
+					file: "app/routes/_middleware.ts",
+					module: { default: csrf(options) },
+				},
+			],
 		}).pipe(Layer.provide(HttpServer.layerServices)),
 		{ disableLogger: true },
 	);

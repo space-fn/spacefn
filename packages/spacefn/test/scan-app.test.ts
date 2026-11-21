@@ -30,7 +30,6 @@ describe("scanApp", () => {
 				viteConfig: false,
 				infraConfig: false,
 				routes: [],
-				middleware: [],
 				queues: [],
 				crons: [],
 				cronSources: {},
@@ -51,9 +50,7 @@ describe("scanApp", () => {
 				"app/routes/index.ts": "",
 				"app/routes/users/[id].ts": "",
 				"app/routes/users/_shared/x.ts": "",
-				"app/middleware/10-log.ts": "",
-				"app/middleware/2-auth.ts": "",
-				"app/middleware/nested/skip.ts": "",
+				"app/routes/_middleware.ts": "",
 				"app/durable-objects/chat-room.ts": "",
 				"app/client/main.ts": "",
 				"app/client/style.css": "",
@@ -62,8 +59,12 @@ describe("scanApp", () => {
 			const tree = yield* scanApp(root);
 			expect(tree.env).toBe(true);
 			expect(tree.layers).toBe(false);
-			expect(tree.routes).toEqual(["index.ts", "users/_shared/x.ts", "users/[id].ts"]);
-			expect(tree.middleware).toEqual(["2-auth.ts", "10-log.ts"]);
+			expect(tree.routes).toEqual([
+				"_middleware.ts",
+				"index.ts",
+				"users/_shared/x.ts",
+				"users/[id].ts",
+			]);
 			expect(tree.durableObjects).toEqual(["chat-room.ts"]);
 			expect(tree.client).toEqual(["main.ts", "style.css"]);
 			expect(tree.gitignore).toBe(".space\n");

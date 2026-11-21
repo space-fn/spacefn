@@ -16,15 +16,18 @@ export interface Middleware {
 }
 
 /**
- * Declares a file in `app/middleware/`. It wraps every request: run code
- * before `next`, change its response after, or answer without calling it.
- * Files run in file-name order (`1-auth.ts` before `2-log.ts`), the first
- * one outermost.
+ * Declares middleware for a `_middleware.ts` file. It wraps a request: run
+ * code before `next`, change its response after, or answer without calling
+ * it. `app/routes/_middleware.ts` wraps every request; one in a folder below
+ * wraps that folder's routes and pages, inside the outer ones. Export one, or
+ * an array that runs first to last, the first outermost.
  *
  * ```ts
- * export default middleware((next) =>
- *   Effect.map(next, HttpServerResponse.setHeader("x-frame-options", "DENY")),
- * );
+ * // app/routes/admin/_middleware.ts
+ * export default [
+ *   requireUser,
+ *   middleware((next) => Effect.map(next, HttpServerResponse.setHeader("x-frame-options", "DENY"))),
+ * ];
  * ```
  */
 export const middleware = (apply: (next: HttpApp) => HttpApp): Middleware => ({
@@ -35,24 +38,33 @@ export const middleware = (apply: (next: HttpApp) => HttpApp): Middleware => ({
 export const isMiddleware = (value: unknown): value is Middleware =>
 	Predicate.hasProperty(value, MiddlewareTypeId);
 
+/** Where `_middleware.ts` files live; the one directly in it wraps every request. */
+export const ROUTES_FOLDER = "app/routes";
+
 const loadMiddleware = (
 	entry: Unchecked<ManifestMiddleware>,
-): Effect.Effect<Middleware, SpaceError> => {
+): Effect.Effect<readonly Middleware[], SpaceError> => {
 	const value = (entry.module as { default?: unknown }).default;
-	return isMiddleware(value)
-		? Effect.succeed(value)
+	const list: readonly unknown[] = Array.isArray(value) ? value : [value];
+	return list.length > 0 && list.every(isMiddleware)
+		? Effect.succeed(list)
 		: Effect.fail(
 				new SpaceError({
 					code: "MIDDLEWARE_EXPORT",
-					message: "The default export is not a middleware",
-					hint: "Export it with: export default middleware((next) => ...)",
+					message: "The default export is not a middleware or an array of them",
+					hint: "Export it with: export default middleware((next) => ...), or export default [a, b]",
 					file: entry.file,
 				}),
 			);
 };
 
+const chainOf =
+	(chain: readonly Middleware[]) =>
+	(app: HttpApp): HttpApp =>
+		chain.reduceRight((next, middleware) => middleware.apply(next), app);
+
 /**
- * Applies the app's middleware to every request, with error handling
+ * Applies `app/routes/_middleware.ts` to every request, with error handling
  * outermost: a failure in middleware, a handler or the router itself (no
  * matching route) becomes a proper response. `services` is provided to the
  * middleware (the routes get the same context from `httpLayer`).
@@ -63,12 +75,37 @@ export const middlewareLayer = (
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.unwrap(
 		Effect.gen(function* () {
-			const chain = yield* Effect.forEach(entries, loadMiddleware);
-			const apply = (app: HttpApp): HttpApp =>
-				chain.reduceRight((next, middleware) => middleware.apply(next), app);
+			const apply = chainOf((yield* Effect.forEach(entries, loadMiddleware)).flat());
 			return HttpRouter.middleware(
 				(app) => Effect.provideContext(handleErrors(apply(app)), services) as never,
 				{ global: true },
 			) as Layer.Layer<never, never, HttpRouter.HttpRouter>;
 		}),
+	);
+
+/** Wraps a route's or page's handler, given its file, in the middleware of the folders it is in. */
+export type AroundRoute = (file: string, app: HttpApp) => HttpApp;
+
+export const noMiddleware: AroundRoute = (_, app) => app;
+
+/**
+ * The `_middleware.ts` files below `app/routes/`, outer folders first, as an
+ * {@link AroundRoute}. Loaded once, so a bad export fails at startup.
+ */
+export const scopedMiddleware = (
+	entries: readonly Unchecked<ManifestMiddleware>[],
+): Effect.Effect<AroundRoute, SpaceError> =>
+	Effect.map(
+		Effect.forEach(entries, (entry) =>
+			Effect.map(loadMiddleware(entry), (chain) => ({ folder: entry.folder, chain })),
+		),
+		(loaded) => {
+			const byDepth = [...loaded].sort((a, b) => a.folder.length - b.folder.length);
+			return (file, app) =>
+				chainOf(
+					byDepth
+						.filter(({ folder }) => file.startsWith(`${folder}/`))
+						.flatMap(({ chain }) => chain),
+				)(app);
+		},
 	);

@@ -30,7 +30,7 @@ export const isSameSite = (
  * it carries the session cookie, so non-browser API clients keep working.
  *
  * ```ts
- * // app/middleware/1-csrf.ts
+ * // app/routes/_middleware.ts
  * export default csrf({ cookie: "session" });
  * ```
  */

@@ -25,6 +25,12 @@ export interface PlannedRoute extends RoutePath {
 	readonly file: string;
 }
 
+export interface PlannedMiddleware {
+	/** The folder it covers, e.g. `app/routes/admin`. */
+	readonly folder: string;
+	readonly file: string;
+}
+
 export interface PlannedUnit {
 	readonly name: string;
 	readonly file: string;
@@ -64,8 +70,8 @@ export interface AppPlan {
 	readonly infraConfig: boolean;
 	/** Files in `app/routes/` (routes and pages), most specific first. */
 	readonly routes: readonly PlannedRoute[];
-	/** Middleware files in run order (file name order, numbers compared as numbers). */
-	readonly middleware: readonly string[];
+	/** `_middleware.ts` files in `app/routes/`, outer folders first. */
+	readonly middleware: readonly PlannedMiddleware[];
 	readonly queues: readonly PlannedUnit[];
 	readonly crons: readonly PlannedCron[];
 	readonly durableObjects: readonly PlannedClass[];
@@ -120,6 +126,23 @@ const planRoutes = Effect.fnUntraced(function* (tree: AppTree, mode: Mode) {
 	}
 	return routes.sort(compareRoutePaths);
 });
+
+const MIDDLEWARE_FILE = /^_middleware\.(?:[cm]?[jt]s|[jt]sx)$/;
+
+/** Every `_middleware.ts` in `app/routes/`, skipping private folders, outer folders first. */
+const planMiddleware = (files: readonly string[]): PlannedMiddleware[] =>
+	files
+		.map((file) => ({ file, segments: file.split("/") }))
+		.filter(
+			({ segments }) =>
+				MIDDLEWARE_FILE.test(segments.at(-1)!) &&
+				!segments.slice(0, -1).some((segment) => segment.startsWith("_")),
+		)
+		.sort((a, b) => a.segments.length - b.segments.length || a.file.localeCompare(b.file))
+		.map(({ file, segments }) => ({
+			folder: ["app/routes", ...segments.slice(0, -1)].join("/"),
+			file: `app/routes/${file}`,
+		}));
 
 const planUnits = (folder: string, files: readonly string[], prefix: string) =>
 	Effect.forEach(unitFiles(files), (file) =>
@@ -286,7 +309,7 @@ export const planApp = Effect.fnUntraced(function* (
 		viteConfig: tree.viteConfig,
 		infraConfig: tree.infraConfig,
 		routes: yield* planRoutes(tree, mode),
-		middleware: unitFiles(tree.middleware).map((file) => `app/middleware/${file}`),
+		middleware: planMiddleware(tree.routes),
 		queues: yield* planUnits("queues", tree.queues, "QUEUE"),
 		crons: yield* planCrons(tree),
 		durableObjects,

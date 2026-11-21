@@ -18,8 +18,8 @@ Local settings go in `.env` (copy `.env.example`). A deploy reads `.env.<stage>`
 ## Where things go
 
 ```txt
-app/routes/         pages and endpoints: index.ts is /, todos/[id].ts is /todos/:id
-app/middleware/     runs before every request, in file-name order
+app/routes/         pages and endpoints: index.ts is /, todos/[id].ts is /todos/:id;
+                    _middleware.ts wraps the requests to its folder
 app/db/main/        migrations/ and queries/ in SQL; import @space/db/main.ts
 app/queues/         queue consumers, one per file
 app/crons/          scheduled jobs, one per file

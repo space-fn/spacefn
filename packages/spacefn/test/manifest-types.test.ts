@@ -18,7 +18,13 @@ it("accepts route() and middleware() defaults", () => {
 	const manifest = {
 		...base,
 		routes: [{ ...at, module: { default: route({ GET: Effect.succeed(1) }) } }],
-		middleware: [{ file: "app/middleware/a.ts", module: { default: middleware((next) => next) } }],
+		middleware: [
+			{
+				folder: "app/routes",
+				file: "app/routes/_middleware.ts",
+				module: { default: middleware((next) => next) },
+			},
+		],
 	} as const satisfies SpaceManifest;
 	expect(manifest.routes).toHaveLength(1);
 });
@@ -29,8 +35,12 @@ it("rejects other defaults at compile time", () => {
 		{ ...at, module: { default: { GET: Effect.succeed(1) } } },
 	] as const satisfies SpaceManifest["routes"];
 	const chain = [
-		// @ts-expect-error a middleware file must default-export middleware()
-		{ file: "app/middleware/a.ts", module: { default: (next: unknown) => next } },
+		{
+			folder: "app/routes",
+			file: "app/routes/_middleware.ts",
+			// @ts-expect-error a _middleware.ts file must default-export middleware() or an array of them
+			module: { default: (next: unknown) => next },
+		},
 	] as const satisfies SpaceManifest["middleware"];
 	expect([routes, chain]).toHaveLength(2);
 });
