@@ -34,6 +34,8 @@ export interface AppTree {
 	readonly durableObjects: readonly string[];
 	readonly workflows: readonly string[];
 	readonly client: readonly string[];
+	/** Every file under `public/` at the app root, recursively. */
+	readonly public: readonly string[];
 	readonly db: readonly DbFolder[];
 	/** Source of each file in `app/crons/`, for the schedule the infra needs. */
 	readonly cronSources: Readonly<Record<string, string>>;
@@ -132,6 +134,7 @@ export const scanApp = Effect.fnUntraced(function* (
 		durableObjects: yield* flat("durable-objects"),
 		workflows: yield* flat("workflows"),
 		client: yield* flat("client"),
+		public: yield* listFiles(join(root, "public"), true),
 		db: yield* Effect.forEach(dbNames, (name) => scanDb(join(app, "db", name), name)),
 		cronSources,
 		gitignore: yield* Effect.tryPromise({

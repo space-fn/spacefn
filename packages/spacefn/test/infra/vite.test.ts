@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -83,6 +84,10 @@ describe("the Bun app", () => {
 			expect((await fetch(`${base}/app/client/main.ts`)).status).toBe(200);
 		});
 
+		it("serves public/ at /", async () => {
+			expect(await (await fetch(`${base}/robots.txt`)).text()).toBe("User-agent: *\n");
+		});
+
 		it("runs queue consumers in-process", async () => {
 			await fetch(`${base}/send`, { method: "POST" });
 			await until(async () => (await (await fetch(`${base}/`)).text()).includes("done in dev"));
@@ -117,6 +122,7 @@ describe("the Bun app", () => {
 				await readFile(join(app.root, "dist/server/package.json"), "utf8"),
 			);
 			expect(Object.keys(manifest.dependencies)).toEqual(["@libsql/client"]);
+			expect(existsSync(join(app.root, "dist/server/robots.txt"))).toBe(false);
 			const port = 4800 + Math.floor(Math.random() * 100);
 			const server = spawn("bun", [join(app.root, "dist/server/index.js")], {
 				env: { ...process.env, PORT: String(port), SPACE_DATA_DIR: join(app.data, "built") },
@@ -131,6 +137,7 @@ describe("the Bun app", () => {
 				expect(page).not.toContain("@vite/client");
 				const asset = await fetch(base + script);
 				expect(asset.headers.get("cache-control")).toContain("immutable");
+				expect(await (await fetch(`${base}/robots.txt`)).text()).toBe("User-agent: *\n");
 			} finally {
 				server.kill("SIGTERM");
 			}

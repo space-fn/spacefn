@@ -157,6 +157,8 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			).client;
 			return {
 				root,
+				// Served as they are at /, before the app, and copied into the client build.
+				publicDir: join(root, "public"),
 				build: { outDir: join(root, "dist") },
 				environments: {
 					client: {
@@ -182,6 +184,9 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 				},
 			};
 		},
+		// public/ belongs with the client build only, not in the server bundles.
+		configEnvironment: (name) =>
+			name === "client" ? undefined : { build: { copyPublicDir: false } },
 		configResolved: (resolved) => {
 			config = resolved;
 		},

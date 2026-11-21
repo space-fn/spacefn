@@ -34,6 +34,7 @@ describe("scanApp", () => {
 				durableObjects: [],
 				workflows: [],
 				client: [],
+				public: [],
 				db: [],
 				gitignore: undefined,
 			});
@@ -51,6 +52,8 @@ describe("scanApp", () => {
 				"app/durable-objects/chat-room.ts": "",
 				"app/client/main.ts": "",
 				"app/client/style.css": "",
+				"public/favicon.ico": "",
+				"public/images/logo.svg": "",
 				".gitignore": ".space\n",
 			});
 			const tree = yield* scanApp(root);
@@ -64,6 +67,7 @@ describe("scanApp", () => {
 			]);
 			expect(tree.durableObjects).toEqual(["chat-room.ts"]);
 			expect(tree.client).toEqual(["main.ts", "style.css"]);
+			expect(tree.public).toEqual(["favicon.ico", "images/logo.svg"]);
 			expect(tree.gitignore).toBe(".space\n");
 		}),
 	);

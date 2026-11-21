@@ -16,6 +16,7 @@ const empty: AppTree = {
 	durableObjects: [],
 	workflows: [],
 	client: [],
+	public: [],
 	db: [],
 	gitignore: ".space/\n",
 };

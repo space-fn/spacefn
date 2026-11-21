@@ -15,6 +15,7 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	durableObjects: [],
 	workflows: [],
 	client: [],
+	public: [],
 	db: [],
 	gitignore: "node_modules\n.space/\n",
 	...parts,
@@ -134,6 +135,18 @@ describe("planApp units", () => {
 			"app/client/style.css",
 		]);
 		expect(planError(tree({ client: ["main.css", "main.ts"] })).code).toBe("CLIENT_DUP_ENTRY");
+	});
+
+	it("refuses a public/ file at a route's URL, HTML ones at Cloudflare's URLs too", () => {
+		const routes = ["index.ts", "health.ts", "about.ts", "users/[id].ts"];
+		expect(plan(tree({ routes, public: ["favicon.ico", "users/1"] })).routes).toHaveLength(4);
+		expect(planError(tree({ routes, public: ["health"] }))).toMatchObject({
+			code: "PUBLIC_SHADOWS_ROUTE",
+			message: "public/health is served at /health, before app/routes/health.ts could answer",
+			file: "public/health",
+		});
+		expect(planError(tree({ routes, public: ["about.html"] })).code).toBe("PUBLIC_SHADOWS_ROUTE");
+		expect(planError(tree({ routes, public: ["index.html"] })).code).toBe("PUBLIC_SHADOWS_ROUTE");
 	});
 });
 

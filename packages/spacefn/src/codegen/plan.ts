@@ -151,6 +151,39 @@ const planClasses = (folder: string, files: readonly string[], prefix: string) =
 		units.map((unit) => ({ ...unit, className: pascalName(unit.name) })),
 	);
 
+/**
+ * The URLs a `public/` file answers: its path, and for HTML what Cloudflare's
+ * assets also serve it at (`about.html` at `/about`, `docs/index.html` at `/docs/`).
+ */
+const publicUrls = (file: string): string[] => {
+	const url = `/${file}`;
+	if (url.endsWith("/index.html"))
+		return [url, url.slice(0, -"index.html".length), url.slice(0, -"/index.html".length) || "/"];
+	if (url.endsWith(".html")) return [url, url.slice(0, -".html".length)];
+	return [url];
+};
+
+/** Public files are served before the app, so one at a route's URL would hide the route. */
+const checkPublic = Effect.fnUntraced(function* (
+	files: readonly string[],
+	routes: readonly PlannedRoute[],
+) {
+	const fixed = new Map<string, PlannedRoute>(
+		routes.filter((route) => route.params.length === 0).map((route) => [route.path, route]),
+	);
+	for (const file of files)
+		for (const url of publicUrls(file)) {
+			const route = fixed.get(url);
+			if (route)
+				return yield* fail(
+					"PUBLIC_SHADOWS_ROUTE",
+					`public/${file} is served at ${url}, before ${route.file} could answer`,
+					"Rename or move one of them.",
+					`public/${file}`,
+				);
+		}
+});
+
 const planClient = Effect.fnUntraced(function* (files: readonly string[]) {
 	const entries = files.filter(
 		(file) =>
@@ -340,13 +373,16 @@ export const planApp = Effect.fnUntraced(function* (
 	yield* checkTarget(config.target, "durable-objects", durableObjects);
 	yield* checkTarget(config.target, "workflows", workflows);
 
+	const routes = yield* planRoutes(tree, mode);
+	yield* checkPublic(tree.public, routes);
+
 	return {
 		target: config.target,
 		name: config.name,
 		mode,
 		folders: config.folders,
 		env: tree.env,
-		routes: yield* planRoutes(tree, mode),
+		routes,
 		middleware: planMiddleware(tree.routes),
 		queues: yield* planUnits("queues", tree.queues, "QUEUE"),
 		crons: yield* planCrons(tree),
