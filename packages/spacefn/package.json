@@ -23,7 +23,6 @@
 	},
 	"files": [
 		"dist",
-		"docker",
 		"schemas"
 	],
 	"type": "module",
@@ -39,9 +38,7 @@
 		"./cloudflare": "./src/cloudflare/index.ts",
 		"./bun": "./src/bun/index.ts",
 		"./vite": "./src/infra/vite.ts",
-		"./infra": "./src/infra/index.ts",
-		"./infra/cloudflare": "./src/infra/cloudflare.ts",
-		"./infra/docker": "./src/infra/docker.ts"
+		"./infra": "./src/infra/index.ts"
 	},
 	"publishConfig": {
 		"bin": {
@@ -95,14 +92,6 @@
 			"./infra": {
 				"types": "./dist/infra/index.d.mts",
 				"import": "./dist/infra/index.mjs"
-			},
-			"./infra/cloudflare": {
-				"types": "./dist/infra/cloudflare.d.mts",
-				"import": "./dist/infra/cloudflare.mjs"
-			},
-			"./infra/docker": {
-				"types": "./dist/infra/docker.d.mts",
-				"import": "./dist/infra/docker.mjs"
 			}
 		}
 	},

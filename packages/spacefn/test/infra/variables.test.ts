@@ -2,35 +2,32 @@ import { Redacted } from "effect";
 import { defineEnv, Env } from "spacefn";
 import { describe, expect, it } from "vitest";
 
-import { deployVariables } from "../../src/infra/variables.ts";
+import { variables } from "../../src/infra/variables.ts";
 
-describe("deployVariables", () => {
-	it("passes the app's set variables on, secrets redacted", () => {
+const environment = {
+	GREETING: "hi",
+	API_KEY: "k",
+	DB_MAIN_URL: "libsql://x",
+	DB_MAIN_AUTH_TOKEN: "t",
+	HOME: "/home/me",
+};
+
+describe("variables", () => {
+	it("passes configs/env.ts's set variables on, secrets redacted", () => {
 		const env = defineEnv({ GREETING: Env.string(), API_KEY: Env.secret(), UNSET: Env.string() });
-		const variables = deployVariables(
-			{ env, libsql: ["DB_MAIN"] },
-			{
-				GREETING: "hi",
-				API_KEY: "k",
-				DB_MAIN_URL: "libsql://x",
-				DB_MAIN_AUTH_TOKEN: "t",
-				OTEL_EXPORTER_OTLP_ENDPOINT: "https://otel",
-				OTEL_EXPORTER_OTLP_HEADERS: "authorization=x",
-				HOME: "/home/me",
-			},
+		const values = variables(env, environment);
+		expect(Object.keys(values).sort()).toEqual(["API_KEY", "GREETING"]);
+		expect(values.GREETING).toBe("hi");
+		expect(Redacted.isRedacted(values.API_KEY)).toBe(true);
+	});
+
+	it("passes the listed variables on, as plain values or secrets", () => {
+		const values = variables(
+			{ DB_MAIN_URL: "plain", DB_MAIN_AUTH_TOKEN: "secret", OTEL_EXPORTER_OTLP_ENDPOINT: "plain" },
+			environment,
 		);
-		expect(Object.keys(variables).sort()).toEqual([
-			"API_KEY",
-			"DB_MAIN_AUTH_TOKEN",
-			"DB_MAIN_URL",
-			"GREETING",
-			"OTEL_EXPORTER_OTLP_ENDPOINT",
-			"OTEL_EXPORTER_OTLP_HEADERS",
-		]);
-		expect(variables.GREETING).toBe("hi");
-		expect(Redacted.isRedacted(variables.API_KEY)).toBe(true);
-		expect(Redacted.isRedacted(variables.DB_MAIN_AUTH_TOKEN)).toBe(true);
-		expect(Redacted.isRedacted(variables.OTEL_EXPORTER_OTLP_HEADERS)).toBe(true);
-		expect(variables.DB_MAIN_URL).toBe("libsql://x");
+		expect(Object.keys(values).sort()).toEqual(["DB_MAIN_AUTH_TOKEN", "DB_MAIN_URL"]);
+		expect(values.DB_MAIN_URL).toBe("libsql://x");
+		expect(Redacted.isRedacted(values.DB_MAIN_AUTH_TOKEN)).toBe(true);
 	});
 });

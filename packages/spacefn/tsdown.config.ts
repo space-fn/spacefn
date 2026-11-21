@@ -33,7 +33,5 @@ export default defineConfig([
 		"infra/index": "src/infra/index.ts",
 		"infra/cli": "src/infra/cli.ts",
 		"infra/dev-bun": "src/infra/dev-bun.ts",
-		"infra/cloudflare": "src/infra/cloudflare.ts",
-		"infra/docker": "src/infra/docker.ts",
 	}),
 ]);
