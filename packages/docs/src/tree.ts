@@ -67,12 +67,17 @@ const prefixOrder = (name: string) => {
 	return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 };
 
-/** Index pages first, then `order` (frontmatter or a numeric prefix), then name. */
+/**
+ * Index pages first, then `order` (frontmatter or a numeric prefix), so a
+ * numbered folder sits among the pages at its number; then pages before
+ * folders, then name.
+ */
 const byOrder = (a: DocNode, b: DocNode) => {
 	const ai = isIndex(a.rel) ? 0 : 1;
 	const bi = isIndex(b.rel) ? 0 : 1;
 	if (ai !== bi) return ai - bi;
 	if (a.order !== b.order) return a.order - b.order;
+	if (a.kind !== b.kind) return a.kind === "page" ? -1 : 1;
 	return a.rel.localeCompare(b.rel, undefined, { numeric: true });
 };
 
@@ -113,11 +118,7 @@ const walk = async (dir: string, prefix: string): Promise<DocNode[]> => {
 				};
 			}),
 	);
-	const found = nodes.filter((node) => node !== undefined);
-	// Loose pages come before folders, as the sidebar shows them.
-	const pages = found.filter((node) => node.kind === "page").sort(byOrder);
-	const dirs = found.filter((node) => node.kind === "dir").sort(byOrder);
-	return [...pages, ...dirs];
+	return nodes.filter((node) => node !== undefined).sort(byOrder);
 };
 
 export const scanDocs = (dir: string): Promise<DocNode[]> => walk(dir, "");

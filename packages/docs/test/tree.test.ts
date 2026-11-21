@@ -15,7 +15,7 @@ const docs = (files: Record<string, string>) => {
 	return dir;
 };
 
-test("orders index pages first, then by order, then by name; folders after pages", async () => {
+test("orders index pages first, then by order with folders among pages, then pages before folders, then by name", async () => {
 	const dir = docs({
 		"zeta.md": "# Zeta",
 		"alpha.md": "# Alpha",
@@ -33,11 +33,11 @@ test("orders index pages first, then by order, then by name; folders after pages
 	expect(tree.map((node) => node.rel)).toEqual([
 		"index.md",
 		"first.md",
+		"guide",
 		"2-second.md",
 		"later.md",
 		"alpha.md",
 		"zeta.md",
-		"guide",
 		"api",
 	]);
 	const guide = tree.find((node) => node.rel === "guide");
@@ -64,9 +64,9 @@ test("orders by a number before the name, which URLs leave out", async () => {
 	expect(flattenPages(tree).map((page) => urlPath(page.rel))).toEqual([
 		"start.md",
 		"routes.md",
+		"guides/pages.md",
 		"deploy.md",
 		"0.5.md",
-		"guides/pages.md",
 	]);
 	expect(tree.find((node) => node.kind === "dir")).toMatchObject({ label: "Guides", order: 3 });
 });

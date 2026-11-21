@@ -73,28 +73,37 @@ const navList = (source: SourceView, nodes: readonly DocNode[], current: string)
 	return `<ul class="nav-list">${items.join("")}</ul>`;
 };
 
-/** Loose pages at the top, then one titled group per folder. */
+/** The tree in reading order: each run of loose pages as a list, each folder as a titled group. */
 const sidebar = (input: PageInput): string => {
 	const { source, tree, rel } = input;
-	const pages = tree.filter((node): node is DocPage => node.kind === "page");
-	const top = pages.length
-		? `<ul class="nav-top">${pages
-				.map(
-					(page) =>
-						`<li><a href="${pageHref(source, page.rel)}"${active(page.rel === rel)}>${escapeHtml(page.title)}</a></li>`,
-				)
-				.join("")}</ul>`
-		: "";
-	const groups = tree
-		.filter((node) => node.kind === "dir")
-		.map(
-			(node) =>
-				`<div class="nav-group"><a class="nav-group-title" href="${dirHref(source, node.rel)}">${escapeHtml(node.label)}</a>${navList(source, node.children, rel)}</div>`,
-		)
-		.join("");
+	const parts: string[] = [];
+	let pages: DocPage[] = [];
+	const flush = () => {
+		if (pages.length)
+			parts.push(
+				`<ul class="nav-top">${pages
+					.map(
+						(page) =>
+							`<li><a href="${pageHref(source, page.rel)}"${active(page.rel === rel)}>${escapeHtml(page.title)}</a></li>`,
+					)
+					.join("")}</ul>`,
+			);
+		pages = [];
+	};
+	for (const node of tree) {
+		if (node.kind === "page") {
+			pages.push(node);
+			continue;
+		}
+		flush();
+		parts.push(
+			`<div class="nav-group"><a class="nav-group-title" href="${dirHref(source, node.rel)}">${escapeHtml(node.label)}</a>${navList(source, node.children, rel)}</div>`,
+		);
+	}
+	flush();
 	const tabs =
 		input.sources.length > 1 ? `<div class="nav-sources">${sourceTabs(input)}</div>` : "";
-	return `<aside class="sidebar" id="sidebar">${tabs}<nav aria-label="Docs">${top}${groups}</nav></aside>`;
+	return `<aside class="sidebar" id="sidebar">${tabs}<nav aria-label="Docs">${parts.join("")}</nav></aside>`;
 };
 
 const sourceTabs = ({ sources, source }: PageInput) =>
