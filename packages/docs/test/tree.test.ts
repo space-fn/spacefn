@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 
 import { expect, test } from "vitest";
 
-import { flattenPages, labelFromName, scanDocs, urlPath } from "../src/tree.ts";
+import { flattenPages, iconName, labelFromName, scanDocs, urlPath } from "../src/tree.ts";
 
 const docs = (files: Record<string, string>) => {
 	const dir = mkdtempSync(join(tmpdir(), "space-docs-"));
@@ -43,6 +43,23 @@ test("orders index pages first, then by order with folders among pages, then pag
 	const guide = tree.find((node) => node.rel === "guide");
 	expect(guide).toMatchObject({ kind: "dir", label: "The guide" });
 	expect(tree.find((node) => node.rel === "api")).toMatchObject({ label: "Api" });
+});
+
+test("takes a Tabler icon from frontmatter, and gives a folder its index page's", async () => {
+	const tree = await scanDocs(
+		docs({
+			"start.md": "---\nicon: rocket\n---\n# Start",
+			"plain.md": "# Plain",
+			"guide/index.md": "---\nicon: tabler-book\n---\n# Guide",
+			"guide/a.md": "# A",
+		}),
+	);
+	expect(tree.find((node) => node.rel === "start.md")).toMatchObject({ icon: "rocket" });
+	expect(tree.find((node) => node.rel === "plain.md")).toMatchObject({ icon: null });
+	expect(tree.find((node) => node.rel === "guide")).toMatchObject({ icon: "book" });
+	expect(iconName("Heart-Filled")).toBe("heart-filled");
+	expect(iconName('x)" onload')).toBeNull();
+	expect(iconName("")).toBeNull();
 });
 
 test("titles a page without a heading by its file name", async () => {

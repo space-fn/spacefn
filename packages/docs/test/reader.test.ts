@@ -23,7 +23,8 @@ describe("an app with docs/", () => {
 		const root = app({
 			"package.json": '{"name":"todo-app"}',
 			"docs/index.md": "# Todo app\n\nSee [deploys](runbooks/deploys.md).\n",
-			"docs/runbooks/deploys.md": "# Deploys\n\n## Rolling back\n\nRun it.\n",
+			"docs/runbooks/deploys.md":
+				"---\nicon: rocket\n---\n# Deploys\n\n## Rolling back\n\nRun it.\n",
 			"docs/runbooks/notes.md": "# Notes\n",
 			"docs/logo.svg": "<svg/>",
 			"secret.md": "# Outside docs/",
@@ -44,13 +45,15 @@ describe("an app with docs/", () => {
 
 	test("renders a page with the sidebar, the outline and the pager", async () => {
 		const html = await (await get(`${server.url}runbooks/deploys.md`)).text();
-		expect(html).toContain(
-			'<a href="/runbooks/deploys.md" class="active" aria-current="page">Deploys</a>',
-		);
 		expect(html).toContain('<div class="eyebrow">Runbooks</div>');
 		expect(html).toContain('<h2 id="rolling-back">');
 		expect(html).toContain('<a class="next" href="/runbooks/notes.md">');
-		expect(html).toContain("Edit this page");
+		expect(html).not.toContain("edit-link");
+		// Its frontmatter icon, from Tabler; a page without one has none.
+		expect(html).toContain(
+			'class="active" aria-current="page"><span class="nav-icon" style="--icon:url(https://cdn.jsdelivr.net/npm/@tabler/icons@3.50.0/icons/outline/rocket.svg)" aria-hidden="true"></span>Deploys</a>',
+		);
+		expect(html).toContain('<a href="/runbooks/notes.md">Notes</a>');
 	});
 
 	test("lists a folder without an index page as cards, at its URL with a slash", async () => {
@@ -62,7 +65,7 @@ describe("an app with docs/", () => {
 		expect(html).toContain('href="/runbooks/notes.md"');
 	});
 
-	test("serves spacefn's docs under spacefn/, with edit links into the repo", async () => {
+	test("serves spacefn's docs under spacefn/", async () => {
 		const html = await (await get(`${server.url}spacefn/reference/writing-docs.md`)).text();
 		expect(html).toContain('class="source-tab active" href="/spacefn/"');
 		expect(html).toContain('<div class="code-group">');
@@ -91,8 +94,6 @@ describe("an app with docs/", () => {
 		expect(missing.status).toBe(404);
 		expect(await missing.text()).toContain("<h1>Not found</h1>");
 		expect((await get(`${server.url}..%2Fsecret.md`)).status).toBe(403);
-		const open = await get(`${server.url}_/open?file=${encodeURIComponent("/etc/hosts")}`);
-		expect(open.status).toBe(403);
 	});
 });
 

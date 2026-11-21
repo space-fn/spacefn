@@ -12,6 +12,8 @@ export interface DocPage {
 	readonly title: string;
 	readonly description: string | null;
 	readonly order: number;
+	/** A Tabler icon's name, from frontmatter `icon`, shown before it in the sidebar. */
+	readonly icon: string | null;
 }
 
 export interface DocDir {
@@ -19,6 +21,8 @@ export interface DocDir {
 	readonly rel: string;
 	readonly label: string;
 	readonly order: number;
+	/** Its index page's icon. */
+	readonly icon: string | null;
 	readonly children: readonly DocNode[];
 }
 
@@ -81,6 +85,18 @@ const byOrder = (a: DocNode, b: DocNode) => {
 	return a.rel.localeCompare(b.rel, undefined, { numeric: true });
 };
 
+/**
+ * Frontmatter `icon`: a name from tabler.io/icons, `rocket` or `heart-filled`; a
+ * `tabler-` or `ti-` before it is allowed. Anything else is no icon.
+ */
+export const iconName = (value: string | undefined): string | null => {
+	const name = value
+		?.trim()
+		.toLowerCase()
+		.replace(/^(tabler|ti)-/, "");
+	return name && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name) ? name : null;
+};
+
 const readPage = async (path: string, rel: string, name: string): Promise<DocPage> => {
 	const source = await readFile(path, "utf8").catch(() => "");
 	const { data, body } = frontmatter(source);
@@ -91,6 +107,7 @@ const readPage = async (path: string, rel: string, name: string): Promise<DocPag
 		title: data.title ?? titleOf(body) ?? labelFromName(name),
 		description: data.description ?? null,
 		order: Number.isFinite(order) ? order : prefixOrder(name),
+		icon: iconName(data.icon),
 	};
 };
 
@@ -114,6 +131,7 @@ const walk = async (dir: string, prefix: string): Promise<DocNode[]> => {
 					rel,
 					label: home?.kind === "page" ? home.title : labelFromName(entry.name),
 					order: home && Number.isFinite(home.order) ? home.order : prefixOrder(entry.name),
+					icon: home?.kind === "page" ? home.icon : null,
 					children,
 				};
 			}),

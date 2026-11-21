@@ -1,7 +1,7 @@
 // spacefn-docs: spacefn's docs, and the reader `space docs` and `space dev` show them with.
 import { existsSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
-import { join, sep } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createReader, type DocsSource, type Reader } from "./reader.ts";
@@ -24,17 +24,12 @@ const manifest = (dir: string): { name?: string; version?: string } => {
 export const version: string =
 	manifest(fileURLToPath(new URL("..", import.meta.url))).version ?? "0.0.0";
 
-const REPO = "https://github.com/space-fn/spacefn/blob/main/packages/docs/content/";
-
-/** spacefn's docs. From node_modules, "Edit" goes to GitHub; in the spacefn repo, to your editor. */
+/** spacefn's docs. */
 export const spacefnSource = (prefix: string): DocsSource => ({
 	label: "spacefn",
 	dir: contentDir,
 	prefix,
 	version,
-	...(contentDir.includes(`${sep}node_modules${sep}`)
-		? { editUrl: (rel: string) => REPO + rel }
-		: {}),
 });
 
 export interface AppDocsOptions {

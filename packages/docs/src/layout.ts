@@ -8,6 +8,17 @@ export const ASSETS = "_/";
 /** The Mermaid build the browser loads: kept off disk, since it'd add 100+ MB to every app. */
 export const MERMAID_URL = "https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.esm.min.mjs";
 
+/** Tabler's icons, by name, from a CDN like Mermaid: offline, the sidebar shows no icons. */
+export const TABLER_URL = "https://cdn.jsdelivr.net/npm/@tabler/icons@3.50.0/icons/";
+
+/** A sidebar icon: the SVG as a mask, so it takes the link's color. `-filled` names the filled set. */
+const tabler = (name: string | null) => {
+	if (!name) return "";
+	const filled = name.endsWith("-filled");
+	const file = `${filled ? "filled" : "outline"}/${filled ? name.slice(0, -"-filled".length) : name}.svg`;
+	return `<span class="nav-icon" style="--icon:url(${TABLER_URL}${file})" aria-hidden="true"></span>`;
+};
+
 const icon = (body: string, extra = "") =>
 	`<svg class="icon${extra}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
@@ -20,7 +31,6 @@ const ICONS = {
 	moon: icon('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>', " icon-moon"),
 	menu: icon('<path d="M4 7h16M4 12h16M4 17h16"/>'),
 	list: icon('<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>'),
-	edit: icon('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/>'),
 	folder: icon(
 		'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
 	),
@@ -51,7 +61,6 @@ export interface PageInput {
 	readonly tree: readonly DocNode[];
 	/** The shown page or folder, relative to the source's folder. */
 	readonly rel: string;
-	readonly edit: { readonly href: string; readonly label: string } | null;
 	/** The site's name in the top bar and the tab title. */
 	readonly name: string;
 }
@@ -66,9 +75,9 @@ const active = (on: boolean) => (on ? ' class="active" aria-current="page"' : ""
 const navList = (source: SourceView, nodes: readonly DocNode[], current: string): string => {
 	const items = nodes.map((node) => {
 		if (node.kind === "page")
-			return `<li><a href="${pageHref(source, node.rel)}"${active(node.rel === current)}>${escapeHtml(node.title)}</a></li>`;
+			return `<li><a href="${pageHref(source, node.rel)}"${active(node.rel === current)}>${tabler(node.icon)}${escapeHtml(node.title)}</a></li>`;
 		const open = current.startsWith(`${node.rel}/`) ? " open" : "";
-		return `<li><details${open}><summary>${escapeHtml(node.label)}</summary>${navList(source, node.children, current)}</details></li>`;
+		return `<li><details${open}><summary><span>${tabler(node.icon)}${escapeHtml(node.label)}</span></summary>${navList(source, node.children, current)}</details></li>`;
 	});
 	return `<ul class="nav-list">${items.join("")}</ul>`;
 };
@@ -84,7 +93,7 @@ const sidebar = (input: PageInput): string => {
 				`<ul class="nav-top">${pages
 					.map(
 						(page) =>
-							`<li><a href="${pageHref(source, page.rel)}"${active(page.rel === rel)}>${escapeHtml(page.title)}</a></li>`,
+							`<li><a href="${pageHref(source, page.rel)}"${active(page.rel === rel)}>${tabler(page.icon)}${escapeHtml(page.title)}</a></li>`,
 					)
 					.join("")}</ul>`,
 			);
@@ -97,7 +106,7 @@ const sidebar = (input: PageInput): string => {
 		}
 		flush();
 		parts.push(
-			`<div class="nav-group"><a class="nav-group-title" href="${dirHref(source, node.rel)}">${escapeHtml(node.label)}</a>${navList(source, node.children, rel)}</div>`,
+			`<div class="nav-group"><a class="nav-group-title" href="${dirHref(source, node.rel)}">${tabler(node.icon)}${escapeHtml(node.label)}</a>${navList(source, node.children, rel)}</div>`,
 		);
 	}
 	flush();
@@ -166,11 +175,8 @@ export const renderPage = (input: PageInput): string => {
 	// The site's logo: the first doc set's (the app's), else the open one's.
 	const logoUrl = input.sources[0]?.logo ?? source.logo;
 	const logo = logoUrl ? `<img src="${escapeHtml(logoUrl)}" alt="" width="28" height="28">` : "";
-	const edit = input.edit
-		? `<a class="edit-link" href="${escapeHtml(input.edit.href)}"${input.edit.href.startsWith("http") ? ' target="_blank" rel="noopener"' : ""}>${ICONS.edit}${escapeHtml(input.edit.label)}</a>`
-		: "";
 	const next = pager(input);
-	const foot = edit || next ? `<footer class="page-foot">${edit}${next}</footer>` : "";
+	const foot = next ? `<footer class="page-foot">${next}</footer>` : "";
 	const pageTitle = [name, `${name} docs`].includes(title)
 		? `${name} docs`
 		: `${title} · ${name} docs`;

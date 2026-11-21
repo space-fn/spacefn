@@ -3,10 +3,8 @@
 import { type FSWatcher, watch } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { extname, join, relative, resolve, sep } from "node:path";
+import { extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-
-import launchEditor from "launch-editor";
 
 import { ASSETS, cards, pageHref, renderPage, type SourceView } from "./layout.ts";
 import { escapeHtml, renderMarkdown, type Rendered } from "./markdown.ts";
@@ -29,8 +27,6 @@ export interface DocsSource {
 	/** Its path under the reader's base: `""` for one source, else e.g. `spacefn/`. */
 	readonly prefix: string;
 	readonly version?: string;
-	/** Where "Edit" goes for a page; by default the page opens in your editor. */
-	readonly editUrl?: (rel: string) => string;
 }
 
 export interface ReaderOptions {
@@ -192,35 +188,15 @@ export const createReader = (options: ReaderOptions): Reader => {
 		});
 	};
 
-	const openInEditor = (res: ServerResponse, file: string | null) => {
-		const path = file ? resolve(file) : "";
-		if (!path || !sources.some((source) => within(source.dir, path)))
-			return send(res, 403, "text/plain", "space docs: only files in the docs folders open");
-		launchEditor(path);
-		res.statusCode = 204;
-		res.end();
-	};
-
 	const page = async (
 		res: ServerResponse,
 		source: (typeof sources)[number],
 		rel: string,
-		content: { title: string; html: string; rendered?: Rendered; file?: string },
+		content: { title: string; html: string; rendered?: Rendered },
 		status = 200,
 	) => {
 		const view = await viewOf(source);
 		const tree = await scanDocs(source.dir);
-		const edit = content.file
-			? source.editUrl
-				? {
-						href: source.editUrl(relative(source.dir, content.file).split(sep).join("/")),
-						label: "Edit on GitHub",
-					}
-				: {
-						href: `${base}${ASSETS}open?file=${encodeURIComponent(content.file)}`,
-						label: "Edit this page",
-					}
-			: null;
 		send(
 			res,
 			status,
@@ -235,7 +211,6 @@ export const createReader = (options: ReaderOptions): Reader => {
 				source: view,
 				tree,
 				rel,
-				edit,
 				name: options.name,
 			}),
 		);
@@ -279,7 +254,6 @@ export const createReader = (options: ReaderOptions): Reader => {
 			if (name === "search.json")
 				return send(res, 200, TYPES[".json"]!, JSON.stringify(await searchIndex()));
 			if (name === "events") return events(req, res);
-			if (name === "open") return openInEditor(res, url.searchParams.get("file"));
 			if (name === "reader.css" || name === "reader.js")
 				return send(res, 200, TYPES[extname(name)]!, await readFile(join(ASSET_DIR, name)));
 			return send(res, 404, "text/plain", "not found");
@@ -319,7 +293,6 @@ export const createReader = (options: ReaderOptions): Reader => {
 					title: rendered.title ?? labelFromName(rel.split("/").pop() || source.label),
 					html: rendered.html,
 					rendered,
-					file,
 				});
 			}
 			const tree = await scanDocs(source.dir);
@@ -337,7 +310,6 @@ export const createReader = (options: ReaderOptions): Reader => {
 				title: rendered.title ?? labelFromName(rel.split("/").pop()!),
 				html: rendered.html,
 				rendered,
-				file: target,
 			});
 		}
 		const type = TYPES[extname(target).toLowerCase()];
