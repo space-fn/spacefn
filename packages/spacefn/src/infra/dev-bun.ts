@@ -5,7 +5,8 @@ import { createServer } from "vite";
 
 const [root = process.cwd(), port] = process.argv.slice(2);
 const server = await createServer({
-	configFile: join(root, ".space", "vite.config.ts"),
+	configFile: join(root, "configs", "vite.ts"),
+	root,
 	server: port ? { port: Number(port), strictPort: true } : {},
 });
 await server.listen();

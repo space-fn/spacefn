@@ -60,7 +60,7 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 			build: "space build",
 			deploy: "space deploy",
 			docs: "space docs",
-			test: "vitest run --config configs/vitest.config.ts",
+			test: "vitest run --config configs/vitest.ts",
 			typecheck: "tsc --noEmit",
 		},
 		dependencies: sorted(
@@ -82,12 +82,13 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 	};
 };
 
-const spaceConfig = (target: Target) =>
+/** The app's Vite config: spacefn's plugin, for the target. Add your own plugins beside it. */
+const viteConfig = (target: Target) =>
 	[
-		'import { defineSpace } from "spacefn/config";',
+		'import { space } from "spacefn/vite";',
+		'import { defineConfig } from "vite";',
 		"",
-		"// The app's name comes from package.json.",
-		`export default defineSpace({ target: ${JSON.stringify(target)} });`,
+		`export default defineConfig({ plugins: [space({ target: ${JSON.stringify(target)} })] });`,
 		"",
 	].join("\n");
 
@@ -114,6 +115,6 @@ export function scaffold(dir: string, options: ScaffoldOptions): void {
 		resolve(dir, "package.json"),
 		`${JSON.stringify(packageJson(options), null, "\t")}\n`,
 	);
-	writeFileSync(resolve(dir, "configs", "space.ts"), spaceConfig(options.target));
+	writeFileSync(resolve(dir, "configs", "vite.ts"), viteConfig(options.target));
 	writeFileSync(resolve(dir, "app", "db", "main", "config.json"), dbConfig(options.target));
 }

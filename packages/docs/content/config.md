@@ -2,16 +2,30 @@
 
 Everything you configure is in `configs/`, including `configs/env.ts`, the variables the app reads.
 
-## `configs/space.ts`
+The files there are the tools' own, so what you know about Vite, Vitest and TypeScript applies as is. spacefn adds a plugin, not a config format of its own.
 
-```ts
-import { defineSpace } from "spacefn/config";
+## `configs/vite.ts`
 
-export default defineSpace({
-	target: "cloudflare", // or "bun"
-	name: "todo", // default: package.json `name`; names the Worker, the container and the deploy
-});
+The app's Vite config. spacefn is a plugin in it, and its `target` says where the app runs:
+
+```ts [configs/vite.ts]
+import { space } from "spacefn/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [space({ target: "cloudflare" })] }); // or "bun"
 ```
+
+When Vite starts (`space dev`, `space build`, `npm test`), the plugin writes `.space/` from `app/`, then serves and builds the app for its target. Add your own plugins and options beside it, as in any Vite project. For Tailwind:
+
+```ts [configs/vite.ts]
+import tailwind from "@tailwindcss/vite";
+import { space } from "spacefn/vite";
+import { defineConfig } from "vite";
+
+export default defineConfig({ plugins: [space({ target: "cloudflare" }), tailwind()] });
+```
+
+`configs/vitest.ts` merges it, so tests run with the same plugins. The app's name, for the Worker, the container and the deploy, is `package.json`'s `name`.
 
 Imports such as `#lib/...` are declared in `package.json`; see [Conventions](conventions.md#imports). Each database's driver is in its own `app/db/<name>/config.json`; see [Database](database.md#configjson).
 
@@ -43,17 +57,6 @@ Deploys import `configs/env.ts` to know which variables to pass on, so import on
 | `.env.<stage>` | `space deploy --stage <stage>` (default `.env.prod`) |
 
 A deploy never reads `.env`, so local values can't reach production. Variables already in the environment, as CI sets them, are passed on too. A deploy passes the fields of `configs/env.ts` (secrets as Worker secrets on Cloudflare), the `DB_<NAME>_URL` and `_AUTH_TOKEN` of libSQL databases, and `OTEL_*`. Commit `.env.example`, never `.env`.
-
-## `configs/vite.config.ts` (optional)
-
-Your own Vite plugins and options, merged with spacefn's. For Tailwind:
-
-```ts
-import tailwind from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-
-export default defineConfig({ plugins: [tailwind()] });
-```
 
 ## `configs/infra.ts` (optional)
 

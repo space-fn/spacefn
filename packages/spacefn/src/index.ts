@@ -31,7 +31,7 @@ export {
 	type QueueConsumerDefinition,
 	type QueueMessage,
 } from "./jobs/queue.ts";
-export { defineSpace, type SpaceConfig, type Target } from "./space-config.ts";
+export type { DbDriver, Target } from "./app-config.ts";
 export {
 	Blob,
 	BlobError,

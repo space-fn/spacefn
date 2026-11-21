@@ -6,7 +6,14 @@ import { NodeRuntime, NodeServices } from "@effect/platform-node";
 import { Console, Effect, Fiber, Option, Result, Stream } from "effect";
 import { Command, Flag } from "effect/cli";
 import { formatSpaceError, SpaceError } from "spacefn";
-import { gen, loadPlan, watchGen, type PlannedDb, type WriteResult } from "spacefn/codegen";
+import {
+	gen,
+	genPlan,
+	loadPlan,
+	watchGen,
+	type PlannedDb,
+	type WriteResult,
+} from "spacefn/codegen";
 
 import { runAlchemy } from "./alchemy.ts";
 import { buildBun } from "./build.ts";
@@ -28,6 +35,7 @@ import { doctor, formatChecks } from "./doctor.ts";
 import { detectPackageManager } from "./package-manager.ts";
 import { run } from "./process.ts";
 import { installedSpacefn, providerUpgrades, readPackageJson, spacefnUpgrades } from "./upgrade.ts";
+import { loadTarget } from "./vite-config.ts";
 
 const summary = (result: WriteResult) => {
 	const changes = [
@@ -62,12 +70,14 @@ const genCommand = Command.make(
 	Effect.fn(function* ({ watch, prod }) {
 		const root = process.cwd();
 		const mode = prod ? "prod" : "dev";
+		const target = yield* loadTarget(root).pipe(Effect.catchTag("SpaceError", fail));
+		if (target === undefined) return;
 		if (!watch)
-			return yield* gen(root, mode).pipe(
+			return yield* gen(root, mode, target).pipe(
 				Effect.flatMap((result) => Console.log(summary(result))),
 				Effect.catchTag("SpaceError", fail),
 			);
-		yield* watchGen(root, mode).pipe(
+		yield* watchGen(root, mode, target).pipe(
 			Stream.runForEach((result) =>
 				Result.isSuccess(result)
 					? Console.log(summary(result.success))
@@ -75,7 +85,7 @@ const genCommand = Command.make(
 			),
 		);
 	}),
-).pipe(Command.withDescription("Generate .space/ from app/ and configs/space.ts"));
+).pipe(Command.withDescription("Generate .space/ from app/, with the target in configs/vite.ts"));
 
 const exitWith = (message: string) =>
 	Console.error(message).pipe(
@@ -103,7 +113,7 @@ const dbAction = (
 	Effect.gen(function* () {
 		const root = process.cwd();
 		loadDotEnv(root);
-		const plan = yield* loadPlan(root, "dev");
+		const plan = yield* loadPlan(root, "dev", yield* loadTarget(root));
 		const dbs = Option.match(name, {
 			onNone: () => plan.db,
 			onSome: (n) => plan.db.filter((db) => db.name === n),
@@ -180,14 +190,11 @@ const yesFlag = Flag.Boolean("yes").pipe(
 
 /** `gen`, printed, failing the command readably. */
 const generate = (root: string, mode: "dev" | "prod") =>
-	gen(root, mode).pipe(
-		Effect.tap((result) =>
-			result.written.length + result.removed.length > 0
-				? Console.log(summary(result))
-				: Effect.void,
-		),
-		Effect.andThen(loadPlan(root, mode)),
-	);
+	Effect.gen(function* () {
+		const { plan, result } = yield* genPlan(root, mode, yield* loadTarget(root));
+		if (result.written.length + result.removed.length > 0) yield* Console.log(summary(result));
+		return plan;
+	});
 
 /** Ends a command on its error: a SpaceError formatted, anything else by its message. */
 const report = (error: unknown) =>
@@ -209,7 +216,7 @@ const devCommand = Command.make(
 			const plan = yield* generate(root, "dev");
 			// Keep .space/ current while the dev server runs; Vite and Alchemy reload from it.
 			const watcher = yield* Effect.forkChild(
-				watchGen(root, "dev").pipe(
+				watchGen(root, "dev", plan.target).pipe(
 					Stream.drop(1),
 					Stream.runForEach((result) =>
 						Result.isSuccess(result)

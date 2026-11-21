@@ -39,7 +39,7 @@ Each runs the CLI in a terminal:
 
 ## Activation
 
-Activates for workspaces containing `configs/space.ts`, which also marks an app's root, and for SQL/JS/TS files.
+Activates for workspaces containing `configs/vite.ts`, and for SQL/JS/TS files. An app's root is the nearest folder whose `package.json` depends on `spacefn`.
 
 ## Grammars
 

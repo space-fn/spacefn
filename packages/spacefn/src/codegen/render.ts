@@ -8,6 +8,6 @@ export const renderApp = (plan: AppPlan): Record<string, string> => ({
 	"manifest.ts": renderManifest(plan),
 	...Object.fromEntries(plan.db.map((db) => [`db/${db.name}.ts`, renderDb(db)])),
 	...renderEntries(plan),
-	"vite.config.ts": renderViteConfig(plan),
+	"vite.config.ts": renderViteConfig(),
 	"alchemy.run.ts": renderAlchemy(plan),
 });

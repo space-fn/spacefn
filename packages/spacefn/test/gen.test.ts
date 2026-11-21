@@ -24,7 +24,6 @@ const write = (files: Record<string, string>) =>
 const app = {
 	"package.json": JSON.stringify({ name: "todo" }),
 	".gitignore": "node_modules\n.space/\n",
-	"configs/space.ts": `export default { target: "cloudflare" as const };`,
 	"app/routes/index.ts": "",
 	"app/durable-objects/room.ts": "",
 	"app/db/main/config.json": '{ "driver": "d1", "migrateOn": "startup" }',
@@ -35,23 +34,23 @@ describe("gen", () => {
 	it.effect("writes .space for the app, then nothing when nothing changed", () =>
 		Effect.gen(function* () {
 			yield* write(app);
-			expect((yield* gen(root, "dev")).written).toEqual([
+			expect((yield* gen(root, "dev", "cloudflare")).written).toEqual([
 				"alchemy.run.ts",
 				"db/main.ts",
 				"entry.ts",
 				"manifest.ts",
 				"vite.config.ts",
 			]);
-			expect(yield* gen(root, "dev")).toEqual({ written: [], removed: [] });
+			expect(yield* gen(root, "dev", "cloudflare")).toEqual({ written: [], removed: [] });
 		}),
 	);
 
 	it.effect("removes what a deleted convention file generated", () =>
 		Effect.gen(function* () {
 			yield* write(app);
-			yield* gen(root, "dev");
+			yield* gen(root, "dev", "cloudflare");
 			yield* Effect.promise(() => rm(join(root, "app/db"), { recursive: true }));
-			const result = yield* gen(root, "dev");
+			const result = yield* gen(root, "dev", "cloudflare");
 			expect(result.removed).toEqual(["db/main.ts"]);
 			// The stack no longer declares the database either.
 			expect(result.written).toEqual(["alchemy.run.ts", "manifest.ts"]);
@@ -61,8 +60,8 @@ describe("gen", () => {
 
 	it.effect("writes nothing when a check fails", () =>
 		Effect.gen(function* () {
-			yield* write({ ...app, "configs/space.ts": `export default { target: "bun" as const };` });
-			expect((yield* Effect.flip(gen(root, "dev"))).code).toBe("TARGET_UNSUPPORTED");
+			yield* write(app);
+			expect((yield* Effect.flip(gen(root, "dev", "bun"))).code).toBe("TARGET_UNSUPPORTED");
 			const entries = yield* Effect.promise(() => readdir(root));
 			expect(entries).not.toContain(".space");
 		}),

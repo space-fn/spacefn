@@ -89,7 +89,7 @@
 		"onLanguage:javascript",
 		"onLanguage:sql",
 		"onLanguage:typescript",
-		"workspaceContains:configs/space.ts"
+		"workspaceContains:configs/vite.ts"
 	],
 	"icon": "./logo.png",
 	"engines": {

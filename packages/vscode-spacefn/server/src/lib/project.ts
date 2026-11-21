@@ -1,13 +1,23 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 
-/** The file that marks a spacefn app's root. */
-export const SPACE_CONFIG = path.join("configs", "space.ts");
+/** Whether the `package.json` in `dir` depends on spacefn, which makes `dir` an app's root. */
+function dependsOnSpacefn(dir: string): boolean {
+	try {
+		const pkg = JSON.parse(readFileSync(path.join(dir, "package.json"), "utf8")) as Record<
+			string,
+			Record<string, unknown> | undefined
+		>;
+		return ["dependencies", "devDependencies"].some((field) => pkg[field]?.spacefn !== undefined);
+	} catch {
+		return false;
+	}
+}
 
-/** The nearest folder above `filePath` holding `configs/space.ts`, or null outside an app. */
+/** The nearest folder above `filePath` whose `package.json` depends on spacefn, or null outside an app. */
 export function findAppRoot(filePath: string): string | null {
 	for (let dir = path.dirname(filePath); ; dir = path.dirname(dir)) {
-		if (existsSync(path.join(dir, SPACE_CONFIG))) return dir;
+		if (dependsOnSpacefn(dir)) return dir;
 		if (dir === path.dirname(dir)) return null;
 	}
 }

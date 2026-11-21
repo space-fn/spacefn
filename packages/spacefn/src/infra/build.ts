@@ -17,7 +17,7 @@ export const buildBun = (root: string): Effect.Effect<void, unknown> =>
 	Effect.gen(function* () {
 		yield* Effect.tryPromise({
 			try: async () => {
-				const builder = await createBuilder({ configFile: join(root, ".space", "vite.config.ts") });
+				const builder = await createBuilder({ configFile: join(root, "configs", "vite.ts"), root });
 				await builder.buildApp();
 				await writeFile(join(root, ".space", "dist", ".dockerignore"), "server/node_modules\n");
 			},

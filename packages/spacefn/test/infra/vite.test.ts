@@ -56,8 +56,10 @@ describe("the Bun app", () => {
 		let server: ViteDevServer;
 		let base: string;
 		beforeAll(async () => {
+			// As Alchemy runs it: rooted in .space/, whose vite.config.ts re-exports configs/vite.ts.
 			server = await createServer({
 				configFile: join(app.root, ".space", "vite.config.ts"),
+				root: join(app.root, ".space"),
 				server: { port: 0 },
 				logLevel: "silent",
 			});
@@ -101,8 +103,10 @@ describe("the Bun app", () => {
 
 	describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("built", () => {
 		beforeAll(async () => {
+			// As space build runs it: the app's own config, rooted at the app.
 			const builder = await createBuilder({
-				configFile: join(app.root, ".space", "vite.config.ts"),
+				configFile: join(app.root, "configs", "vite.ts"),
+				root: app.root,
 				logLevel: "silent",
 			});
 			await builder.buildApp();

@@ -43,11 +43,13 @@ describe("scaffold", () => {
 		expect(bun.devDependencies).toHaveProperty("spacefn-docs", "workspace:*");
 	});
 
-	it("writes the app: .gitignore, configs/space.ts and package.json", () => {
+	it("writes the app: .gitignore, configs/vite.ts and package.json", () => {
 		const dir = create("bun");
 		expect(readFileSync(join(dir, ".gitignore"), "utf8")).toContain(".space/");
 		expect(existsSync(join(dir, "gitignore"))).toBe(false);
-		expect(readFileSync(join(dir, "configs/space.ts"), "utf8")).toContain('target: "bun"');
+		expect(readFileSync(join(dir, "configs/vite.ts"), "utf8")).toContain(
+			'space({ target: "bun" })',
+		);
 		expect(JSON.parse(readFileSync(join(dir, "app/db/main/config.json"), "utf8"))).toMatchObject({
 			driver: "libsql",
 			migrateOn: "startup",
@@ -64,7 +66,7 @@ describe.each(["cloudflare", "bun"] as const)("a new %s app", (target) => {
 		expect(sh(dir, process.execPath, [space, "gen"]).code).toBe(0);
 		const types = sh(dir, bin("tsc"), ["--noEmit", "-p", "."]);
 		expect(types.output).toBe("");
-		const tests = sh(dir, bin("vitest"), ["run", "--config", "configs/vitest.config.ts"]);
+		const tests = sh(dir, bin("vitest"), ["run", "--config", "configs/vitest.ts"]);
 		expect(tests.output).toContain("2 passed");
 	}, 120_000);
 });

@@ -14,7 +14,7 @@ app/routes/         pages and HTTP endpoints, and _middleware.ts around them
 app/db/<name>/      config.json, migrations/ and queries/ in SQL, typed for you
 app/queues/         queue consumers
 app/crons/          scheduled jobs
-configs/            env.ts (the variables the app reads), space.ts, and optional vite.config.ts and infra.ts
+configs/            env.ts (the variables the app reads), vite.ts (with the target), vitest.ts, optional infra.ts
 ```
 
 Read the [docs](packages/docs/content/index.md), starting with [Getting started](packages/docs/content/getting-started.md).

@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { Effect } from "effect";
 import { gen } from "spacefn/codegen";
 
+import { loadTarget } from "../../src/infra/vite-config.ts";
+
 const spacefn = fileURLToPath(new URL("../..", import.meta.url));
 const docs = join(spacefn, "..", "docs");
 
@@ -28,7 +30,7 @@ export const fixtureApp = async (name: string) => {
 	await mkdir(join(root, "node_modules"), { recursive: true });
 	await link(spacefn, join(root, "node_modules", "spacefn"));
 	await link(docs, join(root, "node_modules", "spacefn-docs"));
-	await Effect.runPromise(gen(root, "dev"));
+	await Effect.runPromise(Effect.flatMap(loadTarget(root), (target) => gen(root, "dev", target)));
 	const data = await mkdtemp(join(tmpdir(), `space-${name}-`));
 	return {
 		root,

@@ -6,6 +6,7 @@
  */
 import type { Layer } from "effect";
 
+import type { DbDriver } from "./app-config.ts";
 import type { DatabaseClass } from "./db/database.ts";
 import type { AppEnv } from "./env.ts";
 import type { Middleware } from "./http/middleware.ts";
@@ -13,7 +14,6 @@ import type { Route } from "./http/route.ts";
 import type { Cron } from "./jobs/cron.ts";
 import type { QueueConsumer } from "./jobs/queue.ts";
 import type { Page } from "./pages/page.ts";
-import type { DbDriver } from "./space-config.ts";
 
 interface ManifestRouteBase {
 	/** Path for Effect's `HttpRouter`, e.g. `/users/:id` or `/files/*`. */

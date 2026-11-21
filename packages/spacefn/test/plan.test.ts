@@ -1,14 +1,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import type { AppConfig } from "../src/app-config.ts";
 import { planApp } from "../src/codegen/plan.ts";
 import type { AppTree } from "../src/codegen/scan-app.ts";
-import type { ResolvedSpaceConfig } from "../src/space-config.ts";
 
 const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	env: false,
 	layers: false,
-	viteConfig: false,
 	infraConfig: false,
 	routes: [],
 	queues: [],
@@ -23,7 +22,7 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	...parts,
 });
 
-const config = (parts: Partial<ResolvedSpaceConfig> = {}): ResolvedSpaceConfig => ({
+const config = (parts: Partial<AppConfig> = {}): AppConfig => ({
 	target: "cloudflare",
 	name: "todo",
 	folders: [],

@@ -11,6 +11,7 @@ import { loadPlan, renderApp, type AppPlan } from "spacefn/codegen";
 
 import { addCommand, detectPackageManager } from "./package-manager.ts";
 import { packageDir } from "./process.ts";
+import { loadTarget } from "./vite-config.ts";
 
 export interface Check {
 	readonly level: "ok" | "warn" | "fail";
@@ -97,13 +98,15 @@ export const doctor = async (root: string): Promise<readonly Check[]> => {
 	const checks: Check[] = [checkNode()];
 	let plan: AppPlan;
 	try {
-		plan = await Effect.runPromise(loadPlan(root, "dev"));
+		plan = await Effect.runPromise(
+			Effect.flatMap(loadTarget(root), (target) => loadPlan(root, "dev", target)),
+		);
 	} catch (error) {
 		const cause = (error as { cause?: unknown }).cause ?? error;
 		checks.push(fail(cause instanceof SpaceError ? formatSpaceError(cause) : String(cause)));
 		return checks;
 	}
-	checks.push(ok(`configs/space.ts and app/ check out (target ${plan.target})`));
+	checks.push(ok(`configs/vite.ts and app/ check out (target ${plan.target})`));
 	checks.push(await checkGenerated(root, plan));
 	checks.push(checkProvider(root, plan));
 	checks.push(...checkTools(plan));

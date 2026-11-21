@@ -13,7 +13,7 @@
 		"build": "space build",
 		"deploy": "space deploy",
 		"docs": "space docs",
-		"test": "vitest run --config configs/vitest.config.ts",
+		"test": "vitest run --config configs/vitest.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {

@@ -1,6 +1,6 @@
 # Testing
 
-Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, through `configs/vitest.config.ts`, which reuses the generated Vite config so `spacefn/assets` works). They run in Node, in memory: no Worker, no Docker, no database server.
+Tests sit next to the code, as `*.test.ts`, and run with `npm test` (Vitest, through `configs/vitest.ts`, which merges `configs/vite.ts` so the spacefn plugin runs too). They run in Node, in memory: no Worker, no Docker, no database server.
 
 `spacefn/testing` has what you need:
 

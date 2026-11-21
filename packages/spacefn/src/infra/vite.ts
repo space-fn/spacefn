@@ -1,9 +1,13 @@
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 
+import { Cause, Effect, Exit } from "effect";
+import { formatSpaceError, SpaceError, type Target } from "spacefn";
+import { genPlan } from "spacefn/codegen";
 import {
 	isRunnableDevEnvironment,
 	type Manifest,
@@ -13,14 +17,39 @@ import {
 } from "vite";
 
 import { DOCS_BASE, docsMismatch, loadDocs } from "./docs.ts";
+import type { SpacePluginApi } from "./vite-config.ts";
 
 export interface SpaceViteOptions {
-	readonly target: "cloudflare" | "bun";
-	/** The app root (where `app/` and `configs/` are). The generated config sits in `.space/`. */
-	readonly root: string;
-	/** Client entries, e.g. `app/client/main.ts`, relative to the root. */
-	readonly client: readonly string[];
+	/** Where the app runs: `cloudflare` (a Worker, through Alchemy) or `bun` (a server, in Docker). */
+	readonly target: Target;
+	/**
+	 * The app root, where `package.json`, `app/` and `configs/` are. Default: the
+	 * nearest folder with a `package.json`, from Vite's root (Alchemy roots Vite in `.space/`).
+	 */
+	readonly root?: string;
 }
+
+/** What the plugins learn once Vite starts: the app root and, from codegen, its client entries. */
+interface App {
+	root: string;
+	/** Client entries, e.g. `app/client/main.ts`, relative to the root. */
+	client: readonly string[];
+}
+
+const nearestPackage = (from: string) => {
+	for (let dir = resolve(from); ; dir = dirname(dir)) {
+		if (existsSync(join(dir, "package.json"))) return dir;
+		if (dir === dirname(dir)) return resolve(from);
+	}
+};
+
+/** Writes `.space/` before Vite resolves anything, so a plain `vite build` or `vitest` is current too. */
+const generate = async (app: App, mode: "dev" | "prod", target: Target) => {
+	const exit = await Effect.runPromiseExit(genPlan(app.root, mode, target));
+	if (Exit.isSuccess(exit)) return exit.value.plan;
+	const error = Cause.squash(exit.cause);
+	throw new Error(error instanceof SpaceError ? formatSpaceError(error) : String(error));
+};
 
 /** What server code imports for the client's `<script>` and `<link>` tags. */
 export const ASSETS_ID = "spacefn/assets";
@@ -107,56 +136,61 @@ const serveDocs = async (dev: ViteDevServer, root: string) => {
 };
 
 /** The parts every target shares: root, output folders, assets, client-first build, reloads. */
-const core = (options: SpaceViteOptions): Plugin => {
-	const { root } = options;
-	const space = join(root, ".space");
-	const clientOut = join(space, "dist", "client");
+const core = (options: SpaceViteOptions, app: App): Plugin => {
+	const clientOut = () => join(app.root, ".space", "dist", "client");
 	let config: ResolvedConfig;
 	let server: ViteDevServer | undefined;
 	return {
 		name: "spacefn",
+		api: { spacefn: { target: options.target } } satisfies SpacePluginApi,
 		// Before Vite's resolver, which would find the real spacefn/assets (a stub) in node_modules.
 		enforce: "pre",
-		config: () => ({
-			// Alchemy roots Vite where the config is (.space/); the app is one level up.
-			root,
-			build: { outDir: join(space, "dist") },
-			environments: {
-				client: {
-					build: {
-						outDir: clientOut,
-						emptyOutDir: true,
-						manifest: true,
-						...(options.client.length > 0
-							? { rolldownOptions: { input: options.client.map((file) => join(root, file)) } }
-							: {}),
+		config: async (user, env) => {
+			app.root = options.root ?? nearestPackage(user.root ?? process.cwd());
+			const { root } = app;
+			app.client = (
+				await generate(app, env.command === "build" ? "prod" : "dev", options.target)
+			).client;
+			return {
+				root,
+				build: { outDir: join(root, ".space", "dist") },
+				environments: {
+					client: {
+						build: {
+							outDir: clientOut(),
+							emptyOutDir: true,
+							manifest: true,
+							...(app.client.length > 0
+								? { rolldownOptions: { input: app.client.map((file) => join(root, file)) } }
+								: {}),
+						},
 					},
 				},
-			},
-			server: {
-				watch: {
-					// Vite's watcher doesn't read .gitignore; Alchemy's log would reload pages in a loop.
-					ignored: ["**/.space/.alchemy/**", "**/.space/dist/**", "**/.space/data/**"],
+				server: {
+					watch: {
+						// Vite's watcher doesn't read .gitignore; Alchemy's log would reload pages in a loop.
+						ignored: ["**/.space/.alchemy/**", "**/.space/dist/**", "**/.space/data/**"],
+					},
 				},
-			},
-		}),
+			};
+		},
 		configResolved: (resolved) => {
 			config = resolved;
 		},
 		configureServer: async (dev) => {
 			server = dev;
-			if (dev.config.mode !== "test") await serveDocs(dev, root);
+			if (dev.config.mode !== "test") await serveDocs(dev, app.root);
 		},
 		resolveId: (id) => (id === ASSETS_ID ? RESOLVED_ASSETS_ID : undefined),
 		load: async (id) => {
 			if (id !== RESOLVED_ASSETS_ID) return undefined;
 			const manifest =
-				config.command === "build" && options.client.length > 0
+				config.command === "build" && app.client.length > 0
 					? (JSON.parse(
-							await readFile(join(clientOut, ".vite", "manifest.json"), "utf8"),
+							await readFile(join(clientOut(), ".vite", "manifest.json"), "utf8"),
 						) as Manifest)
 					: undefined;
-			const tags = assetTags(options.client, config.base, manifest);
+			const tags = assetTags(app.client, config.base, manifest);
 			return `import { raw } from "spacefn";\nexport const head = raw(${JSON.stringify(tags)});\n`;
 		},
 		buildApp: {
@@ -164,7 +198,7 @@ const core = (options: SpaceViteOptions): Plugin => {
 			order: "pre",
 			handler: async (builder) => {
 				const client = builder.environments.client;
-				if (client && options.client.length > 0 && !client.isBuilt) await builder.build(client);
+				if (client && app.client.length > 0 && !client.isBuilt) await builder.build(client);
 			},
 		},
 		hotUpdate(update) {
@@ -232,12 +266,12 @@ declare module "node:http" {
  * and crons in-process (production gives them their own processes). A build
  * bundles `.space/server.ts` into `.space/dist/server/index.js`.
  */
-const bun = (options: SpaceViteOptions): Plugin => {
-	const { root } = options;
-	const serverOut = join(root, ".space", "dist", "server");
+const bun = (app: App): Plugin => {
+	const serverOut = () => join(app.root, ".space", "dist", "server");
 	const require = createRequire(import.meta.url);
 	return {
 		name: "spacefn:bun",
+		// After core's config hook, which finds the root.
 		config: () => ({
 			// Otherwise Vite's SPA fallback rewrites / to /index.html before the app sees it.
 			appType: "custom",
@@ -245,12 +279,12 @@ const bun = (options: SpaceViteOptions): Plugin => {
 				ssr: {
 					resolve: { noExternal: true, external: NATIVE },
 					build: {
-						outDir: serverOut,
+						outDir: serverOut(),
 						emptyOutDir: true,
 						minify: true,
 						target: "esnext",
 						rolldownOptions: {
-							input: { index: join(root, ".space", "server.ts") },
+							input: { index: join(app.root, ".space", "server.ts") },
 							external: NATIVE,
 						},
 					},
@@ -272,7 +306,7 @@ const bun = (options: SpaceViteOptions): Plugin => {
 			const dependencies: Record<string, string> = {};
 			for (const name of NATIVE) dependencies[name] = await installedVersion(require.resolve, name);
 			await writeFile(
-				join(serverOut, "package.json"),
+				join(serverOut(), "package.json"),
 				`${JSON.stringify({ private: true, type: "module", dependencies }, null, "\t")}\n`,
 			);
 		},
@@ -282,7 +316,7 @@ const bun = (options: SpaceViteOptions): Plugin => {
 			const environment = server.environments.ssr;
 			if (!environment || !isRunnableDevEnvironment(environment))
 				throw new Error("spacefn: the ssr environment can't run modules in this process");
-			const entry = join(root, ".space", "app.ts");
+			const entry = join(app.root, ".space", "app.ts");
 			let current: { module: unknown; app: DevApp; stopJobs: () => Promise<void> } | undefined;
 			let loading: Promise<DevApp> | undefined;
 			const load = (): Promise<DevApp> =>
@@ -330,8 +364,14 @@ const bun = (options: SpaceViteOptions): Plugin => {
 };
 
 /**
- * The spacefn Vite plugin. The generated `.space/vite.config.ts` adds it, so
- * apps don't configure it; their own plugins go in `configs/vite.config.ts`.
+ * The spacefn Vite plugin, for the app's `configs/vite.ts`. When Vite starts
+ * it writes `.space/` from `app/`, then serves and builds the app for `target`.
+ *
+ * ```ts
+ * export default defineConfig({ plugins: [space({ target: "cloudflare" })] });
+ * ```
  */
-export const space = (options: SpaceViteOptions): Plugin[] =>
-	options.target === "bun" ? [core(options), bun(options)] : [core(options)];
+export const space = (options: SpaceViteOptions): Plugin[] => {
+	const app: App = { root: options.root ?? process.cwd(), client: [] };
+	return options.target === "bun" ? [core(options, app), bun(app)] : [core(options, app)];
+};

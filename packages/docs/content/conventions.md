@@ -11,7 +11,7 @@ app/client/           browser scripts and styles    → Pages
 app/durable-objects/  Durable Object classes        (Cloudflare only)
 app/workflows/        Workflow classes              (Cloudflare only)
 app/layers.ts         your own services             → Services
-configs/              env.ts (the variables the app reads), space.ts, and optional vite.config.ts and infra.ts
+configs/              env.ts (the variables the app reads), vite.ts, vitest.ts, tsconfig.json, optional infra.ts
 lib/                  your code, imported as #lib/...
 .space/               generated
 ```

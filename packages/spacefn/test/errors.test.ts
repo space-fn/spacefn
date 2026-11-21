@@ -67,11 +67,11 @@ describe("formatSpaceError", () => {
 		const error = new SpaceError({
 			code: "CONFIG",
 			message: "bad target",
-			file: "configs/space.ts",
+			file: "configs/vite.ts",
 			hint: "Use cloudflare or bun.",
 		});
 		expect(formatSpaceError(error)).toBe(
-			"[CONFIG] configs/space.ts: bad target\n  hint: Use cloudflare or bun.",
+			"[CONFIG] configs/vite.ts: bad target\n  hint: Use cloudflare or bun.",
 		);
 		expect(formatSpaceError(new SpaceError({ code: "X", message: "y" }))).toBe("[X] y");
 	});

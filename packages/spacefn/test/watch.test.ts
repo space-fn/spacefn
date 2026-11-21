@@ -30,14 +30,13 @@ describe("watchGen", () => {
 					yield* write({
 						"package.json": JSON.stringify({ name: "todo" }),
 						".gitignore": ".space/\n",
-						"configs/space.ts": `export default { target: "bun" as const };`,
 						"app/routes/index.ts": "",
 					});
 					const results =
 						yield* Queue.unbounded<
 							Result.Result<{ written: readonly string[] }, { code: string }>
 						>();
-					yield* watchGen(root, "dev", Duration.millis(30)).pipe(
+					yield* watchGen(root, "dev", "bun", Duration.millis(30)).pipe(
 						Stream.runForEach((result) => Queue.offer(results, result)),
 						Effect.forkScoped,
 					);

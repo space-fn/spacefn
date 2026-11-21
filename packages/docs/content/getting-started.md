@@ -6,7 +6,7 @@
 npm create spacefn@latest my-app
 ```
 
-It asks where the app runs: **Cloudflare** (Workers, D1, KV, R2, Queues, Durable Objects) or **Bun** (one Docker container, with local SQLite files or a remote libSQL database). Pass `--target cloudflare` or `--target bun` to skip the question. You can change it later in `configs/space.ts`.
+It asks where the app runs: **Cloudflare** (Workers, D1, KV, R2, Queues, Durable Objects) or **Bun** (one Docker container, with local SQLite files or a remote libSQL database). Pass `--target cloudflare` or `--target bun` to skip the question. You can change it later: it's the `target` in `configs/vite.ts`.
 
 ```sh
 cd my-app
@@ -31,10 +31,10 @@ app/
   db/main/migrations/       the schema, in SQL
   db/main/queries/          one SQL query per file, typed for you
   client/site.css           bundled by Vite
-  env.ts                    the variables the app reads
 configs/
-  space.ts                  the target and options
-  tsconfig.json, vitest.config.ts
+  env.ts                    the variables the app reads
+  vite.ts                   the Vite config, with spacefn's plugin and the target
+  vitest.ts, tsconfig.json
 .space/                     generated; don't edit or commit it
 ```
 

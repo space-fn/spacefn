@@ -29,7 +29,6 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
-		"./config": "./src/space-config.ts",
 		"./testing": "./src/testing.ts",
 		"./assets": "./src/assets.ts",
 		"./codegen": "./src/codegen/index.ts",
@@ -51,10 +50,6 @@
 			".": {
 				"types": "./dist/index.d.mts",
 				"import": "./dist/index.mjs"
-			},
-			"./config": {
-				"types": "./dist/space-config.d.mts",
-				"import": "./dist/space-config.mjs"
 			},
 			"./testing": {
 				"types": "./dist/testing.d.mts",

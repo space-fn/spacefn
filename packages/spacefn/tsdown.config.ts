@@ -18,7 +18,6 @@ const area = (entry: Record<string, string>, tsconfig = "tsconfig.json"): UserCo
 export default defineConfig([
 	area({
 		index: "src/index.ts",
-		"space-config": "src/space-config.ts",
 		testing: "src/testing.ts",
 		assets: "src/assets.ts",
 		"codegen/index": "src/codegen/index.ts",

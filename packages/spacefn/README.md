@@ -13,12 +13,12 @@ This one package has everything: the framework, both targets, the Vite plugin, t
 | Import                                                                  | For                                                               |
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `spacefn`                                                               | App code: routes, pages, `html`, database, services, jobs, auth   |
-| `spacefn/config`                                                        | `configs/space.ts`: `defineSpace`                                 |
 | `spacefn/infra`                                                         | `configs/infra.ts`: `defineInfra`                                 |
 | `spacefn/testing`                                                       | Tests: in-memory services, a test database and `testHttp`         |
+| `spacefn/assets`                                                        | `head`, the client's tags; the Vite plugin provides it            |
 | `spacefn/cloudflare`                                                    | Cloudflare bindings spacefn doesn't wrap, through `CloudflareEnv` |
 | `spacefn/bun`                                                           | The Bun server; generated code uses it                            |
-| `spacefn/vite`                                                          | The Vite plugin; the generated `.space/vite.config.ts` adds it    |
+| `spacefn/vite`                                                          | The Vite plugin, in `configs/vite.ts`: `space({ target })`        |
 | `spacefn/runtime`, `codegen`, `sql`, `infra/cloudflare`, `infra/docker` | Generated code, the CLI and the editor extension                  |
 
 Read the [docs](https://github.com/space-fn/spacefn/blob/main/packages/docs/content/index.md).

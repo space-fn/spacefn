@@ -53,33 +53,16 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 };
 
 /**
- * `.space/vite.config.ts`: the user's `configs/vite.config.ts` (object or
- * function form) merged with the spacefn plugin. Alchemy and `space dev` both
- * load this file, so no Vite config sits in the app root.
+ * `.space/vite.config.ts`: the app's own `configs/vite.ts`, for Alchemy, which
+ * roots Vite in `.space/` and looks for a `vite.config.ts` there.
  */
-export const renderViteConfig = (plan: AppPlan): string => {
-	const options = [
-		`target: ${str(plan.target)}`,
-		'root: fileURLToPath(new URL("..", import.meta.url))',
-		`client: ${str(plan.client)}`,
-	];
-	const spacePlugin = `{ plugins: [space({ ${options.join(", ")} })] }`;
-	const imports = [
-		'import { fileURLToPath } from "node:url";',
+export const renderViteConfig = (): string =>
+	[
+		GENERATED,
+		"// Alchemy looks for vite.config.ts where it runs Vite. The config is the app's: configs/vite.ts.",
+		'export { default } from "../configs/vite.ts";',
 		"",
-		'import { space } from "spacefn/vite";',
-		`import { defineConfig${plan.viteConfig ? ", mergeConfig" : ""} } from "vite";`,
-		...(plan.viteConfig ? ['import user from "../configs/vite.config.ts";'] : []),
-	];
-	const body = plan.viteConfig
-		? [
-				"export default defineConfig(async (env) =>",
-				`\tmergeConfig(typeof user === "function" ? await user(env) : await user, ${spacePlugin}),`,
-				");",
-			]
-		: [`export default defineConfig(${spacePlugin});`];
-	return [GENERATED, ...imports, "", ...body, ""].join("\n");
-};
+	].join("\n");
 
 /**
  * `.space/alchemy.run.ts`: the infra, as data for spacefn's stack,

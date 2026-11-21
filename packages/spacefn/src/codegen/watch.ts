@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { Duration, Effect, Queue, type Result, Stream } from "effect";
 
+import type { Target } from "../app-config.ts";
 import type { SpaceError } from "../errors.ts";
 import { gen } from "./gen.ts";
 import type { Mode } from "./route-path.ts";
@@ -56,9 +57,10 @@ const changes = (root: string): Stream.Stream<void> =>
 export const watchGen = (
 	root: string,
 	mode: Mode,
+	target: Target,
 	debounce: Duration.Input = Duration.millis(50),
 ): Stream.Stream<Result.Result<WriteResult, SpaceError>> =>
 	changes(root).pipe(
 		Stream.debounce(debounce),
-		Stream.mapEffect(() => Effect.result(gen(root, mode))),
+		Stream.mapEffect(() => Effect.result(gen(root, mode, target))),
 	);

@@ -102,7 +102,7 @@ describe("doctor", () => {
 		try {
 			const checks = await doctor(app.root);
 			const text = formatChecks(checks);
-			expect(text).toContain("✓ configs/space.ts and app/ check out (target cloudflare)");
+			expect(text).toContain("✓ configs/vite.ts and app/ check out (target cloudflare)");
 			expect(text).toContain("✓ .space/ is up to date");
 			expect(text).toContain("✓ @alchemy.run/cloudflare is installed");
 			// The fixture's .env doesn't exist, so GREETING is missing.
@@ -115,6 +115,6 @@ describe("doctor", () => {
 	it("fails readably when there is no app", async () => {
 		const checks = await doctor(root);
 		expect(checks.at(-1)).toMatchObject({ level: "fail" });
-		expect(checks.at(-1)!.message).toContain("configs/space.ts");
+		expect(checks.at(-1)!.message).toContain("No configs/vite.ts found");
 	});
 });

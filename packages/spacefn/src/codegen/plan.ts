@@ -1,9 +1,9 @@
 import { Effect, Schema } from "effect";
 
+import { DbDriver, type AppConfig, type Target } from "../app-config.ts";
 import type { MigrateOn } from "../db/database.ts";
 import { SpaceError } from "../errors.ts";
 import { isValidSchedule } from "../jobs/cron.ts";
-import { DbDriver, type ResolvedSpaceConfig, type Target } from "../space-config.ts";
 import type { AnalyzedQuery, Migration } from "../sql/index.ts";
 import { bindingName, pascalName, unitName } from "./names.ts";
 import {
@@ -64,7 +64,6 @@ export interface AppPlan {
 	readonly folders: readonly string[];
 	readonly env: boolean;
 	readonly layers: boolean;
-	readonly viteConfig: boolean;
 	readonly infraConfig: boolean;
 	/** Files in `app/routes/` (routes and pages), most specific first. */
 	readonly routes: readonly PlannedRoute[];
@@ -278,7 +277,7 @@ const checkTarget = (target: Target, folder: string, units: readonly PlannedUnit
 		: fail(
 				"TARGET_UNSUPPORTED",
 				`app/${folder}/ only runs on Cloudflare, but the target is "${target}"`,
-				`Remove app/${folder}/, or set target: "cloudflare" in configs/space.ts.`,
+				`Remove app/${folder}/, or set space({ target: "cloudflare" }) in configs/vite.ts.`,
 				first.file,
 			);
 };
@@ -314,7 +313,7 @@ const planCrons = Effect.fnUntraced(function* (tree: AppTree) {
 /** Checks the scanned app against the config and works out everything codegen emits. */
 export const planApp = Effect.fnUntraced(function* (
 	tree: AppTree,
-	config: ResolvedSpaceConfig,
+	config: AppConfig,
 	mode: Mode,
 ): Effect.fn.Return<AppPlan, SpaceError> {
 	yield* checkGitignore(tree);
@@ -330,7 +329,6 @@ export const planApp = Effect.fnUntraced(function* (
 		folders: config.folders,
 		env: tree.env,
 		layers: tree.layers,
-		viteConfig: tree.viteConfig,
 		infraConfig: tree.infraConfig,
 		routes: yield* planRoutes(tree, mode),
 		middleware: planMiddleware(tree.routes),

@@ -16,14 +16,17 @@ const at = (file: string, body = "") => {
 
 beforeEach(() => {
 	root = mkdtempSync(path.join(tmpdir(), "spacefn-vscode-"));
-	at("configs/space.ts", 'export default defineSpace({ target: "bun" });');
+	at("package.json", JSON.stringify({ name: "app", dependencies: { spacefn: "^0.11.0" } }));
 	mkdirSync(path.join(root, "app/db/main/migrations"), { recursive: true });
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 describe("resolveDb", () => {
-	it("finds the app root from configs/space.ts", () => {
+	it("finds the app root: the nearest package.json that depends on spacefn", () => {
 		expect(findAppRoot(at("app/routes/users/[id].ts"))).toBe(root);
+		// A package.json without spacefn, such as one in a subfolder, isn't the app.
+		at("app/routes/legacy/package.json", JSON.stringify({ name: "legacy" }));
+		expect(findAppRoot(at("app/routes/legacy/x.ts"))).toBe(root);
 		expect(findAppRoot(path.join(tmpdir(), "elsewhere", "x.ts"))).toBeNull();
 	});
 
