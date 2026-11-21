@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 
 const own = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const template = resolve(own, "template");
+/** What differs by target: `configs/infra.ts`, and on Bun `configs/Dockerfile`. */
+const targets = resolve(own, "targets");
 
 export type Target = "cloudflare" | "bun";
 export const TARGETS: readonly Target[] = ["cloudflare", "bun"];
@@ -17,12 +19,14 @@ const VERSIONS: Readonly<Record<string, string>> = {
 	vite: "^8.3.8",
 	typescript: "^7.0.2",
 	vitest: "^5.1.1",
+	alchemy: "2.0.0-beta.87",
 	"@alchemy.run/cloudflare": "2.0.0-beta.87",
 	"@alchemy.run/docker": "2.0.0-beta.87",
 };
 
 /** The ones the spacefn repo's catalog pins, for the playground. */
 const CATALOG = new Set([
+	"alchemy",
 	"effect",
 	"vite",
 	"vitest",
@@ -43,7 +47,7 @@ export interface ScaffoldOptions {
 const sorted = (record: Record<string, string>) =>
 	Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
 
-/** The app's package.json: its target's runtime and Alchemy provider. */
+/** The app's package.json: Alchemy and its target's provider, for `configs/infra.ts`. */
 export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 	const other = (pkg: string) =>
 		[pkg, workspace && CATALOG.has(pkg) ? "catalog:" : VERSIONS[pkg]!] as const;
@@ -71,6 +75,7 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 		),
 		devDependencies: sorted(
 			Object.fromEntries([
+				other("alchemy"),
 				other(target === "cloudflare" ? "@alchemy.run/cloudflare" : "@alchemy.run/docker"),
 				// The reader and spacefn's docs, at spacefn's version.
 				["spacefn-docs", workspace ? "workspace:*" : SPACEFN_VERSION],
@@ -109,6 +114,7 @@ export function scaffold(dir: string, options: ScaffoldOptions): void {
 	if (existsSync(dir)) throw new Error(`${dir} already exists`);
 	mkdirSync(dir, { recursive: true });
 	cpSync(template, dir, { recursive: true });
+	cpSync(resolve(targets, options.target), dir, { recursive: true });
 	// npm drops .gitignore files from packages, so the template ships it as gitignore.
 	renameSync(resolve(dir, "gitignore"), resolve(dir, ".gitignore"));
 	writeFileSync(

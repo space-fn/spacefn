@@ -15,6 +15,7 @@
 	},
 	"files": [
 		"dist",
+		"targets",
 		"template"
 	],
 	"type": "module",
@@ -29,6 +30,7 @@
 		"@alchemy.run/cloudflare": "catalog:",
 		"@alchemy.run/docker": "catalog:",
 		"@types/node": "^26.6.6",
+		"alchemy": "catalog:",
 		"effect": "catalog:",
 		"spacefn": "workspace:*",
 		"tsdown": "catalog:",

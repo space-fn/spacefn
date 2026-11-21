@@ -1,10 +1,19 @@
 // Checks the packages as npm users get them: packs spacefn, spacefn-docs and
 // create-spacefn, scaffolds an app per target outside the workspace with the packed
 // scaffolder, installs the packed spacefn and docs with npm, then generates,
-// typechecks and tests the app, serves its docs, and on Bun builds it and serves a request.
+// typechecks and tests the app, serves its docs, and on Bun builds it and serves a request,
+// then (with Docker running) builds the app's configs/Dockerfile and serves a request from it.
 // Usage: node scripts/pack-check.ts [cloudflare|bun ...]
 import { spawn, spawnSync, type SpawnSyncOptions } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	copyFileSync,
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -75,6 +84,22 @@ const serveOnce = async (app: string) => {
 	}
 };
 
+/** Builds the app's configs/Dockerfile from its source, runs the image and asks it once. */
+const serveImage = async (app: string) => {
+	const tag = `spacefn-pack-${Date.now()}`;
+	const port = String(4600 + Math.floor(Math.random() * 100));
+	sh("docker", ["build", "-f", "configs/Dockerfile", "-t", tag, "."], { cwd: app });
+	sh("docker", ["run", "-d", "--rm", "--name", tag, "-p", `${port}:3000`, tag]);
+	try {
+		await answers(`http://localhost:${port}/health`, "the Docker image");
+	} finally {
+		spawnSync("docker", ["rm", "-f", tag]);
+		spawnSync("docker", ["rmi", tag]);
+	}
+};
+
+const docker = spawnSync("docker", ["info"]).status === 0;
+
 try {
 	const spacefn = pack("spacefn");
 	const docs = pack("docs", "spacefn-docs");
@@ -91,10 +116,14 @@ try {
 			cwd: work,
 		});
 		const app = join(work, name);
-		// The scaffold asks for the release on npm; use the one just packed.
+		// The scaffold asks for the release on npm; use the one just packed, inside the app so
+		// its Dockerfile's build can install it too.
+		mkdirSync(join(app, "vendor"));
+		copyFileSync(spacefn, join(app, "vendor", "spacefn.tgz"));
+		copyFileSync(docs, join(app, "vendor", "spacefn-docs.tgz"));
 		const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
-		manifest.dependencies.spacefn = `file:${spacefn}`;
-		manifest.devDependencies["spacefn-docs"] = `file:${docs}`;
+		manifest.dependencies.spacefn = "file:./vendor/spacefn.tgz";
+		manifest.devDependencies["spacefn-docs"] = "file:./vendor/spacefn-docs.tgz";
 		writeFileSync(join(app, "package.json"), `${JSON.stringify(manifest, null, "\t")}\n`);
 		writeFileSync(join(app, ".env"), readFileSync(join(app, ".env.example")));
 		sh("npm", ["install", "--no-audit", "--no-fund"], { cwd: app });
@@ -104,6 +133,8 @@ try {
 		if (target === "bun") {
 			sh("npm", ["run", "build"], { cwd: app });
 			await serveOnce(app);
+			if (docker) await serveImage(app);
+			else console.log("skipped the Docker image: Docker isn't running");
 		}
 		console.log(
 			`✓ ${target}: installs from the tarballs, typechecks, passes its tests, serves its docs`,

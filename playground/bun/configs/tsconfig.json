@@ -11,6 +11,5 @@
 		"skipLibCheck": true,
 		"types": []
 	},
-	"include": ["../app", "../lib", "../configs", "../.space"],
-	"exclude": ["../.space/.alchemy"]
+	"include": ["../app", "../lib", "../configs", "../.space"]
 }
