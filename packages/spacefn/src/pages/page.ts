@@ -104,13 +104,12 @@ export interface Page<L = any, Acts extends Actions = any> {
  * ```ts
  * export default page({
  *   loader: Effect.gen(function* () {
- *     const db = yield* MainDb;
- *     return { todos: yield* db.listTodos() };
+ *     return { todos: yield* MainDb.listTodos() };
  *   }),
  *   actions: {
  *     add: action({
  *       input: Schema.Struct({ title: Schema.NonEmptyString }),
- *       handler: ({ title }) => Effect.flatMap(MainDb, (db) => db.addTodo({ title })),
+ *       handler: ({ title }) => MainDb.addTodo({ title }),
  *     }),
  *   },
  *   render: (ctx) => html`

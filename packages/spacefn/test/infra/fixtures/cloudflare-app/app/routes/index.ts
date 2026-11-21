@@ -11,7 +11,7 @@ export default route({
 		const db = yield* MainDb;
 		yield* db.addNote({ text: "hi" });
 		const notes = Option.getOrThrow(yield* db.countNotes()).n;
-		const job = Option.getOrElse(yield* (yield* Kv).get("job"), () => "none");
+		const job = Option.getOrElse(yield* Kv.get("job"), () => "none");
 		const secret = Redacted.value(env.API_KEY).length;
 		return html`<html>
 			<head>

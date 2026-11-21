@@ -10,7 +10,7 @@ import { layout } from "./_layout.ts";
 const TOPIC = "todos";
 
 const todoList = Effect.gen(function* () {
-	const todos = yield* (yield* MainDb).listTodos();
+	const todos = yield* MainDb.listTodos();
 	return html`<ul id="todos">
 		${todos.map(
 			(todo) =>
@@ -26,7 +26,7 @@ const todoList = Effect.gen(function* () {
 
 /** After a change: tell every open page, then send this browser back to the list. */
 const changed = Effect.gen(function* () {
-	yield* (yield* Bus).publish(TOPIC, "changed");
+	yield* Bus.publish(TOPIC, "changed");
 	return redirect("/");
 });
 
@@ -39,7 +39,7 @@ export default page({
 			input: Schema.Struct({ title: Schema.NonEmptyString }),
 			handler: ({ title }) =>
 				Effect.gen(function* () {
-					yield* (yield* MainDb).addTodo({ title });
+					yield* MainDb.addTodo({ title });
 					return yield* changed;
 				}),
 		}),
@@ -47,7 +47,7 @@ export default page({
 			input: Schema.Struct({ id: Schema.FiniteFromString }),
 			handler: ({ id }) =>
 				Effect.gen(function* () {
-					yield* (yield* MainDb).toggleTodo({ id });
+					yield* MainDb.toggleTodo({ id });
 					return yield* changed;
 				}),
 		}),

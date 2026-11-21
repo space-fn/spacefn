@@ -68,8 +68,8 @@ export const hashSessionToken = (token: string): Effect.Effect<string | undefine
  * ```ts
  * // lib/auth.ts
  * export const auth = sessionAuth({
- *   lookup: (tokenHash) => Effect.flatMap(MainDb, (db) => db.findSession({ tokenHash })),
- *   touch: (tokenHash, lastSeenAt) => Effect.flatMap(MainDb, (db) => db.touchSession({ tokenHash, lastSeenAt })),
+ *   lookup: (tokenHash) => MainDb.findSession({ tokenHash }),
+ *   touch: (tokenHash, lastSeenAt) => MainDb.touchSession({ tokenHash, lastSeenAt }),
  * });
  * // in a handler
  * const user = yield* auth.requireUser;

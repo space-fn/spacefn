@@ -56,7 +56,7 @@ clearDone: action({
 	input: Schema.Struct({}),
 	handler: () =>
 		Effect.gen(function* () {
-			yield* (yield* MainDb).clearDone();
+			yield* MainDb.clearDone();
 			return yield* changed;
 		}),
 }),

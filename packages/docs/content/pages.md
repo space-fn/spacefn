@@ -14,7 +14,7 @@ import { layout } from "../_layout.ts";
 export default page({
 	loader: Effect.gen(function* () {
 		const { id } = yield* Input.params(Schema.Struct({ id: Schema.FiniteFromString }));
-		const todo = yield* (yield* MainDb).findTodo({ id });
+		const todo = yield* MainDb.findTodo({ id });
 		if (Option.isNone(todo)) return yield* new NotFound({ message: `No todo ${id}` });
 		return todo.value;
 	}),
@@ -23,7 +23,7 @@ export default page({
 			input: Schema.Struct({ id: Schema.FiniteFromString, title: Schema.NonEmptyString }),
 			handler: ({ id, title }) =>
 				Effect.gen(function* () {
-					yield* (yield* MainDb).renameTodo({ id, title });
+					yield* MainDb.renameTodo({ id, title });
 					return redirect(`/todos/${id}`);
 				}),
 		}),
@@ -95,7 +95,7 @@ html`<main data-init="@get('${ctx.actions.live.url}')">${ctx.loaderData.list}</m
 When the page loads, Datastar opens the action. `watch` subscribes to the `todos` topic on the [Bus](services.md), sends `todoList`'s HTML, and sends it again after each message, until the tab closes. Datastar swaps elements in by `id`, so give the rendered elements one. Anything that changes the todos publishes the topic, from a page, a route, a queue consumer or a cron:
 
 ```ts
-yield * (yield * Bus).publish("todos", "changed");
+yield * Bus.publish("todos", "changed");
 ```
 
 A burst of messages causes one re-render. For more control, `Datastar.sse(stream)` sends your own events, built with `Datastar.patchElements`, `removeElements`, `patchSignals` and `executeScript`. `Datastar.signals(schema)` decodes the signals a request sent, and `Datastar.isRequest` tells a Datastar request from a plain one.

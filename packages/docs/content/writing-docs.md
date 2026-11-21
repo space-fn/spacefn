@@ -182,7 +182,7 @@ Add `app/db/main/queries/todos/mark-done.sql`; `space gen` types it.
 
 ### Call it
 
-`yield* (yield* MainDb).todos.markDone({ id })` in a route or a page action.
+`yield* MainDb.todos.markDone({ id })` in a route or a page action.
 
 </div>
 

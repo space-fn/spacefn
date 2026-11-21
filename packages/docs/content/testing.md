@@ -63,9 +63,8 @@ import { it } from "@effect/vitest";
 
 it.effect("lists todos", () =>
 	Effect.gen(function* () {
-		const db = yield* MainDb;
-		yield* db.addTodo({ title: "Ship" });
-		expect((yield* db.listTodos()).map((todo) => todo.title)).toEqual(["Ship"]);
+		yield* MainDb.addTodo({ title: "Ship" });
+		expect((yield* MainDb.listTodos()).map((todo) => todo.title)).toEqual(["Ship"]);
 	}).pipe(Effect.provide(testDb(MainDb))),
 );
 ```

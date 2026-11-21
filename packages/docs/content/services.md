@@ -1,6 +1,6 @@
 # Services
 
-spacefn gives every app five services. Get one with `yield*` and use it the same way on every target; what backs it depends on where the app runs.
+spacefn gives every app five services. Call them through their class, `yield* Kv.get(key)`, the same way on every target; what backs them depends on where the app runs. `yield* Kv` gives the whole service, to pass around.
 
 | Service       | What it's for                           | Cloudflare                 | Bun                             |
 | ------------- | --------------------------------------- | -------------------------- | ------------------------------- |
@@ -17,10 +17,9 @@ On Bun, the web server, the queue consumers and the crons run in separate proces
 ## Kv
 
 ```ts
-const kv = yield * Kv;
-yield * kv.set("greeting", "hi", { ttl: "10 minutes" });
-const greeting = yield * kv.get("greeting"); // Option<string>
-yield * kv.delete("greeting");
+yield * Kv.set("greeting", "hi", { ttl: "10 minutes" });
+const greeting = yield * Kv.get("greeting"); // Option<string>
+yield * Kv.delete("greeting");
 ```
 
 Workers KV is eventually consistent and keeps a value for at least 60 seconds, so shorter TTLs are raised to 60 there. Don't use it for counters; that's what `RateLimiter` is for.
@@ -28,19 +27,18 @@ Workers KV is eventually consistent and keeps a value for at least 60 seconds, s
 ## Blob
 
 ```ts
-const blob = yield * Blob;
 // An `Upload` from Input.body is a File.
 const bytes = new Uint8Array(yield * Effect.promise(() => upload.arrayBuffer()));
-yield * blob.put(`avatars/${userId}.png`, bytes, { contentType: upload.type });
-const avatar = yield * blob.get(`avatars/${userId}.png`); // Option<{ body, size, contentType, uploadedAt }>
-const keys = yield * blob.list({ prefix: "avatars/", limit: 100 });
-yield * blob.delete(`avatars/${userId}.png`);
+yield * Blob.put(`avatars/${userId}.png`, bytes, { contentType: upload.type });
+const avatar = yield * Blob.get(`avatars/${userId}.png`); // Option<{ body, size, contentType, uploadedAt }>
+const keys = yield * Blob.list({ prefix: "avatars/", limit: 100 });
+yield * Blob.delete(`avatars/${userId}.png`);
 ```
 
 ## Queue
 
 ```ts
-yield * (yield * Queue).send("emails", { to: "ada@example.com" }, { delay: "5 minutes" });
+yield * Queue.send("emails", { to: "ada@example.com" }, { delay: "5 minutes" });
 ```
 
 The queue is named after its consumer file, `app/queues/emails.ts`; sending to a queue without one is an error. Bodies must survive structured cloning. See [Queues and crons](jobs.md).
@@ -48,7 +46,7 @@ The queue is named after its consumer file, `app/queues/emails.ts`; sending to a
 ## Bus
 
 ```ts
-yield * (yield * Bus).publish("todos", "changed");
+yield * Bus.publish("todos", "changed");
 ```
 
 Every subscriber to the topic gets the message; nothing is stored, so only those subscribed right now see it. Pages subscribe through `Datastar.watch` (see [Pages](pages.md)). On Bun, subscribers in the same process get it at once and those in other processes within about a quarter of a second.

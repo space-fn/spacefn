@@ -100,11 +100,11 @@ const manifest = {
 			module: {
 				default: route({
 					GET: Effect.gen(function* () {
-						return (yield* (yield* NotesDb).listNotes()).map((note) => note.text);
+						return (yield* NotesDb.listNotes()).map((note) => note.text);
 					}),
 					POST: Effect.gen(function* () {
 						const { text } = yield* Input.body(Schema.Struct({ text: Schema.String }));
-						yield* (yield* NotesDb).addNote({ text });
+						yield* NotesDb.addNote({ text });
 						return { added: text };
 					}),
 				}),
@@ -171,11 +171,11 @@ const manifest = {
 			module: {
 				default: route({
 					POST: Effect.gen(function* () {
-						yield* (yield* Queue).send("emails", { to: "ada" });
+						yield* Queue.send("emails", { to: "ada" });
 						return { queued: true };
 					}),
 					GET: Effect.gen(function* () {
-						return Option.getOrNull(yield* (yield* Kv).get("mailed"));
+						return Option.getOrNull(yield* Kv.get("mailed"));
 					}),
 				}),
 			},
@@ -192,7 +192,7 @@ const manifest = {
 					body: Schema.Struct({ to: Schema.String }),
 					handler: ({ to }) =>
 						Effect.gen(function* () {
-							yield* (yield* Kv).set("mailed", to);
+							yield* Kv.set("mailed", to);
 						}),
 				}),
 			},
@@ -206,7 +206,7 @@ const manifest = {
 				default: cron(
 					"0 3 * * *",
 					Effect.gen(function* () {
-						yield* (yield* Kv).set("cron", "ran");
+						yield* Kv.set("cron", "ran");
 					}),
 				),
 			},

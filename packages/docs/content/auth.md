@@ -23,9 +23,8 @@ import { sessionAuth } from "spacefn";
 import MainDb from "#space/db/main.ts";
 
 export const auth = sessionAuth({
-	lookup: (tokenHash) => Effect.flatMap(MainDb, (db) => db.findSession({ tokenHash })),
-	touch: (tokenHash, lastSeenAt) =>
-		Effect.flatMap(MainDb, (db) => db.touchSession({ tokenHash, lastSeenAt })),
+	lookup: (tokenHash) => MainDb.findSession({ tokenHash }),
+	touch: (tokenHash, lastSeenAt) => MainDb.touchSession({ tokenHash, lastSeenAt }),
 	policy: { absolute: "30 days", idle: "7 days" },
 });
 ```

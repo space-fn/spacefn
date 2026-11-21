@@ -18,7 +18,7 @@ export default queue({
 });
 ```
 
-Send to it from anywhere with `(yield* Queue).send("emails", { to, subject })`.
+Send to it from anywhere with `Queue.send("emails", { to, subject })`.
 
 - Each message is acknowledged once its handler succeeds and retried when it fails, so one bad message doesn't redeliver the batch. A body that doesn't decode is retried too.
 - After 3 retries a message is dropped; on Bun with an error in the log, on Cloudflare as the queue's settings say.

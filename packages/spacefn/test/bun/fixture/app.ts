@@ -52,11 +52,11 @@ const manifest = {
 			module: {
 				default: route({
 					GET: Effect.gen(function* () {
-						return (yield* (yield* NotesDb).listNotes()).map((note) => note.text);
+						return (yield* NotesDb.listNotes()).map((note) => note.text);
 					}),
 					POST: Effect.gen(function* () {
 						const { text } = yield* Input.body(Schema.Struct({ text: Schema.String }));
-						yield* (yield* NotesDb).addNote({ text });
+						yield* NotesDb.addNote({ text });
 						return { added: text };
 					}),
 				}),
@@ -78,15 +78,15 @@ const manifest = {
 				default: route({
 					POST: Effect.gen(function* () {
 						const { to } = yield* Input.body(Schema.Struct({ to: Schema.String }));
-						yield* (yield* Queue).send("emails", { to });
+						yield* Queue.send("emails", { to });
 						return { queued: to };
 					}),
 					// Who handled the mail to `to`, waiting for the notice when it isn't done yet.
 					GET: Effect.scoped(
 						Effect.gen(function* () {
 							const { to } = yield* Input.query(Schema.Struct({ to: Schema.String }));
-							const notices = yield* (yield* Bus).subscribe(`mailed:${to}`);
-							const done = yield* (yield* Kv).get(`mailed:${to}`);
+							const notices = yield* Bus.subscribe(`mailed:${to}`);
+							const done = yield* Kv.get(`mailed:${to}`);
 							if (Option.isSome(done)) return { pid: Number(done.value) };
 							const notice = yield* Stream.runHead(notices).pipe(
 								Effect.timeoutOption(Duration.seconds(10)),
@@ -111,8 +111,8 @@ const manifest = {
 					handler: ({ to }) =>
 						Effect.gen(function* () {
 							if (to === "crash") return process.exit(1);
-							yield* (yield* Kv).set(`mailed:${to}`, String(process.pid));
-							yield* (yield* Bus).publish(`mailed:${to}`, String(process.pid));
+							yield* Kv.set(`mailed:${to}`, String(process.pid));
+							yield* Bus.publish(`mailed:${to}`, String(process.pid));
 						}),
 				}),
 			},
@@ -126,7 +126,7 @@ const manifest = {
 				default: cron(
 					"* * * * *",
 					Effect.gen(function* () {
-						yield* (yield* Kv).set("cron", String(process.pid));
+						yield* Kv.set("cron", String(process.pid));
 					}),
 				),
 			},

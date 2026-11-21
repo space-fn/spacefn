@@ -14,13 +14,13 @@ import MainDb from "#space/db/main.ts";
 export default route({
 	GET: Effect.gen(function* () {
 		const { id } = yield* Input.params(Schema.Struct({ id: Schema.FiniteFromString }));
-		const todo = yield* (yield* MainDb).findTodo({ id });
+		const todo = yield* MainDb.findTodo({ id });
 		if (Option.isNone(todo)) return yield* new NotFound({ message: `No todo ${id}` });
 		return todo.value;
 	}),
 	DELETE: Effect.gen(function* () {
 		const { id } = yield* Input.params(Schema.Struct({ id: Schema.FiniteFromString }));
-		yield* (yield* MainDb).deleteTodo({ id });
+		yield* MainDb.deleteTodo({ id });
 	}),
 });
 ```

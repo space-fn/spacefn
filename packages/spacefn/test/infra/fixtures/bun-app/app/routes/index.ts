@@ -4,7 +4,7 @@ import { head } from "spacefn/assets";
 
 export default route({
 	GET: Effect.gen(function* () {
-		const job = yield* (yield* Kv).get("job");
+		const job = yield* Kv.get("job");
 		return html`<!doctype html>
 			<html>
 				<head>

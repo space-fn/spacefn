@@ -5,6 +5,6 @@ export default queue({
 	body: Schema.Struct({ at: Schema.String }),
 	handler: ({ at }) =>
 		Effect.gen(function* () {
-			yield* (yield* Kv).set("job", `done in ${at}`);
+			yield* Kv.set("job", `done in ${at}`);
 		}),
 });
