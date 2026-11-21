@@ -96,6 +96,36 @@ describe("an app with docs/", () => {
 	});
 });
 
+describe("numbered docs", () => {
+	let server: Awaited<ReturnType<typeof serve>>;
+	beforeAll(async () => {
+		const root = app({
+			"package.json": '{"name":"shop"}',
+			"docs/index.md": "# Shop\n\nRead [setup](1-setup.md) and [the guides](2-guides/).\n",
+			"docs/1-setup.md": "# Setup\n",
+			"docs/2-guides/1-orders.md": "# Orders\n",
+		});
+		server = await serve({ root, port: 0 });
+	});
+	afterAll(() => server.close());
+
+	test("serves pages and folders at URLs without the number", async () => {
+		const html = await (await get(server.url)).text();
+		expect(html).toContain('href="/setup.md"');
+		expect(html).toContain('href="/guides/orders.md"');
+		expect(await (await get(`${server.url}guides/orders.md`)).text()).toContain("<h1");
+	});
+
+	test("sends a link by file name to the page's URL", async () => {
+		const page = await get(`${server.url}1-setup.md`);
+		expect([page.status, page.headers.get("location")]).toEqual([302, "/setup.md"]);
+		const folder = await get(`${server.url}2-guides/1-orders.md?q=1`);
+		expect(folder.headers.get("location")).toBe("/guides/orders.md?q=1");
+		const dir = await get(`${server.url}2-guides/`);
+		expect(dir.headers.get("location")).toBe("/guides/");
+	});
+});
+
 test("an app without docs/ opens on spacefn's docs", async () => {
 	const server = await serve({ root: app({ "package.json": '{"name":"bare"}' }), port: 0 });
 	try {

@@ -1,6 +1,6 @@
 // The reader's HTML around a rendered page: top bar, sidebar, "On this page", pager.
 import { escapeHtml, type TocEntry } from "./markdown.ts";
-import { type DocNode, type DocPage, flattenPages, groupOf } from "./tree.ts";
+import { type DocNode, type DocPage, flattenPages, groupOf, urlPath } from "./tree.ts";
 
 /** Where the reader's own files (styles, script, search index) are served, under its base. */
 export const ASSETS = "_/";
@@ -57,7 +57,7 @@ export interface PageInput {
 }
 
 export const pageHref = (source: SourceView, rel: string): string =>
-	source.href + rel.split("/").map(encodeURIComponent).join("/");
+	source.href + urlPath(rel).split("/").map(encodeURIComponent).join("/");
 
 const dirHref = (source: SourceView, rel: string) => `${pageHref(source, rel)}/`;
 

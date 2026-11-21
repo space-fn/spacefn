@@ -1,7 +1,7 @@
 // Serves docs folders as a site: Markdown rendered per request, so edits show on reload,
 // and the page reloads itself when a file changes.
 import { type FSWatcher, watch } from "node:fs";
-import { readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,16 @@ import launchEditor from "launch-editor";
 
 import { ASSETS, cards, pageHref, renderPage, type SourceView } from "./layout.ts";
 import { escapeHtml, renderMarkdown, type Rendered } from "./markdown.ts";
-import { findDir, flattenPages, groupOf, INDEX_NAMES, labelFromName, scanDocs } from "./tree.ts";
+import {
+	findDir,
+	flattenPages,
+	groupOf,
+	INDEX_NAMES,
+	labelFromName,
+	scanDocs,
+	urlName,
+	urlPath,
+} from "./tree.ts";
 
 /** A docs folder the reader serves. */
 export interface DocsSource {
@@ -38,6 +47,23 @@ export interface Reader {
 	/** Stops watching the docs folders. */
 	readonly close: () => void;
 }
+
+/**
+ * The file a URL path names, relative to `dir`: each segment is a name as it is,
+ * or one with its order number left out (`pages.md` finds `2-pages.md`).
+ */
+const locate = async (dir: string, path: string): Promise<string | undefined> => {
+	let rel = "";
+	for (const segment of path.split("/").filter(Boolean)) {
+		const names = await readdir(join(dir, rel)).catch(() => [] as string[]);
+		const name = names.includes(segment)
+			? segment
+			: names.find((candidate) => urlName(candidate) === segment);
+		if (name === undefined) return undefined;
+		rel = rel ? `${rel}/${name}` : name;
+	}
+	return rel;
+};
 
 const ASSET_DIR = fileURLToPath(new URL("../assets/", import.meta.url));
 
@@ -262,11 +288,19 @@ export const createReader = (options: ReaderOptions): Reader => {
 		const source = sources.find((s) => rest.startsWith(s.prefix) || `${rest}/` === s.prefix);
 		if (!source) return redirect(res, base + (shown[0]?.prefix ?? ""));
 		if (`${rest}/` === source.prefix) return redirect(res, base + source.prefix);
-		const rel = rest.slice(source.prefix.length).replace(/\/+$/, "");
+		const asked = rest.slice(source.prefix.length).replace(/\/+$/, "");
+		if (!within(source.dir, resolve(source.dir, asked)))
+			return send(res, 403, "text/plain", "forbidden");
+		const rel = (await locate(source.dir, asked)) ?? asked;
 		const target = resolve(source.dir, rel);
-		if (!within(source.dir, target)) return send(res, 403, "text/plain", "forbidden");
 
 		const found = await exists(target);
+		// A link by file name, `2-pages.md`, goes to the page's URL, `pages.md`.
+		if (found && urlPath(rel) !== asked)
+			return redirect(
+				res,
+				pageHref(await viewOf(source), rel) + (found.isDirectory() ? "/" : "") + url.search,
+			);
 		if (!found) {
 			// No docs of its own: the reader opens on the next source.
 			if (rel === "" && source !== shown.at(-1)) return redirect(res, base + shown.at(-1)!.prefix);

@@ -11,19 +11,21 @@ description: Markdown, HTML, code groups, callouts and diagrams in the docs read
 
 Every `.md` file in `docs/` is a page, and every folder is a group in the sidebar. A folder's `index.md` (or `README.md`) is its first page and names the group.
 
+Number files and folders to put them in reading order. The number orders the sidebar and is left out everywhere else: `2-runbooks/1-deploys.md` is "Deploys" in "Runbooks", at `/runbooks/deploys.md`.
+
 ```txt
 docs/
-  index.md            the home page
-  architecture.md
-  runbooks/
-    index.md          "Runbooks", the group's title
-    deploys.md
-    incidents.md
+  index.md              the home page
+  1-architecture.md     /architecture.md
+  2-runbooks/
+    index.md            "Runbooks", the group's title
+    1-deploys.md        /runbooks/deploys.md
+    2-incidents.md      /runbooks/incidents.md
 ```
 
-A page's title is its first `# heading`. Pages are ordered by name unless you give an order, either as a number before the name (`1.setup.md`, which the sidebar doesn't show) or in frontmatter:
+Without numbers, pages are in name order. Frontmatter `order` overrides the number, and `title` the first `# heading`:
 
-```md [docs/architecture.md]
+```md [docs/1-architecture.md]
 ---
 title: How it fits together
 order: 2
@@ -33,7 +35,7 @@ description: One line, shown on the folder's cards
 # Architecture
 ```
 
-Link between pages by their file names, as you would on GitHub: `[deploys](runbooks/deploys.md)`. Put images next to the pages and link them the same way.
+Link between pages by their file names, as you would on GitHub: `[deploys](2-runbooks/1-deploys.md)`. The reader sends such a link to the page's URL. Put images next to the pages and link them the same way. Don't give two files in a folder the same name apart from the number, such as `deploys.md` and `1-deploys.md`: only the one without a number is reachable.
 
 ## Code
 
@@ -123,7 +125,7 @@ GitHub's alerts become callouts. Text after the kind names it:
 
 ## Diagrams
 
-A `mermaid` block draws a [Mermaid](https://mermaid.js.org) diagram, in the page's light or dark theme. The browser loads Mermaid when a page has one; offline, the diagram's source shows instead.
+A `mermaid` block draws a [Mermaid](https://mermaid.js.org) diagram, in the page's light or dark theme and the code font. The browser loads Mermaid when a page has one; offline, the diagram's source shows instead.
 
 ````md
 ```mermaid

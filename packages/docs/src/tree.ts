@@ -28,13 +28,18 @@ export const INDEX_NAMES = ["index.md", "README.md"];
 
 export const isIndex = (rel: string) => INDEX_NAMES.includes(rel.split("/").pop()!);
 
-/** `1.getting-started.md` → `Getting started`. A numeric prefix only sets the order. */
+/** A number before a name, `2-pages.md`, orders it in the sidebar; URLs and labels leave it out. */
+const ORDER_PREFIX = /^(\d+)-/;
+
+/** A file or folder's name in URLs: `2-pages.md` → `pages.md`. */
+export const urlName = (name: string): string => name.replace(ORDER_PREFIX, "");
+
+/** A path in URLs: `3-guides/2-pages.md` → `guides/pages.md`. */
+export const urlPath = (rel: string): string => rel.split("/").map(urlName).join("/");
+
+/** `1-getting-started.md` → `Getting started`. */
 export const labelFromName = (name: string): string => {
-	const words = name
-		.replace(/\.md$/, "")
-		.replace(/^\d+[.-]/, "")
-		.replace(/[-_]+/g, " ")
-		.trim();
+	const words = urlName(name).replace(/\.md$/, "").replace(/[-_]+/g, " ").trim();
 	return words ? words[0]!.toUpperCase() + words.slice(1) : name;
 };
 
@@ -58,7 +63,7 @@ export const titleOf = (body: string): string | null => {
 };
 
 const prefixOrder = (name: string) => {
-	const match = /^(\d+)[.-]/.exec(name);
+	const match = ORDER_PREFIX.exec(name);
 	return match ? Number(match[1]) : Number.POSITIVE_INFINITY;
 };
 
