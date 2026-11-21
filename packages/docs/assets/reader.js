@@ -279,6 +279,8 @@ if (config.mermaid) {
 	const sources = blocks.map((block) => block.textContent);
 	import(config.mermaid)
 		.then(({ default: mermaid }) => {
+			// Diagrams set in the code font, like the source they're drawn from.
+			const fontFamily = getComputedStyle(root).getPropertyValue("--mono").trim();
 			const draw = () => {
 				blocks.forEach((block, i) => {
 					block.removeAttribute("data-processed");
@@ -287,7 +289,8 @@ if (config.mermaid) {
 				mermaid.initialize({
 					startOnLoad: false,
 					theme: root.classList.contains("dark") ? "dark" : "default",
-					fontFamily: getComputedStyle(d.body).fontFamily,
+					fontFamily,
+					themeVariables: { fontFamily },
 				});
 				return mermaid.run({ nodes: blocks });
 			};
