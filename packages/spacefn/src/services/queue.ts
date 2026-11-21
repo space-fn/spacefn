@@ -22,6 +22,13 @@ export interface QueueShape {
 
 /** Background jobs. Cloudflare Queues on Cloudflare, a table consumed by the queue process on Bun. */
 export class Queue extends Context.Service<Queue, QueueShape>()("spacefn/Queue") {
+	/** Sends `body` to `app/queues/<queue>.ts`: `yield* Queue.send("emails", { to })`. */
+	static readonly send = (
+		queue: string,
+		body: unknown,
+		options?: QueueSendOptions,
+	): Effect.Effect<void, QueueError, Queue> => Queue.use((q) => q.send(queue, body, options));
+
 	/** Records sent messages in {@link QueueInbox} instead of delivering them. */
 	static readonly memory: Layer.Layer<Queue | QueueInbox> = Layer.effectContext(
 		Effect.sync(() => {

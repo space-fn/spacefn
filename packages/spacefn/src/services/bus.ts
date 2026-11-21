@@ -25,6 +25,13 @@ export interface BusShape {
  * processes reach it), an in-process PubSub in tests.
  */
 export class Bus extends Context.Service<Bus, BusShape>()("spacefn/Bus") {
+	static readonly publish = (topic: string, message: string): Effect.Effect<void, BusError, Bus> =>
+		Bus.use((bus) => bus.publish(topic, message));
+	static readonly subscribe = (
+		topic: string,
+	): Effect.Effect<Stream.Stream<string, BusError>, BusError, Bus | Scope.Scope> =>
+		Bus.use((bus) => bus.subscribe(topic));
+
 	static readonly memory: Layer.Layer<Bus> = Layer.sync(Bus, () => {
 		const topics = new Map<string, PubSub.PubSub<string>>();
 		const topicOf = (topic: string) =>

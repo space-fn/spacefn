@@ -28,6 +28,12 @@ export interface RateLimiterShape {
 export class RateLimiter extends Context.Service<RateLimiter, RateLimiterShape>()(
 	"spacefn/RateLimiter",
 ) {
+	static readonly hit = (
+		key: string,
+		windowMillis: number,
+	): Effect.Effect<RateHit, RateLimiterError, RateLimiter> =>
+		RateLimiter.use((limiter) => limiter.hit(key, windowMillis));
+
 	/** In-process counters on the Effect Clock. Ended windows are swept at most once a minute. */
 	static readonly memory: Layer.Layer<RateLimiter> = Layer.sync(RateLimiter, () => {
 		const windows = new Map<string, RateHit>();

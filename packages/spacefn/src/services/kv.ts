@@ -26,6 +26,17 @@ export interface KvShape {
  * table in the state libSQL database on Bun, a Map in tests.
  */
 export class Kv extends Context.Service<Kv, KvShape>()("spacefn/Kv") {
+	/** The value at `key`, if it's there and hasn't expired: `yield* Kv.get("theme")`. */
+	static readonly get = (key: string): Effect.Effect<Option.Option<string>, KvError, Kv> =>
+		Kv.use((kv) => kv.get(key));
+	static readonly set = (
+		key: string,
+		value: string,
+		options?: KvSetOptions,
+	): Effect.Effect<void, KvError, Kv> => Kv.use((kv) => kv.set(key, value, options));
+	static readonly delete = (key: string): Effect.Effect<void, KvError, Kv> =>
+		Kv.use((kv) => kv.delete(key));
+
 	/** In-process store; TTLs follow the Effect Clock, so `TestClock` can move time. */
 	static readonly memory: Layer.Layer<Kv> = Layer.sync(Kv, () => {
 		const entries = new Map<string, { value: string; expiresAt: number | undefined }>();

@@ -40,6 +40,20 @@ const encoder = new TextEncoder();
 
 /** Object storage for files and uploads. R2 on Cloudflare, a directory on Bun, a Map in tests. */
 export class Blob extends Context.Service<Blob, BlobShape>()("spacefn/Blob") {
+	static readonly put = (
+		key: string,
+		body: Uint8Array | string,
+		options?: BlobPutOptions,
+	): Effect.Effect<void, BlobError, Blob> => Blob.use((blob) => blob.put(key, body, options));
+	static readonly get = (key: string): Effect.Effect<Option.Option<BlobObject>, BlobError, Blob> =>
+		Blob.use((blob) => blob.get(key));
+	static readonly delete = (key: string): Effect.Effect<void, BlobError, Blob> =>
+		Blob.use((blob) => blob.delete(key));
+	static readonly list = (
+		options?: BlobListOptions,
+	): Effect.Effect<ReadonlyArray<string>, BlobError, Blob> =>
+		Blob.use((blob) => blob.list(options));
+
 	static readonly memory: Layer.Layer<Blob> = Layer.sync(Blob, () => {
 		const objects = new Map<string, BlobObject>();
 		return {
