@@ -3,7 +3,7 @@ import { Effect } from "effect";
 
 import { escapeHtml, html, raw } from "../src/html.ts";
 import { route } from "../src/http/route.ts";
-import { testHttp } from "../src/testing.ts";
+import { testApp } from "../src/testing.ts";
 
 describe("html", () => {
 	it("escapes interpolated text and attribute values", () => {
@@ -40,7 +40,7 @@ describe("html", () => {
 	});
 
 	it("is served as text/html from a route", async () => {
-		const app = testHttp({
+		const app = testApp({
 			routes: [
 				{
 					path: "/hi",

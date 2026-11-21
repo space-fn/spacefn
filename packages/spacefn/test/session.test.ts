@@ -4,7 +4,7 @@ import { HttpServerResponse } from "effect/http";
 
 import { hashSessionToken, sessionAuth, type SessionRecord } from "../src/auth/session.ts";
 import { route, type RouteMethods } from "../src/http/route.ts";
-import { testHttp } from "../src/testing.ts";
+import { testApp } from "../src/testing.ts";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -30,7 +30,7 @@ const setup = () => {
 		file: `app/routes${path}.ts`,
 		module: { default: route(methods) },
 	});
-	const app = testHttp({
+	const app = testApp({
 		routes: [
 			at("/sign-in", {
 				POST: Effect.gen(function* () {

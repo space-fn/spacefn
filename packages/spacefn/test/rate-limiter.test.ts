@@ -4,7 +4,7 @@ import { TestClock } from "effect/testing";
 
 import { route } from "../src/http/route.ts";
 import { clientAddress, rateLimit, RateLimiter } from "../src/services/rate-limiter.ts";
-import { testHttp } from "../src/testing.ts";
+import { testApp } from "../src/testing.ts";
 
 describe("rateLimit", () => {
 	it.effect("allows the limit per window, then fails with a retry delay", () =>
@@ -23,7 +23,7 @@ describe("rateLimit", () => {
 	);
 
 	it("answers 429 with Retry-After from a route, keyed by the client address", async () => {
-		const app = testHttp(
+		const app = testApp(
 			{
 				routes: [
 					{

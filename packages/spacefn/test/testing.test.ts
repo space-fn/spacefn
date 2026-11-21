@@ -1,12 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 import { HttpServerResponse } from "effect/http";
 
 import { database } from "../src/db/database.ts";
 import { middleware } from "../src/http/middleware.ts";
 import { route } from "../src/http/route.ts";
-import { defineEnv, Env, Kv, Queue } from "../src/index.ts";
-import { memoryServices, QueueInbox, testDb, testEnv, testHttp } from "../src/testing.ts";
+import { defineEnv, Env, Input, Kv, Queue } from "../src/index.ts";
+import { form, memoryServices, QueueInbox, testApp, testDb, testEnv } from "../src/testing.ts";
 
 const AppEnv = defineEnv({ FROM: Env.string() });
 
@@ -44,7 +44,7 @@ describe("spacefn/testing", () => {
 	);
 });
 
-describe("testHttp", () => {
+describe("testApp", () => {
 	it("serves routes and middleware with one shared set of services", async () => {
 		const counter = route({
 			POST: Effect.gen(function* () {
@@ -62,7 +62,7 @@ describe("testHttp", () => {
 				return HttpServerResponse.setHeader(response, "x-n", n);
 			}),
 		);
-		const app = testHttp(
+		const app = testApp(
 			{
 				routes: [
 					{
@@ -83,6 +83,29 @@ describe("testHttp", () => {
 		expect(await second.json()).toEqual({ n: 2 });
 		expect(second.headers.get("x-n")).toBe("2");
 		await app.dispose();
+	});
+
+	it("posts forms, and disposes with await using", async () => {
+		let disposed = false;
+		const echo = route({
+			POST: Effect.map(Input.body(Schema.Struct({ title: Schema.String })), ({ title }) => ({
+				title,
+			})),
+		});
+		{
+			await using app = testApp(
+				{
+					routes: [
+						{ path: "/", params: [], file: "app/routes/index.ts", module: { default: echo } },
+					],
+				},
+				Layer.effectDiscard(Effect.addFinalizer(() => Effect.sync(() => (disposed = true)))),
+			);
+			expect(await (await app.fetch("/", form({ title: "Ship" }))).json()).toEqual({
+				title: "Ship",
+			});
+		}
+		expect(disposed).toBe(true);
 	});
 });
 
@@ -137,7 +160,7 @@ describe("testDb", () => {
 				return yield* countNotes;
 			}).pipe(Effect.map(Option.getOrElse(() => 0))),
 		});
-		const app = testHttp(
+		const app = testApp(
 			{
 				routes: [
 					{

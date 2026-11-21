@@ -4,10 +4,10 @@ import { Effect, Schema, Stream } from "effect";
 import { html, raw } from "../src/html.ts";
 import { route, type RouteMethods } from "../src/http/route.ts";
 import { Datastar, encodeEvent } from "../src/pages/datastar.ts";
-import { testHttp } from "../src/testing.ts";
+import { testApp } from "../src/testing.ts";
 
 const serve = (methods: RouteMethods) =>
-	testHttp({
+	testApp({
 		routes: [
 			{
 				path: "/ds",

@@ -11,7 +11,7 @@ import type { ManifestRoute } from "../src/manifest.ts";
 import { Datastar } from "../src/pages/datastar.ts";
 import { action, page, pagesLayer, type Page } from "../src/pages/page.ts";
 import { Bus } from "../src/services/bus.ts";
-import { testHttp } from "../src/testing.ts";
+import { testApp } from "../src/testing.ts";
 
 const at = (path: `/${string}`, value: unknown, params: string[] = []) =>
 	({
@@ -71,7 +71,7 @@ const reset = () => Effect.runSync(Ref.set(TodosRef, ["Write"]));
 describe("page", () => {
 	it("renders the loader's data as HTML", async () => {
 		reset();
-		const app = testHttp({ routes: [at("/todos", todos)] });
+		const app = testApp({ routes: [at("/todos", todos)] });
 		const response = await app.fetch("/todos");
 		expect(response.status).toBe(200);
 		expect(response.headers.get("content-type")).toBe("text/html; charset=utf-8");
@@ -83,7 +83,7 @@ describe("page", () => {
 
 	it("runs an action and re-renders with its data", async () => {
 		reset();
-		const app = testHttp({ routes: [at("/todos", todos)] });
+		const app = testApp({ routes: [at("/todos", todos)] });
 		const response = await app.fetch("/todos?__action=add", form({ title: "Ship" }));
 		expect(response.status).toBe(200);
 		expect(await markup(response)).toContain("<p>Added Ship</p><");
@@ -93,7 +93,7 @@ describe("page", () => {
 
 	it("re-renders with the issues and the submitted values when the input doesn't decode", async () => {
 		reset();
-		const app = testHttp({ routes: [at("/todos", todos)] });
+		const app = testApp({ routes: [at("/todos", todos)] });
 		const response = await app.fetch("/todos?__action=add", form({ title: "" }));
 		expect(response.status).toBe(422);
 		expect(await markup(response)).toMatch(/<p> ?title: .+ \(\)<\/p>/);
@@ -107,7 +107,7 @@ describe("page", () => {
 			loader: Effect.succeed(redirect("/login")),
 			render: () => html`never`,
 		});
-		const app = testHttp({ routes: [at("/todos", todos), at("/private", gated)] });
+		const app = testApp({ routes: [at("/todos", todos), at("/private", gated)] });
 		const cleared = await app.fetch("/todos?__action=clear", form({}));
 		expect([cleared.status, cleared.headers.get("location")]).toEqual([303, "/done"]);
 		const login = await app.fetch("/private");
@@ -117,7 +117,7 @@ describe("page", () => {
 
 	it("answers bad action requests and other methods", async () => {
 		const plain = page({ render: () => html`<p>hi</p>` });
-		const app = testHttp({ routes: [at("/todos", todos), at("/plain", plain)] });
+		const app = testApp({ routes: [at("/todos", todos), at("/plain", plain)] });
 		expect((await app.fetch("/todos", form({}))).status).toBe(400);
 		const unknown = await app.fetch("/todos?__action=toString", form({}));
 		expect([unknown.status, await unknown.json()]).toEqual([
@@ -140,7 +140,7 @@ describe("page", () => {
 			}),
 			render: (ctx) => html`<h1>Todo ${ctx.data.id}</h1>`,
 		});
-		const app = testHttp({ routes: [at("/todos/:id", todo, ["id"])] });
+		const app = testApp({ routes: [at("/todos/:id", todo, ["id"])] });
 		expect(await (await app.fetch("/todos/1")).text()).toBe("<h1>Todo 1</h1>");
 		expect((await app.fetch("/todos/2")).status).toBe(404);
 		expect((await app.fetch("/todos/abc")).status).toBe(404);
@@ -148,7 +148,7 @@ describe("page", () => {
 	});
 
 	it("serves pages and routes from one tree, and refuses a file that is neither", async () => {
-		const both = testHttp({
+		const both = testApp({
 			routes: [
 				at("/", page({ render: () => html`<h1>Home</h1>` })),
 				at("/health", route({ GET: Effect.succeed({ ok: true }) })),
@@ -159,7 +159,7 @@ describe("page", () => {
 		await both.dispose();
 
 		// The app doesn't start: a broken file fails at startup, not at the first request.
-		const neither = testHttp({ routes: [at("/x", { render: () => html`` })] });
+		const neither = testApp({ routes: [at("/x", { render: () => html`` })] });
 		await expect(neither.fetch("/x")).rejects.toMatchObject({
 			code: "ROUTE_EXPORT",
 			message: "The default export is not a route or a page",
@@ -203,7 +203,7 @@ describe("get actions", () => {
 	});
 
 	it("runs a get action from the query string; the page itself has no POST", async () => {
-		const app = testHttp({ routes: [at("/counter", counter)] });
+		const app = testApp({ routes: [at("/counter", counter)] });
 		expect(await markup(await app.fetch("/counter?__action=search&q=hi"))).toMatch(/<\/p>\s*HI/);
 		const post = await app.fetch("/counter?__action=search", form({ q: "x" }));
 		expect([post.status, post.headers.get("allow")]).toEqual([405, "GET"]);
@@ -212,7 +212,7 @@ describe("get actions", () => {
 
 	it("keeps elements live with Datastar.watch", async () => {
 		const bus = Effect.runSync(Layer.build(Bus.memory).pipe(Effect.scoped));
-		const app = testHttp({ routes: [at("/counter", counter)] }, Layer.succeedContext(bus));
+		const app = testApp({ routes: [at("/counter", counter)] }, Layer.succeedContext(bus));
 
 		expect(await markup(await app.fetch("/counter"))).toContain(`@get('?__action=watch')`);
 

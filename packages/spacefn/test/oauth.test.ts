@@ -5,7 +5,7 @@ import { HttpClient, HttpClientResponse } from "effect/http";
 import { toBase64Url } from "../src/auth/encoding.ts";
 import { OAuth, type OAuthProvider } from "../src/auth/oauth.ts";
 import { route } from "../src/http/route.ts";
-import { testHttp } from "../src/testing.ts";
+import { testApp } from "../src/testing.ts";
 
 const client = {
 	clientId: "client-1",
@@ -41,7 +41,7 @@ const fakeProvider = (responses: Record<string, unknown>, tokenStatus = 200) => 
 };
 
 const serve = (provider: OAuthProvider, services: Layer.Layer<any>) =>
-	testHttp(
+	testApp(
 		{
 			routes: [
 				{

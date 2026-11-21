@@ -24,28 +24,30 @@ export const memoryServices: Layer.Layer<Blob | Bus | Kv | Queue | QueueInbox | 
 export const testEnv = (values: Record<string, unknown>): Layer.Layer<never> =>
 	ConfigProvider.layer(ConfigProvider.fromUnknown(values));
 
-export interface TestHttp {
+export interface TestApp extends AsyncDisposable {
 	/** Sends a request to the app. A path is resolved against `http://app.test`. */
 	readonly fetch: (input: string | Request, init?: RequestInit) => Promise<Response>;
+	/** Releases the services; `await using` does it at the end of the block. */
 	readonly dispose: () => Promise<void>;
 }
 
 /**
- * Serves routes and middleware in memory, with `services` (for example
- * `memoryServices`) provided to both, the way a target serves the app.
+ * Serves the manifest's pages, routes and middleware in memory, with
+ * `services` provided to them, the way a target serves the app. Pass the
+ * generated manifest, or only the routes a test needs.
  *
  * ```ts
- * const app = testHttp({ routes: [todosRoute] }, memoryServices);
- * const response = await app.fetch("/todos");
+ * await using app = testApp(manifest, Layer.mergeAll(testDb(MainDb), memoryServices));
+ * const response = await app.fetch("/?__action=add", form({ title: "Ship" }));
  * ```
  */
-export const testHttp = <E>(
+export const testApp = <A, E>(
 	manifest: {
 		readonly routes?: readonly Unchecked<ManifestRoute>[];
 		readonly middleware?: readonly Unchecked<ManifestMiddleware>[];
 	},
-	services?: Layer.Layer<any, E>,
-): TestHttp => {
+	services?: Layer.Layer<A, E>,
+): TestApp => {
 	const app = HttpRouter.toWebHandler(
 		httpLayer(
 			{ routes: manifest.routes ?? [], middleware: manifest.middleware ?? [] },
@@ -59,7 +61,18 @@ export const testHttp = <E>(
 				typeof input === "string" ? new Request(new URL(input, "http://app.test"), init) : input,
 			),
 		dispose: app.dispose,
+		[Symbol.asyncDispose]: app.dispose,
 	};
+};
+
+/** A form post, as a browser sends one: `app.fetch("/?__action=add", form({ title: "Ship" }))`. */
+export const form = (
+	fields: Readonly<Record<string, string>>,
+	init: Omit<RequestInit, "body"> = {},
+): RequestInit => {
+	const headers = new Headers(init.headers);
+	headers.set("content-type", "application/x-www-form-urlencoded");
+	return { method: "POST", ...init, headers, body: new URLSearchParams(fields).toString() };
 };
 
 /**
