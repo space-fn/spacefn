@@ -17,7 +17,7 @@ const interrupt = async (cli: ReturnType<typeof space>) => {
 
 describe("space docs", () => {
 	it("serves the app's docs and spacefn's until Ctrl-C", async () => {
-		const app = await fixtureApp("bun-app");
+		const app = await fixtureApp("services-bun");
 		const port = 4950 + Math.floor(Math.random() * 40);
 		const docs = space(app.root, ["docs", "--port", String(port)]);
 		try {
@@ -46,7 +46,7 @@ describe("space dev on Cloudflare (alchemy dev)", () => {
 	let dev: ReturnType<typeof space>;
 	let base: string;
 	beforeAll(async () => {
-		app = await fixtureApp("cloudflare-app");
+		app = await fixtureApp("services-cloudflare");
 		dev = space(app.root, ["dev", "--stage", "test"], { GREETING: "hello", API_KEY: "sekret" });
 		await until(() => /ready at (http:\/\/\S+)/.test(dev.log()));
 		base = /ready at (http:\/\/\S+)/.exec(dev.log())![1]!.replace(/\/$/, "");
@@ -87,7 +87,7 @@ describe("space dev on Cloudflare (alchemy dev)", () => {
 
 describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("space dev and build on Bun", () => {
 	it("runs route code on Bun, and stops it all on Ctrl-C", async () => {
-		const app = await fixtureApp("bun-app");
+		const app = await fixtureApp("services-bun");
 		const port = 4900 + Math.floor(Math.random() * 50);
 		const dev = space(app.root, ["dev", "--port", String(port)], {
 			SPACE_DATA_DIR: join(app.data, "dev"),
@@ -104,7 +104,7 @@ describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("space dev and bui
 	}, 60_000);
 
 	it("builds the client and the server bundle", async () => {
-		const app = await fixtureApp("bun-app");
+		const app = await fixtureApp("services-bun");
 		try {
 			const build = space(app.root, ["build"]);
 			expect(await build.exited).toBe(0);
@@ -121,9 +121,9 @@ const docker = process.env.SPACE_TEST_DOCKER === "1" && spawnSync("docker", ["in
 // Opt in with SPACE_TEST_DOCKER=1: it builds an image and runs a container in local Docker.
 describe.skipIf(!docker)("space deploy and destroy on Bun (Docker)", () => {
 	it("builds and deploys the app with its volume, then destroys it", async () => {
-		const app = await fixtureApp("bun-app");
+		const app = await fixtureApp("services-bun", { copy: true });
 		try {
-			// The fixture's Dockerfile takes dist/, as an app's own Dockerfile may.
+			// The example's Dockerfile takes dist/, as an app's own Dockerfile may.
 			expect(await space(app.root, ["build"]).exited).toBe(0);
 			const deploy = space(app.root, ["deploy", "--stage", "test", "--yes"]);
 			expect(await deploy.exited).toBe(0);

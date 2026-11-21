@@ -1,9 +1,0 @@
-{
-	"name": "cf-fixture",
-	"private": true,
-	"type": "module",
-	"imports": {
-		"#configs/*": "./configs/*",
-		"#space/*": "./.space/*"
-	}
-}

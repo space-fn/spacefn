@@ -13,8 +13,8 @@
 		"prepare": "git config core.hooksPath configs/hooks",
 		"publish": "./scripts/publish.sh",
 		"publish:vscode": "./scripts/publish-vscode.sh",
-		"typecheck": "pnpm -r --filter './packages/*' typecheck",
-		"test": "pnpm -r --filter './packages/*' test",
+		"typecheck": "pnpm -r --filter './packages/*' --filter './examples/*' typecheck",
+		"test": "pnpm -r --filter './packages/*' --filter './examples/*' test",
 		"examples": "node scripts/examples.ts && pnpm install",
 		"pack:check": "node scripts/pack-check.ts"
 	},

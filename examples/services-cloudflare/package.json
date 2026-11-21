@@ -1,0 +1,30 @@
+{
+	"name": "services-cloudflare",
+	"private": true,
+	"description": "Every binding a Cloudflare deploy creates, in use: D1, KV, R2, a queue, a cron, rate limits. spacefn's dev tests run it.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"effect": "catalog:",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:"
+	}
+}

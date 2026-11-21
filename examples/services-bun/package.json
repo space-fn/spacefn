@@ -1,0 +1,30 @@
+{
+	"name": "services-bun",
+	"private": true,
+	"description": "The services on Bun, deployed to Docker: KV, a queue, a cron, public/ and the client build. spacefn's dev, build and Docker tests run it.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"effect": "catalog:",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/docker": "catalog:",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:"
+	}
+}

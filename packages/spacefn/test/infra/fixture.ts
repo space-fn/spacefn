@@ -1,7 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, symlink } from "node:fs/promises";
+import { cp, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
@@ -10,34 +10,35 @@ import { gen } from "spacefn/internal/codegen";
 import { loadTarget } from "../../src/infra/vite-config.ts";
 
 const spacefn = fileURLToPath(new URL("../..", import.meta.url));
-const docs = join(spacefn, "..", "docs");
-
-/** Links `path` to `target`; test files set up the same fixture in parallel, so it may exist. */
-const link = async (target: string, path: string) => {
-	await rm(path, { force: true });
-	await symlink(target, path).catch((error: NodeJS.ErrnoException) => {
-		if (error.code !== "EEXIST") throw error;
-	});
-};
 
 /**
- * A fixture app under `test/infra/fixtures/`, generated, with spacefn and
- * spacefn-docs linked into its node_modules as an installed app has them.
+ * An app in the repo's `examples/`, a workspace package, freshly generated and
+ * without the local data of a previous run.
  */
-export const fixtureApp = async (name: string) => {
-	const root = join(spacefn, "test", "infra", "fixtures", name);
+export const fixtureApp = async (
+	name: "services-cloudflare" | "services-bun",
+	/** A copy in a temporary folder, for a test that builds while others serve the app. */
+	options: { readonly copy?: boolean } = {},
+) => {
+	const example = join(spacefn, "..", "..", "examples", name);
+	const root = options.copy ? await mkdtemp(join(tmpdir(), `${name}-`)) : example;
+	if (options.copy) {
+		const skip = new Set(["node_modules", ".space", ".alchemy", "dist"]);
+		await cp(example, root, { recursive: true, filter: (from) => !skip.has(basename(from)) });
+		await symlink(join(example, "node_modules"), join(root, "node_modules"));
+	}
 	await rm(join(root, ".space"), { recursive: true, force: true });
 	// Alchemy's state and local dev data, so each run starts empty.
 	await rm(join(root, ".alchemy"), { recursive: true, force: true });
-	await mkdir(join(root, "node_modules"), { recursive: true });
-	await link(spacefn, join(root, "node_modules", "spacefn"));
-	await link(docs, join(root, "node_modules", "spacefn-docs"));
 	await Effect.runPromise(Effect.flatMap(loadTarget(root), (target) => gen(root, "dev", target)));
 	const data = await mkdtemp(join(tmpdir(), `space-${name}-`));
 	return {
 		root,
 		data,
-		cleanup: () => rm(data, { recursive: true, force: true }),
+		cleanup: async () => {
+			await rm(data, { recursive: true, force: true });
+			if (options.copy) await rm(root, { recursive: true, force: true });
+		},
 	};
 };
 

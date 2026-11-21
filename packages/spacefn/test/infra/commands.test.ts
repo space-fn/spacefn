@@ -99,7 +99,7 @@ describe("clean", () => {
 
 describe("doctor", () => {
 	it("checks the app, .space/, the provider and the env", async () => {
-		const app = await fixtureApp("cloudflare-app");
+		const app = await fixtureApp("services-cloudflare");
 		try {
 			const checks = await doctor(app.root);
 			const text = formatChecks(checks);

@@ -1,8 +1,0 @@
-{
-	"name": "bun-fixture",
-	"private": true,
-	"type": "module",
-	"imports": {
-		"#space/*": "./.space/*"
-	}
-}

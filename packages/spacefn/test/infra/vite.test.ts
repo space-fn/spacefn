@@ -73,7 +73,7 @@ describe("assets", () => {
 describe("the Bun app", () => {
 	let app: Awaited<ReturnType<typeof fixtureApp>>;
 	beforeAll(async () => {
-		app = await fixtureApp("bun-app");
+		app = await fixtureApp("services-bun");
 		process.env.SPACE_DATA_DIR = join(app.data, "dev");
 	});
 	afterAll(() => app.cleanup());
