@@ -11,5 +11,7 @@ Apps that show spacefn's conventions in full: `app/` only wires, the code is in 
 | `datastar`            | Cloudflare | A live poll: html components with fixed ids, signals under `poll.`, a Rocket element |
 | `tailwind`            | Bun        | Tailwind v4: design tokens in `@theme`, a UI kit in `lib/ui/`, a live search         |
 | `lightningcss`        | Bun        | Plain CSS through Lightning CSS: nesting, custom media, `light-dark()`, lowered      |
+| `react`, `solid`      | Bun        | A client-only cart island on a server-rendered page, loaded by one page only         |
+| `vue`, `svelte`       | Cloudflare | The same island with Vue and Svelte single-file components                           |
 
 In the repo, `pnpm examples` remakes the starters from the `create-spacefn` template, and `pnpm install` gives every example the workspace's packages. Run one with `cd examples/<name> && pnpm dev`.

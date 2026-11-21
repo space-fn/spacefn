@@ -1,0 +1,35 @@
+{
+	"name": "vue",
+	"private": true,
+	"description": "A Vue island on a server-rendered spacefn page: a client-only cart, loaded only on the page that uses it.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"docs": "space docs",
+		"test": "vitest run --config configs/vitest.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"effect": "catalog:",
+		"spacefn": "workspace:*",
+		"vue": "3.5.45"
+	},
+	"devDependencies": {
+		"@alchemy.run/cloudflare": "catalog:",
+		"@vitejs/plugin-vue": "6.0.10",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vitest": "catalog:"
+	}
+}
