@@ -97,11 +97,11 @@ A folder in `queries/` groups its queries under its name, as deep as you like:
 
 ```txt
 app/db/main/queries/
-  list-todos.sql          db.listTodos()
+  list-todos.sql          MainDb.listTodos()
   todos/
-    mark-done.sql         db.todos.markDone({ id })
+    mark-done.sql         MainDb.todos.markDone({ id })
     stats/
-      count-done.sql      db.todos.stats.countDone()
+      count-done.sql      MainDb.todos.stats.countDone()
 ```
 
 A query and a folder can't share a name (`todos.sql` beside `todos/`). Files and folders starting with `_` are drafts and skipped.
@@ -110,16 +110,16 @@ A query and a folder can't share a name (`todos.sql` beside `todos/`). Files and
 
 ## Using a database
 
-Import the generated class and use it as a service:
+Import the generated class and call its queries on it:
 
 ```ts
 import MainDb from "#space/db/main.ts";
 
-const todos = yield * (yield * MainDb).listTodos();
-yield * (yield * MainDb).addTodo({ title: "Ship" });
+const todos = yield * MainDb.listTodos();
+yield * MainDb.addTodo({ title: "Ship" });
 ```
 
-Queries fail with Effect's `SqlError`, which says why (a constraint, for example), so you can handle it. A row that doesn't match the generated types is a defect. For SQL that doesn't fit a query file, get Effect's `SqlClient` with `` sql`...` `` templates; the VS Code extension checks those too.
+`yield* MainDb` gives every query at once, as a service to pass around. Queries fail with Effect's `SqlError`, which says why (a constraint, for example), so you can handle it. A row that doesn't match the generated types is a defect. For SQL that doesn't fit a query file, get Effect's `SqlClient` with `` sql`...` `` templates; the VS Code extension checks those too.
 
 ## Drivers
 

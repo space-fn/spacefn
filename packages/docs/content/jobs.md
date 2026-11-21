@@ -21,12 +21,12 @@ export default queue({
 Send to it from anywhere with `Queue.send("emails", { to, subject })`.
 
 - Each message is acknowledged once its handler succeeds and retried when it fails, so one bad message doesn't redeliver the batch. A body that doesn't decode is retried too.
-- After 3 retries a message is dropped; on Bun with an error in the log, on Cloudflare as the queue's settings say.
+- After 3 retries a message is dropped; on Bun with an error in the log, on Cloudflare as the consumer's `settings` in `configs/infra.ts` say (`maxRetries`, `deadLetterQueue`).
 - `message.attempts` is 1 on the first delivery; `message.id` identifies it in logs.
 - `concurrency` (default 1, in order) is how many messages of a batch run at once; `retryDelay` is the wait before a retry.
 - Delivery is at least once, so make handlers safe to run twice.
 
-On Cloudflare it's a Cloudflare Queue and a consumer, created on deploy. On Bun the queue is a table in the state database, consumed by the queue process; a message whose process died is delivered again about a minute later.
+On Cloudflare it's a Cloudflare Queue and a consumer, which `configs/infra.ts` creates for each file. On Bun the queue is a table in the state database, consumed by the queue process; a message whose process died is delivered again about a minute later.
 
 ## Crons
 

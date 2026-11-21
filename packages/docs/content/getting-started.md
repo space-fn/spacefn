@@ -34,12 +34,14 @@ app/
   client/site.css           bundled by Vite
 configs/
   env.ts                    the variables the app reads
+  infra.ts                  what a deploy creates: a plain Alchemy stack
   vite.ts                   the Vite config, with spacefn's plugin and the target
   vitest.ts, tsconfig.json
+  Dockerfile                the image a Bun deploy builds (Bun only)
 .space/                     generated; don't edit or commit it
 ```
 
-Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main/queries/` and `db.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](conventions.md).
+Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main/queries/` and `MainDb.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](conventions.md).
 
 ## Change something
 
