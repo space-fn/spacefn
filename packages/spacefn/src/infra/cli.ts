@@ -114,7 +114,8 @@ const dbAction = (
 		loadDotEnv(root);
 		const plan = yield* loadPlan(root, "dev", yield* loadTarget(root));
 		const dbs = Option.match(name, {
-			onNone: () => plan.db,
+			// A `manual` database has no one URL to migrate; --db names one for DB_<NAME>_URL.
+			onNone: () => plan.db.filter((db) => db.open !== "manual"),
 			onSome: (n) => plan.db.filter((db) => db.name === n),
 		});
 		if (dbs.length === 0)

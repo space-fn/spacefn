@@ -177,6 +177,26 @@ describe("planApp target and config checks", () => {
 		]);
 	});
 
+	it("opens a database at startup unless its config.json says manual", () => {
+		const result = plan(
+			tree({
+				db: [
+					dbFolder("main"),
+					dbFolder("tenant", { driver: "libsql", migrateOn: "startup", open: "manual" }),
+				],
+			}),
+		);
+		expect(result.db.map((d) => [d.name, d.open])).toEqual([
+			["main", "startup"],
+			["tenant", "manual"],
+		]);
+		expect(
+			planError(
+				tree({ db: [dbFolder("main", { driver: "d1", migrateOn: "startup", open: "later" })] }),
+			).code,
+		).toBe("DB_CONFIG_INVALID");
+	});
+
 	it("requires a valid config.json, and a driver the target has", () => {
 		const error = (json: object | string | null, target: "cloudflare" | "bun" = "cloudflare") =>
 			planError(tree({ db: [dbFolder("main", json)] }), config({ target }));

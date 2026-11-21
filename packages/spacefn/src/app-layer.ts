@@ -66,7 +66,8 @@ export const databases = (manifest: {
 		Effect.gen(function* () {
 			const connect = yield* DbConnector;
 			const layers: Layer.Layer<any, SpaceError>[] = [];
-			for (const entry of manifest.db) {
+			// A `manual` database is the app's to open, as for a database per tenant.
+			for (const entry of manifest.db.filter((db) => db.open !== "manual")) {
 				const Database = yield* databaseOf(entry);
 				const connection = connect(entry);
 				if (connection)

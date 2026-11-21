@@ -76,7 +76,9 @@ const checkTools = (plan: AppPlan): Check[] =>
 
 /** The bindings the Worker reads for the file conventions, by where they come from. */
 const expectedBindings = (plan: AppPlan) => [
-	...plan.db.filter((db) => db.driver === "d1").map((db) => [db.binding, "databases"] as const),
+	...plan.db
+		.filter((db) => db.driver === "d1" && db.open !== "manual")
+		.map((db) => [db.binding, "databases"] as const),
 	...plan.queues.map((queue) => [queue.binding, "queues"] as const),
 	...plan.durableObjects.map((unit) => [unit.binding, "durableObjects"] as const),
 	...plan.workflows.map((unit) => [unit.binding, "workflows"] as const),

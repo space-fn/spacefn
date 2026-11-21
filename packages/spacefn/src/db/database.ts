@@ -21,6 +21,13 @@ export interface QueryDefinition {
 /** When a database applies its migrations, from `migrateOn` in `app/db/<name>/config.json`. */
 export type MigrateOn = "startup" | "call";
 
+/**
+ * Who opens a database, from `open` in `app/db/<name>/config.json`. `startup`:
+ * `databases(manifest)`, once. `manual`: the app, with `<Name>Db.layer(connection)`,
+ * as for a database per tenant.
+ */
+export type DbOpen = "startup" | "manual";
+
 export interface DbDefinition {
 	readonly name: string;
 	readonly migrations: readonly Migration[];

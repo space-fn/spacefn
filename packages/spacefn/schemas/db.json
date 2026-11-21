@@ -4,7 +4,9 @@
 	"description": "app/db/<name>/config.json: how this database is reached and when it migrates.",
 	"type": "object",
 	"properties": {
-		"$schema": { "type": "string" },
+		"$schema": {
+			"type": "string"
+		},
 		"driver": {
 			"description": "d1: a D1 database (Cloudflare). durable-object: SQLite inside each Durable Object (Cloudflare). libsql: DB_<NAME>_URL, e.g. Turso, sqld or a file: (both targets).",
 			"enum": ["d1", "durable-object", "libsql"]
@@ -12,6 +14,10 @@
 		"migrateOn": {
 			"description": "startup: pending migrations apply when the app starts. call: only when your code calls <Name>Db.migrate(), or space db migrate runs.",
 			"enum": ["startup", "call"]
+		},
+		"open": {
+			"description": "startup (the default): databases(manifest) opens it when the app starts. manual: the app opens it with <Name>Db.layer(connection), as for a database per tenant; the infra makes nothing for it, and space db skips it unless --db names it.",
+			"enum": ["startup", "manual"]
 		}
 	},
 	"required": ["driver", "migrateOn"],

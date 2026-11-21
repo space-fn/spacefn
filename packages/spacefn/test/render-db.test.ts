@@ -28,6 +28,7 @@ describe("renderDb", () => {
 			name: "main",
 			driver: "d1",
 			migrateOn: "startup",
+			open: "startup",
 			binding: "DB_MAIN",
 			migrations,
 			// As scanQueries names queries/todos/mark-done.sql.
@@ -45,6 +46,7 @@ describe("renderDb", () => {
 			name: "main",
 			driver: "d1",
 			migrateOn: "startup",
+			open: "startup",
 			binding: "DB_MAIN",
 			migrations,
 			queries: await queries({

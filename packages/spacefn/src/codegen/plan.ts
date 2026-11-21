@@ -1,7 +1,7 @@
 import { Effect, Schema } from "effect";
 
 import { DbDriver, type AppConfig, type Target } from "../app-config.ts";
-import { RESERVED_QUERY_NAMES, type MigrateOn } from "../db/database.ts";
+import { RESERVED_QUERY_NAMES, type DbOpen, type MigrateOn } from "../db/database.ts";
 import { SpaceError } from "../errors.ts";
 import { isValidSchedule } from "../jobs/cron.ts";
 import type { AnalyzedQuery, Migration } from "../sql/index.ts";
@@ -50,6 +50,8 @@ export interface PlannedDb {
 	readonly name: string;
 	readonly driver: DbDriver;
 	readonly migrateOn: MigrateOn;
+	/** `startup`: `databases(manifest)` opens it. `manual`: the app opens it, with `<Name>Db.layer(...)`. */
+	readonly open: DbOpen;
 	readonly binding: string;
 	readonly migrations: readonly Migration[];
 	readonly queries: readonly AnalyzedQuery[];
@@ -252,6 +254,7 @@ const DbConfig = Schema.Struct({
 	$schema: Schema.optional(Schema.String),
 	driver: DbDriver,
 	migrateOn: Schema.Literals(["startup", "call"]),
+	open: Schema.optional(Schema.Literals(["startup", "manual"])),
 });
 
 const dbConfigOf = Effect.fnUntraced(function* (db: AppTree["db"][number], target: Target) {
@@ -275,7 +278,7 @@ const dbConfigOf = Effect.fnUntraced(function* (db: AppTree["db"][number], targe
 				new SpaceError({
 					code: "DB_CONFIG_INVALID",
 					message: error.message,
-					hint: `driver is d1, durable-object or libsql; migrateOn is startup or call. E.g. ${example}`,
+					hint: `driver is d1, durable-object or libsql; migrateOn is startup or call; open, if set, is startup or manual. E.g. ${example}`,
 					file,
 				}),
 		),
@@ -288,7 +291,7 @@ const planDb = Effect.fnUntraced(function* (tree: AppTree, target: Target) {
 			const name = yield* unitName("db", db.name);
 			yield* checkParamTypes(db);
 			yield* checkQueryNames(db);
-			const { driver, migrateOn } = yield* dbConfigOf(db, target);
+			const { driver, migrateOn, open = "startup" } = yield* dbConfigOf(db, target);
 			if (target !== "cloudflare" && CLOUDFLARE_ONLY_DRIVERS.has(driver))
 				return yield* fail(
 					"TARGET_UNSUPPORTED",
@@ -300,6 +303,7 @@ const planDb = Effect.fnUntraced(function* (tree: AppTree, target: Target) {
 				name,
 				driver,
 				migrateOn,
+				open,
 				binding: bindingName("DB", name),
 				migrations: db.migrations,
 				queries: db.queries,

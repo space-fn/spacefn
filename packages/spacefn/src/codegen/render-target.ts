@@ -81,7 +81,10 @@ export const renderInfra = (plan: AppPlan): string => {
 	const app = {
 		name: plan.name,
 		folders: plan.folders,
-		databases: plan.db.map(({ name, binding, driver }) => ({ name, binding, driver })),
+		// A `manual` database is the app's to create and open, so the infra has nothing to make.
+		databases: plan.db
+			.filter((db) => db.open !== "manual")
+			.map(({ name, binding, driver }) => ({ name, binding, driver })),
 		queues: plan.queues.map(({ name, binding }) => ({ name, binding })),
 		crons: [...new Set(plan.crons.map((cron) => cron.schedule))],
 		durableObjects: plan.durableObjects.map(({ className, binding }) => ({ className, binding })),

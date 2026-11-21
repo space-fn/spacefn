@@ -188,6 +188,16 @@ describe("databases()", () => {
 		}).pipe(Effect.provide(databases({ db: [entry("libsql")] }).pipe(Layer.provide(connector)))),
 	);
 
+	it.effect("leaves a manual database to the app", () =>
+		Effect.gen(function* () {
+			expect(Option.isNone(yield* Effect.serviceOption(NotesDb))).toBe(true);
+		}).pipe(
+			Effect.provide(
+				databases({ db: [{ ...entry("libsql"), open: "manual" }] }).pipe(Layer.provide(connector)),
+			),
+		),
+	);
+
 	it.effect("leaves out a database the target doesn't connect", () =>
 		Effect.gen(function* () {
 			expect(Option.isNone(yield* Effect.serviceOption(NotesDb))).toBe(true);

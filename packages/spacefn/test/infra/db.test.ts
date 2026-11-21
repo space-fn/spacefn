@@ -25,6 +25,7 @@ const main: PlannedDb = {
 	name: "main",
 	driver: "libsql",
 	migrateOn: "startup",
+	open: "startup",
 	binding: "DB_MAIN",
 	migrations: [
 		{

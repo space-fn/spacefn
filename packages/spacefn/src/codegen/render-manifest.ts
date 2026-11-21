@@ -41,7 +41,7 @@ export const renderManifest = (plan: AppPlan): string => {
 	);
 	const db = plan.db.map(
 		(d, i) =>
-			`\t\t{ name: ${str(d.name)}, driver: ${str(d.driver)}, binding: ${str(d.binding)}, module: ${use(`db${i}`, `./db/${d.name}.ts`)} },`,
+			`\t\t{ name: ${str(d.name)}, driver: ${str(d.driver)}, binding: ${str(d.binding)}, ${d.open === "manual" ? 'open: "manual", ' : ""}module: ${use(`db${i}`, `./db/${d.name}.ts`)} },`,
 	);
 	const env = plan.env ? [`\tenv: ${ref("env", "configs/env.ts")},`] : [];
 	const list = (key: string, lines: string[]) =>
