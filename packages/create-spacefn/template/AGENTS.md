@@ -1,6 +1,6 @@
 # Notes for coding agents
 
-This is a spacefn app, on Effect 4. spacefn's docs and examples for the installed version are in `node_modules/spacefn-docs/`: read them before guessing an API.
+This is a spacefn app, on Effect 4. spacefn's docs (`content/`) and example apps (`examples/`) for the installed version are in `node_modules/spacefn-docs/`: read them before guessing an API.
 
 - `app/` only wires the runtime: its files connect code from `modules/` and `lib/` to routes, pages, jobs and the entry, with no logic or markup of their own.
 - A feature's logic, views, client code and tests go in `modules/<feature>/`. Code shared by features (UI kit, design tokens, helpers) goes in `lib/`, which doesn't import `modules/`.

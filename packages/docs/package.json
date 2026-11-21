@@ -1,7 +1,7 @@
 {
 	"name": "spacefn-docs",
 	"version": "0.11.0-alpha.0",
-	"description": "spacefn's docs and the reader `space docs` serves them with",
+	"description": "spacefn's docs and examples, and the reader `space docs` serves them with",
 	"keywords": [
 		"docs",
 		"spacefn"
@@ -17,7 +17,8 @@
 	"files": [
 		"dist",
 		"assets",
-		"content"
+		"content",
+		"examples"
 	],
 	"type": "module",
 	"exports": {
@@ -34,6 +35,8 @@
 	},
 	"scripts": {
 		"build": "tsdown",
+		"prepack": "node scripts/examples.ts",
+		"postpack": "node -e \"fs.rmSync('examples', { recursive: true, force: true })\"",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},

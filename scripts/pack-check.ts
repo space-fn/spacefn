@@ -7,6 +7,7 @@
 import { spawn, spawnSync, type SpawnSyncOptions } from "node:child_process";
 import {
 	copyFileSync,
+	existsSync,
 	mkdirSync,
 	mkdtempSync,
 	readdirSync,
@@ -46,6 +47,7 @@ const checkManifest = (tarball: string) => {
 	if (/"(catalog|workspace):/.test(text))
 		throw new Error(`${tarball}: catalog: or workspace: left in`);
 	if (text.includes("./src/")) throw new Error(`${tarball}: points at ./src/ instead of dist/`);
+	return join(dir, "package");
 };
 
 /** Waits for `url` to answer 200, within 20 seconds. */
@@ -104,7 +106,18 @@ try {
 	const spacefn = pack("spacefn");
 	const docs = pack("docs", "spacefn-docs");
 	const create = pack("create-spacefn");
-	for (const tarball of [spacefn, docs, create]) checkManifest(tarball);
+	for (const tarball of [spacefn, create]) checkManifest(tarball);
+	// spacefn-docs carries the examples, for people and agents to read, without what's generated.
+	const docsDir = checkManifest(docs);
+	for (const target of targets)
+		if (!existsSync(join(docsDir, "examples", `starter-${target}`, "AGENTS.md")))
+			throw new Error(`${docs}: examples/starter-${target} is missing`);
+	if (
+		/"(catalog|workspace):/.test(
+			readFileSync(join(docsDir, "examples", "starter-bun", "package.json"), "utf8"),
+		)
+	)
+		throw new Error(`${docs}: an example's package.json has catalog: or workspace: left in`);
 
 	const scaffolder = mkdtempSync(join(work, "create-"));
 	sh("tar", ["-xzf", create, "-C", scaffolder]);
