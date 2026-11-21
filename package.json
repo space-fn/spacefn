@@ -8,8 +8,8 @@
 	"type": "module",
 	"scripts": {
 		"check": "pnpm fmt --check && pnpm lint && pnpm typecheck",
-		"fmt": "oxfmt -c configs/oxfmt.json '!legacy/**'",
-		"lint": "oxlint -c configs/oxlint.json --ignore-pattern 'legacy/**' --ignore-pattern 'packages/create-spacefn/template/**'",
+		"fmt": "oxfmt -c configs/oxfmt.json",
+		"lint": "oxlint -c configs/oxlint.json --ignore-pattern 'packages/create-spacefn/template/**'",
 		"prepare": "git config core.hooksPath configs/hooks",
 		"publish": "./scripts/publish.sh",
 		"publish:vscode": "./scripts/publish-vscode.sh",
