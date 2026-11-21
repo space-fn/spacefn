@@ -43,7 +43,7 @@ Keep `loader` and `actions` before `render`, so TypeScript can type `ctx`. Write
 
 ## The loader
 
-An `Effect` that reads input (`Input.params`, `Input.query`), uses services, and returns `ctx.data`. It can fail with the errors of [Routes](routes.md) (`NotFound` is a 404 page), or return a response to answer instead of rendering, such as `redirect("/login")`.
+An `Effect` that reads input (`Input.params`, `Input.query`), uses services, and returns `ctx.data`. It can fail with the errors of [Routes](2-routes.md) (`NotFound` is a 404 page), or return a response to answer instead of rendering, such as `redirect("/login")`.
 
 ## Actions
 
@@ -69,7 +69,7 @@ ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.r
 
 ## Scripts, styles and public files
 
-A page loads the browser code it needs with `assets("name")`, for the entries in `app/client/`. [Frontend](frontend.md) covers them, `public/`, CSS, client components from React, Vue, Solid or Svelte, and how to write Datastar components.
+A page loads the browser code it needs with `assets("name")`, for the entries in `app/client/`. [Frontend](4-frontend.md) covers them, `public/`, CSS, client components from React, Vue, Solid or Svelte, and how to write Datastar components.
 
 ## Live updates with Datastar
 
@@ -87,13 +87,13 @@ live: action({
 html`<main data-init="@get('${ctx.actions.live.url}')">${ctx.data.list}</main>`;
 ```
 
-When the page loads, Datastar opens the action. `watch` subscribes to the `todos` topic on the [Bus](services.md), sends `todoList`'s HTML, and sends it again after each message, until the tab closes. Datastar swaps elements in by `id`, so give the rendered elements one. Anything that changes the todos publishes the topic, from a page, a route, a queue consumer or a cron:
+When the page loads, Datastar opens the action. `watch` subscribes to the `todos` topic on the [Bus](6-services.md), sends `todoList`'s HTML, and sends it again after each message, until the tab closes. Datastar swaps elements in by `id`, so give the rendered elements one. Anything that changes the todos publishes the topic, from a page, a route, a queue consumer or a cron:
 
 ```ts
 yield * Bus.publish("todos", "changed");
 ```
 
-A burst of messages causes one re-render. How to name the ids and signals, and split the markup into components, is in [Frontend](frontend.md#datastar). For more control, `Datastar.sse(stream)` sends your own events, built with `Datastar.patchElements`, `removeElements`, `patchSignals` and `executeScript`. `Datastar.signals(schema)` decodes the signals a request sent, and `Datastar.isRequest` tells a Datastar request from a plain one.
+A burst of messages causes one re-render. How to name the ids and signals, and split the markup into components, is in [Frontend](4-frontend.md#datastar). For more control, `Datastar.sse(stream)` sends your own events, built with `Datastar.patchElements`, `removeElements`, `patchSignals` and `executeScript`. `Datastar.signals(schema)` decodes the signals a request sent, and `Datastar.isRequest` tells a Datastar request from a plain one.
 
 ## Error pages
 

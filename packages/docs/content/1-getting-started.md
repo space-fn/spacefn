@@ -50,7 +50,7 @@ configs/
 .space/                     generated; don't edit or commit it
 ```
 
-Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main/queries/` and `MainDb.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](conventions.md).
+Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main/queries/` and `MainDb.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](2-conventions.md).
 
 ## Change something
 
@@ -91,4 +91,4 @@ npm test           # every *.test.ts in app/, modules/ and lib/
 npm run deploy     # stage `prod`
 ```
 
-`deploy` runs `configs/infra.ts`, a plain Alchemy stack. On Cloudflare it creates the D1 database, the queues and the rest in your account; Alchemy asks you to sign in the first time. On Bun it builds an image with `configs/Dockerfile` and runs it in Docker. See [Deploying](deploy.md).
+`deploy` runs `configs/infra.ts`, a plain Alchemy stack. On Cloudflare it creates the D1 database, the queues and the rest in your account; Alchemy asks you to sign in the first time. On Bun it builds an image with `configs/Dockerfile` and runs it in Docker. See [Deploying](4-deploy.md).

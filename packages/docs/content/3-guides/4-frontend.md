@@ -1,10 +1,10 @@
 # Frontend
 
-Pages are server-rendered `html` (see [Pages](pages.md)). What runs in the browser is bundled by Vite from `app/client/`, and each page loads only what it uses. Every section below has a tested app in `examples/`, which also ships in `node_modules/spacefn-docs/examples/`.
+Pages are server-rendered `html` (see [Pages](3-pages.md)). What runs in the browser is bundled by Vite from `app/client/`, and each page loads only what it uses. Every section below has a tested app in `examples/`, which also ships in `node_modules/spacefn-docs/examples/`.
 
 ## Where browser code goes
 
-The same split as the rest of the app (see [Conventions](conventions.md#where-code-goes)):
+The same split as the rest of the app (see [Conventions](../2-conventions.md#where-code-goes)):
 
 ```txt
 app/client/main.ts            an entry: imports from modules/ and lib/, and starts them
@@ -145,7 +145,7 @@ Put what the server and the component share, such as types and formatting, in a 
 
 ## Datastar
 
-[Datastar](https://data-star.dev) adds behavior to server-rendered HTML with `data-*` attributes, and the server answers its requests by patching elements and signals (see [Pages](pages.md#live-updates-with-datastar)). These conventions keep the markup and the server in step; `examples/datastar` uses all of them.
+[Datastar](https://data-star.dev) adds behavior to server-rendered HTML with `data-*` attributes, and the server answers its requests by patching elements and signals (see [Pages](3-pages.md#live-updates-with-datastar)). These conventions keep the markup and the server in step; `examples/datastar` uses all of them.
 
 **Components are functions from props to `html`**, in `modules/<feature>/views.ts`, or `lib/ui/` when every feature uses them. They take what they show and the URLs they call as props, not the page's `ctx`, so a live update can render them too:
 

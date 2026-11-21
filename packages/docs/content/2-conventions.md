@@ -102,7 +102,7 @@ Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for
 - **Private files:** a file or folder starting with `_` is never a page, route or job, such as `app/routes/_shared.ts`. Most such code belongs in `modules/` or `lib/` instead.
 - **Tests:** `*.test.ts` and `*.spec.ts` files are skipped too, so tests sit next to what they test.
 - **Dev-only and prod-only files:** `debug.dev.ts` exists only in `space dev`, `banner.prod.ts` only in builds and deploys.
-- **Middleware:** `_middleware.ts` in `app/routes/` wraps every request; in a folder below, it wraps that folder's pages and routes. See [Routes](routes.md#middleware).
+- **Middleware:** `_middleware.ts` in `app/routes/` wraps every request; in a folder below, it wraps that folder's pages and routes. See [Routes](3-guides/2-routes.md#middleware).
 - **Queues and crons** are named after their file: `app/queues/emails.ts` is the queue `emails`.
 
 ## Imports
@@ -121,6 +121,6 @@ Imports from the app root are [subpath imports](https://nodejs.org/api/packages.
 
 - `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
 - `#modules/...` and `#lib/...` are your own code. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
-- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Pages](pages.md#scripts-styles-and-public-files)). The Vite plugin provides it.
+- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Frontend](3-guides/4-frontend.md#loading-entries)). The Vite plugin provides it.
 
 Use relative imports with the `.ts` extension inside a folder.

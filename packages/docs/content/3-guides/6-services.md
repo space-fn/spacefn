@@ -12,7 +12,7 @@ spacefn gives every app five services. Call them through their class, `yield* Kv
 
 On Cloudflare, `configs/infra.ts` creates the KV namespace and the R2 bucket behind `Kv` and `Blob` (R2 must be enabled on the account); remove the one the app doesn't use.
 
-On Bun, the web server, the queue consumers and the crons run in separate processes, so these services keep their data in a shared libSQL **state database**: `.space/data/state.db` locally, or `SPACE_STATE_URL` (and `SPACE_STATE_AUTH_TOKEN`) for a remote one. See [Deploying](deploy.md).
+On Bun, the web server, the queue consumers and the crons run in separate processes, so these services keep their data in a shared libSQL **state database**: `.space/data/state.db` locally, or `SPACE_STATE_URL` (and `SPACE_STATE_AUTH_TOKEN`) for a remote one. See [Deploying](../4-deploy.md).
 
 ## Kv
 
@@ -41,7 +41,7 @@ yield * Blob.delete(`avatars/${userId}.png`);
 yield * Queue.send("emails", { to: "ada@example.com" }, { delay: "5 minutes" });
 ```
 
-The queue is named after its consumer file, `app/queues/emails.ts`; sending to a queue without one is an error. Bodies must survive structured cloning. See [Queues and crons](jobs.md).
+The queue is named after its consumer file, `app/queues/emails.ts`; sending to a queue without one is an error. Bodies must survive structured cloning. See [Queues and crons](7-jobs.md).
 
 ## Bus
 
@@ -49,7 +49,7 @@ The queue is named after its consumer file, `app/queues/emails.ts`; sending to a
 yield * Bus.publish("todos", "changed");
 ```
 
-Every subscriber to the topic gets the message; nothing is stored, so only those subscribed right now see it. Pages subscribe through `Datastar.watch` (see [Pages](pages.md)). On Bun, subscribers in the same process get it at once and those in other processes within about a quarter of a second.
+Every subscriber to the topic gets the message; nothing is stored, so only those subscribed right now see it. Pages subscribe through `Datastar.watch` (see [Pages](3-pages.md)). On Bun, subscribers in the same process get it at once and those in other processes within about a quarter of a second.
 
 ## RateLimiter
 
@@ -80,6 +80,6 @@ export default app(manifest, {
 });
 ```
 
-See [The entry](entry.md).
+See [The entry](1-entry.md).
 
 On Cloudflare, `CloudflareEnv` from `spacefn/cloudflare` gives bindings spacefn doesn't wrap, such as your Durable Objects (`DO_CHAT_ROOM` for `app/durable-objects/chat-room.ts`) or ones you add in `configs/infra.ts`.

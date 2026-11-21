@@ -9,10 +9,10 @@
 | `space deploy [--stage S] [--yes]`                           | `alchemy deploy configs/infra.ts` for stage `S` (default `prod`). `--yes` skips the approval.                                                                         |
 | `space destroy [--stage S] [--yes]`                          | `alchemy destroy configs/infra.ts`: deletes everything stage `S` deployed, its data included.                                                                         |
 | `space gen [--watch] [--prod]`                               | Writes `.space/` from `app/` and `configs/`. `--prod` takes `.prod.ts` files instead of `.dev.ts`.                                                                    |
-| `space db status\|migrate\|rollback [--db name] [--steps N]` | Migrations of libSQL databases. See [Database](database.md).                                                                                                          |
+| `space db status\|migrate\|rollback [--db name] [--steps N]` | Migrations of libSQL databases. See [Database](../3-guides/5-database.md).                                                                                            |
 | `space doctor`                                               | Checks Node, the config, `.space/`, the target's tools, the bindings in `configs/infra.ts` and `configs/env.ts`, and says what to fix.                                |
 | `space upgrade`                                              | Updates spacefn, its Alchemy provider and `spacefn-docs`, then regenerates.                                                                                           |
-| `space docs [--port N]`                                      | Serves your `docs/` and spacefn's docs at `http://localhost:4321/`. `space dev` serves them too, at `/__space/docs/`. See [Writing docs](writing-docs.md).            |
+| `space docs [--port N]`                                      | Serves your `docs/` and spacefn's docs at `http://localhost:4321/`. `space dev` serves them too, at `/__space/docs/`. See [Writing docs](3-writing-docs.md).          |
 | `space clean`                                                | Deletes generated files and builds. Keeps local data.                                                                                                                 |
 
 Every command prints errors with a code, the file and a hint, for example:

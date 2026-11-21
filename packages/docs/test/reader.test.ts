@@ -63,7 +63,7 @@ describe("an app with docs/", () => {
 	});
 
 	test("serves spacefn's docs under spacefn/, with edit links into the repo", async () => {
-		const html = await (await get(`${server.url}spacefn/writing-docs.md`)).text();
+		const html = await (await get(`${server.url}spacefn/reference/writing-docs.md`)).text();
 		expect(html).toContain('class="source-tab active" href="/spacefn/"');
 		expect(html).toContain('<div class="code-group">');
 		expect(html).toContain('"mermaid":"https://cdn.jsdelivr.net/npm/mermaid@');
@@ -83,7 +83,7 @@ describe("an app with docs/", () => {
 		const deploys = index.find((page) => page.href === "/runbooks/deploys.md");
 		expect(deploys?.source).toBe("todo-app");
 		expect(deploys?.sections.map((section) => section.id)).toEqual([null, "rolling-back"]);
-		expect(index.some((page) => page.href === "/spacefn/writing-docs.md")).toBe(true);
+		expect(index.some((page) => page.href === "/spacefn/reference/writing-docs.md")).toBe(true);
 	});
 
 	test("answers 404 inside the reader, and refuses paths out of docs/", async () => {

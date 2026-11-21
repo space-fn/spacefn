@@ -45,7 +45,7 @@ yield * rateLimit(`sign-in:${email}`, { limit: 5, window: "15 minutes" });
 yield * rateLimit(`sign-in:${yield * clientAddress}`, { limit: 20, window: "15 minutes" });
 ```
 
-Past the limit it fails with `TooManyRequests`, a `429` with `Retry-After`. Limit by what you protect: the account and the address. See [Services](services.md).
+Past the limit it fails with `TooManyRequests`, a `429` with `Retry-After`. Limit by what you protect: the account and the address. See [Services](6-services.md).
 
 ## Two-factor codes (TOTP)
 

@@ -6,7 +6,7 @@ space deploy --stage staging # another copy, with its own resources
 space destroy --stage staging
 ```
 
-`space deploy` generates `.space/` for production and runs `alchemy deploy configs/infra.ts --stage <stage>`. [Alchemy](https://alchemy.run) creates or updates what the stack declares and shows the plan for you to approve. `--yes` skips the prompt, for CI. Each stage is a separate copy of the app, with its own databases and queues. Variables come from `.env.<stage>` and the environment; see [Configuration](config.md).
+`space deploy` generates `.space/` for production and runs `alchemy deploy configs/infra.ts --stage <stage>`. [Alchemy](https://alchemy.run) creates or updates what the stack declares and shows the plan for you to approve. `--yes` skips the prompt, for CI. Each stage is a separate copy of the app, with its own databases and queues. Variables come from `.env.<stage>` and the environment; see [Configuration](5-reference/1-config.md).
 
 ## `configs/infra.ts`
 

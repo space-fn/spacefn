@@ -1,5 +1,4 @@
 ---
-order: 90
 description: Markdown, HTML, code groups, callouts and diagrams in the docs reader
 ---
 
@@ -190,9 +189,9 @@ Add `app/db/main/queries/todos/mark-done.sql`; `space gen` types it.
 
 <div class="cards">
 
-- [Database](database.md)<br>Migrations and typed queries
-- [Pages](pages.md)<br>Server-rendered pages and forms
-- [Testing](testing.md)<br>Pages, routes and queries in memory
+- [Database](../3-guides/5-database.md)<br>Migrations and typed queries
+- [Pages](../3-guides/3-pages.md)<br>Server-rendered pages and forms
+- [Testing](../3-guides/9-testing.md)<br>Pages, routes and queries in memory
 
 </div>
 
