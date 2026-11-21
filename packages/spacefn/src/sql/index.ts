@@ -3,6 +3,7 @@ export { splitStatements } from "./split.ts";
 export { namedParams, type NamedSql } from "./params.ts";
 export {
 	inferMode,
+	namespaceName,
 	parseQueryFile,
 	queryName,
 	type QueryFile,

@@ -66,6 +66,19 @@ AND title LIKE '%' || :q || '%'
 ORDER BY id;
 ```
 
+A folder in `queries/` groups its queries under its name, as deep as you like:
+
+```txt
+app/db/main/queries/
+  list-todos.sql          db.listTodos()
+  todos/
+    mark-done.sql         db.todos.markDone({ id })
+    stats/
+      count-done.sql      db.todos.stats.countDone()
+```
+
+A query and a folder can't share a name (`todos.sql` beside `todos/`). Files and folders starting with `_` are drafts and skipped.
+
 `space gen` checks each query against the migrations and reports a wrong column or table with its file. The VS Code extension shows the same as you type.
 
 ## Using a database

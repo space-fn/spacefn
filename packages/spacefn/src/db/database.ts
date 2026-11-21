@@ -42,9 +42,26 @@ export type QueryFn<T extends QueryTypes> = {} extends T["params"]
 	? (params?: T["params"]) => Effect.Effect<QueryResult<T>, SqlError.SqlError>
 	: (params: T["params"]) => Effect.Effect<QueryResult<T>, SqlError.SqlError>;
 
-/** A database's typed queries, one function per query file. */
+/** The first part of each dotted name: a folder in `queries/`. */
+type Namespaces<Q> = keyof Q extends infer K
+	? K extends `${infer Head}.${string}`
+		? Head
+		: never
+	: never;
+
+/** The queries inside folder `N`, named without it. */
+type Inside<Q, N extends string> = {
+	[K in keyof Q as K extends `${N}.${infer Rest}` ? Rest : never]: Q[K];
+};
+
+/**
+ * A database's typed queries, one function per query file. A folder in
+ * `queries/` is a namespace: `todos/mark-done.sql` is `db.todos.markDone`.
+ */
 export type Database<Q extends Record<keyof Q, QueryTypes>> = {
-	readonly [K in keyof Q]: QueryFn<Q[K]>;
+	readonly [K in keyof Q as K extends `${string}.${string}` ? never : K]: QueryFn<Q[K]>;
+} & {
+	readonly [N in Namespaces<Q>]: Database<Inside<Q, N> & Record<keyof Inside<Q, N>, QueryTypes>>;
 };
 
 // SQLite has no boolean or blob types it returns consistently: booleans are
@@ -132,13 +149,17 @@ const makeQuery = (connection: DbConnection, db: string, name: string, query: Qu
 export const makeDatabase = <Q extends Record<keyof Q, QueryTypes>>(
 	connection: DbConnection,
 	definition: DbDefinition,
-): Database<Q> =>
-	Object.fromEntries(
-		Object.entries(definition.queries).map(([name, query]) => [
-			name,
-			makeQuery(connection, definition.name, name, query),
-		]),
-	) as Database<Q>;
+): Database<Q> => {
+	const root: Record<string, unknown> = {};
+	for (const [name, query] of Object.entries(definition.queries)) {
+		const path = name.split(".");
+		let level = root;
+		for (const folder of path.slice(0, -1))
+			level = (level[folder] ??= {}) as Record<string, unknown>;
+		level[path.at(-1)!] = makeQuery(connection, definition.name, name, query);
+	}
+	return root as Database<Q>;
+};
 
 export interface DatabaseLayerOptions {
 	/** Apply pending migrations while the layer builds. Default `true`. */

@@ -11,7 +11,10 @@ export interface QueryPart {
 }
 
 export interface QueryFile {
-	/** Function name, from the file name: `find-todo.sql` gives `findTodo`. */
+	/**
+	 * Function name, from the file name: `find-todo.sql` gives `findTodo`. A
+	 * scan of `queries/` prefixes subfolders: `todos/mark-done.sql` is `todos.markDone`.
+	 */
 	name: string;
 	/** `-- :one` / `:many` / `:exec` if the file has one, else read from the statement. */
 	mode: QueryMode;
@@ -33,7 +36,12 @@ const CASE_OPEN = /^--\s*case\s*$/;
 const WHEN = /^--\s*when\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/;
 const CASE_CLOSE = /^--\s*end\s*$/;
 
-/** `add-todo.sql`, `add_todo.sql` and `addTodo.sql` all give `addTodo`. */
+const camel = (words: string) =>
+	words.replace(/[-_]([a-zA-Z0-9])/g, (_, char: string) => char.toUpperCase());
+
+const FOLDER_NAME = /^[a-z][a-zA-Z0-9]*(?:[-_][a-zA-Z0-9]+)*$/;
+
+/** `add-todo.sql`, `add_todo.sql` and `addTodo.sql` all give `addTodo`. Only the file name counts. */
 export function queryName(file: string): string {
 	const base = file.split(/[\\/]/).pop() ?? file;
 	const match = FILE_NAME.exec(base);
@@ -42,7 +50,17 @@ export function queryName(file: string): string {
 			file,
 			hint: "Name the file with letters and digits, words split by - or _, starting with a lowercase letter: add-todo.sql.",
 		});
-	return match[1]!.replace(/[-_]([a-zA-Z0-9])/g, (_, char: string) => char.toUpperCase());
+	return camel(match[1]!);
+}
+
+/** A folder in `queries/` is a namespace: `todo-items/` gives `todoItems`. */
+export function namespaceName(folder: string, file: string): string {
+	if (!FOLDER_NAME.test(folder))
+		throw new SqlError("QUERY_NAME", `The folder "${folder}" doesn't give a namespace name`, {
+			file,
+			hint: "Name it like a query file: letters and digits, words split by - or _, starting with a lowercase letter.",
+		});
+	return camel(folder);
 }
 
 /**

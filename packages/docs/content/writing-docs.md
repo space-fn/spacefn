@@ -178,11 +178,11 @@ Add `app/db/main/migrations/0002_add_done.sql`.
 
 ### Write the query
 
-Add `app/db/main/queries/todos/markDone.sql`; `space gen` types it.
+Add `app/db/main/queries/todos/mark-done.sql`; `space gen` types it.
 
 ### Call it
 
-`yield* Main.todos.markDone({ id })` in a route or a page action.
+`yield* (yield* MainDb).todos.markDone({ id })` in a route or a page action.
 
 </div>
 

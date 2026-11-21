@@ -22,7 +22,15 @@ const paramType = (declared: string | undefined) => {
 	return match ? tsType(match[1] as string, match[2] === "?") : "unknown";
 };
 
-const pascal = (name: string) => name.charAt(0).toUpperCase() + name.slice(1);
+/** `todos.markDone` gives `TodosMarkDone`, for its `Params` and `Row` types. */
+const pascal = (name: string) =>
+	name
+		.split(".")
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join("");
+
+/** An object key: `addTodo`, or `"todos.markDone"` for a query in a folder. */
+const key = (name: string) => (name.includes(".") ? JSON.stringify(name) : name);
 const str = JSON.stringify;
 
 /** Parameters used only inside `-- case` arms may be left out. */
@@ -60,7 +68,7 @@ const renderQuery = (query: AnalyzedQuery) => {
 		(p) => `\t\t\t{ sql: ${str(p.sql)}, params: ${str(p.paramNames)}, gate: ${str(p.gate)} },`,
 	);
 	return [
-		`\t${query.name}: {`,
+		`\t${key(query.name)}: {`,
 		`\t\tmode: ${str(query.mode)},`,
 		`\t\tcolumns: ${columnMap(query)},`,
 		"\t\tparts: [",
@@ -85,7 +93,7 @@ export const renderDb = (db: PlannedDb): string => {
 	);
 	const map = db.queries.map(
 		(q) =>
-			`\t${q.name}: { params: ${pascal(q.name)}Params; row: ${q.mode === "exec" ? "never" : `${pascal(q.name)}Row`}; mode: ${str(q.mode)} };`,
+			`\t${key(q.name)}: { params: ${pascal(q.name)}Params; row: ${q.mode === "exec" ? "never" : `${pascal(q.name)}Row`}; mode: ${str(q.mode)} };`,
 	);
 	const className = dbClassName(db.name);
 	return [

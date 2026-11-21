@@ -20,6 +20,25 @@ const queries = async (files: Record<string, string>) => {
 };
 
 describe("renderDb", () => {
+	it("quotes the key of a query in a folder and prefixes its types", async () => {
+		const [query] = await queries({
+			"mark-done.sql": "-- @param id number\nUPDATE todos SET done = 1 WHERE id = :id",
+		});
+		const source = renderDb({
+			name: "main",
+			driver: "d1",
+			binding: "DB_MAIN",
+			migrations,
+			// As scanQueries names queries/todos/mark-done.sql.
+			queries: [{ ...query!, name: "todos.markDone" }],
+		});
+		expect(source).toContain("export interface TodosMarkDoneParams {");
+		expect(source).toContain('\t"todos.markDone": {\n\t\tmode: "exec",');
+		expect(source).toContain(
+			'\t"todos.markDone": { params: TodosMarkDoneParams; row: never; mode: "exec" };',
+		);
+	});
+
 	it("renders migrations, query parts and Params/Row types", async () => {
 		const source = renderDb({
 			name: "main",

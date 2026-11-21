@@ -24,6 +24,36 @@ test("reads every query in name order and skips drafts", async () => {
 	expect((await scanQueries(dir, migrations)).map((q) => q.name)).toEqual(["a", "b"]);
 });
 
+test("names the queries in a folder after it, skipping draft folders", async () => {
+	await mkdir(join(dir, "todo-items", "stats"), { recursive: true });
+	await mkdir(join(dir, "_drafts"));
+	await writeFile(join(dir, "todo-items", "mark-done.sql"), "UPDATE todos SET title = 'x'");
+	await writeFile(join(dir, "todo-items", "stats", "count.sql"), "SELECT id FROM todos");
+	await writeFile(join(dir, "_drafts", "nope.sql"), "not a query");
+	await writeFile(join(dir, "list.sql"), "SELECT id FROM todos");
+	expect((await scanQueries(dir, migrations)).map((q) => q.name)).toEqual([
+		"list",
+		"todoItems.markDone",
+		"todoItems.stats.count",
+	]);
+});
+
+test("a query and a folder cannot share a name", async () => {
+	await mkdir(join(dir, "todos"));
+	await writeFile(join(dir, "todos.sql"), "SELECT id FROM todos");
+	await writeFile(join(dir, "todos", "list.sql"), "SELECT id FROM todos");
+	await expect(scanQueries(dir, migrations)).rejects.toMatchObject({
+		code: "QUERY_DUP",
+		message: "todos is given by both todos/list.sql and todos.sql",
+	});
+});
+
+test("a folder must give a namespace name", async () => {
+	await mkdir(join(dir, "Todos"));
+	await writeFile(join(dir, "Todos", "list.sql"), "SELECT id FROM todos");
+	await expect(scanQueries(dir, migrations)).rejects.toMatchObject({ code: "QUERY_NAME" });
+});
+
 test("returns nothing without a queries folder", async () => {
 	expect(await scanQueries(join(dir, "nope"), migrations)).toEqual([]);
 });

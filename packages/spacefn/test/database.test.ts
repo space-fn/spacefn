@@ -46,6 +46,17 @@ const queries = {
 		columns: { title: "number" },
 		parts: [{ sql: "SELECT title FROM todos", params: [], gate: null }],
 	},
+	// queries/todos/mark-done.sql and queries/todos/stats/count-done.sql
+	"todos.markDone": {
+		mode: "exec",
+		columns: {},
+		parts: [{ sql: "UPDATE todos SET done = 1 WHERE id = ?", params: ["id"], gate: null }],
+	},
+	"todos.stats.countDone": {
+		mode: "one",
+		columns: { n: "number" },
+		parts: [{ sql: "SELECT count(*) AS n FROM todos WHERE done = 1", params: [], gate: null }],
+	},
 } as const;
 
 interface Row {
@@ -72,6 +83,12 @@ interface Queries {
 		mode: "exec";
 	};
 	badRow: { params: Record<string, never>; row: { readonly title: number }; mode: "many" };
+	"todos.markDone": { params: { readonly id: number }; row: never; mode: "exec" };
+	"todos.stats.countDone": {
+		params: Record<string, never>;
+		row: { readonly n: number };
+		mode: "one";
+	};
 }
 
 class MainDb extends database<MainDb, Queries>()({ name: "main", migrations, queries }) {}
@@ -100,6 +117,24 @@ describe("database", () => {
 				Option.some({ title: "Ship", icon: new Uint8Array([1, 2]) }),
 			);
 			expect(yield* db.findTodo({ id: 9 })).toEqual(Option.none());
+		}).pipe(Effect.provide(Main)),
+	);
+
+	it.effect("nests the queries of a folder under its name", () =>
+		Effect.gen(function* () {
+			const db = yield* MainDb;
+			yield* db.addTodo({ title: "Write", note: null, done: false, icon: null });
+			yield* db.todos.markDone({ id: 1 });
+			expect(yield* db.todos.stats.countDone()).toEqual(Option.some({ n: 1 }));
+			// @ts-expect-error the dotted name is only in the generated data
+			expect(db["todos.markDone"]).toBeUndefined();
+			const typesOnly = () => {
+				// @ts-expect-error a folder is not a query
+				db.todos();
+				// @ts-expect-error markDone needs its id
+				db.todos.markDone();
+			};
+			expect(typesOnly).toBeTypeOf("function");
 		}).pipe(Effect.provide(Main)),
 	);
 
