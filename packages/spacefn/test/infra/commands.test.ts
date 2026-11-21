@@ -105,7 +105,8 @@ describe("doctor", () => {
 			const text = formatChecks(checks);
 			expect(text).toContain("✓ configs/vite.ts and app/ check out (target cloudflare)");
 			expect(text).toContain("✓ .space/ is up to date");
-			expect(text).toContain("✓ @alchemy.run/cloudflare is installed");
+			expect(text).toContain("✓ alchemy and @alchemy.run/cloudflare are installed");
+			expect(text).toContain("✓ .alchemy/ is in .gitignore");
 			expect(text).toContain("✓ configs/infra.ts binds what app/ needs");
 			// The fixture's .env doesn't exist, so GREETING is missing.
 			expect(text).toMatch(/! configs\/env.ts doesn't read in dev .*GREETING/);

@@ -41,11 +41,21 @@ const checkGenerated = async (root: string, plan: AppPlan): Promise<Check> => {
 	return ok(".space/ is up to date");
 };
 
+/** `configs/infra.ts` imports Alchemy and the target's provider, so the app installs both. */
 const checkProvider = (root: string, plan: AppPlan): Check => {
 	const provider = plan.target === "cloudflare" ? "@alchemy.run/cloudflare" : "@alchemy.run/docker";
-	if (packageDir(root, provider)) return ok(`${provider} is installed`);
-	const install = addCommand(detectPackageManager(root), [provider], true).join(" ");
-	return fail(`${provider} isn't installed; dev and deploy need it: ${install}`);
+	const missing = ["alchemy", provider].filter((name) => !packageDir(root, name));
+	if (missing.length === 0) return ok(`alchemy and ${provider} are installed`);
+	const install = addCommand(detectPackageManager(root), missing, true).join(" ");
+	return fail(`${missing.join(" and ")} isn't installed; configs/infra.ts needs it: ${install}`);
+};
+
+/** Alchemy's local state lands in `.alchemy/` at the root: deploy records, not for git. */
+const checkStateIgnored = async (root: string): Promise<Check> => {
+	const gitignore = await readFile(join(root, ".gitignore"), "utf8").catch(() => "");
+	return gitignore.split("\n").some((line) => /^\/?\.alchemy\/?\s*$/.test(line))
+		? ok(".alchemy/ is in .gitignore")
+		: warn("Add .alchemy/ to .gitignore: Alchemy keeps local state and dev data there");
 };
 
 const has = (command: string, args: string[]) => spawnSync(command, args).status === 0;
@@ -141,6 +151,7 @@ export const doctor = async (root: string): Promise<readonly Check[]> => {
 	checks.push(await checkGenerated(root, plan));
 	checks.push(checkProvider(root, plan));
 	checks.push(await checkInfra(root, plan));
+	checks.push(await checkStateIgnored(root));
 	checks.push(...checkTools(plan));
 	checks.push(await checkEnv(root, plan));
 	return checks;
