@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 
 import * as spacefn from "../src/index.ts";
+import * as libsqlEntry from "../src/libsql.ts";
 import * as runtime from "../src/runtime.ts";
 import * as testing from "../src/testing.ts";
 
@@ -24,6 +25,10 @@ describe("public exports", () => {
 			"applyMigrations",
 		] as const)
 			expect(runtime[name], name).toBeTypeOf("function");
+	});
+
+	it("gives app code libSQL over HTTP, for databases it opens itself", () => {
+		expect(libsqlEntry.libsql).toBeTypeOf("function");
 	});
 
 	it("gives tests an in-memory database", () => {

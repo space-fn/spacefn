@@ -31,6 +31,7 @@
 		"./testing": "./src/testing.ts",
 		"./assets": "./src/assets.ts",
 		"./platform": "./src/platform.ts",
+		"./libsql": "./src/libsql.ts",
 		"./internal/codegen": "./src/codegen/index.ts",
 		"./internal/runtime": "./src/runtime.ts",
 		"./internal/sql": "./src/sql/index.ts",
@@ -56,6 +57,10 @@
 			"./assets": {
 				"types": "./dist/assets.d.mts",
 				"import": "./dist/assets.mjs"
+			},
+			"./libsql": {
+				"types": "./dist/libsql.d.mts",
+				"import": "./dist/libsql.mjs"
 			},
 			"./platform": {
 				"types": "./dist/platform.d.mts",
