@@ -29,7 +29,7 @@ import {
 	type DbReport,
 } from "./db.ts";
 import { devBun } from "./dev.ts";
-import { docsMismatch, installDocs, loadDocs } from "./docs.ts";
+import { docsMismatch, installDocs, loadDocs, spacefnVersion } from "./docs.ts";
 import { doctor, formatChecks } from "./doctor.ts";
 import { detectPackageManager } from "./package-manager.ts";
 import { run } from "./process.ts";
@@ -381,7 +381,7 @@ Command.make("space").pipe(
 		docsCommand,
 		cleanCommand,
 	]),
-	Command.run({ version: "0.11.0-alpha.0" }),
+	Command.run({ version: spacefnVersion() }),
 	Effect.provide(NodeServices.layer),
 	NodeRuntime.runMain,
 );
