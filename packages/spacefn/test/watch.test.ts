@@ -30,6 +30,7 @@ describe("watchGen", () => {
 					yield* write({
 						"package.json": JSON.stringify({ name: "todo" }),
 						".gitignore": ".space/\n",
+						"app/entry.ts": "",
 						"app/routes/index.ts": "",
 					});
 					const results =

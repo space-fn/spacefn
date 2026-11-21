@@ -63,7 +63,6 @@ export interface AppPlan {
 	/** The app's own code folders beside `app/`, from `package.json` `imports`. */
 	readonly folders: readonly string[];
 	readonly env: boolean;
-	readonly layers: boolean;
 	readonly infraConfig: boolean;
 	/** Files in `app/routes/` (routes and pages), most specific first. */
 	readonly routes: readonly PlannedRoute[];
@@ -317,6 +316,13 @@ export const planApp = Effect.fnUntraced(function* (
 	mode: Mode,
 ): Effect.fn.Return<AppPlan, SpaceError> {
 	yield* checkGitignore(tree);
+	if (!tree.entry)
+		return yield* fail(
+			"ENTRY_MISSING",
+			"app/entry.ts is missing",
+			'Every app has one: export default app(manifest, { services: [platform, ...] }), with manifest from "#space/manifest.ts" and platform from "spacefn/platform". See the docs on the entry.',
+			"app/entry.ts",
+		);
 	const durableObjects = yield* planClasses("durable-objects", tree.durableObjects, "DO");
 	const workflows = yield* planClasses("workflows", tree.workflows, "WF");
 	yield* checkTarget(config.target, "durable-objects", durableObjects);
@@ -328,7 +334,6 @@ export const planApp = Effect.fnUntraced(function* (
 		mode,
 		folders: config.folders,
 		env: tree.env,
-		layers: tree.layers,
 		infraConfig: tree.infraConfig,
 		routes: yield* planRoutes(tree, mode),
 		middleware: planMiddleware(tree.routes),

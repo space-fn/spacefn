@@ -1,16 +1,16 @@
 import { ConfigProvider, Duration, Effect, Layer, ManagedRuntime } from "effect";
 import { FetchHttpClient, HttpRouter, HttpServer } from "effect/http";
 import { OtlpExporter } from "effect/observability";
-import { formatSpaceError, SpaceError, type SpaceManifest } from "spacefn";
+import { formatSpaceError, SpaceError, type SpaceApp, type SpaceManifest } from "spacefn";
 import {
-	appLayer,
+	appServices,
 	consumeBatch,
 	cronOf,
+	DbConnector,
 	httpLayer,
 	noConsumer,
 	queueConsumerOf,
 	runSchedule,
-	telemetry,
 	type Delivery,
 } from "spacefn/runtime";
 
@@ -27,27 +27,43 @@ import { blobLayer, kvLayer, queueLayer } from "./storage.ts";
  */
 export const QUEUE_NAMES_VAR = "SPACE_QUEUE_NAMES";
 
-/** Every service the target provides, on this Worker's bindings. */
-export const platformLayer = (manifest: Pick<SpaceManifest, "name" | "queues">, env: WorkerEnv) =>
-	Layer.mergeAll(
-		kvLayer(env),
-		blobLayer(env),
-		queueLayer(env, manifest.queues),
-		busLayer(env),
-		rateLimiterLayer(env),
-		Layer.succeed(CloudflareEnv, env),
-		FetchHttpClient.layer,
-		telemetry(manifest.name).pipe(Layer.provide(FetchHttpClient.layer)),
-	).pipe(Layer.provideMerge(ConfigProvider.layer(configProvider(env))));
+/**
+ * The Cloudflare target's services, for the entry's `services` (through
+ * `spacefn/platform`): Kv, Blob, Queue, Bus and RateLimiter on the Worker's
+ * bindings, an `HttpClient`, how databases connect (D1 or libSQL), and the
+ * Worker's vars and secrets as config. It reads the bindings from
+ * `CloudflareEnv`, which the Worker provides.
+ */
+export const platform = (manifest: Pick<SpaceManifest, "queues">) =>
+	Layer.unwrap(
+		Effect.gen(function* () {
+			const env = yield* CloudflareEnv;
+			return Layer.mergeAll(
+				kvLayer(env),
+				blobLayer(env),
+				queueLayer(env, manifest.queues),
+				busLayer(env),
+				rateLimiterLayer(env),
+				FetchHttpClient.layer,
+				Layer.succeed(DbConnector, connectFor(env)),
+			).pipe(Layer.provideMerge(ConfigProvider.layer(configProvider(env))));
+		}),
+	);
 
-const makeApp = (manifest: SpaceManifest, env: WorkerEnv) => {
+const makeApp = (space: SpaceApp, env: WorkerEnv) => {
+	const { manifest } = space;
+	// The Worker's bindings, for the platform and for the app's own code.
 	const runtime = ManagedRuntime.make(
-		appLayer(manifest, { platform: platformLayer(manifest, env), connect: connectFor(env) }),
+		appServices(space).pipe(Layer.provideMerge(Layer.succeed(CloudflareEnv, env))) as Layer.Layer<
+			any,
+			unknown
+		>,
 	);
 	const http = HttpRouter.toWebHandler(
-		httpLayer(manifest, Layer.effectContext(runtime.contextEffect)).pipe(
-			Layer.provide(HttpServer.layerServices),
-		),
+		httpLayer(manifest, Layer.effectContext(runtime.contextEffect), {
+			before: space.options.before ?? [],
+			routes: space.options.routes ?? [],
+		}).pipe(Layer.provide(HttpServer.layerServices)),
 		{ memoMap: runtime.memoMap },
 	);
 	const queueNames: Record<string, string> = (() => {
@@ -59,7 +75,9 @@ const makeApp = (manifest: SpaceManifest, env: WorkerEnv) => {
 			runtime
 				.runPromise(
 					Effect.gen(function* () {
-						yield* (yield* OtlpExporter.Flusher).flush;
+						// Telemetry is the entry's choice; without it there is nothing to flush.
+						const flusher = yield* Effect.serviceOption(OtlpExporter.Flusher);
+						if (flusher._tag === "Some") yield* flusher.value.flush;
 					}),
 				)
 				.catch(() => {}),
@@ -90,20 +108,23 @@ const delivery = (message: Message): Delivery => ({
 });
 
 /**
- * The Worker for a manifest: what `.space/entry.ts` default-exports. The app
- * (its services, migrated databases and routes) is built once per isolate, on
- * the first event, and shared by requests, queue batches and crons. Telemetry
- * is flushed with `waitUntil` after each, so it doesn't delay the response.
+ * Runs `app/entry.ts` as a Worker: what `.space/entry.ts` default-exports. The
+ * app (its services, migrated databases and routes) is built once per
+ * isolate, on the first event, and shared by requests, queue batches and
+ * crons. Telemetry is flushed with `waitUntil` after each, so it doesn't delay
+ * the response. The entry's `cloudflare.handlers` are added as they are.
  */
-export const worker = (manifest: SpaceManifest): ExportedHandler<WorkerEnv> => {
+export const worker = (space: SpaceApp): ExportedHandler<WorkerEnv> => {
+	const { manifest } = space;
 	const apps = new WeakMap<object, ReturnType<typeof makeApp>>();
 	const appFor = (env: WorkerEnv) => {
 		let app = apps.get(env);
-		if (!app) apps.set(env, (app = makeApp(manifest, env)));
+		if (!app) apps.set(env, (app = makeApp(space, env)));
 		return app;
 	};
 
 	return {
+		...(space.options.cloudflare?.handlers as ExportedHandler<WorkerEnv> | undefined),
 		async fetch(request, env, ctx) {
 			const app = appFor(env);
 			try {

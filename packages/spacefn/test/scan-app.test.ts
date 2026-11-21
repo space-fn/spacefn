@@ -26,7 +26,7 @@ describe("scanApp", () => {
 		Effect.gen(function* () {
 			expect(yield* scanApp(root)).toEqual({
 				env: false,
-				layers: false,
+				entry: false,
 				infraConfig: false,
 				routes: [],
 				queues: [],
@@ -57,7 +57,7 @@ describe("scanApp", () => {
 			});
 			const tree = yield* scanApp(root);
 			expect(tree.env).toBe(true);
-			expect(tree.layers).toBe(false);
+			expect(tree.entry).toBe(false);
 			expect(tree.routes).toEqual([
 				"_middleware.ts",
 				"index.ts",

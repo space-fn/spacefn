@@ -24,7 +24,8 @@ export interface DbFolder {
  */
 export interface AppTree {
 	readonly env: boolean;
-	readonly layers: boolean;
+	/** Whether `app/entry.ts` exists; every app has one. */
+	readonly entry: boolean;
 	/** Whether `configs/infra.ts` exists, for the generated infra to merge. */
 	readonly infraConfig: boolean;
 	/** Every file under `app/routes/`, recursively: routes, pages, `_middleware.ts` and private files. */
@@ -165,7 +166,7 @@ export const scanApp = Effect.fnUntraced(function* (
 
 	return {
 		env: yield* exists(join(root, "configs", "env.ts")),
-		layers: yield* exists(join(app, "layers.ts")),
+		entry: yield* exists(join(app, "entry.ts")),
 		infraConfig: yield* exists(join(root, "configs", "infra.ts")),
 		routes: yield* listFiles(join(app, "routes"), true),
 		queues: yield* flat("queues"),

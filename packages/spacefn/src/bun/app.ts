@@ -1,7 +1,7 @@
 import { Cause, Context, Effect, Fiber, Layer, ManagedRuntime, Option } from "effect";
 import { FetchHttpClient, HttpRouter, HttpServer, HttpServerRequest } from "effect/http";
-import { formatSpaceError, SpaceError, type SpaceManifest } from "spacefn";
-import { appLayer, httpLayer, telemetry } from "spacefn/runtime";
+import { formatSpaceError, SpaceError, type SpaceApp, type SpaceManifest } from "spacefn";
+import { appServices, DbConnector, httpLayer } from "spacefn/runtime";
 
 import { blobLayer } from "./blob.ts";
 import { busLayer } from "./bus.ts";
@@ -12,14 +12,19 @@ import { consumeQueues, queueLayer } from "./queue.ts";
 import { rateLimiterLayer } from "./rate-limiter.ts";
 import { SpaceState } from "./state.ts";
 
-/** Every service the target provides. Config comes from the environment (Bun loads `.env`). */
-export const platformLayer = (manifest: Pick<SpaceManifest, "name" | "queues">) =>
+/**
+ * The Bun target's services, for the entry's `services` (through
+ * `spacefn/platform`): Kv, Blob, Queue, Bus and RateLimiter on the app's state
+ * database and files, an `HttpClient`, and how databases connect (libSQL).
+ * Config comes from the environment (Bun loads `.env`).
+ */
+export const platform = (manifest: Pick<SpaceManifest, "queues">) =>
 	Layer.mergeAll(kvLayer, rateLimiterLayer, queueLayer(manifest.queues), busLayer).pipe(
 		// Kept in the app's context too: the queue consumers claim from it.
 		Layer.provideMerge(SpaceState.layer),
 		Layer.merge(blobLayer()),
 		Layer.merge(FetchHttpClient.layer),
-		Layer.merge(telemetry(manifest.name).pipe(Layer.provide(FetchHttpClient.layer))),
+		Layer.merge(Layer.succeed(DbConnector, connect)),
 	);
 
 /** The client's address from the server, for `clientAddress`. */
@@ -27,6 +32,8 @@ class ClientIp extends Context.Service<ClientIp, string | undefined>()("spacefn/
 
 export interface BunApp {
 	readonly manifest: SpaceManifest;
+	/** The entry's `bun` options. */
+	readonly options: NonNullable<SpaceApp["options"]["bun"]>;
 	/** The app's services, built once, on first use; queue and cron processes run on it too. */
 	readonly runtime: ManagedRuntime.ManagedRuntime<any, unknown>;
 	/** Answers a request. A failure to start is logged and answered with a 500. */
@@ -44,17 +51,21 @@ export const logError = (error: unknown) =>
 	console.error(error instanceof SpaceError ? formatSpaceError(error) : error);
 
 /**
- * The app for a manifest: what `.space/app.ts` default-exports. The Vite dev
- * server calls its `fetch`; `serve` runs it in production.
+ * Runs `app/entry.ts` on Bun: what `.space/app.ts` default-exports for the
+ * Vite dev server, which calls its `fetch`. `serve` runs it in production,
+ * with `extra` services of its own (the client build's files).
  */
-export const app = (manifest: SpaceManifest): BunApp => {
+export const bunApp = (space: SpaceApp, extra: Layer.Any = Layer.empty): BunApp => {
+	const { manifest } = space;
+	// What the entry's services still need is a startup error, reported by fetch and serve.
 	const runtime = ManagedRuntime.make(
-		appLayer(manifest, { platform: platformLayer(manifest), connect }),
+		Layer.merge(appServices(space), extra as Layer.Layer<any>) as Layer.Layer<any, unknown>,
 	);
 	const http = HttpRouter.toWebHandler(
-		httpLayer(manifest, Layer.effectContext(runtime.contextEffect)).pipe(
-			Layer.provide(HttpServer.layerServices),
-		),
+		httpLayer(manifest, Layer.effectContext(runtime.contextEffect), {
+			before: space.options.before ?? [],
+			routes: space.options.routes ?? [],
+		}).pipe(Layer.provide(HttpServer.layerServices)),
 		{
 			memoMap: runtime.memoMap,
 			middleware: (handle) =>
@@ -70,6 +81,7 @@ export const app = (manifest: SpaceManifest): BunApp => {
 	);
 	return {
 		manifest,
+		options: space.options.bun ?? {},
 		runtime,
 		fetch: async (request, clientIp) => {
 			try {

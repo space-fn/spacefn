@@ -1,6 +1,7 @@
-// A small app as `space gen` would wire it, run by serve.test.ts under Bun.
+// A small app as `space gen` and app/entry.ts would wire it, run by serve.test.ts under Bun.
 import { Duration, Effect, Option, Schema, Stream } from "effect";
 import {
+	app,
 	Bus,
 	clientAddress,
 	cron,
@@ -9,11 +10,13 @@ import {
 	Queue,
 	queue,
 	route,
+	databases,
+	staticFiles,
 	type SpaceManifest,
 } from "spacefn";
 import { database } from "spacefn/runtime";
 
-import { app } from "../../../src/bun/index.ts";
+import { platform } from "../../../src/bun/index.ts";
 
 interface NotesQueries {
 	addNote: { params: { readonly text: string }; row: never; mode: "exec" };
@@ -132,4 +135,8 @@ const manifest = {
 	db: [{ name: "notes", driver: "libsql", binding: "DB_NOTES", module: { default: NotesDb } }],
 } as const satisfies SpaceManifest;
 
-export default app(manifest);
+// As the scaffolded app/entry.ts has it, without telemetry.
+export default app(manifest, {
+	services: [platform(manifest), databases(manifest)],
+	before: [staticFiles()],
+});

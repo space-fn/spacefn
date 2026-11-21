@@ -24,6 +24,7 @@ const write = (files: Record<string, string>) =>
 const app = {
 	"package.json": JSON.stringify({ name: "todo" }),
 	".gitignore": "node_modules\n.space/\n",
+	"app/entry.ts": "",
 	"app/routes/index.ts": "",
 	"app/durable-objects/room.ts": "",
 	"app/db/main/config.json": '{ "driver": "d1", "migrateOn": "startup" }',

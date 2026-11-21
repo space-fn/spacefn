@@ -8,6 +8,7 @@ Start with [Getting started](getting-started.md), then read what you need:
 | ------------------------------------- | -------------------------------------------------------------------- |
 | [Getting started](getting-started.md) | Create an app, run it, deploy it                                     |
 | [Conventions](conventions.md)         | Which folder holds what, and how file names become URLs              |
+| [The entry](entry.md)                 | `app/entry.ts`: services, middleware, extra routes, `onError`        |
 | [Routes and middleware](routes.md)    | HTTP endpoints, reading input, errors, middleware, CSRF              |
 | [Pages](pages.md)                     | Server-rendered pages, form actions, live updates with Datastar      |
 | [Database](database.md)               | Migrations, typed SQL queries, drivers, `space db`                   |

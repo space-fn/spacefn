@@ -23,6 +23,7 @@ You need Node 22 or later. A Bun app also needs [Bun](https://bun.sh), and Docke
 
 ```txt
 app/
+  entry.ts                  what runs with the rest: services, middleware, onError
   routes/index.ts           the page at /
   routes/_layout.ts         the HTML around every page (private: no page of its own)
   routes/index.test.ts      its test

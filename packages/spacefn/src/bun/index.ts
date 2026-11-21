@@ -1,4 +1,4 @@
-export { app, platformLayer, type BunApp } from "./app.ts";
+export { bunApp, platform, type BunApp } from "./app.ts";
 export { blobLayer } from "./blob.ts";
 export { busLayer } from "./bus.ts";
 export { connect, dataDir, libsqlDatabase, libsqlFromConfig } from "./db.ts";

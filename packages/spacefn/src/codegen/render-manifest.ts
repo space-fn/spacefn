@@ -44,7 +44,6 @@ export const renderManifest = (plan: AppPlan): string => {
 			`\t\t{ name: ${str(d.name)}, driver: ${str(d.driver)}, binding: ${str(d.binding)}, module: ${use(`db${i}`, `./db/${d.name}.ts`)} },`,
 	);
 	const env = plan.env ? [`\tenv: ${ref("env", "configs/env.ts")},`] : [];
-	const layers = plan.layers ? [`\tlayers: ${ref("layers", "app/layers.ts")},`] : [];
 	const list = (key: string, lines: string[]) =>
 		lines.length === 0 ? [`\t${key}: [],`] : [`\t${key}: [`, ...lines, "\t],"];
 
@@ -52,7 +51,6 @@ export const renderManifest = (plan: AppPlan): string => {
 		"export const manifest = {",
 		`\tname: ${str(plan.name)},`,
 		...env,
-		...layers,
 		...list("routes", routes),
 		...list("middleware", middleware),
 		...list("queues", queues),

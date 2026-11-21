@@ -2,9 +2,11 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { stat } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 
-import { Cause, Effect, Exit, Fiber } from "effect";
+import { Cause, Effect, Exit, Fiber, Layer } from "effect";
+import type { SpaceApp } from "spacefn";
+import { StaticFiles } from "spacefn/runtime";
 
-import { logError, type BunApp } from "./app.ts";
+import { bunApp, logError, type BunApp } from "./app.ts";
 import { runCrons } from "./cron.ts";
 import { consumeQueues } from "./queue.ts";
 
@@ -12,11 +14,7 @@ import { consumeQueues } from "./queue.ts";
 export const ROLE_VAR = "SPACE_ROLE";
 
 export interface ServeOptions {
-	/** Default `PORT`, else 3000. */
-	readonly port?: number;
-	/** Default `HOST`, else every interface. */
-	readonly hostname?: string;
-	/** The built client assets, served before routes. Default `dist/client`. */
+	/** The client build, for the entry's `staticFiles()`. Default `dist/client`. */
 	readonly client?: string;
 }
 
@@ -86,11 +84,15 @@ const supervise = (role: "queues" | "crons") => {
 };
 
 /** A file of the client build, or undefined to let the app answer. Hashed `/assets/` are cached for good. */
-const staticFile = async (root: string, request: Request): Promise<Response | undefined> => {
-	if (request.method !== "GET" && request.method !== "HEAD") return undefined;
+const staticFile = async (
+	root: string,
+	method: string,
+	url: string,
+): Promise<Response | undefined> => {
+	if (method !== "GET" && method !== "HEAD") return undefined;
 	let pathname: string;
 	try {
-		pathname = decodeURIComponent(new URL(request.url).pathname);
+		pathname = decodeURIComponent(url);
 	} catch {
 		return undefined;
 	}
@@ -99,7 +101,7 @@ const staticFile = async (root: string, request: Request): Promise<Response | un
 	const info = await stat(path).catch(() => undefined);
 	if (!info?.isFile()) return undefined;
 	const file = Bun.file(path);
-	return new Response(request.method === "HEAD" ? null : file, {
+	return new Response(method === "HEAD" ? null : file, {
 		headers: {
 			"content-type": file.type,
 			"content-length": String(info.size),
@@ -110,16 +112,15 @@ const staticFile = async (root: string, request: Request): Promise<Response | un
 	});
 };
 
-const serveWeb = async (app: BunApp, options: ServeOptions, children: ("queues" | "crons")[]) => {
+const serveWeb = async (app: BunApp, children: ("queues" | "crons")[]) => {
 	await start(app);
-	const root = resolve(options.client ?? "dist/client");
+	const { options } = app;
 	const server = Bun.serve({
 		port: options.port ?? Number(process.env.PORT ?? 3000),
 		hostname: options.hostname ?? process.env.HOST ?? "0.0.0.0",
 		// Bun's default of 10s would cut live pages, whose keepalive comes every 15s.
-		idleTimeout: 60,
-		fetch: async (request, server) =>
-			(await staticFile(root, request)) ?? app.fetch(request, server.requestIP(request)?.address),
+		idleTimeout: options.idleTimeout ?? 60,
+		fetch: (request, server) => app.fetch(request, server.requestIP(request)?.address),
 	});
 	console.log(`${app.manifest.name} is listening on ${server.url}`);
 	const supervised = children.map(supervise);
@@ -146,24 +147,29 @@ const runJobs = async (app: BunApp, program: Effect.Effect<unknown, unknown, any
 };
 
 /**
- * Runs the app in production: what `.space/server.ts` calls. By default this
- * process serves HTTP (the client build, then routes) and starts the queue
+ * Runs `app/entry.ts` in production: what `.space/server.ts` calls. By default this
+ * process serves HTTP (with the client build for `staticFiles()`) and starts the queue
  * consumers and the crons in child processes, so a slow or crashing job never
  * blocks a request. Set `SPACE_ROLE` to `web`, `queues` or `crons` to run one
  * part per process or container instead; run crons in one only. SIGTERM stops
  * everything gracefully.
  */
-export const serve = (app: BunApp, options: ServeOptions = {}): Promise<void> => {
+export const serve = (space: SpaceApp, options: ServeOptions = {}): Promise<void> => {
+	const root = resolve(options.client ?? "dist/client");
+	const app = bunApp(
+		space,
+		Layer.succeed(StaticFiles, { lookup: (method, path) => staticFile(root, method, path) }),
+	);
 	const role = process.env[ROLE_VAR];
 	switch (role) {
 		case undefined:
 		case "":
-			return serveWeb(app, options, [
+			return serveWeb(app, [
 				...(app.manifest.queues.length > 0 ? (["queues"] as const) : []),
 				...(app.manifest.crons.length > 0 ? (["crons"] as const) : []),
 			]);
 		case "web":
-			return serveWeb(app, options, []);
+			return serveWeb(app, []);
 		case "queues":
 			return runJobs(app, consumeQueues(app.manifest));
 		case "crons":

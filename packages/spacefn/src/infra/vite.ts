@@ -55,6 +55,10 @@ const generate = async (app: App, mode: "dev" | "prod", target: Target) => {
 export const ASSETS_ID = "spacefn/assets";
 const RESOLVED_ASSETS_ID = "\0space:assets";
 
+/** What `app/entry.ts` imports for the target's services. */
+export const PLATFORM_ID = "spacefn/platform";
+const RESOLVED_PLATFORM_ID = "\0space:platform";
+
 /** Packages with native code: left out of the Bun server bundle and installed beside it. */
 const NATIVE = ["@libsql/client"];
 
@@ -181,8 +185,12 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			server = dev;
 			if (dev.config.mode !== "test") await serveDocs(dev, app.root);
 		},
-		resolveId: (id) => (id === ASSETS_ID ? RESOLVED_ASSETS_ID : undefined),
+		resolveId: (id) =>
+			id === ASSETS_ID ? RESOLVED_ASSETS_ID : id === PLATFORM_ID ? RESOLVED_PLATFORM_ID : undefined,
 		load: async (id) => {
+			// The target's platform, so app/entry.ts is the same file on both targets.
+			if (id === RESOLVED_PLATFORM_ID)
+				return `export { platform } from ${JSON.stringify(`spacefn/${options.target}`)};\n`;
 			if (id !== RESOLVED_ASSETS_ID) return undefined;
 			const manifest =
 				config.command === "build" && app.client.length > 0

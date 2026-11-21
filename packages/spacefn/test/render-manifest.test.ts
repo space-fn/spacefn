@@ -7,7 +7,7 @@ import type { AppTree } from "../src/codegen/scan-app.ts";
 
 const empty: AppTree = {
 	env: false,
-	layers: false,
+	entry: true,
 	infraConfig: false,
 	routes: [],
 	queues: [],
@@ -50,7 +50,6 @@ describe("renderManifest", () => {
 		expect(
 			render({
 				env: true,
-				layers: true,
 				routes: ["index.ts", "files/[...path].ts", "users/[id].ts", "_middleware.ts"],
 				queues: ["emails.ts"],
 				crons: ["nightly.ts"],
@@ -75,12 +74,10 @@ describe("renderManifest", () => {
 			import * as cron0 from "../app/crons/nightly.ts";
 			import * as db0 from "./db/main.ts";
 			import * as env from "../configs/env.ts";
-			import * as layers from "../app/layers.ts";
 
 			export const manifest = {
 				name: "todo",
 				env: { file: "configs/env.ts", module: env },
-				layers: { file: "app/layers.ts", module: layers },
 				routes: [
 					{ path: "/", params: [], file: "app/routes/index.ts", module: route0 },
 					{ path: "/files/*", params: ["path"], catchAll: "path", file: "app/routes/files/[...path].ts", module: route1 },

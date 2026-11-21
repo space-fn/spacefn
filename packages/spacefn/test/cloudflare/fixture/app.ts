@@ -1,6 +1,7 @@
-// A small app as `space gen` would wire it, bundled and run in workerd by miniflare.test.ts.
+// A small app as `space gen` and app/entry.ts would wire it, bundled and run in workerd by miniflare.test.ts.
 import { Effect, ManagedRuntime, Option, Schema, Stream } from "effect";
 import {
+	app,
 	Blob,
 	Bus,
 	cron,
@@ -10,11 +11,17 @@ import {
 	queue,
 	rateLimit,
 	route,
+	databases,
 	type SpaceManifest,
 } from "spacefn";
 import { database } from "spacefn/runtime";
 
-import { CloudflareEnv, durableObjectSql, worker } from "../../../src/cloudflare/index.ts";
+import {
+	CloudflareEnv,
+	durableObjectSql,
+	platform,
+	worker,
+} from "../../../src/cloudflare/index.ts";
 
 interface NotesQueries {
 	addNote: { params: { readonly text: string }; row: never; mode: "exec" };
@@ -208,4 +215,4 @@ const manifest = {
 	db: [{ name: "notes", driver: "d1", binding: "DB_NOTES", module: { default: NotesDb } }],
 } as const satisfies SpaceManifest;
 
-export default worker(manifest);
+export default worker(app(manifest, { services: [platform(manifest), databases(manifest)] }));

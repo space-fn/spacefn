@@ -4,8 +4,6 @@
  * and `spacefn/bun` turn it into a running app. Module types make a wrong
  * export a type error in the generated file, so the editor flags it.
  */
-import type { Layer } from "effect";
-
 import type { DbDriver } from "./app-config.ts";
 import type { DatabaseClass } from "./db/database.ts";
 import type { AppEnv } from "./env.ts";
@@ -63,12 +61,6 @@ export interface ManifestCron {
 	readonly module: { readonly default: Cron };
 }
 
-/** `app/layers.ts`: its default export is a Layer with the app's own services. */
-export interface ManifestLayers {
-	readonly file: string;
-	readonly module: { readonly default: Layer.Any };
-}
-
 /** `configs/env.ts`: its default export is the `defineEnv()` service. */
 export interface ManifestEnv {
 	readonly file: string;
@@ -94,7 +86,6 @@ export type Unchecked<T extends { readonly module: unknown }> = T extends unknow
 export interface SpaceManifest {
 	readonly name: string;
 	readonly env?: ManifestEnv;
-	readonly layers?: ManifestLayers;
 	readonly routes: readonly ManifestRoute[];
 	/** Outer folders first. */
 	readonly middleware: readonly ManifestMiddleware[];

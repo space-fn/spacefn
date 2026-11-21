@@ -20,6 +20,7 @@ export default defineConfig([
 		index: "src/index.ts",
 		testing: "src/testing.ts",
 		assets: "src/assets.ts",
+		platform: "src/platform.ts",
 		"codegen/index": "src/codegen/index.ts",
 		runtime: "src/runtime.ts",
 		"sql/index": "src/sql/index.ts",

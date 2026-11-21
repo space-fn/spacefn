@@ -10,7 +10,7 @@ app/crons/            one scheduled job per file    → Queues and crons
 app/client/           browser scripts and styles    → Pages
 app/durable-objects/  Durable Object classes        (Cloudflare only)
 app/workflows/        Workflow classes              (Cloudflare only)
-app/layers.ts         your own services             → Services
+app/entry.ts          what runs with the rest       → The entry
 configs/              env.ts (the variables the app reads), vite.ts, vitest.ts, tsconfig.json, optional infra.ts
 lib/                  your code, imported as #lib/...
 .space/               generated

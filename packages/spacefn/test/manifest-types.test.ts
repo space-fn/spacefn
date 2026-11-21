@@ -1,6 +1,6 @@
 // Type-level checks, enforced by `tsc`: the generated manifest rejects wrong exports.
 import { expect, it } from "@effect/vitest";
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Schema } from "effect";
 
 import { database } from "../src/db/database.ts";
 import { html } from "../src/html.ts";
@@ -86,14 +86,5 @@ it("accepts queue(), cron() and a Layer, and rejects anything else", () => {
 		// @ts-expect-error a cron file must default-export cron()
 		{ name: "b", file: "app/crons/b.ts", module: { default: Effect.void } },
 	] as const satisfies SpaceManifest["crons"];
-	const layers = {
-		file: "app/layers.ts",
-		module: { default: Layer.empty },
-	} satisfies SpaceManifest["layers"];
-	const notLayers = {
-		file: "app/layers.ts",
-		// @ts-expect-error app/layers.ts must default-export a Layer
-		module: { default: {} },
-	} satisfies SpaceManifest["layers"];
-	expect([queues, crons, layers, notLayers]).toHaveLength(4);
+	expect([queues, crons]).toHaveLength(2);
 });

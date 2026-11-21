@@ -18,6 +18,7 @@ Local settings go in `.env` (copy `.env.example`). A deploy reads `.env.<stage>`
 ## Where things go
 
 ```txt
+app/entry.ts        the app: its services, what wraps every request, onError
 app/routes/         pages and endpoints: index.ts is /, todos/[id].ts is /todos/:id;
                     _middleware.ts wraps the requests to its folder
 app/db/main/        config.json (driver, migrateOn), migrations/ and queries/ in SQL;

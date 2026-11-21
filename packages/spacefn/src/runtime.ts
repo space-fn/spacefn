@@ -1,6 +1,6 @@
 // For generated code and the target packages (spacefn/cloudflare, spacefn/bun), not for app code.
 export { httpLayer } from "./http/app.ts";
-export { appLayer, DbConnector, type AppLayerOptions } from "./app-layer.ts";
+export { DbConnector } from "./app-layer.ts";
 export { appServices } from "./app.ts";
 export { OnError } from "./http/respond.ts";
 export { StaticFiles } from "./http/static.ts";

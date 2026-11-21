@@ -1,20 +1,24 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
-import { clientAddress, route, type SpaceManifest } from "spacefn";
+import { app, clientAddress, databases, route, type SpaceManifest } from "spacefn";
 import { database } from "spacefn/runtime";
 
-import { app } from "../../src/bun/app.ts";
+import { bunApp, platform } from "../../src/bun/app.ts";
 import { dir } from "./helpers.ts";
 
 process.env.SPACE_DATA_DIR = `${dir}/app`;
 
 const empty = { name: "t", middleware: [], queues: [], crons: [], db: [] } as const;
 
+/** The manifest run as the scaffolded app/entry.ts runs it. */
+const run = (manifest: SpaceManifest) =>
+	bunApp(app(manifest, { services: [platform(manifest), databases(manifest)] }));
+
 class CfDb extends database<CfDb, {}>()({ name: "cf", migrations: [], queries: {} }) {}
 
 describe("app", () => {
 	it("answers requests and passes the client address on", async () => {
-		const handle = app({
+		const handle = run({
 			...empty,
 			routes: [
 				{
@@ -31,7 +35,7 @@ describe("app", () => {
 	});
 
 	it("answers 500 when the app can't start, and says why", async () => {
-		const handle = app({
+		const handle = run({
 			...empty,
 			routes: [],
 			db: [{ name: "cf", driver: "d1", binding: "DB_CF", module: { default: CfDb } }],

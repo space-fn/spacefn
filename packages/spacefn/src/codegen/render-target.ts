@@ -3,21 +3,25 @@ import { fromSpace, GENERATED } from "./render-manifest.ts";
 
 const str = JSON.stringify;
 
+/** Imported by the generated entries: the app as `app/entry.ts` describes it. */
+const ENTRY = 'import entry from "../app/entry.ts";';
+
 /**
- * The runtime entry for the target. Cloudflare gets one Worker module that also
- * exports the Durable Object and workflow classes, spacefn's own included. Bun gets a fetch-handler
- * module (`app.ts`, which the Vite dev server loads) and a production server
- * (`server.ts`, bundled by `vite build`).
+ * The runtime entry for the target, running `app/entry.ts`. Cloudflare gets
+ * one Worker module that also exports the Durable Object and workflow
+ * classes, spacefn's own included. Bun gets a fetch-handler module (`app.ts`,
+ * which the Vite dev server loads) and a production server (`server.ts`,
+ * bundled by `vite build`).
  */
 export const renderEntries = (plan: AppPlan): Record<string, string> => {
 	if (plan.target === "bun")
 		return {
 			"app.ts": [
 				GENERATED,
-				'import { app } from "spacefn/bun";',
-				'import { manifest } from "./manifest.ts";',
+				'import { bunApp } from "spacefn/bun";',
+				ENTRY,
 				"",
-				"export default app(manifest);",
+				"export default bunApp(entry);",
 				"",
 			].join("\n"),
 			"server.ts": [
@@ -26,10 +30,10 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 				'import { fileURLToPath } from "node:url";',
 				"",
 				'import { serve } from "spacefn/bun";',
-				'import app from "./app.ts";',
+				ENTRY,
 				"",
 				"// Built to dist/server/index.js, beside dist/client.",
-				'await serve(app, { client: join(dirname(fileURLToPath(import.meta.url)), "..", "client") });',
+				'await serve(entry, { client: join(dirname(fileURLToPath(import.meta.url)), "..", "client") });',
 				"",
 			].join("\n"),
 		};
@@ -41,9 +45,9 @@ export const renderEntries = (plan: AppPlan): Record<string, string> => {
 		"entry.ts": [
 			GENERATED,
 			'import { worker } from "spacefn/cloudflare";',
-			'import { manifest } from "./manifest.ts";',
+			ENTRY,
 			"",
-			"export default worker(manifest);",
+			"export default worker(entry);",
 			"// The Durable Objects behind Bus and RateLimiter.",
 			'export { SpaceBus, SpaceRateLimiter } from "spacefn/cloudflare";',
 			...classes,

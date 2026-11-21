@@ -18,7 +18,6 @@ export type {
 	ManifestCron,
 	ManifestDb,
 	ManifestEnv,
-	ManifestLayers,
 	ManifestModule,
 	ManifestQueue,
 	ManifestRoute,

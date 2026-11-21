@@ -10,6 +10,7 @@ cd my-app && cp .env.example .env && npm install && npm run dev
 ```
 
 ```txt
+app/entry.ts        the app's services, middleware and error handling, in one file
 app/routes/         pages and HTTP endpoints, and _middleware.ts around them
 app/db/<name>/      config.json, migrations/ and queries/ in SQL, typed for you
 app/queues/         queue consumers

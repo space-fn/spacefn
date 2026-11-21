@@ -1,8 +1,19 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Option, Schema } from "effect";
-import { cron, defineEnv, Env, Kv, Queue, queue, route, type SpaceManifest } from "spacefn";
+import {
+	app,
+	cron,
+	databases,
+	defineEnv,
+	Env,
+	Kv,
+	Queue,
+	queue,
+	route,
+	type SpaceManifest,
+} from "spacefn";
 
-import { worker } from "../../src/cloudflare/worker.ts";
+import { platform, worker } from "../../src/cloudflare/worker.ts";
 import { fakeContext, fakeKv, fakeMessage, fakeQueue } from "./fakes.ts";
 
 const AppEnv = defineEnv({ GREETING: Env.string() });
@@ -70,7 +81,11 @@ const setup = (vars: Record<string, string> = { GREETING: "hi" }) => {
 	const { kv, values } = fakeKv();
 	const { queue: emails, sent } = fakeQueue();
 	const env = { ...vars, KV: kv, QUEUE_EMAILS: emails };
-	return { app: worker(manifest), env, values, sent };
+	// As the scaffolded app/entry.ts runs it, without telemetry.
+	const entry = app(manifest, {
+		services: [platform(manifest), AppEnv.layer, databases(manifest)],
+	});
+	return { app: worker(entry), env, values, sent };
 };
 
 const get = async (app: ExportedHandler<any>, env: object, init?: RequestInit) => {
@@ -118,6 +133,13 @@ describe("worker", () => {
 		expect(values.has("last")).toBe(false);
 		await app.scheduled!({ cron: "0 3 * * *", scheduledTime: 0, noRetry() {} }, env, ctx);
 		expect(values.get("last")?.value).toBe("nightly ran");
+	});
+
+	it("adds the entry's other Worker handlers beside spacefn's", () => {
+		const email = () => undefined;
+		const handler = worker(app(manifest, { cloudflare: { handlers: { email } } }));
+		expect(handler.email).toBe(email);
+		expect(typeof handler.fetch).toBe("function");
 	});
 
 	it("answers 500 when the app can't start, and says why in the log", async () => {

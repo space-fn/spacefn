@@ -66,15 +66,22 @@ Counts are fixed windows, and every process and instance agrees on them. `client
 
 ## Your own services
 
-`app/layers.ts` default-exports a `Layer` of your own services. It can use the env, the databases and the services above, and everything in the app can use it:
+List your own layers in the entry's `services`, after spacefn's. They can use the env, the databases and the services above, and everything in the app can use them:
 
-```ts
-// app/layers.ts
-import { Layer } from "effect";
-
+```ts [app/entry.ts]
 import { Mailer } from "#lib/mailer.ts";
 
-export default Layer.mergeAll(Mailer.layer);
+export default app(manifest, {
+	services: [
+		platform(manifest),
+		Env.layer,
+		databases(manifest),
+		telemetry(manifest.name),
+		Mailer.layer,
+	],
+});
 ```
+
+See [The entry](entry.md).
 
 On Cloudflare, `CloudflareEnv` from `spacefn/cloudflare` gives bindings spacefn doesn't wrap, such as your Durable Objects (`DO_CHAT_ROOM` for `app/durable-objects/chat-room.ts`) or ones you add in `configs/infra.ts`.

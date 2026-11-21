@@ -80,7 +80,7 @@ const methodNotAllowed = (allowed: readonly Method[]) =>
  * layer, so a broken app stops at startup, not at the first request.
  *
  * Handler requirements are not tracked here: route modules are `unknown` to
- * the core, and the target provides the app's services (`app/layers.ts`, the
+ * the core, and the target provides the app's services (the entry's `services`, the
  * runtime Layers) around the whole router.
  */
 export const routesLayer = (

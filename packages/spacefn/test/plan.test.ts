@@ -7,7 +7,7 @@ import type { AppTree } from "../src/codegen/scan-app.ts";
 
 const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	env: false,
-	layers: false,
+	entry: true,
 	infraConfig: false,
 	routes: [],
 	queues: [],
