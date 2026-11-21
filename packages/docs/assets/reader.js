@@ -279,8 +279,9 @@ if (config.mermaid) {
 	const sources = blocks.map((block) => block.textContent);
 	import(config.mermaid)
 		.then(({ default: mermaid }) => {
-			// Diagrams set in the code font, like the source they're drawn from.
+			// Diagrams set in the code font, like the source they're drawn from, a size below the text.
 			const fontFamily = getComputedStyle(root).getPropertyValue("--mono").trim();
+			const fontSize = 13;
 			const draw = () => {
 				blocks.forEach((block, i) => {
 					block.removeAttribute("data-processed");
@@ -290,7 +291,8 @@ if (config.mermaid) {
 					startOnLoad: false,
 					theme: root.classList.contains("dark") ? "dark" : "default",
 					fontFamily,
-					themeVariables: { fontFamily },
+					fontSize,
+					themeVariables: { fontFamily, fontSize: `${fontSize}px` },
 				});
 				return mermaid.run({ nodes: blocks });
 			};
