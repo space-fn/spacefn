@@ -42,10 +42,9 @@ Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main
 
 ## Change something
 
-Add a query, `app/db/main/queries/clear-done.sql`:
+Add a query, `app/db/main/queries/clear-done.sql`. Its file name makes it `clearDone`:
 
 ```sql
--- name: clearDone :exec
 DELETE FROM todos WHERE done = 1;
 ```
 

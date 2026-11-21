@@ -8,24 +8,24 @@ const findSqlTemplate = () => null;
 
 describe("sqlDirectiveCompletions", () => {
 	test("offers directive keywords after --", () => {
-		const text = "-- name:";
+		const text = "-- @";
 		const items = sqlDirectiveCompletions(
 			{ text, offset: text.length, isSqlFile: true, isJsTs: false },
 			null,
 			findSqlTemplate,
 		);
 		expect(items).not.toBeNull();
-		expect(items!.some((i) => i.label.includes("name"))).toBe(true);
+		expect(items!.map((i) => i.label)).toEqual(["-- @param", "-- @column"]);
 	});
 
-	test("offers query modes after name:", () => {
-		const text = "-- name: :";
+	test("offers query modes after -- :", () => {
+		const text = "-- :";
 		const items = sqlDirectiveCompletions(
 			{ text, offset: text.length, isSqlFile: true, isJsTs: false },
 			null,
 			findSqlTemplate,
 		);
-		expect(items!.some((i) => i.label === ":one")).toBe(true);
+		expect(items!.map((i) => i.label)).toEqual(["-- :one", "-- :many", "-- :exec"]);
 	});
 
 	test("returns null outside directive", () => {

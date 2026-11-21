@@ -76,7 +76,7 @@ describe("scanApp", () => {
 			yield* write({
 				"app/db/main/migrations/0001_todos.sql":
 					"-- up\nCREATE TABLE todos (id INTEGER PRIMARY KEY, title TEXT NOT NULL);",
-				"app/db/main/queries/list.sql": "-- name: listTodos :many\nSELECT id, title FROM todos;",
+				"app/db/main/queries/list-todos.sql": "SELECT id, title FROM todos;",
 				"app/db/_draft/migrations/0001_x.sql": "-- up\nCREATE TABLE x (a);",
 			});
 			const [main, ...rest] = (yield* scanApp(root)).db;
@@ -93,7 +93,7 @@ describe("scanApp", () => {
 		Effect.gen(function* () {
 			yield* write({
 				"app/db/main/migrations/0001_todos.sql": "-- up\nCREATE TABLE todos (id INTEGER);",
-				"app/db/main/queries/bad.sql": "-- name: bad :one\nSELECT nope FROM todos;",
+				"app/db/main/queries/bad.sql": "-- :one\nSELECT nope FROM todos;",
 			});
 			const error = yield* Effect.flip(scanApp(root));
 			expect(error.file).toBe("app/db/main/queries/bad.sql");

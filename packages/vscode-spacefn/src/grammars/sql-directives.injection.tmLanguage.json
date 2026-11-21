@@ -16,11 +16,8 @@
 					"captures": { "1": { "name": "keyword.control.directive.spacefn.sql" } }
 				},
 				{
-					"match": "--\\s*name:\\s*([A-Za-z_]\\w*)\\s*(:one|:many|:exec)?",
-					"captures": {
-						"1": { "name": "entity.name.function.spacefn.sql" },
-						"2": { "name": "constant.language.spacefn.sql" }
-					},
+					"match": "--\\s*(:one|:many|:exec)\\b",
+					"captures": { "1": { "name": "constant.language.spacefn.sql" } },
 					"name": "keyword.other.directive.spacefn.sql"
 				},
 				{

@@ -82,25 +82,6 @@ export async function validateSqlDiagnostics(doc: TextDocument): Promise<Diagnos
 			.filter((l) => !l.trim().startsWith("--"))
 			.join("\n")
 			.trim();
-		const nameLine = text.split("\n").find((l) => l.trim().startsWith("-- name:"));
-		if (nameLine) {
-			const nm = nameLine.match(/--\s*name:\s*(\S+)(?:\s+:(one|many|exec))?/);
-			if (!nm) {
-				diagnostics.push({
-					severity: DiagnosticSeverity.Error,
-					range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
-					message: "Invalid -- name: directive",
-					source: "spacefn",
-				});
-			} else if (!nm[2]) {
-				diagnostics.push({
-					severity: DiagnosticSeverity.Error,
-					range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } },
-					message: "Query mode must be :one, :many, or :exec",
-					source: "spacefn",
-				});
-			}
-		}
 		if (sql) {
 			const stmt = await scratch.prepare(sql);
 			await stmt.columns();

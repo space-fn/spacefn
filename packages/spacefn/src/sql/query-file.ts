@@ -11,8 +11,9 @@ export interface QueryPart {
 }
 
 export interface QueryFile {
-	/** Function name, from `-- name: findTodo :one`. */
+	/** Function name, from the file name: `find-todo.sql` gives `findTodo`. */
 	name: string;
+	/** `-- :one` / `:many` / `:exec` if the file has one, else read from the statement. */
 	mode: QueryMode;
 	/** The SQL with annotation comments removed (all parts joined). */
 	sql: string;
@@ -24,28 +25,57 @@ export interface QueryFile {
 	parts: QueryPart[];
 }
 
-const HEADER = /^--\s*name:\s*([A-Za-z_]\w*)\s*:(one|many|exec)\s*$/;
+const MODE = /^--\s*:(one|many|exec)\s*$/;
+const OLD_HEADER = /^--\s*name:/;
+const FILE_NAME = /^([a-z][a-zA-Z0-9]*(?:[-_][a-zA-Z0-9]+)*)\.sql$/;
 const ANNOTATION = /^--\s*@(column|param)\s+([A-Za-z_]\w*)\s+(\S+)\s*$/;
 const CASE_OPEN = /^--\s*case\s*$/;
 const WHEN = /^--\s*when\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*$/;
 const CASE_CLOSE = /^--\s*end\s*$/;
 
+/** `add-todo.sql`, `add_todo.sql` and `addTodo.sql` all give `addTodo`. */
+export function queryName(file: string): string {
+	const base = file.split(/[\\/]/).pop() ?? file;
+	const match = FILE_NAME.exec(base);
+	if (!match)
+		throw new SqlError("QUERY_NAME", `"${base}" doesn't give a function name`, {
+			file,
+			hint: "Name the file with letters and digits, words split by - or _, starting with a lowercase letter: add-todo.sql.",
+		});
+	return match[1]!.replace(/[-_]([a-zA-Z0-9])/g, (_, char: string) => char.toUpperCase());
+}
+
+/**
+ * What a statement returns when the file doesn't say: rows for `SELECT`,
+ * `VALUES`, a `WITH` that only reads, and anything with `RETURNING`; nothing
+ * otherwise. `-- :one` is never inferred.
+ */
+export function inferMode(sql: string): QueryMode {
+	const code = sql.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+	if (/\bRETURNING\b/i.test(code)) return "many";
+	const first = /^\s*(\w+)/.exec(code)?.[1]?.toUpperCase();
+	if (first === "SELECT" || first === "VALUES") return "many";
+	if (first === "WITH") return /\b(?:INSERT|UPDATE|DELETE|REPLACE)\b/i.test(code) ? "exec" : "many";
+	return "exec";
+}
+
 export function parseQueryFile(file: string, text: string): QueryFile {
 	const lines = text.split("\n");
-	const header = lines.find((line) => line.trim() !== "");
-	const match = header ? HEADER.exec(header.trim()) : null;
-	if (!match) {
+	if (lines.some((line) => OLD_HEADER.test(line.trim())))
 		throw new SqlError(
-			"QUERY_HEADER",
-			`${file} must start with "-- name: <function> :one|:many|:exec"`,
-			{ file, hint: "Add the header line as the first non-empty line." },
+			"QUERY_NAME_HEADER",
+			`${file}: the query's name comes from its file name now`,
+			{
+				file,
+				hint: "Remove the -- name: line. To return one row, write -- :one on a line of its own.",
+			},
 		);
-	}
-
-	if (lines.filter((line) => HEADER.test(line.trim())).length > 1)
-		throw new SqlError("QUERY_MULTIPLE", `${file} has more than one "-- name:" header`, {
+	const name = queryName(file);
+	const modes = lines.flatMap((line) => MODE.exec(line.trim())?.[1] ?? []);
+	if (modes.length > 1)
+		throw new SqlError("QUERY_MODE", `${file} sets its mode ${modes.length} times`, {
 			file,
-			hint: "Put each query in its own file.",
+			hint: "Keep one -- :one, -- :many or -- :exec line.",
 		});
 
 	const columns: Record<string, string> = {};
@@ -80,7 +110,7 @@ export function parseQueryFile(file: string, text: string): QueryFile {
 			(kind === "column" ? columns : params)[name] = type;
 			continue;
 		}
-		if (HEADER.test(trimmed)) continue;
+		if (MODE.test(trimmed)) continue;
 
 		if (CASE_OPEN.test(trimmed)) {
 			// flush pending outside-case text
@@ -168,5 +198,6 @@ export function parseQueryFile(file: string, text: string): QueryFile {
 			file,
 			hint: "Put each query in its own file; D1 can't run several with parameters at once.",
 		});
-	return { name: match[1] as string, mode: match[2] as QueryMode, sql, columns, params, parts };
+	const mode = (modes[0] as QueryMode | undefined) ?? inferMode(sql);
+	return { name, mode, sql, columns, params, parts };
 }

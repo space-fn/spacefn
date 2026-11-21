@@ -32,16 +32,18 @@ Databases migrate when the app starts, on every target. On Bun you can also run 
 
 ## Queries
 
-One query per file. The header names the function and what it returns:
+One query per file. The file's name is the function's: `find-todo.sql` (or `find_todo.sql`, or `findTodo.sql`) is `findTodo`. What it returns comes from the statement:
 
-| Header                     | Returns              |
-| -------------------------- | -------------------- |
-| `-- name: listTodos :many` | `ReadonlyArray<Row>` |
-| `-- name: findTodo :one`   | `Option<Row>`        |
-| `-- name: addTodo :exec`   | nothing              |
+| Statement                                                    | Returns              |
+| ------------------------------------------------------------ | -------------------- |
+| `SELECT`, `VALUES`, a `WITH` that only reads, or `RETURNING` | `ReadonlyArray<Row>` |
+| anything else: `INSERT`, `UPDATE`, `DELETE`, ...             | nothing              |
+| any statement, with a `-- :one` line                         | `Option<Row>`        |
 
-```sql
--- name: findTodo :one
+`-- :many` and `-- :exec` set the other two the same way, when the statement says otherwise.
+
+```sql [app/db/main/queries/find-todo.sql]
+-- :one
 -- @param id number
 SELECT id, title, done FROM todos WHERE id = :id;
 ```
@@ -51,8 +53,7 @@ SELECT id, title, done FROM todos WHERE id = :id;
 - **Types:** `string`, `number`, `boolean`, `bytes` (`Uint8Array`) and `unknown`; add `?` for nullable (`string?`).
 - **Optional filters:** lines between `-- case` and `-- end` are included only when their `-- when` parameters are given, so one query serves a search form:
 
-```sql
--- name: searchTodos :many
+```sql [app/db/main/queries/search-todos.sql]
 -- @param done boolean
 -- @param q string
 SELECT id, title, done FROM todos WHERE 1 = 1

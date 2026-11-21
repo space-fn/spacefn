@@ -27,8 +27,7 @@ describe("renderDb", () => {
 			binding: "DB_MAIN",
 			migrations,
 			queries: await queries({
-				"list.sql": [
-					"-- name: listTodos :many",
+				"list-todos.sql": [
 					"-- @param done number",
 					"-- @param title string?",
 					"SELECT id, title, note FROM todos WHERE done = :done",
@@ -37,8 +36,7 @@ describe("renderDb", () => {
 					"AND title = :title",
 					"-- end",
 				].join("\n"),
-				"add.sql":
-					"-- name: addTodo :exec\n-- @param title string\nINSERT INTO todos (title) VALUES (:title)",
+				"add-todo.sql": "-- @param title string\nINSERT INTO todos (title) VALUES (:title)",
 			}),
 		});
 		expect(source).toMatchInlineSnapshot(`
