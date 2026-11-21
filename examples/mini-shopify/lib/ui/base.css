@@ -1,0 +1,19 @@
+/* The base styles every page shares. */
+:root {
+	--space: 0.5rem;
+	color-scheme: light dark;
+	font-family: system-ui, sans-serif;
+}
+body {
+	max-width: 40rem;
+	margin: calc(var(--space) * 6) auto;
+	padding: 0 calc(var(--space) * 2);
+	line-height: 1.5;
+}
+form {
+	display: flex;
+	gap: var(--space);
+}
+td {
+	padding-right: calc(var(--space) * 2);
+}
