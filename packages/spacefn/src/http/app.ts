@@ -4,7 +4,7 @@ import { HttpRouter } from "effect/http";
 import type { SpaceError } from "../errors.ts";
 import type { ManifestMiddleware, ManifestRoute, Unchecked } from "../manifest.ts";
 import { isPage, pagesLayer } from "../pages/page.ts";
-import { middlewareLayer, ROUTES_FOLDER, scopedMiddleware } from "./middleware.ts";
+import { middlewareLayer, ROUTES_FOLDER, scopedMiddleware, type Middleware } from "./middleware.ts";
 import { routesLayer } from "./route.ts";
 
 /**
@@ -19,6 +19,12 @@ export const httpLayer = <E = never>(
 		readonly middleware: readonly Unchecked<ManifestMiddleware>[];
 	},
 	services?: Layer.Layer<any, E>,
+	extra: {
+		/** Middleware outside `app/routes/_middleware.ts`, around every request. */
+		readonly before?: readonly Middleware[];
+		/** Effect `HttpRouter` layers beside the file routes. */
+		readonly routes?: readonly Layer.Any[];
+	} = {},
 ): Layer.Layer<never, SpaceError | E, HttpRouter.HttpRouter> =>
 	Layer.unwrap(
 		Effect.gen(function* () {
@@ -40,7 +46,10 @@ export const httpLayer = <E = never>(
 					around,
 				).pipe(provided),
 				pagesLayer(manifest.routes.filter(isPageFile), around).pipe(provided),
-				middlewareLayer(root, context),
+				middlewareLayer(root, context, extra.before),
+				...(extra.routes ?? []).map((routes) =>
+					(routes as Layer.Layer<never, never, HttpRouter.HttpRouter>).pipe(provided),
+				),
 			) as Layer.Layer<never, SpaceError, HttpRouter.HttpRouter>;
 		}),
 	);

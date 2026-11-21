@@ -1,6 +1,9 @@
 // For generated code and the target packages (spacefn/cloudflare, spacefn/bun), not for app code.
 export { httpLayer } from "./http/app.ts";
-export { appLayer, type AppLayerOptions } from "./app-layer.ts";
+export { appLayer, DbConnector, type AppLayerOptions } from "./app-layer.ts";
+export { appServices } from "./app.ts";
+export { OnError } from "./http/respond.ts";
+export { StaticFiles } from "./http/static.ts";
 export { cronMatches, cronOf, runSchedule } from "./jobs/cron.ts";
 export { consumeBatch, noConsumer, queueConsumerOf, type Delivery } from "./jobs/queue.ts";
 export type { Unchecked } from "./manifest.ts";

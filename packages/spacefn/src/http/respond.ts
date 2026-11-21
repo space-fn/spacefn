@@ -1,4 +1,4 @@
-import { Cause, Effect, Option, Schema, SchemaIssue } from "effect";
+import { Cause, Context, Effect, Option, Schema, SchemaIssue } from "effect";
 import { HttpServerError, HttpServerRequest, HttpServerResponse } from "effect/http";
 
 import { BadRequest, httpStatus, isHttpError, NotFound, type HttpError } from "../errors.ts";
@@ -102,7 +102,7 @@ export const wantsHtml = (request: HttpServerRequest.HttpServerRequest): boolean
 	(request.headers.accept ?? "").split(",")[0]!.trim().startsWith("text/html");
 
 /** A plain error page with the status, its name and the error's message, if it has one. */
-export const errorPage = (
+export const errorPageResponse = (
 	status: number,
 	message: string | undefined,
 ): HttpServerResponse.HttpServerResponse => {
@@ -131,36 +131,64 @@ const fromServerError = (error: unknown): HttpError | undefined => {
 };
 
 /**
- * Answers every failure of a handler. Tagged HTTP errors get their status;
- * anything else is logged with its full cause and answered with an opaque 500,
- * so internals never reach the client. Browser navigations get an HTML page,
- * everything else JSON. Interruption is passed on untouched.
+ * What a failed request answers with, given the full cause: the entry's
+ * `onError`. It may read the request (`HttpServerRequest`), and must not fail.
+ */
+export type ErrorHandler = (
+	cause: Cause.Cause<unknown>,
+) => Effect.Effect<HttpServerResponse.HttpServerResponse>;
+
+/**
+ * spacefn's error handler, the default `onError`. Tagged HTTP errors get their
+ * status; anything else is logged with its full cause and answered with an
+ * opaque 500, so internals never reach the client. Browser navigations get a
+ * plain HTML page, everything else JSON.
+ */
+export const errorPage: ErrorHandler = (cause) => {
+	const found = Cause.findErrorOption(cause);
+	const error = Option.isSome(found)
+		? isHttpError(found.value)
+			? found.value
+			: fromServerError(found.value)
+		: undefined;
+	return Effect.gen(function* () {
+		const request = yield* Effect.serviceOption(HttpServerRequest.HttpServerRequest);
+		const html = Option.isSome(request) && wantsHtml(request.value);
+		if (error) {
+			if (!html) return errorResponse(error);
+			const page = errorPageResponse(
+				httpStatus(error),
+				"message" in error ? (error.message as string | undefined) : undefined,
+			);
+			return error._tag === "TooManyRequests" && error.retryAfterSeconds !== undefined
+				? HttpServerResponse.setHeader(page, "retry-after", String(error.retryAfterSeconds))
+				: page;
+		}
+		yield* Effect.logError("Unhandled error in a request", cause);
+		return html ? errorPageResponse(500, undefined) : INTERNAL;
+	});
+};
+
+/** The app's `onError`, {@link errorPage} unless the entry gives another. */
+export const OnError = Context.Reference<ErrorHandler>("spacefn/OnError", {
+	defaultValue: () => errorPage,
+});
+
+/**
+ * Answers every failure of a handler with the app's {@link OnError}. The
+ * router's failures arrive as `NotFound` and `BadRequest`; interruption is
+ * passed on untouched.
  */
 export const handleErrors = <R>(
 	effect: Effect.Effect<HttpServerResponse.HttpServerResponse, unknown, R>,
 ): Effect.Effect<HttpServerResponse.HttpServerResponse, never, R> =>
 	Effect.catchCause(effect, (cause) => {
 		if (Cause.hasInterruptsOnly(cause)) return Effect.failCause(cause as Cause.Cause<never>);
+		// The router's own failures (no route, an unreadable body) reach onError as spacefn's errors.
 		const found = Cause.findErrorOption(cause);
-		const error = Option.isSome(found)
-			? isHttpError(found.value)
-				? found.value
-				: fromServerError(found.value)
-			: undefined;
+		const known = Option.isSome(found) ? fromServerError(found.value) : undefined;
 		return Effect.gen(function* () {
-			const request = yield* Effect.serviceOption(HttpServerRequest.HttpServerRequest);
-			const html = Option.isSome(request) && wantsHtml(request.value);
-			if (error) {
-				if (!html) return errorResponse(error);
-				const page = errorPage(
-					httpStatus(error),
-					"message" in error ? (error.message as string | undefined) : undefined,
-				);
-				return error._tag === "TooManyRequests" && error.retryAfterSeconds !== undefined
-					? HttpServerResponse.setHeader(page, "retry-after", String(error.retryAfterSeconds))
-					: page;
-			}
-			yield* Effect.logError("Unhandled error in a request", cause);
-			return html ? errorPage(500, undefined) : INTERNAL;
+			const handle = yield* OnError;
+			return yield* handle(known ? Cause.fail(known) : cause);
 		});
 	});

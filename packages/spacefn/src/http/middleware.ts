@@ -64,7 +64,7 @@ const chainOf =
 		chain.reduceRight((next, middleware) => middleware.apply(next), app);
 
 /**
- * Applies `app/routes/_middleware.ts` to every request, with error handling
+ * Applies `before` (the entry's), then `app/routes/_middleware.ts`, to every request, with error handling
  * outermost: a failure in middleware, a handler or the router itself (no
  * matching route) becomes a proper response. `services` is provided to the
  * middleware (the routes get the same context from `httpLayer`).
@@ -72,10 +72,14 @@ const chainOf =
 export const middlewareLayer = (
 	entries: readonly Unchecked<ManifestMiddleware>[],
 	services: Context.Context<any> = Context.empty() as Context.Context<any>,
+	before: readonly Middleware[] = [],
 ): Layer.Layer<never, SpaceError, HttpRouter.HttpRouter> =>
 	Layer.unwrap(
 		Effect.gen(function* () {
-			const apply = chainOf((yield* Effect.forEach(entries, loadMiddleware)).flat());
+			const apply = chainOf([
+				...before,
+				...(yield* Effect.forEach(entries, loadMiddleware)).flat(),
+			]);
 			return HttpRouter.middleware(
 				(app) => Effect.provideContext(handleErrors(apply(app)), services) as never,
 				{ global: true },
