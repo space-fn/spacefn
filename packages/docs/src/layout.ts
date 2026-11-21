@@ -72,12 +72,21 @@ const dirHref = (source: SourceView, rel: string) => `${pageHref(source, rel)}/`
 
 const active = (on: boolean) => (on ? ' class="active" aria-current="page"' : "");
 
+/**
+ * A sidebar folder's `<details>` attributes: open when it holds the current page, and
+ * `data-nav` to remember it by, so `NAV_BOOT` and the reader's script keep the ones you
+ * opened or closed that way on the next page.
+ */
+const folderState = (source: SourceView, rel: string, current: string) => {
+	const here = current.startsWith(`${rel}/`);
+	return `${here ? " open data-current" : ""} data-nav="${escapeHtml(source.href + rel)}"`;
+};
+
 const navList = (source: SourceView, nodes: readonly DocNode[], current: string): string => {
 	const items = nodes.map((node) => {
 		if (node.kind === "page")
 			return `<li><a href="${pageHref(source, node.rel)}"${active(node.rel === current)}>${tabler(node.icon)}${escapeHtml(node.title)}</a></li>`;
-		const open = current.startsWith(`${node.rel}/`) ? " open" : "";
-		return `<li><details${open}><summary><span>${tabler(node.icon)}${escapeHtml(node.label)}</span></summary>${navList(source, node.children, current)}</details></li>`;
+		return `<li><details${folderState(source, node.rel, current)}><summary><span>${tabler(node.icon)}${escapeHtml(node.label)}</span></summary>${navList(source, node.children, current)}</details></li>`;
 	});
 	return `<ul class="nav-list">${items.join("")}</ul>`;
 };
@@ -106,13 +115,13 @@ const sidebar = (input: PageInput): string => {
 		}
 		flush();
 		parts.push(
-			`<div class="nav-group"><a class="nav-group-title" href="${dirHref(source, node.rel)}">${tabler(node.icon)}${escapeHtml(node.label)}</a>${navList(source, node.children, rel)}</div>`,
+			`<details class="nav-group"${folderState(source, node.rel, rel)}><summary class="nav-group-title">${tabler(node.icon)}${escapeHtml(node.label)}</summary>${navList(source, node.children, rel)}</details>`,
 		);
 	}
 	flush();
 	const tabs =
 		input.sources.length > 1 ? `<div class="nav-sources">${sourceTabs(input)}</div>` : "";
-	return `<aside class="sidebar" id="sidebar">${tabs}<nav aria-label="Docs">${parts.join("")}</nav></aside>`;
+	return `<aside class="sidebar" id="sidebar">${tabs}<nav aria-label="Docs">${parts.join("")}</nav><script>${NAV_BOOT}</script></aside>`;
 };
 
 const sourceTabs = ({ sources, source }: PageInput) =>
@@ -163,6 +172,11 @@ export const cards = (source: SourceView, nodes: readonly DocNode[]): string => 
 	});
 	return `<ul class="cards">${items.join("")}</ul>`;
 };
+
+// Runs right after the sidebar, so folders open or closed on an earlier page are the same
+// before the first paint. The folder of the current page stays open.
+const NAV_BOOT =
+	"(function(){try{var s=JSON.parse(localStorage.getItem('spacefn-docs-nav')||'{}');document.querySelectorAll('#sidebar details[data-nav]:not([data-current])').forEach(function(e){var o=s[e.dataset.nav];if(o!==undefined)e.open=o})}catch(e){}})()";
 
 // Runs in <head>, so the saved theme applies before the first paint.
 const THEME_BOOT =

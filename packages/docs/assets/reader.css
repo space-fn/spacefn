@@ -224,12 +224,41 @@ html.dark .icon-moon {
 	margin-bottom: 1.5rem;
 }
 .nav-group-title {
-	display: block;
+	display: flex;
+	align-items: center;
 	margin: 0 0 0.5rem;
-	padding: 0 0.75rem;
+	padding: 0.25rem 0.75rem;
+	border-radius: var(--radius);
 	font-size: 0.8125rem;
 	font-weight: 600;
 	color: var(--text-strong);
+	list-style: none;
+	cursor: pointer;
+	user-select: none;
+}
+.nav-group-title::-webkit-details-marker {
+	display: none;
+}
+.nav-group-title:hover {
+	background: var(--bg-muted);
+}
+/* The same chevron as a folder inside a group. */
+.nav-group-title::after {
+	content: "";
+	width: 0.4rem;
+	height: 0.4rem;
+	margin-left: auto;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(-45deg);
+	transition: transform 0.15s;
+	opacity: 0.6;
+}
+.nav-group[open] > .nav-group-title::after {
+	transform: rotate(45deg);
+}
+.nav-group:not([open]) {
+	margin-bottom: 0.5rem;
 }
 .nav-list {
 	list-style: none;

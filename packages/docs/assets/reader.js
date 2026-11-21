@@ -30,6 +30,19 @@ d.querySelector(".theme-toggle")?.addEventListener("click", () => {
 	for (const listener of themeChanged) listener();
 });
 
+// Sidebar folders: remember which ones you opened or closed (see NAV_BOOT in layout.ts).
+for (const folder of d.querySelectorAll("#sidebar details[data-nav]"))
+	folder.addEventListener("toggle", () => {
+		let saved = {};
+		try {
+			saved = JSON.parse(store.get("spacefn-docs-nav") ?? "{}");
+		} catch {
+			// A bad value starts over.
+		}
+		saved[folder.dataset.nav] = folder.open;
+		store.set("spacefn-docs-nav", JSON.stringify(saved));
+	});
+
 // Navigation on narrow screens
 const menu = d.querySelector(".menu-btn");
 menu?.addEventListener("click", () => {

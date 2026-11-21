@@ -54,6 +54,10 @@ describe("an app with docs/", () => {
 			'class="active" aria-current="page"><span class="nav-icon" style="--icon:url(https://cdn.jsdelivr.net/npm/@tabler/icons@3.50.0/icons/outline/rocket.svg)" aria-hidden="true"></span>Deploys</a>',
 		);
 		expect(html).toContain('<a href="/runbooks/notes.md">Notes</a>');
+		// Its folder is a collapsible group, open because the page is in it.
+		expect(html).toContain(
+			'<details class="nav-group" open data-current data-nav="/runbooks"><summary class="nav-group-title">Runbooks</summary>',
+		);
 	});
 
 	test("lists a folder without an index page as cards, at its URL with a slash", async () => {
