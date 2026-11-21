@@ -66,7 +66,13 @@ describe.each(["cloudflare", "bun"] as const)("a new %s app", (target) => {
 		expect(sh(dir, process.execPath, [space, "gen"]).code).toBe(0);
 		const types = sh(dir, bin("tsc"), ["--noEmit", "-p", "."]);
 		expect(types.output).toBe("");
-		const tests = sh(dir, bin("vitest"), ["run", "--config", "configs/vitest.ts"]);
+		// Without Vitest's shared module cache, which races with the repo's other test runs.
+		const tests = sh(dir, bin("vitest"), [
+			"run",
+			"--config",
+			"configs/vitest.ts",
+			"--no-fsModuleCache",
+		]);
 		expect(tests.output).toContain("2 passed");
 	}, 120_000);
 });

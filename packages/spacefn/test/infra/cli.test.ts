@@ -22,7 +22,7 @@ describe("space docs", () => {
 		const docs = space(app.root, ["docs", "--port", String(port)]);
 		try {
 			await until(() => docs.log().includes(`http://localhost:${port}/`), 20_000);
-			expect(await text(`http://localhost:${port}/writing-docs.md`)).toContain(
+			expect(await text(`http://localhost:${port}/reference/writing-docs.md`)).toContain(
 				"<title>Writing docs · spacefn docs</title>",
 			);
 		} finally {

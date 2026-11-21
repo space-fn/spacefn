@@ -1,5 +1,6 @@
-import { readdir, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { cp, mkdtemp, readdir, readFile, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createBuilder } from "vite";
@@ -7,9 +8,18 @@ import { describe, expect, it } from "vitest";
 
 const examples = fileURLToPath(new URL("../../../../examples/", import.meta.url));
 
-/** Builds `examples/<name>` with its own Vite config: its client CSS and JS, and the manifest. */
+const SKIP = new Set(["node_modules", ".space", ".alchemy", "dist"]);
+
+/**
+ * Builds a copy of `examples/<name>` with its own Vite config: its client CSS
+ * and JS, and the manifest. A copy, since the example's own tests load its
+ * `.space/` meanwhile, and a build writes it for production.
+ */
 const built = async (name: string) => {
-	const root = join(examples, name);
+	const example = join(examples, name);
+	const root = await mkdtemp(join(tmpdir(), `example-${name}-`));
+	await cp(example, root, { recursive: true, filter: (from) => !SKIP.has(basename(from)) });
+	await symlink(join(example, "node_modules"), join(root, "node_modules"));
 	const builder = await createBuilder({
 		configFile: join(root, "configs", "vite.ts"),
 		root,
@@ -31,7 +41,7 @@ const built = async (name: string) => {
 			{ readonly isEntry?: boolean }
 		>,
 	};
-	await rm(join(root, "dist"), { recursive: true, force: true });
+	await rm(root, { recursive: true, force: true });
 	return result;
 };
 

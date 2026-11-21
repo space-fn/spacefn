@@ -14,7 +14,7 @@
 		"publish": "./scripts/publish.sh",
 		"publish:vscode": "./scripts/publish-vscode.sh",
 		"typecheck": "pnpm -r --filter './packages/*' --filter './examples/*' typecheck",
-		"test": "pnpm -r --filter './packages/*' --filter './examples/*' test",
+		"test": "pnpm -r --filter './packages/*' --filter './examples/*' test --no-fsModuleCache",
 		"examples": "node scripts/examples.ts && pnpm install",
 		"pack:check": "node scripts/pack-check.ts"
 	},
