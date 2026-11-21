@@ -74,18 +74,45 @@ const installedVersion = async (resolve: (id: string) => string, name: string) =
 	throw new Error(`spacefn: can't find the installed version of ${name}`);
 };
 
+/** Where the dev head's inline scripts are served, as one module the browser runs once. */
+export const DEV_HEAD_URL = "@spacefn/dev-head.js";
+const RESOLVED_DEV_HEAD_ID = "\0space:dev-head";
+
 /**
- * One client entry's tags, in load order: its source in dev (after Vite's
- * client), else its CSS, the chunks it imports, and the script, from the manifest.
+ * The tags plugins put in a page's `<head>` in dev: Vite's client, and others
+ * such as React's refresh preamble. Asked of Vite with a blank page, since
+ * spacefn's pages aren't HTML files that Vite transforms. Inline module scripts
+ * become one module at {@link DEV_HEAD_URL}, so a page that calls `assets(...)`
+ * more than once still runs them once, before its entries.
+ */
+export const devHead = (page: string, base: string): { tags: string; code: string } => {
+	const head = /<head>([\s\S]*)<\/head>/.exec(page)?.[1] ?? "";
+	const inline: string[] = [];
+	const tags = head
+		.replace(/<script type="module">([\s\S]*?)<\/script>/g, (_, code: string) => {
+			inline.push(code.trim());
+			return inline.length === 1
+				? `<script type="module" src="${base}${DEV_HEAD_URL}"></script>`
+				: "";
+		})
+		.trim();
+	return { tags, code: inline.join("\n") };
+};
+
+/**
+ * One client entry's tags, in load order: in dev, the plugins' {@link devHead}
+ * and then the source; in a build, its CSS, the chunks it imports and the
+ * script, from the manifest.
  */
 export const entryTags = (
 	entry: string,
 	base: string,
 	manifest: Manifest | undefined,
+	head = `<script type="module" src="${base}@vite/client"></script>`,
 ): string[] => {
 	if (!manifest)
 		return [
-			`<script type="module" src="${base}@vite/client"></script>`,
+			head,
 			entry.endsWith(".css")
 				? `<link rel="stylesheet" href="${base}${entry}">`
 				: `<script type="module" src="${base}${entry}"></script>`,
@@ -158,6 +185,11 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 	const clientOut = () => join(app.root, "dist", "client");
 	let config: ResolvedConfig;
 	let server: ViteDevServer | undefined;
+	let head: Promise<{ tags: string; code: string }> | undefined;
+	const headOf = (dev: ViteDevServer) =>
+		(head ??= dev
+			.transformIndexHtml("/", "<html><head></head><body></body></html>")
+			.then((page) => devHead(page, config.base)));
 	return {
 		name: "spacefn",
 		api: { spacefn: { target: options.target } } satisfies SpacePluginApi,
@@ -209,11 +241,18 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			if (dev.config.mode !== "test") await serveDocs(dev, app.root);
 		},
 		resolveId: (id) =>
-			id === ASSETS_ID ? RESOLVED_ASSETS_ID : id === PLATFORM_ID ? RESOLVED_PLATFORM_ID : undefined,
+			id === ASSETS_ID
+				? RESOLVED_ASSETS_ID
+				: id === PLATFORM_ID
+					? RESOLVED_PLATFORM_ID
+					: id === `/${DEV_HEAD_URL}`
+						? RESOLVED_DEV_HEAD_ID
+						: undefined,
 		load: async (id) => {
 			// The target's platform, so app/entry.ts is the same file on both targets.
 			if (id === RESOLVED_PLATFORM_ID)
 				return `export { platform } from ${JSON.stringify(`spacefn/${options.target}`)};\n`;
+			if (id === RESOLVED_DEV_HEAD_ID) return server ? (await headOf(server)).code : "";
 			if (id !== RESOLVED_ASSETS_ID) return undefined;
 			const manifest =
 				config.command === "build" && app.client.length > 0
@@ -221,9 +260,13 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 							await readFile(join(clientOut(), ".vite", "manifest.json"), "utf8"),
 						) as Manifest)
 					: undefined;
+			const tags = !manifest && server ? (await headOf(server)).tags : undefined;
 			return assetsModule(
 				Object.fromEntries(
-					app.client.map((file) => [clientEntryName(file), entryTags(file, config.base, manifest)]),
+					app.client.map((file) => [
+						clientEntryName(file),
+						entryTags(file, config.base, manifest, tags),
+					]),
 				),
 			);
 		},

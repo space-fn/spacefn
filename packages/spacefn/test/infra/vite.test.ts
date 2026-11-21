@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createBuilder, createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { assetsModule, entryTags } from "../../src/infra/vite.ts";
+import { assetsModule, DEV_HEAD_URL, devHead, entryTags } from "../../src/infra/vite.ts";
 import { fixtureApp } from "./fixture.ts";
 
 const until = async (check: () => Promise<boolean>, ms = 10_000) => {
@@ -47,6 +47,21 @@ describe("entryTags", () => {
 			'<link rel="modulepreload" href="/assets/shared-3.js">',
 			'<script type="module" src="/assets/main-1.js"></script>',
 		]);
+	});
+});
+
+describe("devHead", () => {
+	it("keeps the plugins' tags and serves their inline scripts as one module", () => {
+		const page =
+			'<html><head><script type="module">import a from "/@react-refresh";\na(window);</script>' +
+			'<script type="module" src="/@vite/client"></script>' +
+			'<script type="module">window.b = 1;</script></head><body></body></html>';
+		expect(devHead(page, "/")).toEqual({
+			tags:
+				`<script type="module" src="/${DEV_HEAD_URL}"></script>` +
+				'<script type="module" src="/@vite/client"></script>',
+			code: 'import a from "/@react-refresh";\na(window);\nwindow.b = 1;',
+		});
 	});
 });
 
