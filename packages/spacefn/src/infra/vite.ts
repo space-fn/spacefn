@@ -7,7 +7,7 @@ import { Readable } from "node:stream";
 
 import { Cause, Effect, Exit } from "effect";
 import { formatSpaceError, SpaceError, type Target } from "spacefn";
-import { genPlan } from "spacefn/codegen";
+import { genPlan } from "spacefn/internal/codegen";
 import {
 	isRunnableDevEnvironment,
 	type Manifest,

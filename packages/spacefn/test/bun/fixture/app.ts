@@ -14,7 +14,7 @@ import {
 	staticFiles,
 	type SpaceManifest,
 } from "spacefn";
-import { database } from "spacefn/runtime";
+import { database } from "spacefn/internal/runtime";
 
 import { platform } from "../../../src/bun/index.ts";
 

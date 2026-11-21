@@ -35,12 +35,12 @@ interface Boundary {
 	/** Imports its runtime code never makes; files matching `nodeOnly` are exempt. */
 	readonly runtimeForbid?: readonly Rule[];
 	readonly nodeOnly?: RegExp;
-	/** Areas it may reach with a relative import. Others are reached by name, e.g. `spacefn/runtime`. */
+	/** Areas it may reach with a relative import. Others are reached by name, e.g. `spacefn/internal/runtime`. */
 	readonly reaches?: readonly Area[];
 }
 
 const BOUNDARIES: Record<Area, Boundary> = {
-	// Pure SQL tooling. Only the `spacefn/sql/node` helpers (fs, node:sqlite) may touch Node.
+	// Pure SQL tooling. Only the `spacefn/internal/sql/node` helpers (fs, node:sqlite) may touch Node.
 	sql: {
 		forbid: [ALCHEMY, CLOUDFLARE, BUN, PLATFORM, INFRA, EFFECT, SELF],
 		runtimeForbid: [NODE],

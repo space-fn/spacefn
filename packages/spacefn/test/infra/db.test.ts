@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "@effect/vitest";
 import { ConfigProvider, Effect } from "effect";
-import type { PlannedDb } from "spacefn/codegen";
+import type { PlannedDb } from "spacefn/internal/codegen";
 
 import {
 	connectFromEnv,

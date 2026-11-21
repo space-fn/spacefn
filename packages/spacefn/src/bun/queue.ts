@@ -2,7 +2,12 @@ import { deserialize, serialize } from "node:v8";
 
 import { Clock, Duration, Effect, Layer } from "effect";
 import { Queue, QueueError, type ManifestQueue, type SpaceManifest } from "spacefn";
-import { consumeBatch, queueConsumerOf, type Delivery, type Unchecked } from "spacefn/runtime";
+import {
+	consumeBatch,
+	queueConsumerOf,
+	type Delivery,
+	type Unchecked,
+} from "spacefn/internal/runtime";
 
 import { SpaceState } from "./state.ts";
 

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { Effect } from "effect";
-import { gen } from "spacefn/codegen";
+import { gen } from "spacefn/internal/codegen";
 
 import { loadTarget } from "../../src/infra/vite-config.ts";
 

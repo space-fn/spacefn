@@ -1,6 +1,6 @@
 import { Clock, Effect } from "effect";
 import type { SpaceManifest } from "spacefn";
-import { cronMatches, cronOf, runSchedule } from "spacefn/runtime";
+import { cronMatches, cronOf, runSchedule } from "spacefn/internal/runtime";
 
 /**
  * Runs the jobs of `app/crons/` at the start of each UTC minute their schedule

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { app, clientAddress, databases, route, type SpaceManifest } from "spacefn";
-import { database } from "spacefn/runtime";
+import { database } from "spacefn/internal/runtime";
 
 import { bunApp, platform } from "../../src/bun/app.ts";
 import { dir } from "./helpers.ts";

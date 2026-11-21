@@ -12,7 +12,7 @@ import {
 	queueConsumerOf,
 	runSchedule,
 	type Delivery,
-} from "spacefn/runtime";
+} from "spacefn/internal/runtime";
 
 import { CloudflareEnv, configProvider, type WorkerEnv } from "./bindings.ts";
 import { busLayer } from "./bus.ts";

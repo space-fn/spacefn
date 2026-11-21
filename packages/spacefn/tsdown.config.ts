@@ -2,7 +2,7 @@ import { defineConfig, type UserConfig } from "tsdown";
 
 /**
  * One build per area, each typed with its runtime's globals. The targets
- * import the core by name (`spacefn`, `spacefn/runtime`), so they share the
+ * import the core by name (`spacefn`, `spacefn/internal/runtime`), so they share the
  * core's files instead of bundling a copy.
  */
 const area = (entry: Record<string, string>, tsconfig = "tsconfig.json"): UserConfig => ({

@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 
 import { createClient } from "@libsql/client";
 import { Config, Effect, Option, Redacted, type Scope } from "effect";
-import { dbClassName, type PlannedDb } from "spacefn/codegen";
+import { dbClassName, type PlannedDb } from "spacefn/internal/codegen";
 import {
 	applyMigrations,
 	libsqlConnection,
@@ -11,7 +11,7 @@ import {
 	rollbackMigrations,
 	type DbConnection,
 	type MigrationStatus,
-} from "spacefn/runtime";
+} from "spacefn/internal/runtime";
 
 /**
  * Opens a database for the CLI, or `undefined` when its driver is only

@@ -14,7 +14,7 @@ import {
 	databases,
 	type SpaceManifest,
 } from "spacefn";
-import { database } from "spacefn/runtime";
+import { database } from "spacefn/internal/runtime";
 
 import {
 	CloudflareEnv,

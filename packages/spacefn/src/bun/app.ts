@@ -1,7 +1,7 @@
 import { Cause, Context, Effect, Fiber, Layer, ManagedRuntime, Option } from "effect";
 import { FetchHttpClient, HttpRouter, HttpServer, HttpServerRequest } from "effect/http";
 import { formatSpaceError, SpaceError, type SpaceApp, type SpaceManifest } from "spacefn";
-import { appServices, DbConnector, httpLayer } from "spacefn/runtime";
+import { appServices, DbConnector, httpLayer } from "spacefn/internal/runtime";
 
 import { blobLayer } from "./blob.ts";
 import { busLayer } from "./bus.ts";

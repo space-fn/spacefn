@@ -8,7 +8,7 @@ import {
 	transactional,
 	type DbConnection,
 	type Unchecked,
-} from "spacefn/runtime";
+} from "spacefn/internal/runtime";
 
 import { binding, type WorkerEnv } from "./bindings.ts";
 

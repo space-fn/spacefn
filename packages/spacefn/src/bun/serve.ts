@@ -4,7 +4,7 @@ import { resolve, sep } from "node:path";
 
 import { Cause, Effect, Exit, Fiber, Layer } from "effect";
 import type { SpaceApp } from "spacefn";
-import { StaticFiles } from "spacefn/runtime";
+import { StaticFiles } from "spacefn/internal/runtime";
 
 import { bunApp, logError, type BunApp } from "./app.ts";
 import { runCrons } from "./cron.ts";

@@ -7,7 +7,7 @@ import { parseEnv } from "node:util";
 
 import { type Config, ConfigProvider, Effect } from "effect";
 import { formatSpaceError, SpaceError } from "spacefn";
-import { loadPlan, renderApp, type AppPlan } from "spacefn/codegen";
+import { loadPlan, renderApp, type AppPlan } from "spacefn/internal/codegen";
 
 import { addCommand, detectPackageManager } from "./package-manager.ts";
 import { packageDir } from "./process.ts";

@@ -31,10 +31,10 @@
 		"./testing": "./src/testing.ts",
 		"./assets": "./src/assets.ts",
 		"./platform": "./src/platform.ts",
-		"./codegen": "./src/codegen/index.ts",
-		"./runtime": "./src/runtime.ts",
-		"./sql": "./src/sql/index.ts",
-		"./sql/node": "./src/sql/node/index.ts",
+		"./internal/codegen": "./src/codegen/index.ts",
+		"./internal/runtime": "./src/runtime.ts",
+		"./internal/sql": "./src/sql/index.ts",
+		"./internal/sql/node": "./src/sql/node/index.ts",
 		"./cloudflare": "./src/cloudflare/index.ts",
 		"./bun": "./src/bun/index.ts",
 		"./vite": "./src/infra/vite.ts",
@@ -61,19 +61,19 @@
 				"types": "./dist/platform.d.mts",
 				"import": "./dist/platform.mjs"
 			},
-			"./codegen": {
+			"./internal/codegen": {
 				"types": "./dist/codegen/index.d.mts",
 				"import": "./dist/codegen/index.mjs"
 			},
-			"./runtime": {
+			"./internal/runtime": {
 				"types": "./dist/runtime.d.mts",
 				"import": "./dist/runtime.mjs"
 			},
-			"./sql": {
+			"./internal/sql": {
 				"types": "./dist/sql/index.d.mts",
 				"import": "./dist/sql/index.mjs"
 			},
-			"./sql/node": {
+			"./internal/sql/node": {
 				"types": "./dist/sql/node/index.d.mts",
 				"import": "./dist/sql/node/index.mjs"
 			},

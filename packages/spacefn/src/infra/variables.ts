@@ -1,5 +1,5 @@
 import { Redacted } from "effect";
-import { envVariables } from "spacefn/runtime";
+import { envVariables } from "spacefn/internal/runtime";
 
 /** `configs/env.ts`'s default export: its fields say which variables the app reads. */
 export interface EnvSource {

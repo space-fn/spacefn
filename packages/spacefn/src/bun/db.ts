@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { createClient } from "@libsql/client";
 import { Config, Effect, Option, Redacted, type Scope } from "effect";
 import { SpaceError, type ManifestDb } from "spacefn";
-import { libsqlConnection, type DbConnection, type Unchecked } from "spacefn/runtime";
+import { libsqlConnection, type DbConnection, type Unchecked } from "spacefn/internal/runtime";
 
 /** Where local files go: `file:` databases, the state database and blobs. */
 export const dataDir = Config.String("SPACE_DATA_DIR").pipe(Config.withDefault(".space/data"));

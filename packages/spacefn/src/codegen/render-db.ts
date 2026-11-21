@@ -98,7 +98,7 @@ export const renderDb = (db: PlannedDb): string => {
 	const className = dbClassName(db.name);
 	return [
 		GENERATED,
-		'import { database } from "spacefn/runtime";',
+		'import { database } from "spacefn/internal/runtime";',
 		"",
 		...db.queries.flatMap(renderTypes).flatMap((block) => [block, ""]),
 		`export const name = ${str(db.name)};`,

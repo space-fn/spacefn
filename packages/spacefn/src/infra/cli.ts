@@ -13,7 +13,7 @@ import {
 	watchGen,
 	type PlannedDb,
 	type WriteResult,
-} from "spacefn/codegen";
+} from "spacefn/internal/codegen";
 
 import { runAlchemy } from "./alchemy.ts";
 import { build } from "./build.ts";
