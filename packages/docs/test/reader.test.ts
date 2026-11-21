@@ -135,7 +135,7 @@ test("an app without docs/ opens on spacefn's docs", async () => {
 	const server = await serve({ root: app({ "package.json": '{"name":"bare"}' }), port: 0 });
 	try {
 		const html = await (await get(server.url)).text();
-		expect(html).toContain("<title>spacefn docs</title>");
+		expect(html).toContain("<title>Introduction · spacefn docs</title>");
 		expect(html).not.toContain("source-tab");
 	} finally {
 		await server.close();

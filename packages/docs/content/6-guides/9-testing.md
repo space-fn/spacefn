@@ -1,3 +1,7 @@
+---
+icon: test-pipe
+---
+
 # Testing
 
 Tests sit next to the code they test, as `*.test.ts`: a feature's in its `modules/<feature>/` folder, shared code's in `lib/`. `npm test` runs every one in `app/`, `modules/` and `lib/` with Vitest, through `configs/vitest.ts`, which merges `configs/vite.ts` so the spacefn plugin runs too. They run in Node, in memory: no Worker, no Docker, no database server.

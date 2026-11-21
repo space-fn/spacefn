@@ -1,22 +1,34 @@
+---
+icon: list-tree
+---
+
 # Conventions
 
 An app is a folder. spacefn reads it (without running your code) and writes the wiring into `.space/`: `space gen` does it once, `space dev` on every change.
 
 ```txt
-app/routes/           pages and HTTP endpoints      → Pages, Routes
-app/db/<name>/        migrations/ and queries/      → Database
-app/queues/           one consumer per file         → Queues and crons
-app/crons/            one scheduled job per file    → Queues and crons
-app/client/           browser scripts and styles    → Pages
-app/durable-objects/  Durable Object classes        (Cloudflare only)
-app/workflows/        Workflow classes              (Cloudflare only)
-app/entry.ts          what runs with the rest       → The entry
-configs/              env.ts (the variables the app reads), infra.ts (the Alchemy stack), vite.ts, vitest.ts, tsconfig.json; Dockerfile on Bun
-modules/<feature>/    a feature's code: logic, views, client code, tests
-lib/                  code features share: UI kit, design tokens, helpers
-public/               files served as they are at / → Pages
-.space/               generated
+my-app/
+├── app/
+│   ├── entry.ts             what runs with the rest      → The entry
+│   ├── routes/              pages and HTTP endpoints     → Pages, Routes
+│   ├── db/<name>/           migrations/ and queries/     → Database
+│   ├── queues/              one consumer per file        → Queues and crons
+│   ├── crons/               one scheduled job per file   → Queues and crons
+│   ├── client/              browser scripts and styles   → Frontend
+│   ├── durable-objects/     Durable Object classes       (Cloudflare only)
+│   └── workflows/           Workflow classes             (Cloudflare only)
+├── modules/<feature>/       a feature's code: logic, views, client code, tests
+├── lib/                     code features share: UI kit, design tokens, helpers
+├── public/                  files served as they are at /  → Frontend
+├── configs/
+│   ├── env.ts               the variables the app reads
+│   ├── infra.ts             the Alchemy stack
+│   ├── vite.ts, vitest.ts, tsconfig.json
+│   └── Dockerfile           on Bun
+└── .space/                  generated
 ```
+
+[Folders](4-folders/index.md) has a page for each of these, with what goes in it and an example.
 
 Each convention file has one default export, made with a helper: `route(...)`, `page(...)`, `middleware(...)`, `queue(...)`, `cron(...)`. Exporting something else is an error that names the file.
 
@@ -102,7 +114,7 @@ Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for
 - **Private files:** a file or folder starting with `_` is never a page, route or job, such as `app/routes/_shared.ts`. Most such code belongs in `modules/` or `lib/` instead.
 - **Tests:** `*.test.ts` and `*.spec.ts` files are skipped too, so tests sit next to what they test.
 - **Dev-only and prod-only files:** `debug.dev.ts` exists only in `space dev`, `banner.prod.ts` only in builds and deploys.
-- **Middleware:** `_middleware.ts` in `app/routes/` wraps every request; in a folder below, it wraps that folder's pages and routes. See [Routes](3-guides/2-routes.md#middleware).
+- **Middleware:** `_middleware.ts` in `app/routes/` wraps every request; in a folder below, it wraps that folder's pages and routes. See [Routes](6-guides/2-routes.md#middleware).
 - **Queues and crons** are named after their file: `app/queues/emails.ts` is the queue `emails`.
 
 ## Imports
@@ -121,6 +133,6 @@ Imports from the app root are [subpath imports](https://nodejs.org/api/packages.
 
 - `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
 - `#modules/...` and `#lib/...` are your own code. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
-- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Frontend](3-guides/4-frontend.md#loading-entries)). The Vite plugin provides it.
+- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Frontend](6-guides/4-frontend.md#loading-entries)). The Vite plugin provides it.
 
 Use relative imports with the `.ts` extension inside a folder.

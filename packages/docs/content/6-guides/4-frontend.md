@@ -1,3 +1,7 @@
+---
+icon: palette
+---
+
 # Frontend
 
 Pages are server-rendered `html` (see [Pages](3-pages.md)). What runs in the browser is bundled by Vite from `app/client/`, and each page loads only what it uses. Every section below has a tested app in `examples/`, which also ships in `node_modules/spacefn-docs/examples/`.
@@ -7,12 +11,18 @@ Pages are server-rendered `html` (see [Pages](3-pages.md)). What runs in the bro
 The same split as the rest of the app (see [Conventions](../2-conventions.md#where-code-goes)):
 
 ```txt
-app/client/main.ts            an entry: imports from modules/ and lib/, and starts them
-app/client/site.css           an entry: @imports the stylesheets
-modules/<feature>/client/     the feature's components and scripts
-modules/<feature>/<f>.css     the feature's styles
-lib/ui/                       the UI kit: layout, components, design tokens
-public/                       files served as they are at /
+my-app/
+├── app/
+│   └── client/
+│       ├── main.ts          an entry: imports from modules/ and lib/, and starts them
+│       └── site.css         an entry: @imports the stylesheets
+├── modules/
+│   └── <feature>/
+│       ├── client/          the feature's components and scripts
+│       └── <feature>.css    the feature's styles
+├── lib/
+│   └── ui/                  the UI kit: layout, components, design tokens
+└── public/                  files served as they are at /
 ```
 
 An entry is each file directly in `app/client/`, named after the file: `app/client/main.ts` is `main`. Keep entries to a few lines, so the code itself lives with its feature:

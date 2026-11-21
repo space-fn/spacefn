@@ -1,3 +1,7 @@
+---
+icon: door-enter
+---
+
 # The entry
 
 `app/entry.ts` says what runs with the file conventions: the services, what wraps every request, and how failures are answered. Every app has one, and it's yours. spacefn provides the pieces and never adds one you didn't list. The same file runs on Cloudflare and on Bun.
@@ -28,7 +32,7 @@ The app's services, in order: each layer can use the ones listed before it, and 
 | `platform(manifest)`       | The target's `Kv`, `Blob`, `Queue`, `Bus`, `RateLimiter`, an `HttpClient`, and how databases connect. On Cloudflare also the Worker's vars and secrets as config, and `CloudflareEnv`. |
 | `Env.layer`                | `configs/env.ts`, read and checked when the app starts.                                                                                                                                |
 | `databases(manifest)`      | Every database in `app/db/`, migrated as its `config.json` says.                                                                                                                       |
-| `telemetry(manifest.name)` | Traces, logs and metrics over OTLP, once `OTEL_EXPORTER_OTLP_ENDPOINT` is set. See [Deploying](../4-deploy.md).                                                                        |
+| `telemetry(manifest.name)` | Traces, logs and metrics over OTLP, once `OTEL_EXPORTER_OTLP_ENDPOINT` is set. See [Deploying](../5-deployment/index.md#telemetry).                                                    |
 
 Your own services go after them, so they can use everything above:
 

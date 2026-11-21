@@ -1,3 +1,7 @@
+---
+icon: flag
+---
+
 # Getting started
 
 ## Create an app
@@ -24,30 +28,39 @@ You need Node 22 or later. A Bun app also needs [Bun](https://bun.sh), and Docke
 `app/` holds what spacefn reads, and its files only connect the code in `modules/` and `lib/`:
 
 ```txt
-app/
-  entry.ts                  what runs with the rest: services, middleware, onError
-  routes/index.ts           the page at /: the todos module's actions and views, wired up
-  routes/health.ts          GET /health
-  routes/_middleware.ts     refuses cross-site form posts, on every request
-  db/main/migrations/       the schema, in SQL
-  db/main/queries/          one SQL query per file, typed for you
-  client/site.css           the stylesheet entry, loaded by assets("site")
-modules/todos/
-  todos.ts                  what the app does with todos: list, add, toggle
-  views.ts                  the todos' HTML, from plain props
-  todos.css                 their styles, imported by app/client/site.css
-  todos.test.ts             the feature tested through the page, in memory
-lib/ui/
-  layout.ts                 the HTML around every page
-  base.css                  the design tokens and base styles
-public/favicon.svg          served as it is, at /favicon.svg
-configs/
-  env.ts                    the variables the app reads
-  infra.ts                  what a deploy creates: a plain Alchemy stack
-  vite.ts                   the Vite config, with spacefn's plugin and the target
-  vitest.ts, tsconfig.json
-  Dockerfile                the image a Bun deploy builds (Bun only)
-.space/                     generated; don't edit or commit it
+my-app/
+├── app/
+│   ├── entry.ts                what runs with the rest: services, middleware, onError
+│   ├── routes/
+│   │   ├── index.ts            the page at /: the todos module's actions and views, wired up
+│   │   ├── health.ts           GET /health
+│   │   └── _middleware.ts      refuses cross-site form posts, on every request
+│   ├── db/
+│   │   └── main/
+│   │       ├── migrations/     the schema, in SQL
+│   │       └── queries/        one SQL query per file, typed for you
+│   └── client/
+│       └── site.css            the stylesheet entry, loaded by assets("site")
+├── modules/
+│   └── todos/
+│       ├── todos.ts            what the app does with todos: list, add, toggle
+│       ├── views.ts            the todos' HTML, from plain props
+│       ├── todos.css           their styles, imported by app/client/site.css
+│       └── todos.test.ts       the feature tested through the page, in memory
+├── lib/
+│   └── ui/
+│       ├── layout.ts           the HTML around every page
+│       └── base.css            the design tokens and base styles
+├── public/
+│   └── favicon.svg             served as it is, at /favicon.svg
+├── configs/
+│   ├── env.ts                  the variables the app reads
+│   ├── infra.ts                what a deploy creates: a plain Alchemy stack
+│   ├── vite.ts                 the Vite config, with spacefn's plugin and the target
+│   ├── vitest.ts
+│   ├── tsconfig.json
+│   └── Dockerfile              the image a Bun deploy builds (Bun only)
+└── .space/                     generated; don't edit or commit it
 ```
 
 Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main/queries/` and `MainDb.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](2-conventions.md).
@@ -91,4 +104,4 @@ npm test           # every *.test.ts in app/, modules/ and lib/
 npm run deploy     # stage `prod`
 ```
 
-`deploy` runs `configs/infra.ts`, a plain Alchemy stack. On Cloudflare it creates the D1 database, the queues and the rest in your account; Alchemy asks you to sign in the first time. On Bun it builds an image with `configs/Dockerfile` and runs it in Docker. See [Deploying](4-deploy.md).
+`deploy` runs `configs/infra.ts`, a plain Alchemy stack. On Cloudflare it creates the D1 database, the queues and the rest in your account; Alchemy asks you to sign in the first time. On Bun it builds an image with `configs/Dockerfile` and runs it in Docker. See [Deploying](5-deployment/index.md).

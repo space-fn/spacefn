@@ -1,3 +1,7 @@
+---
+icon: route
+---
+
 # Routes and middleware
 
 ## Routes

@@ -1,3 +1,7 @@
+---
+icon: clock-play
+---
+
 # Queues and crons
 
 ## Queues

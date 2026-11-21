@@ -1,3 +1,7 @@
+---
+icon: server
+---
+
 # Services
 
 spacefn gives every app five services. Call them through their class, `yield* Kv.get(key)`, the same way on every target; what backs them depends on where the app runs. `yield* Kv` gives the whole service, to pass around.
@@ -12,7 +16,7 @@ spacefn gives every app five services. Call them through their class, `yield* Kv
 
 On Cloudflare, `configs/infra.ts` creates the KV namespace and the R2 bucket behind `Kv` and `Blob` (R2 must be enabled on the account); remove the one the app doesn't use.
 
-On Bun, the web server, the queue consumers and the crons run in separate processes, so these services keep their data in a shared libSQL **state database**: `.space/data/state.db` locally, or `SPACE_STATE_URL` (and `SPACE_STATE_AUTH_TOKEN`) for a remote one. See [Deploying](../4-deploy.md).
+On Bun, the web server, the queue consumers and the crons run in separate processes, so these services keep their data in a shared libSQL **state database**: `.space/data/state.db` locally, or `SPACE_STATE_URL` (and `SPACE_STATE_AUTH_TOKEN`) for a remote one. See [Deploying](../5-deployment/2-bun.md).
 
 ## Kv
 

@@ -1,3 +1,7 @@
+---
+icon: terminal-2
+---
+
 # CLI
 
 `space` comes with `spacefn`. Run it with `npx space <command>`, or through the app's scripts (`npm run dev`).
@@ -9,7 +13,7 @@
 | `space deploy [--stage S] [--yes]`                           | `alchemy deploy configs/infra.ts` for stage `S` (default `prod`). `--yes` skips the approval.                                                                         |
 | `space destroy [--stage S] [--yes]`                          | `alchemy destroy configs/infra.ts`: deletes everything stage `S` deployed, its data included.                                                                         |
 | `space gen [--watch] [--prod]`                               | Writes `.space/` from `app/` and `configs/`. `--prod` takes `.prod.ts` files instead of `.dev.ts`.                                                                    |
-| `space db status\|migrate\|rollback [--db name] [--steps N]` | Migrations of libSQL databases. See [Database](../3-guides/5-database.md).                                                                                            |
+| `space db status\|migrate\|rollback [--db name] [--steps N]` | Migrations of libSQL databases. See [Database](../6-guides/5-database.md).                                                                                            |
 | `space doctor`                                               | Checks Node, the config, `.space/`, the target's tools, the bindings in `configs/infra.ts` and `configs/env.ts`, and says what to fix.                                |
 | `space upgrade`                                              | Updates spacefn, its Alchemy provider and `spacefn-docs`, then regenerates.                                                                                           |
 | `space docs [--port N]`                                      | Serves your `docs/` and spacefn's docs at `http://localhost:4321/`. `space dev` serves them too, at `/__space/docs/`. See [Writing docs](3-writing-docs.md).          |

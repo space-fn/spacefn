@@ -1,3 +1,7 @@
+---
+icon: file-text
+---
+
 # Pages
 
 A file in `app/routes/` whose default export is a `page(...)` is a server-rendered page. `page` takes a `loader` (what the page needs), `actions` (what its forms do) and `render` (the HTML). The page connects them to the feature's code in `modules/`: what to do with todos, and how they look.

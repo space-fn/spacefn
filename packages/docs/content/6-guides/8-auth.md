@@ -1,3 +1,7 @@
+---
+icon: lock
+---
+
 # Auth
 
 spacefn gives building blocks, not a user system: your users and sessions live in your own tables, and you decide the flows. All of it runs on Workers and Bun alike.

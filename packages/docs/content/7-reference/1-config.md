@@ -1,3 +1,7 @@
+---
+icon: adjustments
+---
+
 # Configuration
 
 Everything you configure is in `configs/`, including `configs/env.ts`, the variables the app reads.
@@ -27,7 +31,7 @@ export default defineConfig({ plugins: [space({ target: "cloudflare" }), tailwin
 
 `configs/vitest.ts` merges it, so tests run with the same plugins. The app's name, for the Worker, the container and the deploy, is `package.json`'s `name`.
 
-Imports such as `#lib/...` are declared in `package.json`; see [Conventions](../2-conventions.md#imports). Each database's driver is in its own `app/db/<name>/config.json`; see [Database](../3-guides/5-database.md#configjson).
+Imports such as `#lib/...` are declared in `package.json`; see [Conventions](../2-conventions.md#imports). Each database's driver is in its own `app/db/<name>/config.json`; see [Database](../6-guides/5-database.md#configjson).
 
 ## `configs/env.ts`
 
@@ -60,4 +64,4 @@ A deploy never reads `.env`, so local values can't reach production. Variables a
 
 ## `configs/infra.ts`
 
-A plain Alchemy stack: what `space deploy` and, on Cloudflare, `space dev` run. It loops over `#space/infra.ts` for the resources the file conventions need and passes the variables on with `variables(...)`. See [Deploying](../4-deploy.md).
+A plain Alchemy stack: what `space deploy` and, on Cloudflare, `space dev` run. It loops over `#space/infra.ts` for the resources the file conventions need and passes the variables on with `variables(...)`. See [Deploying](../5-deployment/3-infrastructure.md).

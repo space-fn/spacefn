@@ -1,5 +1,6 @@
 ---
 description: Markdown, HTML, code groups, callouts and diagrams in the docs reader
+icon: pencil
 ---
 
 # Writing docs
@@ -8,18 +9,18 @@ description: Markdown, HTML, code groups, callouts and diagrams in the docs read
 
 ## Pages and the sidebar
 
-Every `.md` file in `docs/` is a page, and every folder is a group in the sidebar. A folder's `index.md` (or `README.md`) is its first page and names the group.
+Every `.md` file in `docs/` is a page, and every folder is a group in the sidebar. A folder's `index.md` (or `README.md`) is its first page and names the group. Groups collapse: the one with the open page starts open, and the reader remembers the ones you open or close.
 
 Number files and folders to put them in reading order. The number orders the sidebar and is left out everywhere else: `2-runbooks/1-deploys.md` is "Deploys" in "Runbooks", at `/runbooks/deploys.md`.
 
 ```txt
 docs/
-  index.md              the home page
-  1-architecture.md     /architecture.md
-  2-runbooks/
-    index.md            "Runbooks", the group's title
-    1-deploys.md        /runbooks/deploys.md
-    2-incidents.md      /runbooks/incidents.md
+├── index.md                the home page
+├── 1-architecture.md       /architecture.md
+└── 2-runbooks/
+    ├── index.md            "Runbooks", the group's title
+    ├── 1-deploys.md        /runbooks/deploys.md
+    └── 2-incidents.md      /runbooks/incidents.md
 ```
 
 Without numbers, pages are in name order. Frontmatter `order` overrides the number, and `title` the first `# heading`:
@@ -29,10 +30,13 @@ Without numbers, pages are in name order. Frontmatter `order` overrides the numb
 title: How it fits together
 order: 2
 description: One line, shown on the folder's cards
+icon: building-bridge
 ---
 
 # Architecture
 ```
+
+`icon` puts a [Tabler icon](https://tabler.io/icons) before the page in the sidebar: its name as on the site, such as `rocket`, or `heart-filled` for the filled one. A folder's `index.md` gives the folder its icon. A page without `icon` has none. The icons load from a CDN, like Mermaid, so they're missing offline.
 
 Link between pages by their file names, as you would on GitHub: `[deploys](2-runbooks/1-deploys.md)`. The reader sends such a link to the page's URL. Put images next to the pages and link them the same way. Don't give two files in a folder the same name apart from the number, such as `deploys.md` and `1-deploys.md`: only the one without a number is reachable.
 
@@ -189,9 +193,9 @@ Add `app/db/main/queries/todos/mark-done.sql`; `space gen` types it.
 
 <div class="cards">
 
-- [Database](../3-guides/5-database.md)<br>Migrations and typed queries
-- [Pages](../3-guides/3-pages.md)<br>Server-rendered pages and forms
-- [Testing](../3-guides/9-testing.md)<br>Pages, routes and queries in memory
+- [Database](../6-guides/5-database.md)<br>Migrations and typed queries
+- [Pages](../6-guides/3-pages.md)<br>Server-rendered pages and forms
+- [Testing](../6-guides/9-testing.md)<br>Pages, routes and queries in memory
 
 </div>
 

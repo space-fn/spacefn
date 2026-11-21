@@ -1,14 +1,20 @@
+---
+icon: database
+---
+
 # Database
 
 Each folder in `app/db/` is a SQLite database: `app/db/main/` is `main`. You write the schema and the queries in SQL; `space gen` turns them into a typed service.
 
 ```txt
 app/db/main/
-  config.json
-  migrations/0001_todos.sql
-  migrations/0002_due_dates.sql
-  queries/list-todos.sql
-  queries/add-todo.sql
+├── config.json
+├── migrations/
+│   ├── 0001_todos.sql
+│   └── 0002_due_dates.sql
+└── queries/
+    ├── list-todos.sql
+    └── add-todo.sql
 ```
 
 ## `config.json`
@@ -98,11 +104,11 @@ A folder in `queries/` groups its queries under its name, as deep as you like:
 
 ```txt
 app/db/main/queries/
-  list-todos.sql          MainDb.listTodos()
-  todos/
-    mark-done.sql         MainDb.todos.markDone({ id })
-    stats/
-      count-done.sql      MainDb.todos.stats.countDone()
+├── list-todos.sql            MainDb.listTodos()
+└── todos/
+    ├── mark-done.sql         MainDb.todos.markDone({ id })
+    └── stats/
+        └── count-done.sql    MainDb.todos.stats.countDone()
 ```
 
 A query and a folder can't share a name (`todos.sql` beside `todos/`). Files and folders starting with `_` are drafts and skipped.

@@ -112,7 +112,7 @@ describe("the Bun app", () => {
 		it("serves the docs reader at /__space/docs/, with the app around it", async () => {
 			const docs = await fetch(`${base}/__space/docs/`);
 			expect(docs.status).toBe(200);
-			expect(await docs.text()).toContain("<title>spacefn docs</title>");
+			expect(await docs.text()).toContain("<title>Introduction · spacefn docs</title>");
 			expect((await fetch(`${base}/__space/docs/_/reader.css`)).status).toBe(200);
 			expect((await fetch(`${base}/__space/docsx`)).status).not.toBe(302);
 		});
