@@ -11,5 +11,5 @@
 		"skipLibCheck": true,
 		"types": []
 	},
-	"include": ["../app", "../lib", "../configs", "../.space"]
+	"include": ["../app", "../lib", "../modules", "../configs"]
 }

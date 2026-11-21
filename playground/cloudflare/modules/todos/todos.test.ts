@@ -13,7 +13,8 @@ const app = () =>
 		Layer.mergeAll(testDb(MainDb), memoryServices, Env.layer.pipe(Layer.provide(testEnv({})))),
 	);
 
-describe("the todos page", () => {
+// The feature through the page at /, as a browser uses it: in memory, with a fresh database.
+describe("todos", () => {
 	it("adds a todo, then lists it", async () => {
 		await using page = app();
 		const added = await page.fetch("/?__action=add", form({ title: "Write docs" }));

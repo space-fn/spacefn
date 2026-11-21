@@ -5,6 +5,7 @@
 	"imports": {
 		"#configs/*": "./configs/*",
 		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
 		"#space/*": "./.space/*"
 	},
 	"scripts": {

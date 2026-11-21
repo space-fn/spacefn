@@ -55,8 +55,13 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 		name,
 		private: true,
 		type: "module",
-		// Imports from the app root: configs/env.ts, your own code in lib/, and the code space gen writes.
-		imports: { "#configs/*": "./configs/*", "#lib/*": "./lib/*", "#space/*": "./.space/*" },
+		// Imports from the app root: configs/env.ts, features in modules/, shared code in lib/, and .space/.
+		imports: {
+			"#configs/*": "./configs/*",
+			"#lib/*": "./lib/*",
+			"#modules/*": "./modules/*",
+			"#space/*": "./.space/*",
+		},
 		scripts: {
 			// .space/ is generated; make it as soon as dependencies are in.
 			postinstall: "space gen",

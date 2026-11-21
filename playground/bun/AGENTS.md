@@ -1,13 +1,9 @@
 # Notes for coding agents
 
-This is a spacefn app. spacefn is built on Effect 4: handlers, loaders and jobs are `Effect`s, services are read with `yield*` inside `Effect.gen`.
+This is a spacefn app, on Effect 4. spacefn's docs and examples for the installed version are in `node_modules/spacefn-docs/`: read them before guessing an API.
 
-- Convention folders are listed in README.md. Adding, removing or renaming a file there needs `npx space gen` (`npm run dev` does it on its own).
-- `.space/` is generated. Never edit it; change `app/` or `configs/` instead.
-- `app/entry.ts` lists the app's services in order (the target's `platform`, the env, databases, telemetry, then the app's own layers), the middleware around every request, and `onError`. Add a new service there.
-- Database: `app/db/<name>/config.json` sets its `driver` and `migrateOn` (`startup` or `call`). Write migrations in `app/db/<name>/migrations/NNNN_name.sql` (`-- up` and `-- down` sections) and one query per file in `app/db/<name>/queries/` (the file name is the function: `list-todos.sql` is `listTodos`; it returns rows for a `SELECT` or `RETURNING`, nothing otherwise, and one row with a `-- :one` line; `:param` placeholders, `-- @column name type` for expressions). Call them on the class from `#space/db/<name>.ts`: `yield* MainDb.listTodos()`. Services work the same way: `yield* Kv.get(key)`, `yield* Bus.publish(topic, message)`.
-- Pages: `export default page({ loader, actions, render })`; actions are `action({ method?, input: Schema, handler })`. Routes: `export default route({ GET: Effect, POST: Effect })`.
-- Errors: fail with `NotFound`, `BadRequest`, `Unauthorized`, ... from spacefn; they become the right status.
+- `app/` only wires the runtime: its files connect code from `modules/` and `lib/` to routes, pages, jobs and the entry, with no logic or markup of their own.
+- A feature's logic, views, client code and tests go in `modules/<feature>/`. Code shared by features (UI kit, design tokens, helpers) goes in `lib/`, which doesn't import `modules/`.
+- `.space/` is generated: never edit it. After adding, removing or renaming a file in `app/`, run `npx space gen` (`npm run dev` does it on its own).
 - `configs/env.ts` is imported by deploys, so it may import only `spacefn` and `effect`.
-- spacefn's docs, for the installed version, are Markdown files in `node_modules/spacefn-docs/content/`. Read them before guessing an API.
 - Check your work with `npm run typecheck` and `npm test`; `npx space doctor` explains setup problems.

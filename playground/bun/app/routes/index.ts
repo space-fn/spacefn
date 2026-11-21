@@ -1,74 +1,47 @@
 import { Effect, Schema } from "effect";
-import { action, Bus, Datastar, html, page, redirect } from "spacefn";
+import { action, actionUrl, Datastar, page, redirect } from "spacefn";
 
 import Env from "#configs/env.ts";
-import MainDb from "#space/db/main.ts";
+import { layout } from "#lib/ui/layout.ts";
+import * as Todos from "#modules/todos/todos.ts";
+import { todoList, todosPage } from "#modules/todos/views.ts";
 
-import { layout } from "./_layout.ts";
+// The page at /. It only connects the todos module to the web: the logic and the markup are there.
 
-/** The Bus topic every change to the todos is announced on. */
-const TOPIC = "todos";
-
-const todoList = Effect.gen(function* () {
-	const todos = yield* MainDb.listTodos();
-	return html`<ul id="todos">
-		${todos.map(
-			(todo) =>
-				html`<li>
-					<form method="post" action="?__action=toggle">
-						<input type="hidden" name="id" value="${todo.id}" />
-						<button class="${todo.done ? "done" : ""}">${todo.title}</button>
-					</form>
-				</li>`,
-		)}
-	</ul>`;
-});
-
-/** After a change: tell every open page, then send this browser back to the list. */
-const changed = Effect.gen(function* () {
-	yield* Bus.publish(TOPIC, "changed");
-	return redirect("/");
-});
+const list = Todos.list.pipe(
+	Effect.map((todos) => todoList({ todos, toggle: actionUrl("toggle") })),
+);
 
 export default page({
 	loader: Effect.gen(function* () {
-		return { greeting: (yield* Env).GREETING, list: yield* todoList };
+		return { greeting: (yield* Env).GREETING, list: yield* list };
 	}),
 	actions: {
+		// After a form post, send the browser back to the list.
 		add: action({
-			input: Schema.Struct({ title: Schema.NonEmptyString }),
-			handler: ({ title }) =>
-				Effect.gen(function* () {
-					yield* MainDb.addTodo({ title });
-					return yield* changed;
-				}),
+			input: Todos.NewTodo,
+			handler: (todo) => Effect.as(Todos.add(todo), redirect("/")),
 		}),
 		toggle: action({
-			input: Schema.Struct({ id: Schema.FiniteFromString }),
-			handler: ({ id }) =>
-				Effect.gen(function* () {
-					yield* MainDb.toggleTodo({ id });
-					return yield* changed;
-				}),
+			input: Todos.TodoRef,
+			handler: (todo) => Effect.as(Todos.toggle(todo), redirect("/")),
 		}),
 		// Datastar opens this when the page loads, and gets the list again after each change.
 		live: action({
 			method: "get",
 			input: Schema.Struct({}),
-			handler: () => Datastar.watch([TOPIC], todoList),
+			handler: () => Datastar.watch([Todos.TOPIC], list),
 		}),
 	},
 	render: (ctx) =>
 		layout(
 			"Todos",
-			html`<main data-init="@get('${ctx.actions.live.url}')">
-				<h1>${ctx.data.greeting}</h1>
-				<form method="post" action="${ctx.actions.add.url}">
-					<input name="title" placeholder="What needs doing?" autofocus />
-					<button>Add</button>
-				</form>
-				${ctx.actions.add.error ? html`<p role="alert">Give the todo a title.</p>` : ""}
-				${ctx.data.list}
-			</main>`,
+			todosPage({
+				greeting: ctx.data.greeting,
+				list: ctx.data.list,
+				add: ctx.actions.add.url,
+				live: ctx.actions.live.url,
+				untitled: ctx.actions.add.ok === false,
+			}),
 		),
 });

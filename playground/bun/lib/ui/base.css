@@ -1,0 +1,17 @@
+/* The design tokens and base styles every page shares. */
+:root {
+	--space: 0.5rem;
+	--measure: 32rem;
+	color-scheme: light dark;
+	font-family: system-ui, sans-serif;
+}
+body {
+	max-width: var(--measure);
+	margin: calc(var(--space) * 6) auto;
+	padding: 0 calc(var(--space) * 2);
+	line-height: 1.5;
+}
+form {
+	display: flex;
+	gap: var(--space);
+}

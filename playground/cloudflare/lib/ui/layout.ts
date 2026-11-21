@@ -1,10 +1,10 @@
 import { html, type HtmlValue } from "spacefn";
-// Files starting with _ are private: no page is made from this one.
 import { assets } from "spacefn/assets";
 
 /** Datastar's client, for live updates. Or install it and import it from app/client/. */
 const DATASTAR = "https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.5/bundles/datastar.js";
 
+/** The HTML around every page: its title, the site's styles and Datastar. */
 export const layout = (title: string, body: HtmlValue) =>
 	html`<!doctype html>
 		<html lang="en">
