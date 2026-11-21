@@ -30,7 +30,7 @@ const badSegment = (file: string, segment: string, message: string, hint: string
 export const isTestFile = (file: string): boolean => /\.(?:test|spec)\.[^/]*$/.test(file);
 
 /**
- * Turns a file path relative to `routes/` or `pages/` into a router path.
+ * Turns a file path relative to `app/routes/` into a router path.
  * Gives `null` for files that are not routes: non-code files, test files, and
  * anything under a segment starting with `_`.
  */

@@ -25,19 +25,10 @@ interface ManifestRouteBase {
 	readonly file: string;
 }
 
-/** A file in `app/routes/`: its default export is a `route()`. */
-export interface ManifestApiRoute extends ManifestRouteBase {
-	readonly kind: "route";
-	readonly module: { readonly default: Route };
+/** A file in `app/routes/`: its default export is a `route()` or a `page()`, which decides how it is served. */
+export interface ManifestRoute extends ManifestRouteBase {
+	readonly module: { readonly default: Route | Page };
 }
-
-/** A file in `app/pages/`: its default export is a `page()`. */
-export interface ManifestPage extends ManifestRouteBase {
-	readonly kind: "page";
-	readonly module: { readonly default: Page };
-}
-
-export type ManifestRoute = ManifestApiRoute | ManifestPage;
 
 export interface ManifestModule {
 	readonly file: string;

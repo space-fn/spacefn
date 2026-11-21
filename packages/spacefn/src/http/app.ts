@@ -3,12 +3,12 @@ import { HttpRouter } from "effect/http";
 
 import type { SpaceError } from "../errors.ts";
 import type { ManifestMiddleware, ManifestRoute, Unchecked } from "../manifest.ts";
-import { pagesLayer } from "../pages/page.ts";
+import { isPage, pagesLayer } from "../pages/page.ts";
 import { middlewareLayer } from "./middleware.ts";
 import { routesLayer } from "./route.ts";
 
 /**
- * Everything HTTP in the app, for a target to serve: the routes, the pages and
+ * Everything HTTP in the app, for a target to serve: the routes and pages of `app/routes/` and
  * the middleware chain, with every failure answered, and `services` (the app's
  * Layers plus the target's runtime Layers) provided to all of it. Fails when a
  * convention file exports the wrong thing.
@@ -27,9 +27,12 @@ export const httpLayer = <E = never>(
 				services ? yield* Layer.build(services) : Context.empty()
 			) as Context.Context<any>;
 			const provided = HttpRouter.provideRequest(Layer.succeedContext(context));
+			// One tree: a file's export decides whether it is served as a page or a route.
+			const isPageFile = (entry: Unchecked<ManifestRoute>) =>
+				isPage((entry.module as { default?: unknown }).default);
 			return Layer.mergeAll(
-				routesLayer(manifest.routes).pipe(provided),
-				pagesLayer(manifest.routes).pipe(provided),
+				routesLayer(manifest.routes.filter((entry) => !isPageFile(entry))).pipe(provided),
+				pagesLayer(manifest.routes.filter(isPageFile)).pipe(provided),
 				middlewareLayer(manifest.middleware, context),
 			) as Layer.Layer<never, SpaceError, HttpRouter.HttpRouter>;
 		}),

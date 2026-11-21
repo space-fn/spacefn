@@ -19,7 +19,6 @@ export const renderManifest = (plan: AppPlan): string => {
 
 	const routes = plan.routes.map((route, i) => {
 		const fields = [
-			`kind: ${str(route.kind)}`,
 			`path: ${str(route.path)}`,
 			`params: ${str(route.params)}`,
 			...(route.catchAll ? [`catchAll: ${str(route.catchAll)}`] : []),

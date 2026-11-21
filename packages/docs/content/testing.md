@@ -28,10 +28,9 @@ const app = () =>
 		{
 			routes: [
 				{
-					kind: "page",
 					path: "/",
 					params: [],
-					file: "app/pages/index.ts",
+					file: "app/routes/index.ts",
 					module: { default: todos },
 				},
 			],
@@ -52,7 +51,7 @@ it("adds a todo", async () => {
 });
 ```
 
-A route is the same with `kind: "route"`; middleware goes in `middleware: [...]`. Each `testHttp` builds its services once, so a fresh one gives a fresh database.
+A route is listed the same way; middleware goes in `middleware: [...]`. Each `testHttp` builds its services once, so a fresh one gives a fresh database.
 
 ## Effects directly
 

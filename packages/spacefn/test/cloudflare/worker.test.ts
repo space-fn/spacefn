@@ -7,8 +7,7 @@ import { fakeContext, fakeKv, fakeMessage, fakeQueue } from "./fakes.ts";
 
 const AppEnv = defineEnv({ GREETING: Env.string() });
 
-const at = (path: `/${string}`) =>
-	({ kind: "route", path, params: [], file: `app/routes${path}.ts` }) as const;
+const at = (path: `/${string}`) => ({ path, params: [], file: `app/routes${path}.ts` }) as const;
 
 const manifest = {
 	name: "todo",

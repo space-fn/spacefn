@@ -43,7 +43,6 @@ describe("html", () => {
 		const app = testHttp({
 			routes: [
 				{
-					kind: "route",
 					path: "/hi",
 					params: [],
 					file: "app/routes/hi.ts",

@@ -10,7 +10,6 @@ cd my-app && cp .env.example .env && npm install && npm run dev
 ```
 
 ```txt
-app/pages/          server-rendered pages, with form actions and live updates (Datastar)
 app/routes/         HTTP endpoints
 app/middleware/     runs around every request
 app/db/<name>/      migrations/ and queries/ in SQL, typed for you

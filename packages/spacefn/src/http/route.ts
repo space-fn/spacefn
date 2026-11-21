@@ -55,8 +55,8 @@ const definitionOf = (entry: Unchecked<ManifestRoute>): Effect.Effect<Route, Spa
 		return Effect.fail(
 			routeError(
 				entry,
-				"The default export is not a route",
-				"Export the handlers with: export default route({ GET: ... })",
+				"The default export is not a route or a page",
+				"Export one with: export default route({ GET: ... }), or export default page({ render: ... })",
 			),
 		);
 	if (!METHODS.some((method) => value.methods[method] !== undefined))
@@ -89,7 +89,6 @@ export const routesLayer = (
 		Effect.gen(function* () {
 			const router = yield* HttpRouter.HttpRouter;
 			for (const entry of routes) {
-				if (entry.kind !== "route") continue; // pages are mounted by the pages module
 				const { methods } = yield* definitionOf(entry);
 				const current = CurrentRoute.of({ file: entry.file, catchAll: entry.catchAll });
 				const allowed = METHODS.filter((method) => methods[method] !== undefined);

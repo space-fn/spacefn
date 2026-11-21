@@ -11,7 +11,6 @@ const empty: AppTree = {
 	viteConfig: false,
 	infraConfig: false,
 	routes: [],
-	pages: [],
 	middleware: [],
 	queues: [],
 	crons: [],
@@ -58,8 +57,7 @@ describe("renderManifest", () => {
 			render({
 				env: true,
 				layers: true,
-				routes: ["index.ts", "files/[...path].ts"],
-				pages: ["users/[id].ts"],
+				routes: ["index.ts", "files/[...path].ts", "users/[id].ts"],
 				middleware: ["1-auth.ts"],
 				queues: ["emails.ts"],
 				crons: ["nightly.ts"],
@@ -71,7 +69,7 @@ describe("renderManifest", () => {
 			import type { SpaceManifest } from "spacefn";
 			import * as route0 from "../app/routes/index.ts";
 			import * as route1 from "../app/routes/files/[...path].ts";
-			import * as route2 from "../app/pages/users/[id].ts";
+			import * as route2 from "../app/routes/users/[id].ts";
 			import * as middleware0 from "../app/middleware/1-auth.ts";
 			import * as queue0 from "../app/queues/emails.ts";
 			import * as cron0 from "../app/crons/nightly.ts";
@@ -84,9 +82,9 @@ describe("renderManifest", () => {
 				env: { file: "app/env.ts", module: env },
 				layers: { file: "app/layers.ts", module: layers },
 				routes: [
-					{ kind: "route", path: "/", params: [], file: "app/routes/index.ts", module: route0 },
-					{ kind: "route", path: "/files/*", params: ["path"], catchAll: "path", file: "app/routes/files/[...path].ts", module: route1 },
-					{ kind: "page", path: "/users/:id", params: ["id"], file: "app/pages/users/[id].ts", module: route2 },
+					{ path: "/", params: [], file: "app/routes/index.ts", module: route0 },
+					{ path: "/files/*", params: ["path"], catchAll: "path", file: "app/routes/files/[...path].ts", module: route1 },
+					{ path: "/users/:id", params: ["id"], file: "app/routes/users/[id].ts", module: route2 },
 				],
 				middleware: [
 					{ file: "app/middleware/1-auth.ts", module: middleware0 },

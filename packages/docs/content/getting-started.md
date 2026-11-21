@@ -23,9 +23,9 @@ You need Node 22 or later. A Bun app also needs [Bun](https://bun.sh), and Docke
 
 ```txt
 app/
-  pages/index.ts            the page at /
-  pages/_layout.ts          the HTML around every page (private: no page of its own)
-  pages/index.test.ts       its test
+  routes/index.ts           the page at /
+  routes/_layout.ts         the HTML around every page (private: no page of its own)
+  routes/index.test.ts      its test
   routes/health.ts          GET /health
   middleware/1-csrf.ts      refuses cross-site form posts
   db/main/migrations/       the schema, in SQL
@@ -38,7 +38,7 @@ configs/
 .space/                     generated; don't edit or commit it
 ```
 
-Add a file to `app/pages/` and it is a page; add one to `app/db/main/queries/` and `db.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](conventions.md).
+Add a file to `app/routes/` and it is a page or a route; add one to `app/db/main/queries/` and `db.yourQuery()` exists. `npm run dev` regenerates `.space/` as you go. See [Conventions](conventions.md).
 
 ## Change something
 
@@ -49,7 +49,7 @@ Add a query, `app/db/main/queries/clear-done.sql`:
 DELETE FROM todos WHERE done = 1;
 ```
 
-Then an action on the page that uses it, in `app/pages/index.ts`:
+Then an action on the page that uses it, in `app/routes/index.ts`:
 
 ```ts
 clearDone: action({

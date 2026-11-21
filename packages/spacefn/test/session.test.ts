@@ -25,7 +25,6 @@ const setup = () => {
 			}),
 	});
 	const at = (path: `/${string}`, methods: RouteMethods) => ({
-		kind: "route" as const,
 		path,
 		params: [],
 		file: `app/routes${path}.ts`,

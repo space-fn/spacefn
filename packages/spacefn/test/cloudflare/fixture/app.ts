@@ -83,8 +83,7 @@ export class Counter {
 
 export { SpaceBus, SpaceRateLimiter } from "../../../src/cloudflare/index.ts";
 
-const at = (path: `/${string}`) =>
-	({ kind: "route", path, params: [], file: `app/routes${path}.ts` }) as const;
+const at = (path: `/${string}`) => ({ path, params: [], file: `app/routes${path}.ts` }) as const;
 
 const manifest = {
 	name: "fixture",

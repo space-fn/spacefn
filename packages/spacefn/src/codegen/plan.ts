@@ -21,7 +21,6 @@ import {
 import type { AppTree } from "./scan-app.ts";
 
 export interface PlannedRoute extends RoutePath {
-	readonly kind: "route" | "page";
 	/** Path from the app root, e.g. `app/routes/users/[id].ts`. */
 	readonly file: string;
 }
@@ -63,7 +62,7 @@ export interface AppPlan {
 	readonly layers: boolean;
 	readonly viteConfig: boolean;
 	readonly infraConfig: boolean;
-	/** Routes and pages together, most specific first. */
+	/** Files in `app/routes/` (routes and pages), most specific first. */
 	readonly routes: readonly PlannedRoute[];
 	/** Middleware files in run order (file name order, numbers compared as numbers). */
 	readonly middleware: readonly string[];
@@ -94,35 +93,30 @@ const shape = (path: string) => path.replace(/:[^/]+/g, ":");
 const planRoutes = Effect.fnUntraced(function* (tree: AppTree, mode: Mode) {
 	const routes: PlannedRoute[] = [];
 	const byShape = new Map<string, PlannedRoute>();
-	for (const [kind, folder, files] of [
-		["route", "routes", tree.routes],
-		["page", "pages", tree.pages],
-	] as const) {
-		for (const file of files) {
-			const parsed = yield* parseRoutePath(file).pipe(
-				Effect.mapError(
-					(error) =>
-						new SpaceError({
-							code: error.code,
-							message: error.message,
-							...(error.hint ? { hint: error.hint } : {}),
-							file: `app/${folder}/${file}`,
-						}),
-				),
+	for (const file of tree.routes) {
+		const parsed = yield* parseRoutePath(file).pipe(
+			Effect.mapError(
+				(error) =>
+					new SpaceError({
+						code: error.code,
+						message: error.message,
+						...(error.hint ? { hint: error.hint } : {}),
+						file: `app/routes/${file}`,
+					}),
+			),
+		);
+		if (!parsed || (parsed.mode && parsed.mode !== mode)) continue;
+		const route: PlannedRoute = { ...parsed, file: `app/routes/${file}` };
+		const existing = byShape.get(shape(route.path));
+		if (existing)
+			return yield* fail(
+				"ROUTE_DUP",
+				`${existing.file} and ${route.file} both serve ${route.path}`,
+				"Rename or move one of them.",
+				route.file,
 			);
-			if (!parsed || (parsed.mode && parsed.mode !== mode)) continue;
-			const route: PlannedRoute = { ...parsed, kind, file: `app/${folder}/${file}` };
-			const existing = byShape.get(shape(route.path));
-			if (existing)
-				return yield* fail(
-					"ROUTE_DUP",
-					`${existing.file} and ${route.file} both serve ${route.path}`,
-					"Rename or move one of them.",
-					route.file,
-				);
-			byShape.set(shape(route.path), route);
-			routes.push(route);
-		}
+		byShape.set(shape(route.path), route);
+		routes.push(route);
 	}
 	return routes.sort(compareRoutePaths);
 });

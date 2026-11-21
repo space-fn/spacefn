@@ -1,9 +1,9 @@
 # Pages
 
-A file in `app/pages/` is a server-rendered page. `page` takes a `loader` (what the page needs), `actions` (what its forms do) and `render` (the HTML):
+A file in `app/routes/` whose default export is a `page(...)` is a server-rendered page. `page` takes a `loader` (what the page needs), `actions` (what its forms do) and `render` (the HTML):
 
 ```ts
-// app/pages/todos/[id].ts → /todos/:id
+// app/routes/todos/[id].ts → /todos/:id
 import MainDb from "@space/db/main.ts";
 import { Effect, Option, Schema } from "effect";
 import { action, html, Input, NotFound, page, redirect } from "spacefn";

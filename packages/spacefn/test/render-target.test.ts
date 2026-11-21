@@ -12,7 +12,6 @@ const empty: AppTree = {
 	viteConfig: false,
 	infraConfig: false,
 	routes: [],
-	pages: [],
 	middleware: [],
 	queues: [],
 	crons: [],

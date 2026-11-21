@@ -3,8 +3,7 @@
 An app is a folder. spacefn reads it (without running your code) and writes the wiring into `.space/`: `space gen` does it once, `space dev` on every change.
 
 ```txt
-app/pages/            pages                         → Pages
-app/routes/           HTTP endpoints                → Routes
+app/routes/           pages and HTTP endpoints      → Pages, Routes
 app/middleware/       wraps every request           → Routes and middleware
 app/db/<name>/        migrations/ and queries/      → Database
 app/queues/           one consumer per file         → Queues and crons
@@ -23,7 +22,7 @@ Each convention file has one default export, made with a helper: `route(...)`, `
 
 ## File names
 
-In `app/pages/` and `app/routes/`, the path of a file is its URL:
+In `app/routes/`, the path of a file is its URL. Its export decides what it is: a `page(...)` is a server-rendered page, a `route(...)` answers per HTTP method.
 
 | File                 | URL                                         |
 | -------------------- | ------------------------------------------- |
@@ -34,9 +33,9 @@ In `app/pages/` and `app/routes/`, the path of a file is its URL:
 | `files/[...path].ts` | `/files/*`, the rest of the path as `path`  |
 | `(admin)/users.ts`   | `/users`: a `(group)` folder only organizes |
 
-Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for the same URL shape, such as `[id].ts` and `[slug].ts`, are an error. A page and a route can't share a URL.
+Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for the same URL shape, such as `[id].ts` and `[slug].ts`, are an error.
 
-- **Private files:** a file or folder starting with `_` is never a page, route or job. Use it for helpers next to the code that uses them, like `app/pages/_layout.ts`.
+- **Private files:** a file or folder starting with `_` is never a page, route or job. Use it for helpers next to the code that uses them, like `app/routes/_layout.ts`.
 - **Tests:** `*.test.ts` and `*.spec.ts` files are skipped too, so tests sit next to what they test.
 - **Dev-only and prod-only files:** `debug.dev.ts` exists only in `space dev`, `banner.prod.ts` only in builds and deploys.
 - **Middleware** runs in file-name order, numbers compared as numbers: `1-auth.ts`, `2-log.ts`, `10-cache.ts`.

@@ -12,7 +12,6 @@ const entry = (
 	value: unknown,
 	catchAll?: string,
 ): Unchecked<ManifestRoute> => ({
-	kind: "route",
 	path,
 	params: [],
 	...(catchAll ? { catchAll } : {}),

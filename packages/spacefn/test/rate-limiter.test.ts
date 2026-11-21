@@ -27,7 +27,6 @@ describe("rateLimit", () => {
 			{
 				routes: [
 					{
-						kind: "route",
 						path: "/sign-in",
 						params: [],
 						file: "app/routes/sign-in.ts",

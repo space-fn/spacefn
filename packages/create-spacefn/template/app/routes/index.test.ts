@@ -12,10 +12,9 @@ const app = () =>
 		{
 			routes: [
 				{
-					kind: "page",
 					path: "/",
 					params: [],
-					file: "app/pages/index.ts",
+					file: "app/routes/index.ts",
 					module: { default: todos },
 				},
 			],

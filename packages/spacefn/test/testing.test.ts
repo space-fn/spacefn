@@ -66,7 +66,6 @@ describe("testHttp", () => {
 			{
 				routes: [
 					{
-						kind: "route",
 						path: "/count",
 						params: [],
 						file: "app/routes/count.ts",
@@ -140,7 +139,6 @@ describe("testDb", () => {
 			{
 				routes: [
 					{
-						kind: "route",
 						path: "/notes",
 						params: [],
 						file: "app/routes/notes.ts",

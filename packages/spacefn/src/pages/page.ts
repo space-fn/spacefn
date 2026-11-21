@@ -247,7 +247,6 @@ export const pagesLayer = (
 		Effect.gen(function* () {
 			const router = yield* HttpRouter.HttpRouter;
 			for (const entry of routes) {
-				if (entry.kind !== "page") continue;
 				const definition = yield* definitionOf(entry);
 				const current = CurrentRoute.of({ file: entry.file, catchAll: entry.catchAll });
 				const serve = (effect: Eff<Response>) =>

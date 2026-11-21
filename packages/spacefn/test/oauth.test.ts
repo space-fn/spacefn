@@ -45,7 +45,6 @@ const serve = (provider: OAuthProvider, services: Layer.Layer<any>) =>
 		{
 			routes: [
 				{
-					kind: "route",
 					path: "/auth/cb",
 					params: [],
 					file: "app/routes/auth/cb.ts",

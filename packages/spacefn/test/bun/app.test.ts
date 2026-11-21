@@ -18,7 +18,6 @@ describe("app", () => {
 			...empty,
 			routes: [
 				{
-					kind: "route",
 					path: "/ip",
 					params: [],
 					file: "app/routes/ip.ts",

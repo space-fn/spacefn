@@ -14,7 +14,6 @@ const serve = (options?: CsrfOptions) => {
 		httpLayer({
 			routes: [
 				{
-					kind: "route",
 					path: "/todos",
 					params: [],
 					file: "app/routes/todos.ts",

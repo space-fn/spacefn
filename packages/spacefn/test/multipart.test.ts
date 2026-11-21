@@ -24,7 +24,6 @@ const serve = (limits: Parameters<typeof Input.body>[1]) => {
 	const app = HttpRouter.toWebHandler(
 		routesLayer([
 			{
-				kind: "route",
 				path: "/avatar",
 				params: [],
 				file: "app/routes/avatar.ts",

@@ -30,7 +30,6 @@ describe("scanApp", () => {
 				viteConfig: false,
 				infraConfig: false,
 				routes: [],
-				pages: [],
 				middleware: [],
 				queues: [],
 				crons: [],

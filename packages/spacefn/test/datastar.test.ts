@@ -10,7 +10,6 @@ const serve = (methods: RouteMethods) =>
 	testHttp({
 		routes: [
 			{
-				kind: "route",
 				path: "/ds",
 				params: [],
 				file: "app/routes/ds.ts",

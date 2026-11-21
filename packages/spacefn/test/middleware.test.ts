@@ -12,7 +12,6 @@ let dispose: (() => Promise<void>) | undefined;
 afterEach(() => dispose?.());
 
 const hello: ManifestRoute = {
-	kind: "route",
 	path: "/hello",
 	params: [],
 	file: "app/routes/hello.ts",

@@ -17,7 +17,7 @@ const at = { path: "/x", params: [], file: "app/routes/x.ts" } as const;
 it("accepts route() and middleware() defaults", () => {
 	const manifest = {
 		...base,
-		routes: [{ kind: "route", ...at, module: { default: route({ GET: Effect.succeed(1) }) } }],
+		routes: [{ ...at, module: { default: route({ GET: Effect.succeed(1) }) } }],
 		middleware: [{ file: "app/middleware/a.ts", module: { default: middleware((next) => next) } }],
 	} as const satisfies SpaceManifest;
 	expect(manifest.routes).toHaveLength(1);
@@ -26,7 +26,7 @@ it("accepts route() and middleware() defaults", () => {
 it("rejects other defaults at compile time", () => {
 	const routes = [
 		// @ts-expect-error a route file must default-export route()
-		{ kind: "route", ...at, module: { default: { GET: Effect.succeed(1) } } },
+		{ ...at, module: { default: { GET: Effect.succeed(1) } } },
 	] as const satisfies SpaceManifest["routes"];
 	const chain = [
 		// @ts-expect-error a middleware file must default-export middleware()
@@ -48,9 +48,9 @@ it("accepts a generated database class and rejects anything else", () => {
 
 it("accepts page() for page files and rejects anything else", () => {
 	const routes = [
-		{ kind: "page", ...at, module: { default: page({ render: () => html`<p>hi</p>` }) } },
+		{ ...at, module: { default: page({ render: () => html`<p>hi</p>` }) } },
 		// @ts-expect-error a page file must default-export page()
-		{ kind: "page", ...at, module: { default: { render: () => html`` } } },
+		{ ...at, module: { default: { render: () => html`` } } },
 	] as const satisfies SpaceManifest["routes"];
 	expect(routes).toHaveLength(2);
 });

@@ -11,7 +11,6 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	viteConfig: false,
 	infraConfig: false,
 	routes: [],
-	pages: [],
 	middleware: [],
 	queues: [],
 	crons: [],
@@ -39,14 +38,14 @@ const planError = (t: AppTree, c = config(), mode: "dev" | "prod" = "dev") =>
 	Effect.runSync(Effect.flip(planApp(t, c, mode)));
 
 describe("planApp routes", () => {
-	it("merges routes and pages, most specific first, with app-relative files", () => {
+	it("orders routes most specific first, with app-relative files", () => {
 		const result = plan(
-			tree({ routes: ["api/users/[id].ts", "api/users/me.ts", "_util.ts"], pages: ["index.ts"] }),
+			tree({ routes: ["api/users/[id].ts", "api/users/me.ts", "_util.ts", "index.ts"] }),
 		);
-		expect(result.routes.map((r) => [r.kind, r.path, r.file])).toEqual([
-			["page", "/", "app/pages/index.ts"],
-			["route", "/api/users/me", "app/routes/api/users/me.ts"],
-			["route", "/api/users/:id", "app/routes/api/users/[id].ts"],
+		expect(result.routes.map((r) => [r.path, r.file])).toEqual([
+			["/", "app/routes/index.ts"],
+			["/api/users/me", "app/routes/api/users/me.ts"],
+			["/api/users/:id", "app/routes/api/users/[id].ts"],
 		]);
 	});
 
@@ -57,17 +56,17 @@ describe("planApp routes", () => {
 	});
 
 	it("rejects two files that serve the same requests, even with different param names", () => {
-		for (const [routes, pages] of [
-			[["users.ts", "users/index.ts"], []],
-			[["users/[id].ts"], ["users/[userId].ts"]],
-		] as const) {
-			const error = planError(tree({ routes, pages }));
+		for (const routes of [
+			["users.ts", "users/index.ts"],
+			["users/[id].ts", "users/[userId].ts"],
+		]) {
+			const error = planError(tree({ routes }));
 			expect(error.code).toBe("ROUTE_DUP");
 		}
 	});
 
 	it("points a bad segment at the file under app/", () => {
-		expect(planError(tree({ pages: ["[user-id].ts"] })).file).toBe("app/pages/[user-id].ts");
+		expect(planError(tree({ routes: ["[user-id].ts"] })).file).toBe("app/routes/[user-id].ts");
 	});
 });
 

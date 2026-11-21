@@ -6,7 +6,8 @@ import { NotFound } from "../src/errors.ts";
 import { html } from "../src/html.ts";
 import { Input } from "../src/http/input.ts";
 import { redirect } from "../src/http/respond.ts";
-import type { ManifestPage } from "../src/manifest.ts";
+import { route } from "../src/http/route.ts";
+import type { ManifestRoute } from "../src/manifest.ts";
 import { Datastar } from "../src/pages/datastar.ts";
 import { action, page, pagesLayer, type Page } from "../src/pages/page.ts";
 import { Bus } from "../src/services/bus.ts";
@@ -14,12 +15,11 @@ import { testHttp } from "../src/testing.ts";
 
 const at = (path: `/${string}`, value: unknown, params: string[] = []) =>
 	({
-		kind: "page",
 		path,
 		params,
-		file: `app/pages${path}.ts`,
+		file: `app/routes${path}.ts`,
 		module: { default: value as Page },
-	}) satisfies ManifestPage;
+	}) satisfies ManifestRoute;
 
 const form = (fields: Record<string, string>) => ({
 	method: "POST",
@@ -148,12 +148,32 @@ describe("page", () => {
 		await app.dispose();
 	});
 
+	it("serves pages and routes from one tree, and refuses a file that is neither", async () => {
+		const both = testHttp({
+			routes: [
+				at("/", page({ render: () => html`<h1>Home</h1>` })),
+				at("/health", route({ GET: Effect.succeed({ ok: true }) })),
+			],
+		});
+		expect(await (await both.fetch("/")).text()).toBe("<h1>Home</h1>");
+		expect(await (await both.fetch("/health")).json()).toEqual({ ok: true });
+		await both.dispose();
+
+		// The app doesn't start: a broken file fails at startup, not at the first request.
+		const neither = testHttp({ routes: [at("/x", { render: () => html`` })] });
+		await expect(neither.fetch("/x")).rejects.toMatchObject({
+			code: "ROUTE_EXPORT",
+			message: "The default export is not a route or a page",
+		});
+		await neither.dispose();
+	});
+
 	it.effect("refuses a file whose default export isn't a page", () =>
 		Effect.gen(function* () {
 			const error = yield* Layer.build(
 				pagesLayer([at("/x", { render: () => html`` })]).pipe(Layer.provide(HttpRouter.layer)),
 			).pipe(Effect.scoped, Effect.flip);
-			expect(error).toMatchObject({ code: "PAGE_EXPORT", file: "app/pages/x.ts" });
+			expect(error).toMatchObject({ code: "PAGE_EXPORT", file: "app/routes/x.ts" });
 		}),
 	);
 });
