@@ -62,7 +62,7 @@ When the input doesn't decode, the page renders again with status `422` and `ctx
 ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.rename.error.fields.title}</p>`}
 ```
 
-Outside the render that answers a submission, `error` and `data` are `undefined`.
+`ctx.actions.<name>.ok` says whether this render answers a submission of that action: `true` when its handler ran (so a handler that returns nothing still shows as done), `false` when its input didn't decode, and `undefined` otherwise, when `error` and `data` are `undefined` too.
 
 ## HTML
 

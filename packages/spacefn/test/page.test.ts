@@ -91,6 +91,17 @@ describe("page", () => {
 		await app.dispose();
 	});
 
+	it("tells a handler that returned nothing ran, by ok", async () => {
+		const ping = page({
+			actions: { ping: action({ input: Schema.Struct({}), handler: () => Effect.void }) },
+			render: (ctx) => html`<p>${String(ctx.actions.ping.ok)}</p>`,
+		});
+		const app = testApp({ routes: [at("/ping", ping)] });
+		expect(await markup(await app.fetch("/ping"))).toBe("<p>undefined</p>");
+		expect(await markup(await app.fetch("/ping?__action=ping", form({})))).toBe("<p>true</p>");
+		await app.dispose();
+	});
+
 	it("re-renders with the issues and the submitted values when the input doesn't decode", async () => {
 		reset();
 		const app = testApp({ routes: [at("/todos", todos)] });
@@ -256,8 +267,9 @@ it("types ctx from the loader and the actions", () => {
 			const field: string | undefined = ctx.actions.save.error?.fields.a;
 			// @ts-expect-error the input has no field b
 			void ctx.actions.save.error?.fields.b;
+			const ok: boolean | undefined = ctx.actions.watch.ok;
 			const length: number | undefined = ctx.actions.save.data;
-			if (length !== undefined) return html`${n + length}${methods}${field}`;
+			if (length !== undefined) return html`${n + length}${methods}${field}${ok}`;
 			// @ts-expect-error no such action
 			return html`${ctx.actions.remove.url}`;
 		},

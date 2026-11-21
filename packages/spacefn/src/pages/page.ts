@@ -64,6 +64,11 @@ export interface ActionContext<A = any, B = unknown, M extends ActionMethod = Ac
 	/** `?__action=<name>`: relative, so it goes to the page itself. */
 	readonly url: string;
 	readonly method: M;
+	/**
+	 * When this render answers a submission of this action: `true` if its handler
+	 * ran, `false` if its input didn't decode. `undefined` otherwise.
+	 */
+	readonly ok: boolean | undefined;
 	/** Set when this render answers a submission of this action that didn't decode (status 422). */
 	readonly error: ActionError<A> | undefined;
 	/** What the handler returned, when this render answers its submission. */
@@ -179,6 +184,7 @@ const contextFor = (
 			const context: ActionContext = {
 				url: `?${ACTION_PARAM}=${encodeURIComponent(name)}`,
 				method: action.method ?? "post",
+				ok: answered?.ok,
 				error:
 					answered && !answered.ok
 						? {
