@@ -11,9 +11,9 @@ export default app(manifest, {
 	services: [
 		platform(manifest),
 		Env.layer,
-		// app/db/platform only: app/db/shop is the schema of every shop's own database,
-		// which Shops opens per request instead of once at startup.
-		databases({ db: manifest.db.filter((db) => db.name !== "shop") }),
+		// app/db/platform. app/db/shop is "open": "manual": the schema of every shop's own
+		// database, which Shops opens per request.
+		databases(manifest),
 		// Where the shops' databases live: Turso with TURSO_API_TOKEN, else local files.
 		hostLayer,
 		// Each shop's ShopDb, by slug, for app/routes/s/[shop]/_middleware.ts.

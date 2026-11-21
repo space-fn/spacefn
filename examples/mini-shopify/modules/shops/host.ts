@@ -1,6 +1,7 @@
 import { createClient } from "@tursodatabase/api";
-import { Context, Data, Effect, Layer, Redacted } from "effect";
+import { Context, Data, Effect, Layer, Redacted, type Scope } from "effect";
 import { dataDir, libsqlDatabase } from "spacefn/bun";
+import { libsql, type DbConnection } from "spacefn/libsql";
 
 import Env from "#configs/env.ts";
 
@@ -16,11 +17,11 @@ export class DatabaseHost extends Context.Service<
 		/** Creates the database `name`, and gives its URL. */
 		readonly create: (name: string) => Effect.Effect<string, HostError>;
 		/** Opens the database at `url`, until the scope closes. */
-		readonly open: (url: string) => ReturnType<typeof libsqlDatabase>;
+		readonly open: (url: string) => Effect.Effect<DbConnection, unknown, Scope.Scope>;
 	}
 >()("mini-shopify/DatabaseHost") {}
 
-/** Each database a file in `dir`, opened with the native libSQL client. */
+/** Each database a file in `dir`, opened with the native libSQL client (Bun and Node only). */
 export const localHost = (dir: string) =>
 	Layer.succeed(DatabaseHost)({
 		create: (name) => Effect.succeed(`file:${dir}/${name}.db`),
@@ -48,7 +49,8 @@ export const tursoHost = (options: {
 				try: () => turso.databases.create(name, { group: options.group }),
 				catch: (cause) => new HostError({ message: `Turso didn't create ${name}`, cause }),
 			}).pipe(Effect.map((db) => `libsql://${db.hostname}`)),
-		open: (url) => libsqlDatabase({ url, authToken: options.groupToken }),
+		// Over HTTP, so this works on every target, Cloudflare Workers included.
+		open: (url) => libsql({ url, authToken: options.groupToken }),
 	});
 };
 

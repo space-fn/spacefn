@@ -25,6 +25,7 @@ Each database says how it's reached and when it migrates:
 
 - `driver`: `d1`, `durable-object` or `libsql`; see [Drivers](#drivers). A driver the target doesn't have stops `space gen`.
 - `migrateOn`: `startup` applies pending migrations as the app starts. `call` never migrates by itself: your code calls `MainDb.migrate()`, or you run `space db migrate`.
+- `open` (optional): `startup`, the default, has `databases(manifest)` in `app/entry.ts` open the database once. `manual` leaves it to your code, for a database per tenant; see [Databases the app opens](#databases-the-app-opens).
 
 The file is required, so each database's settings are written down, not guessed from the target. `$schema` gives completion and checks in the editor.
 
@@ -132,6 +133,31 @@ Every driver is SQLite, so the same SQL runs everywhere. Each database names its
 | `libsql`         | both       | `DB_<NAME>_URL` (and `DB_<NAME>_AUTH_TOKEN`): Turso, `sqld`, or a `file:`.                    |
 
 On Bun, a libSQL database without a URL is a local file, `.space/data/<name>.db` (or `$SPACE_DATA_DIR/<name>.db`), in WAL mode so the web, queue and cron processes share it. D1 has no transactions, so spacefn runs atomic work there as one batch.
+
+## Databases the app opens
+
+Some apps have many databases of one shape, such as one per customer. Write the shape once as a folder in `app/db/`, with `"open": "manual"`:
+
+```json [app/db/shop/config.json]
+{
+	"driver": "libsql",
+	"migrateOn": "startup",
+	"open": "manual"
+}
+```
+
+`space gen` types `ShopDb`'s queries as usual, but `databases(manifest)` doesn't open it, a deploy creates nothing for it, and `space db` skips it unless `--db shop` names it. Open each database yourself with `ShopDb.layer(connection)`, which applies the migrations when it builds, and provide it where it's used:
+
+```ts
+import { libsql } from "spacefn/libsql";
+
+const acme = ShopDb.layer(libsql({ url: "libsql://shop-acme.turso.io", authToken }));
+yield * ShopDb.listProducts().pipe(Effect.provide(acme));
+```
+
+`libsql` from `spacefn/libsql` talks to libSQL over HTTP (Turso, `sqld`, `turso dev`) with the fetch-only client, so it runs on both targets, in Workers and Durable Objects too. A local `file:` database needs the native client, `libsqlDatabase` from `spacefn/bun`.
+
+To keep one connection per tenant across requests, an Effect `LayerMap` from the tenant's key to its layer opens each on first use and closes it when idle, and a `_middleware.ts` provides the request's: `examples/mini-shopify` does this, creating each shop's database with Turso's Platform API.
 
 ## `space db`
 
