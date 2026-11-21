@@ -17,7 +17,7 @@ export const binding = <T>(env: WorkerEnv, name: string, what: string): T => {
 	const value = env[name];
 	if (value === undefined || value === null || typeof value !== "object")
 		throw new Error(
-			`The Worker has no ${what} binding named ${name}. Run space gen and redeploy, or add it in configs/infra.ts.`,
+			`The Worker has no ${what} binding named ${name}. Add it to configs/infra.ts and redeploy.`,
 		);
 	return value as T;
 };

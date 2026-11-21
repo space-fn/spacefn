@@ -173,7 +173,11 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 				server: {
 					watch: {
 						// Vite's watcher doesn't read .gitignore; Alchemy's log would reload pages in a loop.
-						ignored: ["**/.space/.alchemy/**", "**/.space/data/**", `${join(root, "dist")}/**`],
+						ignored: [
+							`${join(root, ".alchemy")}/**`,
+							"**/.space/data/**",
+							`${join(root, "dist")}/**`,
+						],
 					},
 				},
 			};

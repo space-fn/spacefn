@@ -27,6 +27,8 @@ const link = async (target: string, path: string) => {
 export const fixtureApp = async (name: string) => {
 	const root = join(spacefn, "test", "infra", "fixtures", name);
 	await rm(join(root, ".space"), { recursive: true, force: true });
+	// Alchemy's state and local dev data, so each run starts empty.
+	await rm(join(root, ".alchemy"), { recursive: true, force: true });
 	await mkdir(join(root, "node_modules"), { recursive: true });
 	await link(spacefn, join(root, "node_modules", "spacefn"));
 	await link(docs, join(root, "node_modules", "spacefn-docs"));

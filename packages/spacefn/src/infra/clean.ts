@@ -1,13 +1,13 @@
 import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
-/** What `space clean` leaves in `.space/`: Alchemy's deploy state and local dev data, and the local databases. */
-export const KEPT = [".alchemy", "data"] as const;
+/** What `space clean` leaves in `.space/`: local dev data, the local databases among it. */
+export const KEPT = ["data"] as const;
 
 /**
  * `space clean`: deletes what `space gen` made in `.space/` and what
  * `space build` made in `dist/`, giving their paths from the app root. Never
- * the deploy state, which tracks what is deployed, or local data.
+ * local data. Alchemy's deploy state isn't in `.space/`.
  */
 export const clean = async (root: string): Promise<readonly string[]> => {
 	const dir = join(root, ".space");

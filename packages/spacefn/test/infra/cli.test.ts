@@ -53,7 +53,7 @@ describe("space dev on Cloudflare (alchemy dev)", () => {
 	}, 90_000);
 	afterAll(async () => {
 		await interrupt(dev);
-		expect(processes(join(app.root, ".space"))).toEqual([]);
+		expect(processes(app.root)).toEqual([]);
 		await app.cleanup();
 	});
 
@@ -118,6 +118,8 @@ describe.skipIf(!docker)("space deploy and destroy on Bun (Docker)", () => {
 	it("builds and deploys the app with its volume, then destroys it", async () => {
 		const app = await fixtureApp("bun-app");
 		try {
+			// The fixture's Dockerfile takes dist/, as an app's own Dockerfile may.
+			expect(await space(app.root, ["build"]).exited).toBe(0);
 			const deploy = space(app.root, ["deploy", "--stage", "test", "--yes"]);
 			expect(await deploy.exited).toBe(0);
 			// configs/infra.ts maps the container to port 4890.

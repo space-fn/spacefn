@@ -16,7 +16,7 @@ import {
 } from "spacefn/codegen";
 
 import { runAlchemy } from "./alchemy.ts";
-import { buildBun } from "./build.ts";
+import { build } from "./build.ts";
 import { clean, KEPT } from "./clean.ts";
 import {
 	connectFor,
@@ -29,7 +29,6 @@ import {
 	type DbReport,
 } from "./db.ts";
 import { devBun } from "./dev.ts";
-import { addDockerfile, APP_DOCKERFILE } from "./dockerfile.ts";
 import { docsMismatch, installDocs, loadDocs } from "./docs.ts";
 import { doctor, formatChecks } from "./doctor.ts";
 import { detectPackageManager } from "./package-manager.ts";
@@ -242,26 +241,27 @@ const devCommand = Command.make(
 const buildCommand = Command.make("build", {}, () =>
 	Effect.gen(function* () {
 		const root = process.cwd();
-		const plan = yield* generate(root, "prod");
-		if (plan.target === "cloudflare")
+		const target = yield* loadTarget(root);
+		// Alchemy builds the Worker with Cloudflare's Vite plugin, which only it adds.
+		if (target === "cloudflare")
 			return yield* Console.log("space build: the Worker is built and uploaded by space deploy");
-		yield* buildBun(root);
+		yield* build(root);
 		yield* Console.log("space build: wrote dist/ (run it with bun dist/server/index.js)");
 	}).pipe(Effect.catch(report)),
-).pipe(Command.withDescription("Build for production (Bun: dist/)"));
+).pipe(Command.withDescription("vite build with configs/vite.ts, into dist/ (Bun)"));
 
 const deployCommand = Command.make("deploy", { stage: stageFlag, yes: yesFlag }, ({ stage, yes }) =>
 	Effect.gen(function* () {
 		const root = process.cwd();
-		const plan = yield* generate(root, "prod");
-		if (plan.target === "bun") yield* buildBun(root);
+		// configs/infra.ts reads .space/infra.ts; the build happens in the stack (Vite, or the Dockerfile).
+		yield* generate(root, "prod");
 		yield* exitCode(
 			yield* runAlchemy(root, "deploy", { stage: Option.getOrUndefined(stage), yes }),
 		);
 	}).pipe(Effect.catch(report)),
 ).pipe(
 	Command.withDescription(
-		"Build and deploy with Alchemy. Variables come from .env.<stage> and the environment",
+		"alchemy deploy configs/infra.ts. Variables come from .env.<stage> and the environment",
 	),
 );
 
@@ -276,7 +276,11 @@ const destroyCommand = Command.make(
 				yield* runAlchemy(root, "destroy", { stage: Option.getOrUndefined(stage), yes }),
 			);
 		}).pipe(Effect.catch(report)),
-).pipe(Command.withDescription("Delete everything a stage deployed, its data included"));
+).pipe(
+	Command.withDescription(
+		"alchemy destroy configs/infra.ts: delete everything a stage deployed, its data included",
+	),
+);
 
 const doctorCommand = Command.make("doctor", {}, () =>
 	Effect.gen(function* () {
@@ -358,26 +362,9 @@ const cleanCommand = Command.make("clean", {}, () =>
 				? "space clean: nothing to remove"
 				: `space clean: removed ${removed.join(", ")}`,
 		);
-		yield* Console.log(
-			`  kept ${KEPT.map((entry) => `.space/${entry}`).join(" and ")} (deploy state and local data)`,
-		);
+		yield* Console.log(`  kept ${KEPT.map((entry) => `.space/${entry}`).join(", ")} (local data)`);
 	}),
 ).pipe(Command.withDescription("Delete generated files and builds in .space/"));
-
-const addCommand = Command.make("add").pipe(
-	Command.withDescription("Add an optional file to the app"),
-	Command.withSubcommands([
-		Command.make("docker", {}, () =>
-			Effect.promise(() => addDockerfile(process.cwd())).pipe(
-				Effect.flatMap((result) =>
-					result === "written"
-						? Console.log(`space add docker: wrote ${APP_DOCKERFILE}`)
-						: exitWith(`space add docker: ${APP_DOCKERFILE} already exists`),
-				),
-			),
-		).pipe(Command.withDescription(`Copy spacefn's Dockerfile to ${APP_DOCKERFILE} to change it`)),
-	]),
-);
 
 Command.make("space").pipe(
 	Command.withDescription("spacefn: folder-convention apps on Effect"),
@@ -392,7 +379,6 @@ Command.make("space").pipe(
 		upgradeCommand,
 		docsCommand,
 		cleanCommand,
-		addCommand,
 	]),
 	Command.run({ version: "0.11.0-alpha.0" }),
 	Effect.provide(NodeServices.layer),

@@ -59,10 +59,41 @@ const checkTools = (plan: AppPlan): Check[] =>
 				has("docker", ["info"])
 					? ok("Docker is running")
 					: warn(
-							"Docker isn't running; space deploy needs it (or docker.host in configs/infra.ts)",
+							"Docker isn't running; space deploy needs it (or a Docker.Context in configs/infra.ts)",
 						),
 			]
 		: [];
+
+/** The bindings the Worker reads for the file conventions, by where they come from. */
+const expectedBindings = (plan: AppPlan) => [
+	...plan.db.filter((db) => db.driver === "d1").map((db) => [db.binding, "databases"] as const),
+	...plan.queues.map((queue) => [queue.binding, "queues"] as const),
+	...plan.durableObjects.map((unit) => [unit.binding, "durableObjects"] as const),
+	...plan.workflows.map((unit) => [unit.binding, "workflows"] as const),
+];
+
+/**
+ * Whether `configs/infra.ts` gives the Worker every binding the file
+ * conventions need: each must be named in it, or come from a loop over that
+ * list of `#space/infra.ts`'s `app` (as the scaffolded file has them).
+ */
+export const checkInfra = async (root: string, plan: AppPlan): Promise<Check> => {
+	const source = await readFile(join(root, "configs", "infra.ts"), "utf8").catch(() => undefined);
+	if (source === undefined)
+		return fail("No configs/infra.ts: space dev on Cloudflare and space deploy run it");
+	if (plan.target !== "cloudflare") return ok("configs/infra.ts is there");
+	const loops = /from\s+["']#space\/infra\.ts["']/.test(source);
+	const missing = expectedBindings(plan)
+		.filter(
+			([binding, list]) => !source.includes(binding) && !(loops && source.includes(`app.${list}`)),
+		)
+		.map(([binding]) => binding);
+	return missing.length === 0
+		? ok("configs/infra.ts binds what app/ needs")
+		: fail(
+				`configs/infra.ts doesn't bind ${missing.join(", ")}; loop over app from #space/infra.ts or add them`,
+			);
+};
 
 /**
  * Whether the app's env reads from `.env` and the environment as dev would.
@@ -109,6 +140,7 @@ export const doctor = async (root: string): Promise<readonly Check[]> => {
 	checks.push(ok(`configs/vite.ts and app/ check out (target ${plan.target})`));
 	checks.push(await checkGenerated(root, plan));
 	checks.push(checkProvider(root, plan));
+	checks.push(await checkInfra(root, plan));
 	checks.push(...checkTools(plan));
 	checks.push(await checkEnv(root, plan));
 	return checks;

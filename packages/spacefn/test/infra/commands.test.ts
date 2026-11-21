@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { alchemyArgs } from "../../src/infra/alchemy.ts";
 import { clean } from "../../src/infra/clean.ts";
 import type { DocsModule } from "../../src/infra/docs.ts";
-import { doctor, formatChecks } from "../../src/infra/doctor.ts";
+import { checkInfra, doctor, formatChecks } from "../../src/infra/doctor.ts";
 import { addCommand, detectPackageManager } from "../../src/infra/package-manager.ts";
 import { providerUpgrades, spacefnUpgrades } from "../../src/infra/upgrade.ts";
 import { fixtureApp } from "./fixture.ts";
@@ -27,18 +27,18 @@ const touch = async (file: string, body = "") => {
 
 describe("alchemyArgs", () => {
 	it("runs dev on your stage with .env, and deploys to prod with .env.<stage> only", async () => {
-		expect(alchemyArgs(root, "dev")).toEqual(["dev", "alchemy.run.ts"]);
+		expect(alchemyArgs(root, "dev")).toEqual(["dev", "configs/infra.ts"]);
 		await touch(".env");
 		await touch(".env.staging");
-		expect(alchemyArgs(root, "dev")).toEqual(["dev", "alchemy.run.ts", "--env-file", "../.env"]);
-		expect(alchemyArgs(root, "deploy")).toEqual(["deploy", "alchemy.run.ts", "--stage", "prod"]);
+		expect(alchemyArgs(root, "dev")).toEqual(["dev", "configs/infra.ts", "--env-file", ".env"]);
+		expect(alchemyArgs(root, "deploy")).toEqual(["deploy", "configs/infra.ts", "--stage", "prod"]);
 		expect(alchemyArgs(root, "deploy", { stage: "staging", yes: true })).toEqual([
 			"deploy",
-			"alchemy.run.ts",
+			"configs/infra.ts",
 			"--stage",
 			"staging",
 			"--env-file",
-			"../.env.staging",
+			".env.staging",
 			"--yes",
 			"--no-input",
 		]);
@@ -82,18 +82,17 @@ describe("docs", () => {
 });
 
 describe("clean", () => {
-	it("removes generated files and builds, never deploy state or local data", async () => {
+	it("removes generated files and builds, never local data", async () => {
 		for (const file of [
 			".space/manifest.ts",
 			".space/db/main.ts",
-			".space/.alchemy/state/x",
 			".space/data/main.db",
 			"dist/server/index.js",
 		])
 			await touch(file);
 		expect(await clean(root)).toEqual([".space/db", ".space/manifest.ts", "dist"]);
 		expect(existsSync(join(root, "dist"))).toBe(false);
-		expect((await readdir(join(root, ".space"))).sort()).toEqual([".alchemy", "data"]);
+		expect(await readdir(join(root, ".space"))).toEqual(["data"]);
 		expect(await clean(join(root, "missing"))).toEqual([]);
 	});
 });
@@ -107,11 +106,35 @@ describe("doctor", () => {
 			expect(text).toContain("✓ configs/vite.ts and app/ check out (target cloudflare)");
 			expect(text).toContain("✓ .space/ is up to date");
 			expect(text).toContain("✓ @alchemy.run/cloudflare is installed");
+			expect(text).toContain("✓ configs/infra.ts binds what app/ needs");
 			// The fixture's .env doesn't exist, so GREETING is missing.
 			expect(text).toMatch(/! configs\/env.ts doesn't read in dev .*GREETING/);
 		} finally {
 			await app.cleanup();
 		}
+	});
+
+	it("names the bindings configs/infra.ts doesn't give the Worker", async () => {
+		const plan = {
+			target: "cloudflare",
+			db: [{ binding: "DB_MAIN", driver: "d1" }],
+			queues: [{ binding: "QUEUE_EMAILS" }],
+			durableObjects: [],
+			workflows: [{ binding: "WF_ORDER" }],
+		} as unknown as Parameters<typeof checkInfra>[1];
+		expect((await checkInfra(root, plan)).message).toContain("No configs/infra.ts");
+		// Written out by hand: each binding must be named.
+		await touch("configs/infra.ts", "env: { DB_MAIN: yield* Cloudflare.D1.Database('DB_MAIN') }");
+		expect(await checkInfra(root, plan)).toMatchObject({
+			level: "fail",
+			message: expect.stringContaining("doesn't bind QUEUE_EMAILS, WF_ORDER"),
+		});
+		// Or looped over from #space/infra.ts.
+		await touch(
+			"configs/infra.ts",
+			'import { app } from "#space/infra.ts";\nfor (const db of app.databases) {}\nfor (const q of app.queues) {}',
+		);
+		expect((await checkInfra(root, plan)).message).toContain("doesn't bind WF_ORDER");
 	});
 
 	it("fails readably when there is no app", async () => {
