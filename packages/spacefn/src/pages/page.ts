@@ -103,7 +103,7 @@ export interface Page<L = any, Acts extends Actions = any> {
 }
 
 /**
- * Declares a file in `app/pages/`. Keep `loader` and `actions` before `render`
+ * Declares a page, a file in `app/routes/`. Keep `loader` and `actions` before `render`
  * so their types reach `ctx`. Write the loader with `Effect.gen` or `.pipe`:
  * TypeScript can't infer `ctx.data` through the data-first
  * `Effect.map(effect, (x) => ...)`.

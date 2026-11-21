@@ -4,7 +4,7 @@ Language support for spacefn projects: SQL diagnostics in query files and `` sql
 
 ## Features
 
-- SQL diagnostics, completion, hover and go-to-definition in `app/db/<name>/queries/*.sql` and in `` sql`...` `` templates. A template is checked against the database the file imports (`@space/db/<name>.ts`), or the app's only one; templates built with `sql("table")` or `sql.in(...)` are skipped
+- SQL diagnostics, completion, hover and go-to-definition in `app/db/<name>/queries/*.sql` and in `` sql`...` `` templates. A template is checked against the database the file imports (`#space/db/<name>.ts`), or the app's only one; templates built with `sql("table")` or `sql.in(...)` are skipped
 - CSS diagnostics, hover, and completion inside `css` templates
 - Datastar HTML validation in `html` tagged templates
 - Commands that run the `space` CLI

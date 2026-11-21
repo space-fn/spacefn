@@ -8,7 +8,7 @@ Start a new app with the scaffolder:
 npm create spacefn@latest my-app
 ```
 
-This one package has everything: the framework, both targets, the Vite plugin, the Alchemy stacks and the `space` CLI. A Cloudflare app also installs `@alchemy.run/cloudflare`, and a Bun app `@alchemy.run/docker`. Each is an optional peer, so a Bun app never downloads workerd.
+This one package has everything: the framework, both targets, the Vite plugin and the `space` CLI. An app's `configs/infra.ts` is its own Alchemy stack, so the app also installs `alchemy` and its target's provider: `@alchemy.run/cloudflare`, or `@alchemy.run/docker` on Bun. The providers are optional peers, so a Bun app never downloads workerd.
 
 | Import               | For                                                                   |
 | -------------------- | --------------------------------------------------------------------- |

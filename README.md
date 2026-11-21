@@ -22,24 +22,24 @@ Read the [docs](packages/docs/content/index.md), starting with [Getting started]
 
 ## Packages
 
-| Package          | What it is                                                                                    |
-| ---------------- | --------------------------------------------------------------------------------------------- |
-| `spacefn`        | Everything an app installs: the framework, both targets, the Vite plugin, the stacks, the CLI |
-| `spacefn-docs`   | spacefn's docs and the reader `space docs` shows them with, a dev dependency of every app     |
-| `create-spacefn` | `npm create spacefn`                                                                          |
-| `vscode-spacefn` | VS Code: SQL checked against migrations, Datastar and CSS in templates                        |
+| Package          | What it is                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `spacefn`        | Everything an app installs: the framework, both targets, the Vite plugin, the CLI         |
+| `spacefn-docs`   | spacefn's docs and the reader `space docs` shows them with, a dev dependency of every app |
+| `create-spacefn` | `npm create spacefn`                                                                      |
+| `vscode-spacefn` | VS Code: SQL checked against migrations, Datastar and CSS in templates                    |
 
 Inside `packages/spacefn/src/`, each area is a folder, and `test/boundaries.test.ts` keeps them apart:
 
-| Folder        | Import                                             | What it is                                                       |
-| ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| (the rest)    | `spacefn`, …                                       | The core: routes, pages, database, services, jobs, auth, codegen |
-| `sql/`        | `spacefn/sql`                                      | Parses and checks migrations and queries, with no dependencies   |
-| `cloudflare/` | `spacefn/cloudflare`                               | Runs an app as a Worker                                          |
-| `bun/`        | `spacefn/bun`                                      | Runs an app on Bun: web, queue and cron processes                |
-| `infra/`      | `spacefn/vite`, `spacefn/infra/*`, the `space` bin | The CLI, the Vite plugin and the Alchemy stacks                  |
+| Folder        | Import                                           | What it is                                                        |
+| ------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
+| (the rest)    | `spacefn`, …                                     | The core: routes, pages, database, services, jobs, auth, codegen  |
+| `sql/`        | `spacefn/internal/sql`                           | Parses and checks migrations and queries, with no dependencies    |
+| `cloudflare/` | `spacefn/cloudflare`                             | Runs an app as a Worker                                           |
+| `bun/`        | `spacefn/bun`                                    | Runs an app on Bun: web, queue and cron processes                 |
+| `infra/`      | `spacefn/vite`, `spacefn/infra`, the `space` bin | The CLI, the Vite plugin and `variables()` for `configs/infra.ts` |
 
-The core never imports a target or the infra. The targets and the infra import the core by its package name (`spacefn/runtime`), not by relative path, so a build shares one copy of it.
+The core never imports a target or the infra. The targets and the infra import the core by its package name (`spacefn/internal/runtime`), not by relative path, so a build shares one copy of it.
 
 ## Working on spacefn
 
