@@ -1,6 +1,6 @@
 {
 	"name": "create-spacefn",
-	"version": "0.11.0-alpha.0",
+	"version": "0.11.0",
 	"description": "Scaffold a spacefn app for Cloudflare Workers or Bun",
 	"homepage": "https://github.com/space-fn/spacefn#readme",
 	"license": "Apache-2.0",

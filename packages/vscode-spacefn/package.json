@@ -1,7 +1,7 @@
 {
 	"name": "vscode-spacefn",
 	"displayName": "spacefn",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "spacefn support for VS Code: Datastar in html templates, CSS in css templates, and SQL checked against the app's migrations.",
 	"categories": [
 		"Programming Languages"
