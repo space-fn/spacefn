@@ -10,12 +10,16 @@ cd my-app && cp .env.example .env && npm install && npm run dev
 ```
 
 ```txt
-app/entry.ts        the app's services, middleware and error handling, in one file
-app/routes/         pages and HTTP endpoints, and _middleware.ts around them
-app/db/<name>/      config.json, migrations/ and queries/ in SQL, typed for you
-app/queues/         queue consumers
-app/crons/          scheduled jobs
-configs/            env.ts (the variables the app reads), vite.ts (with the target), vitest.ts, optional infra.ts
+my-app/
+├── app/
+│   ├── entry.ts        the app's services, middleware and error handling, in one file
+│   ├── routes/         pages and HTTP endpoints, and _middleware.ts around them
+│   ├── db/<name>/      config.json, migrations/ and queries/ in SQL, typed for you
+│   ├── queues/         queue consumers
+│   └── crons/          scheduled jobs
+├── modules/<feature>/  a feature's logic, views, client code and tests
+├── lib/                code features share: UI kit, design tokens, helpers
+└── configs/            env.ts (the variables the app reads), vite.ts (with the target), vitest.ts, optional infra.ts
 ```
 
 Read the [docs](packages/docs/content/index.md), starting with [Getting started](packages/docs/content/getting-started.md).
