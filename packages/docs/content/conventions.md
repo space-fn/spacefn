@@ -12,12 +12,77 @@ app/durable-objects/  Durable Object classes        (Cloudflare only)
 app/workflows/        Workflow classes              (Cloudflare only)
 app/entry.ts          what runs with the rest       → The entry
 configs/              env.ts (the variables the app reads), infra.ts (the Alchemy stack), vite.ts, vitest.ts, tsconfig.json; Dockerfile on Bun
-lib/                  your code, imported as #lib/...
-public/               files served as they are at /  → Pages
+modules/<feature>/    a feature's code: logic, views, client code, tests
+lib/                  code features share: UI kit, design tokens, helpers
+public/               files served as they are at / → Pages
 .space/               generated
 ```
 
 Each convention file has one default export, made with a helper: `route(...)`, `page(...)`, `middleware(...)`, `queue(...)`, `cron(...)`. Exporting something else is an error that names the file.
+
+## Where code goes
+
+`app/` is what spacefn reads, so keep it to wiring: a file there connects code from `modules/` and `lib/` to a URL, a queue or the entry, and has no logic or markup of its own. The code itself goes in two folders:
+
+- **`modules/<feature>/`**, one folder per feature: what it does (Effects over the databases and services), its views, its client code and its tests. `modules/todos/`, `modules/billing/`.
+- **`lib/`** for what features share and that belongs to none of them: a UI kit with its design tokens, the layout, formatting and auth helpers. `lib/` doesn't import `modules/`.
+
+spacefn doesn't enforce this; it's the layout the docs, the new app and the examples use, so each kind of code has one place to look. A page file then reads as a list of what's connected:
+
+```ts [app/routes/index.ts]
+import { Effect, Schema } from "effect";
+import { action, actionUrl, Datastar, page, redirect } from "spacefn";
+
+import { layout } from "#lib/ui/layout.ts";
+import * as Todos from "#modules/todos/todos.ts";
+import { todoList, todosPage } from "#modules/todos/views.ts";
+
+const list = Todos.list.pipe(
+	Effect.map((todos) => todoList({ todos, toggle: actionUrl("toggle") })),
+);
+
+export default page({
+	loader: Effect.map(list, (list) => ({ list })),
+	actions: {
+		add: action({
+			input: Todos.NewTodo,
+			handler: (todo) => Effect.as(Todos.add(todo), redirect("/")),
+		}),
+		toggle: action({
+			input: Todos.TodoRef,
+			handler: (todo) => Effect.as(Todos.toggle(todo), redirect("/")),
+		}),
+		live: action({
+			method: "get",
+			input: Schema.Struct({}),
+			handler: () => Datastar.watch([Todos.TOPIC], list),
+		}),
+	},
+	render: (ctx) =>
+		layout(
+			"Todos",
+			todosPage({ list: ctx.data.list, add: ctx.actions.add.url, live: ctx.actions.live.url }),
+		),
+});
+```
+
+```ts [modules/todos/todos.ts]
+import { Effect, Schema } from "effect";
+import { Bus } from "spacefn";
+
+import MainDb from "#space/db/main.ts";
+
+export const TOPIC = "todos";
+export const NewTodo = Schema.Struct({ title: Schema.NonEmptyString });
+
+export const list = MainDb.listTodos();
+
+/** Adds a todo, and tells every open page. */
+export const add = ({ title }: typeof NewTodo.Type) =>
+	MainDb.addTodo({ title }).pipe(Effect.andThen(Bus.publish(TOPIC, "changed")));
+```
+
+Views are functions from plain props to `html`, not from the page's `ctx`: the page passes what they show and the URLs they post to. That keeps them testable alone, and usable from more than one page.
 
 ## File names
 
@@ -34,7 +99,7 @@ In `app/routes/`, the path of a file is its URL. Its export decides what it is: 
 
 Parameter names must be identifiers (`[userId]`, not `[user-id]`). Two files for the same URL shape, such as `[id].ts` and `[slug].ts`, are an error.
 
-- **Private files:** a file or folder starting with `_` is never a page, route or job. Use it for helpers next to the code that uses them, like `app/routes/_layout.ts`.
+- **Private files:** a file or folder starting with `_` is never a page, route or job, such as `app/routes/_shared.ts`. Most such code belongs in `modules/` or `lib/` instead.
 - **Tests:** `*.test.ts` and `*.spec.ts` files are skipped too, so tests sit next to what they test.
 - **Dev-only and prod-only files:** `debug.dev.ts` exists only in `space dev`, `banner.prod.ts` only in builds and deploys.
 - **Middleware:** `_middleware.ts` in `app/routes/` wraps every request; in a folder below, it wraps that folder's pages and routes. See [Routes](routes.md#middleware).
@@ -48,13 +113,14 @@ Imports from the app root are [subpath imports](https://nodejs.org/api/packages.
 {
 	"imports": {
 		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
 		"#space/*": "./.space/*"
 	}
 }
 ```
 
 - `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
-- `#lib/...` is your own code in `lib/`. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
+- `#modules/...` and `#lib/...` are your own code. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
 - `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Pages](pages.md#scripts-styles-and-public-files)). The Vite plugin provides it.
 
 Use relative imports with the `.ts` extension inside a folder.

@@ -6,10 +6,9 @@ A file in `app/routes/` whose default export is a `page(...)` is a server-render
 import { Effect, Option, Schema } from "effect";
 import { action, html, Input, NotFound, page, redirect } from "spacefn";
 
+import { layout } from "#lib/ui/layout.ts";
 // app/routes/todos/[id].ts → /todos/:id
 import MainDb from "#space/db/main.ts";
-
-import { layout } from "../_layout.ts";
 
 export default page({
 	loader: Effect.gen(function* () {
@@ -48,7 +47,7 @@ An `Effect` that reads input (`Input.params`, `Input.query`), uses services, and
 
 ## Actions
 
-Each action is `action({ method?, input, handler })`, reached at `ctx.actions.<name>.url` (`?__action=<name>` on the page's own URL):
+Each action is `action({ method?, input, handler })`, reached at `ctx.actions.<name>.url` (`?__action=<name>` on the page's own URL). Where there's no `ctx`, as in a live action that renders part of the page again, `actionUrl("<name>")` gives the same URL:
 
 - **`post`** (the default) decodes the form, a multipart body, or the JSON a Datastar `@post` sends.
 - **`get`** decodes the query string, or the signals of a Datastar `@get`.
@@ -72,7 +71,7 @@ ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.r
 
 Each file directly in `app/client/` is an entry, named after the file: `app/client/main.ts` is `main`, `app/client/site.css` is `site`. A file starting with `_` isn't one; entries import it. `assets(...)` from `spacefn/assets` gives the `<script>` and `<link>` tags of the entries you name, in that order:
 
-```ts [app/routes/_layout.ts]
+```ts [lib/ui/layout.ts]
 import { assets } from "spacefn/assets";
 
 html`<head>

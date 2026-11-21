@@ -21,17 +21,25 @@ You need Node 22 or later. A Bun app also needs [Bun](https://bun.sh), and Docke
 
 ## What's in it
 
+`app/` holds what spacefn reads, and its files only connect the code in `modules/` and `lib/`:
+
 ```txt
 app/
   entry.ts                  what runs with the rest: services, middleware, onError
-  routes/index.ts           the page at /
-  routes/_layout.ts         the HTML around every page (private: no page of its own)
-  routes/index.test.ts      its test
+  routes/index.ts           the page at /: the todos module's actions and views, wired up
   routes/health.ts          GET /health
   routes/_middleware.ts     refuses cross-site form posts, on every request
   db/main/migrations/       the schema, in SQL
   db/main/queries/          one SQL query per file, typed for you
-  client/site.css           bundled by Vite, loaded by assets("site") in the layout
+  client/site.css           the stylesheet entry, loaded by assets("site")
+modules/todos/
+  todos.ts                  what the app does with todos: list, add, toggle
+  views.ts                  the todos' HTML, from plain props
+  todos.css                 their styles, imported by app/client/site.css
+  todos.test.ts             the feature tested through the page, in memory
+lib/ui/
+  layout.ts                 the HTML around every page
+  base.css                  the design tokens and base styles
 public/favicon.svg          served as it is, at /favicon.svg
 configs/
   env.ts                    the variables the app reads
@@ -52,23 +60,26 @@ Add a query, `app/db/main/queries/clear-done.sql`. Its file name makes it `clear
 DELETE FROM todos WHERE done = 1;
 ```
 
-Then an action on the page that uses it, in `app/routes/index.ts`:
+Then what it means for the feature, in `modules/todos/todos.ts`:
+
+```ts
+/** Deletes the done todos, and tells every open page. */
+export const clearDone = MainDb.clearDone().pipe(Effect.andThen(Bus.publish(TOPIC, "changed")));
+```
+
+Wire it to the page as an action, in `app/routes/index.ts`:
 
 ```ts
 clearDone: action({
 	input: Schema.Struct({}),
-	handler: () =>
-		Effect.gen(function* () {
-			yield* MainDb.clearDone();
-			return yield* changed;
-		}),
+	handler: () => Effect.as(Todos.clearDone, redirect("/")),
 }),
 ```
 
-and a button for it in `render`:
+and give the view a button that posts to it: pass `clearDone: ctx.actions.clearDone.url` to `todosPage`, and in `modules/todos/views.ts`:
 
 ```ts
-html`<form method="post" action="${ctx.actions.clearDone.url}"><button>Clear done</button></form>`;
+html`<form method="post" action="${props.clearDone}"><button>Clear done</button></form>`;
 ```
 
 The editor knows `clearDone` exists because `space gen` typed it from the SQL.
@@ -76,7 +87,7 @@ The editor knows `clearDone` exists because `space gen` typed it from the SQL.
 ## Test and deploy
 
 ```sh
-npm test           # the tests next to your code
+npm test           # every *.test.ts in app/, modules/ and lib/
 npm run deploy     # stage `prod`
 ```
 
