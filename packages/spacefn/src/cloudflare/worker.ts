@@ -124,7 +124,7 @@ export const worker = (space: SpaceApp): ExportedHandler<WorkerEnv> => {
 	};
 
 	return {
-		...(space.options.cloudflare?.handlers as ExportedHandler<WorkerEnv> | undefined),
+		...space.options.cloudflare?.handlers,
 		async fetch(request, env, ctx) {
 			const app = appFor(env);
 			try {
