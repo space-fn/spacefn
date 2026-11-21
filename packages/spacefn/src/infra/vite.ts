@@ -309,7 +309,7 @@ const toRequest = (req: IncomingMessage, origin: string): Request => {
 		signal: controller.signal,
 		...(method === "GET" || method === "HEAD"
 			? {}
-			: { body: Readable.toWeb(req) as ReadableStream, duplex: "half" }),
+			: { body: Readable.toWeb(req) as unknown as ReadableStream, duplex: "half" }),
 	} as RequestInit);
 };
 
