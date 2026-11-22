@@ -7,13 +7,11 @@ import { shopsPage } from "#modules/shops/views.ts";
 
 // The platform's home at /: every shop, and opening a new one.
 export default page({
-	loader: Effect.gen(function* () {
-		return { shops: yield* Shops.list };
-	}),
+	loader: Effect.all({ shops: Shops.list }),
 	actions: {
 		create: action({
 			input: Shops.NewShop,
-			handler: (shop) => Effect.as(Shops.create(shop), redirect(`/s/${shop.slug}`)),
+			handler: (shop) => Effect.as(Shops.create(shop), redirect(Shops.url(shop.slug))),
 		}),
 	},
 	render: (ctx) =>

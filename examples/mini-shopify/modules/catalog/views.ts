@@ -1,13 +1,11 @@
 import { html } from "spacefn";
 
-import type { ListProductsRow } from "#space/db/shop.ts";
-
-import { formatPrice } from "./catalog.ts";
+import { formatPrice, type Product } from "./catalog.ts";
 
 /** A shop's storefront: its products, each with a button to sell one, and a form to add one. */
 export const storefront = (props: {
 	readonly name: string;
-	readonly products: readonly ListProductsRow[];
+	readonly products: readonly Product[];
 	readonly add: string;
 	readonly sell: string;
 }) =>

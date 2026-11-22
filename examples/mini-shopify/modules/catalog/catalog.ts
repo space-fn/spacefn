@@ -1,9 +1,11 @@
 import { Schema } from "effect";
 
-import ShopDb from "#space/db/shop.ts";
+import ShopDb, { type ListProductsRow } from "#space/db/shop.ts";
 
 // Runs on the current shop's database: the request's ShopDb, which the
 // middleware of /s/:shop/ provides.
+
+export type Product = ListProductsRow;
 
 export const NewProduct = Schema.Struct({
 	name: Schema.NonEmptyString,

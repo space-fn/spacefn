@@ -1,7 +1,7 @@
 import { Effect, LayerMap, Option, Schema } from "effect";
-import { Conflict, NotFound } from "spacefn";
+import { Conflict, Input, NotFound, type HttpApp } from "spacefn";
 
-import PlatformDb from "#space/db/platform.ts";
+import PlatformDb, { type ListShopsRow } from "#space/db/platform.ts";
 import ShopDb from "#space/db/shop.ts";
 
 import { DatabaseHost } from "./host.ts";
@@ -9,7 +9,15 @@ import { DatabaseHost } from "./host.ts";
 /** A shop's address, `/s/<slug>/`, and its database's name. */
 export const Slug = Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-z0-9][a-z0-9-]{1,30}$/)));
 
+export type Shop = ListShopsRow;
+
 export const NewShop = Schema.Struct({ slug: Slug, name: Schema.NonEmptyString });
+
+/** The path parameters of `/s/:shop/`. */
+export const Params = Schema.Struct({ shop: Slug });
+
+/** A shop's storefront. */
+export const url = (slug: string) => `/s/${slug}`;
 
 export const list = PlatformDb.listShops();
 
@@ -32,9 +40,9 @@ export const find = (slug: string) =>
 /**
  * Each shop's `ShopDb`, by slug: opened, and migrated, the first time a
  * request needs it, and closed after a minute without one. Provide it to a
- * request with `Effect.provide(Shops.get(slug))`.
+ * request with {@link provideShopDb}.
  */
-export class Shops extends LayerMap.Service<Shops>()("mini-shopify/Shops", {
+export class ShopDatabases extends LayerMap.Service<ShopDatabases>()("mini-shopify/ShopDatabases", {
 	lookup: (slug: string) =>
 		ShopDb.layer(
 			Effect.gen(function* () {
@@ -44,3 +52,13 @@ export class Shops extends LayerMap.Service<Shops>()("mini-shopify/Shops", {
 		),
 	idleTimeToLive: "1 minute",
 }) {}
+
+/** The shop the request is under, `/s/:shop/`. */
+export const current = Effect.flatMap(Input.params(Params), ({ shop }) => find(shop));
+
+/** The storefront the request is under. */
+export const here = Effect.map(Input.params(Params), ({ shop }) => url(shop));
+
+/** Runs `next` on the database of the shop the request is under. */
+export const provideShopDb = (next: HttpApp) =>
+	Effect.flatMap(Input.params(Params), ({ shop }) => Effect.provide(next, ShopDatabases.get(shop)));

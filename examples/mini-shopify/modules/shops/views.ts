@@ -1,8 +1,10 @@
 import { html } from "spacefn";
 
+import { type Shop, url } from "./shops.ts";
+
 /** The platform's home: every shop, and a form to open one. */
 export const shopsPage = (props: {
-	readonly shops: readonly { readonly slug: string; readonly name: string }[];
+	readonly shops: readonly Shop[];
 	/** Where the form posts. */
 	readonly create: string;
 	readonly invalid: boolean;
@@ -10,7 +12,7 @@ export const shopsPage = (props: {
 	html`<main>
 		<h1>Shops</h1>
 		<ul>
-			${props.shops.map((shop) => html`<li><a href="/s/${shop.slug}">${shop.name}</a></li>`)}
+			${props.shops.map((shop) => html`<li><a href="${url(shop.slug)}">${shop.name}</a></li>`)}
 		</ul>
 		<form method="post" action="${props.create}">
 			<input name="name" placeholder="Name" required />

@@ -3,7 +3,7 @@ import { platform } from "spacefn/platform";
 
 import Env from "#configs/env.ts";
 import { hostLayer } from "#modules/shops/host.ts";
-import { Shops } from "#modules/shops/shops.ts";
+import { ShopDatabases } from "#modules/shops/shops.ts";
 import { manifest } from "#space/manifest.ts";
 
 export default app(manifest, {
@@ -17,7 +17,7 @@ export default app(manifest, {
 		// Where the shops' databases live: Turso with TURSO_API_TOKEN, else local files.
 		hostLayer,
 		// Each shop's ShopDb, by slug, for app/routes/s/[shop]/_middleware.ts.
-		Shops.layer,
+		ShopDatabases.layer,
 		telemetry(manifest.name),
 	],
 	before: [staticFiles()],

@@ -11,7 +11,7 @@ import PlatformDb from "#space/db/platform.ts";
 import { manifest } from "#space/manifest.ts";
 
 import { localHost } from "./host.ts";
-import { Shops } from "./shops.ts";
+import { ShopDatabases } from "./shops.ts";
 
 /** The app in memory, with each shop's database a file in a fresh folder. */
 const app = () => {
@@ -22,7 +22,7 @@ const app = () => {
 		testDb(PlatformDb),
 		localHost(dir),
 	);
-	return { dir, shops: testApp(manifest, Layer.provideMerge(Shops.layer, services)) };
+	return { dir, shops: testApp(manifest, Layer.provideMerge(ShopDatabases.layer, services)) };
 };
 
 describe("shops", () => {
