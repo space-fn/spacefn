@@ -15,9 +15,27 @@ icon: terminal-2
 | `space gen [--watch] [--prod]`                               | Writes `.space/` from `app/` and `configs/`. `--prod` takes `.prod.ts` files instead of `.dev.ts`.                                                                    |
 | `space db status\|migrate\|rollback [--db name] [--steps N]` | Migrations of libSQL databases. See [Database](../6-guides/5-database.md).                                                                                            |
 | `space doctor`                                               | Checks Node, the config, `.space/`, the target's tools, the bindings in `configs/infra.ts` and `configs/env.ts`, and says what to fix.                                |
-| `space upgrade`                                              | Updates spacefn, its Alchemy provider and `spacefn-docs`, then regenerates.                                                                                           |
+| `space upgrade`                                              | Updates spacefn and what moves with it, then regenerates. See [Upgrading](#upgrading).                                                                                |
 | `space docs [--port N]`                                      | Serves your `docs/` and spacefn's docs at `http://localhost:4321/`. `space dev` serves them too, at `/__space/docs/`. See [Writing docs](3-writing-docs.md).          |
 | `space clean`                                                | Deletes generated files and builds. Keeps local data.                                                                                                                 |
+
+## Upgrading
+
+`space upgrade` reads the latest release from the registry, prints each change as `old → new`, and installs them at once with the app's package manager:
+
+| Package                     | Moves to                                       |
+| --------------------------- | ---------------------------------------------- |
+| `spacefn`, `spacefn-docs`   | the latest release                             |
+| `alchemy` and its providers | the exact version that release is built on     |
+| `effect`, `vite`            | what that release needs, if the app's is older |
+| everything else             | stays: the app's choice                        |
+
+An exact version stays exact. If the install fails or you stop it, `package.json` and the lockfile are put back and installed again. A version it can't edit, such as `catalog:` or `workspace:`, stops it before anything changes. It needs `npm` to read the registry, whichever package manager the app uses.
+
+> [!IMPORTANT]
+> In spacefn 0.11.0, `space upgrade` updates only spacefn. From that version, upgrade with the latest one's instead: `npx spacefn@latest upgrade`.
+
+## Errors
 
 Every command prints errors with a code, the file and a hint, for example:
 

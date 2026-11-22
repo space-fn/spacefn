@@ -34,4 +34,4 @@ The app's name, scripts, dependencies, and the `#` imports that every tool reads
 - **`imports`** are Node's [subpath imports](https://nodejs.org/api/packages.html#subpath-imports): Node, TypeScript, Vite, Vitest and Bun all read them, so nothing else needs configuring. Add one for a folder of your own, such as `"#ui/*": "./src/ui/*"`.
 - **`postinstall`** runs `space gen`, so `.space/` exists after `npm install`, in CI too.
 
-The dependencies are `spacefn` and `effect`; the dev dependencies Vite, Vitest, TypeScript, Alchemy and its provider for the target, and `spacefn-docs`, which holds these docs and the examples, for you and your agents to read in `node_modules/spacefn-docs/`. `space upgrade` updates spacefn, its provider and the docs together.
+The dependencies are `spacefn` and `effect`; the dev dependencies Vite, Vitest, TypeScript, Alchemy and its provider for the target, and `spacefn-docs`, which holds these docs and the examples, for you and your agents to read in `node_modules/spacefn-docs/`. [`space upgrade`](../7-reference/2-cli.md#upgrading) updates spacefn, the docs, Alchemy and what they need newer together.
