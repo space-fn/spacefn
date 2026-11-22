@@ -20,8 +20,19 @@ npx space deploy --stage prod --yes
 On your machine, the first deploy signs you in through the browser. CI can't, so give it an API token:
 
 1. In the Cloudflare dashboard, **My Profile → API Tokens → Create Token**, start from the **Edit Cloudflare Workers** template.
-2. Add the permissions for what the app uses: **D1**, **Queues**, **Workers R2 Storage** and **Workers KV Storage**, all **Edit**.
-3. Store it as `CLOUDFLARE_API_TOKEN` in the CI's secrets, and your account's ID (on the dashboard's overview) as `CLOUDFLARE_ACCOUNT_ID`.
+2. Keep what the template has, and add:
+
+   | Permission                        | For                                                    |
+   | --------------------------------- | ------------------------------------------------------ |
+   | Account → **Secrets Store: Edit** | every app: the key to Alchemy's deploy state           |
+   | Account → **D1: Edit**            | D1 databases, as the scaffolded app has                |
+   | Account → **Queues: Edit**        | `app/queues/`                                          |
+   | Zone → **Zone: Read**             | a [domain](1-cloudflare.md#a-domain), to find its zone |
+
+   Secrets Store needs **Edit** even to read the key: Alchemy reads it through a temporary Worker bound to it.
+
+3. Under **Account Resources** pick the account, and under **Zone Resources** its zones.
+4. Store the token as `CLOUDFLARE_API_TOKEN` in the CI's secrets, and your account's ID (on the **Workers & Pages** overview) as `CLOUDFLARE_ACCOUNT_ID`.
 
 Alchemy keeps the deploy state in the account too, so CI and your machine see the same deploys and either can deploy next.
 
