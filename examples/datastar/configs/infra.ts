@@ -54,12 +54,15 @@ export default Alchemy.Stack(
 		for (const { className, binding } of app.workflows)
 			bindings[binding] = Cloudflare.Workflow(className, { className });
 
+		// space dev --port N sets it; without one, 1337 or the next free port.
+		const devPort = process.env.SPACE_DEV_PORT;
 		const worker = yield* Cloudflare.Website.Vite("Worker", {
 			// Vite runs in .space/: its vite.config.ts is configs/vite.ts, and entry.ts runs app/entry.ts.
 			rootDir: ".space",
 			main: "./entry.ts",
 			crons: [...app.crons],
 			env: bindings,
+			dev: devPort ? { port: Number(devPort), strictPort: true } : undefined,
 			// What a deploy hashes to tell whether to rebuild, from .space/.
 			memo: {
 				include: [
