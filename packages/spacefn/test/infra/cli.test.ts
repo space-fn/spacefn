@@ -121,7 +121,7 @@ const docker = process.env.SPACE_TEST_DOCKER === "1" && spawnSync("docker", ["in
 // Opt in with SPACE_TEST_DOCKER=1: it builds an image and runs a container in local Docker.
 describe.skipIf(!docker)("space deploy and destroy on Bun (Docker)", () => {
 	it("builds and deploys the app with its volume, then destroys it", async () => {
-		const app = await fixtureApp("services-bun", { copy: true });
+		const app = await fixtureApp("services-bun");
 		try {
 			// The example's Dockerfile takes dist/, as an app's own Dockerfile may.
 			expect(await space(app.root, ["build"]).exited).toBe(0);

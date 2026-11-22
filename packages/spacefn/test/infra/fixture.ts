@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { cp, mkdtemp, rm, symlink } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, realpath, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,25 +12,23 @@ import { loadTarget } from "../../src/infra/vite-config.ts";
 
 const spacefn = fileURLToPath(new URL("../..", import.meta.url));
 
+const SKIP = new Set(["node_modules", ".space", ".alchemy", "dist"]);
+
 /**
- * An app in the repo's `examples/`, a workspace package, freshly generated and
- * without the local data of a previous run.
+ * A fresh copy of an app in the repo's `examples/`, freshly generated. Each test
+ * gets its own: tests run in parallel, and Vite restarts when `.space/` is rewritten.
  */
-export const fixtureApp = async (
-	name: "services-cloudflare" | "services-bun",
-	/** A copy in a temporary folder, for a test that builds while others serve the app. */
-	options: { readonly copy?: boolean } = {},
-) => {
+export const fixtureApp = async (name: "services-cloudflare" | "services-bun") => {
 	const example = join(spacefn, "..", "..", "examples", name);
-	const root = options.copy ? await mkdtemp(join(tmpdir(), `${name}-`)) : example;
-	if (options.copy) {
-		const skip = new Set(["node_modules", ".space", ".alchemy", "dist"]);
-		await cp(example, root, { recursive: true, filter: (from) => !skip.has(basename(from)) });
-		await symlink(join(example, "node_modules"), join(root, "node_modules"));
-	}
-	await rm(join(root, ".space"), { recursive: true, force: true });
-	// Alchemy's state and local dev data, so each run starts empty.
-	await rm(join(root, ".alchemy"), { recursive: true, force: true });
+	// The real path, as watchers and process lists name it (macOS's tmpdir is a symlink).
+	const root = await realpath(await mkdtemp(join(tmpdir(), `${name}-`)));
+	await cp(example, root, { recursive: true, filter: (from) => !SKIP.has(basename(from)) });
+	// The packages are linked one by one, so each copy has its own Vite caches.
+	const modules = join(example, "node_modules");
+	await mkdir(join(root, "node_modules"));
+	for (const entry of await readdir(modules))
+		if (!entry.startsWith(".") || entry === ".bin")
+			await symlink(join(modules, entry), join(root, "node_modules", entry));
 	await Effect.runPromise(Effect.flatMap(loadTarget(root), (target) => gen(root, "dev", target)));
 	const data = await mkdtemp(join(tmpdir(), `space-${name}-`));
 	return {
@@ -38,7 +36,7 @@ export const fixtureApp = async (
 		data,
 		cleanup: async () => {
 			await rm(data, { recursive: true, force: true });
-			if (options.copy) await rm(root, { recursive: true, force: true });
+			await rm(root, { recursive: true, force: true });
 		},
 	};
 };
