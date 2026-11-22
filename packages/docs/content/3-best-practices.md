@@ -57,7 +57,7 @@ Declare every variable the app reads, with its type, and read it with `yield* En
 
 ## Load only what a page uses
 
-Every page loads the layout's entries; a page that needs more passes its own with `assets(...)`. Keep heavy client code, such as a framework island, in its own entry, so pages without it stay light. Prefer server-rendered HTML with Datastar for interactivity, and use a framework island where a component really needs client state.
+Every page loads the layout's entries; a page that needs more passes its own with `assets(...)`. A framework island loads its own script, and only on the pages that render it, so pages without it stay light. Prefer server-rendered HTML with Datastar for interactivity, and use a framework island where a component really needs client state.
 
 ## Test through the app
 

@@ -13,8 +13,10 @@ modules/
 │   ├── todos.ts           what the feature does: Effects over the database and services
 │   ├── views.ts           its HTML: functions from props to html
 │   ├── todos.css          its styles, imported by app/assets/site.css
-│   ├── client/            its browser code: components, islands, web components
-│   │   └── mount.ts
+│   ├── ui/                its client components, and the islands that start them
+│   │   ├── TodoList.tsx
+│   │   └── todo-list.island.tsx
+│   ├── client/            its other browser code, such as web components
 │   └── todos.test.ts      its tests
 └── billing/
     ├── billing.ts

@@ -12,8 +12,7 @@ lib/
 ├── ui/
 │   ├── layout.ts          the HTML around every page
 │   ├── base.css           design tokens and base styles
-│   ├── button.ts          components every feature uses
-│   └── island.ts          helpers for client components
+│   └── button.ts          components every feature uses
 ├── auth/
 │   └── admin.ts           requireAdmin, for _middleware.ts files
 ├── mailer.ts              a service, listed in app/entry.ts

@@ -18,8 +18,9 @@ my-app/
 │       └── site.css         an entry: @imports the stylesheets
 ├── modules/
 │   └── <feature>/
-│       ├── client/          the feature's components and scripts
-│       └── <feature>.css    the feature's styles
+│       ├── ui/              its client components, and their *.island.tsx files
+│       ├── client/          its other browser code, such as web components
+│       └── <feature>.css    its styles
 ├── lib/
 │   └── ui/                  the UI kit: layout, components, design tokens
 └── public/                  files served as they are at /
@@ -27,10 +28,10 @@ my-app/
 
 An entry is each file directly in `app/assets/`, named after the file: `app/assets/main.ts` is `main`. Keep entries to a few lines, so the code itself lives with its feature:
 
-```ts [app/assets/cart.ts]
-import { mountCart } from "#modules/cart/client/mount.ts";
+```ts [app/assets/main.ts]
+import { definePollMeter } from "#modules/poll/client/poll-meter.ts";
 
-mountCart();
+definePollMeter();
 ```
 
 ```css [app/assets/site.css]
@@ -109,48 +110,39 @@ export default defineConfig({ plugins: [tailwindcss(), space({ target: "bun" })]
 
 ## Client components
 
-A component from React, Vue, Solid or Svelte runs as an island: the server renders an element and the component's props as JSON, and an asset entry starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
+A component from React, Vue, Solid or Svelte runs as an island: a page renders an element with the component's props, and the browser starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
 
 1. Add the framework's Vite plugin beside spacefn's in `configs/vite.ts`.
-2. Render the island from the page's view, with a small helper in `lib/ui/`:
+2. Declare the island in a file named `*.island.ts` or `*.island.tsx`, next to the component. `start` is the framework's line to put the component in an element; return how to stop it, for when the element is removed:
 
-```ts [lib/ui/island.ts]
-import { html, raw } from "spacefn";
-
-// The props go in a JSON script, not a data- attribute, which Datastar would read as its own.
-// `<` is escaped so no string in the props can close the script.
-export const island = (id: string, props: unknown) =>
-	html`<div id="${id}"></div>
-		<script type="application/json" id="${id}-props">
-			${raw(JSON.stringify(props).replaceAll("<", "\\u003c"))}
-		</script>`;
-```
-
-```ts [lib/ui/mount.ts]
-export const mountIsland = <P>(id: string, start: (element: HTMLElement, props: P) => void) => {
-	const element = document.getElementById(id);
-	const props = document.getElementById(`${id}-props`)?.textContent ?? "{}";
-	if (element) start(element, JSON.parse(props) as P);
-};
-```
-
-3. Mount it from the feature's client code, and call that from an entry the page loads with `assets(...)`:
-
-```tsx [modules/cart/client/mount.tsx]
+```tsx [modules/cart/ui/cart.island.tsx]
 import { createRoot } from "react-dom/client";
-
-import { mountIsland } from "#lib/ui/mount.ts";
+import { island } from "spacefn/island";
 
 import type { Product } from "../cart.ts";
 import { Cart } from "./Cart.tsx";
 
-export const mountCart = () =>
-	mountIsland<{ products: readonly Product[] }>("cart", (element, props) =>
-		createRoot(element).render(<Cart products={props.products} />),
-	);
+export const CartIsland = island("cart", (element, props: { products: readonly Product[] }) => {
+	const root = createRoot(element);
+	root.render(<Cart products={props.products} />);
+	return () => root.unmount();
+});
 ```
 
-| Framework | Plugin                                                              | Mount                                   | Example           |
+3. Render it from the page's view. The props are checked against `start`'s:
+
+```ts [modules/cart/views.ts]
+import { CartIsland } from "./ui/cart.island.tsx";
+
+export const shopPage = (products: readonly Product[]) =>
+	html`<main>${CartIsland.render({ products })}</main>`;
+```
+
+`render` writes `<spacefn-island name="cart">` with the props as JSON inside, then the file's `<script>` through [`once`](3-pages.md#html), so a page with three carts loads it once and pages without one don't load it. Nothing goes in `app/assets/` or `assets(...)`: each island file is an entry of its own. In the browser, the file starts the component in every element with its name, also in ones added later, as by a Datastar patch.
+
+The server imports the same file but never runs its browser code: the plugin leaves out its imports and each `start`, so `react-dom/client` and `.svelte` files aren't loaded there. Keep an island file to its declarations, and put what the server and the component share, such as types and formatting, in a file that imports nothing server-only (`modules/cart/cart.ts`). Names are yours to keep unique; the props must survive JSON.
+
+| Framework | Plugin                                                              | Start                                   | Example           |
 | --------- | ------------------------------------------------------------------- | --------------------------------------- | ----------------- |
 | React     | `react()` from `@vitejs/plugin-react`                               | `createRoot(element).render(<Cart />)`  | `examples/react`  |
 | Solid     | `solid()` from `vite-plugin-solid`                                  | `render(() => <Cart />, element)`       | `examples/solid`  |
