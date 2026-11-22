@@ -63,7 +63,7 @@ export const layout = (title: string, body: HtmlValue, head: HtmlValue = "") =>
 ```
 
 ```ts [app/routes/index.ts]
-render: (ctx) => layout("Shop", shopPage(ctx.data), assets("cart")),
+render: (ctx) => layout("Sales", salesPage(ctx.data), assets("charts")),
 ```
 
 In dev the tags point at the sources, after Vite's client and what plugins add to a page's head (React's refresh preamble, for one). In a build they point at the hashed files, with their CSS and preloads. A tag two entries share comes once. The names are typed: `assets("mian")` is a type error, and so is loading an entry that was deleted.
@@ -115,8 +115,8 @@ A component from React, Vue, Solid or Svelte runs as an island: a page renders a
 1. Add the framework's Vite plugin beside spacefn's in `configs/vite.ts`.
 2. Name the component's file `<Name>.island.<ext>` and export the component as its default. The file's name is the island's:
 
-```tsx [modules/cart/ui/Cart.island.tsx]
-import type { Product } from "../cart.ts";
+```tsx [modules/shop/ui/Cart.island.tsx]
+import type { Product } from "../products.ts";
 
 export default function Cart({ products }: { readonly products: readonly Product[] }) {
 	// ...
@@ -125,7 +125,7 @@ export default function Cart({ products }: { readonly products: readonly Product
 
 3. Render it from the page's view with `island(name, props)` from `#space/islands.ts`. The names and the props are checked against the components:
 
-```ts [modules/cart/views.ts]
+```ts [modules/shop/views.ts]
 import { island } from "#space/islands.ts";
 
 export const shopPage = (products: readonly Product[]) =>
@@ -168,7 +168,7 @@ export default (element: HTMLElement, props: { room: string }) => {
 };
 ```
 
-Names are unique in the app, whatever their folders, and codegen says where two clash. A `.tsx` island in an app with both `react-dom` and `solid-js` is an error; write it as a `.ts` island. The props must survive JSON. Put what the server and the component share, such as types and formatting, in a file that imports nothing server-only (`modules/cart/cart.ts`).
+Names are unique in the app, whatever their folders, and codegen says where two clash. A `.tsx` island in an app with both `react-dom` and `solid-js` is an error; write it as a `.ts` island. The props must survive JSON. Put what the server and the component share, such as types and formatting, in a file that imports nothing server-only (`modules/shop/products.ts`).
 
 For `.tsx`, set `jsx` in `configs/tsconfig.json` (`react-jsx`, or `preserve` with `jsxImportSource: "solid-js"`). `tsc` doesn't read `.vue` or `.svelte` files: the examples declare them in `lib/types/`, so `tsc` takes any props for those islands, and `vue-tsc` or `svelte-check` checks them. With Solid, set Vitest's `environment: "node"` in `configs/vitest.ts`, since its plugin switches it to jsdom.
 

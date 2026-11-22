@@ -11,17 +11,17 @@ The browser's entries. Each script or stylesheet directly in the folder is an en
 app/assets/
 ├── site.css       @imports the base styles and each feature's
 ├── main.ts        what every page runs
-└── cart.tsx       only on the pages with a cart
+└── charts.ts      only on the pages with a chart
 ```
 
-`.ts`, `.tsx`, `.js` and `.css` files are entries; subfolders, `_` files and tests aren't. Two entries can't share a name (`main.ts` and `main.css`): import the stylesheet from the script instead.
+`.ts`, `.tsx`, `.js` and `.css` files are entries; subfolders, `_` files and tests aren't. A framework component doesn't need one: an [island](../../6-guides/4-frontend.md#client-components) is an entry of its own. Two entries can't share a name (`main.ts` and `main.css`): import the stylesheet from the script instead.
 
 Keep each entry to a few lines that import from `modules/` and `lib/`, so the code lives with its feature:
 
-```ts [app/assets/cart.tsx]
-import { mountCart } from "#modules/cart/client/mount.tsx";
+```ts [app/assets/charts.ts]
+import { defineSalesChart } from "#modules/sales/client/sales-chart.ts";
 
-mountCart();
+defineSalesChart();
 ```
 
 ```css [app/assets/site.css]
