@@ -10,6 +10,8 @@ const area = (entry: Record<string, string>, tsconfig = "tsconfig.json"): UserCo
 	tsconfig,
 	format: "esm",
 	dts: true,
+	// Until TypeScript 7.1 is released (it is in beta); then remove.
+	suppressWarnings: ["The `tsgo` generator on TypeScript 7.0 is deprecated"],
 	// The builds run in parallel; `pnpm build` empties dist/ first.
 	clean: false,
 	deps: { neverBundle: [/^spacefn(\/|$)/] },
