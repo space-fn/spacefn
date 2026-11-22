@@ -1,8 +1,9 @@
 #!/bin/bash
 # Publish spacefn, spacefn-docs and create-spacefn, released together at one version:
 # an app scaffolded by create-spacefn@X depends on spacefn@^X and spacefn-docs@^X.
-# pnpm publish turns catalog: and workspace: into real versions and applies
-# publishConfig (dist/ exports and bin); npm publish would do neither.
+# pnpm builds and packs, npm publishes the tarball: pnpm pack turns catalog: and
+# workspace: into real versions and applies publishConfig (dist/ exports and bin),
+# which npm publish wouldn't do from the folder.
 # vscode-spacefn has its own version and its own script: pnpm publish:vscode.
 # Usage: pnpm run publish
 
@@ -52,11 +53,13 @@ pnpm test
 echo "📦 Installing the packed packages into fresh apps"
 node scripts/pack-check.ts
 
-# pnpm's own login, as pnpm publishes: its auth.ini overrides ~/.npmrc, where npm login writes.
-if ! pnpm whoami >/dev/null 2>&1; then
-  echo "🔐 pnpm is not logged in to npm; starting pnpm login"
-  pnpm login
+if ! npm whoami >/dev/null 2>&1; then
+  echo "🔐 npm is not logged in; starting npm login"
+  npm login
 fi
+
+tarballs=$(mktemp -d)
+trap 'rm -rf "$tarballs"' EXIT
 
 for dir in "${packages[@]}"; do
   name=$(node -p "require('./$dir/package.json').name")
@@ -65,8 +68,9 @@ for dir in "${packages[@]}"; do
     continue
   fi
   echo "🚀 Publishing $name@$version ($tag)"
-  # --access public: a package's first publish (spacefn-docs) would otherwise ask.
-  (cd "$dir" && pnpm build && pnpm publish --access public --tag "$tag" --no-git-checks)
+  tarball="$tarballs/$name-$version.tgz"
+  (cd "$dir" && pnpm build && pnpm pack --out "$tarball")
+  npm publish "$tarball" --access public --tag "$tag"
 done
 
 if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
