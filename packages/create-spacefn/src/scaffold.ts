@@ -22,6 +22,8 @@ const VERSIONS: Readonly<Record<string, string>> = {
 	alchemy: "2.0.0-beta.87",
 	"@alchemy.run/cloudflare": "2.0.0-beta.87",
 	"@alchemy.run/docker": "2.0.0-beta.87",
+	oxlint: "^1.94.0",
+	oxfmt: "^0.79.0",
 };
 
 /** The ones the spacefn repo's catalog pins, for the starter examples. */
@@ -42,13 +44,15 @@ export interface ScaffoldOptions {
 	 * cataloged ones from the catalog, for the starter examples.
 	 */
 	readonly workspace?: boolean;
+	/** Adds oxlint and oxfmt, with their configs in `configs/` and `lint`, `fmt` and `check` scripts. */
+	readonly lint?: boolean;
 }
 
 const sorted = (record: Record<string, string>) =>
 	Object.fromEntries(Object.entries(record).sort(([a], [b]) => a.localeCompare(b)));
 
 /** The app's package.json: Alchemy and its target's provider, for `configs/infra.ts`. */
-export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
+export const packageJson = ({ name, target, workspace, lint }: ScaffoldOptions) => {
 	const other = (pkg: string) =>
 		[pkg, workspace && CATALOG.has(pkg) ? "catalog:" : VERSIONS[pkg]!] as const;
 	return {
@@ -71,6 +75,7 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 			docs: "space docs",
 			test: "vitest run --config configs/vitest.ts",
 			typecheck: "tsc --noEmit",
+			...(lint ? LINT_SCRIPTS : {}),
 		},
 		dependencies: sorted(
 			Object.fromEntries([
@@ -84,12 +89,67 @@ export const packageJson = ({ name, target, workspace }: ScaffoldOptions) => {
 				other(target === "cloudflare" ? "@alchemy.run/cloudflare" : "@alchemy.run/docker"),
 				// The reader and spacefn's docs, at spacefn's version.
 				["spacefn-docs", workspace ? "workspace:*" : SPACEFN_VERSION],
+				...(lint ? [other("oxfmt"), other("oxlint")] : []),
 				other("typescript"),
 				other("vite"),
 				other("vitest"),
 			]),
 		),
 	};
+};
+
+/** The scripts oxlint and oxfmt add. Both read `.gitignore`, so `.space/` and `dist/` are skipped. */
+const LINT_SCRIPTS = {
+	lint: "oxlint -c configs/oxlint.json",
+	fmt: "oxfmt -c configs/oxfmt.json",
+	check: "oxfmt -c configs/oxfmt.json --check && oxlint -c configs/oxlint.json && tsc --noEmit",
+};
+
+/** oxlint's settings: its default rules, and unused code as an error. */
+const oxlintConfig = `${JSON.stringify(
+	{
+		$schema: "../node_modules/oxlint/configuration_schema.json",
+		rules: { "no-unused-vars": "error" },
+	},
+	null,
+	"\t",
+)}\n`;
+
+/** oxfmt's settings: the style the new app is written in, so it starts formatted. */
+const oxfmtConfig = `${JSON.stringify(
+	{
+		$schema: "../node_modules/oxfmt/configuration_schema.json",
+		useTabs: true,
+		trailingComma: "all",
+		sortImports: true,
+		sortPackageJson: true,
+	},
+	null,
+	"\t",
+)}\n`;
+
+/** With oxlint and oxfmt, AGENTS.md and the README say to run `check`. */
+const withLint = (dir: string) => {
+	writeFileSync(resolve(dir, "configs", "oxlint.json"), oxlintConfig);
+	writeFileSync(resolve(dir, "configs", "oxfmt.json"), oxfmtConfig);
+	const replace = (file: string, from: string, to: string) => {
+		const path = resolve(dir, file);
+		const text = readFileSync(path, "utf8");
+		if (!text.includes(from)) throw new Error(`${file} has no "${from}" to replace`);
+		writeFileSync(path, text.replace(from, to));
+	};
+	replace(
+		"AGENTS.md",
+		"Check your work with `npm run typecheck` and `npm test`",
+		"Check your work with `npm run check` (format, lint and types) and `npm test`; `npm run fmt` formats",
+	);
+	replace(
+		"README.md",
+		"| `npm test`         | Runs the tests                                                            |\n",
+		"| `npm test`         | Runs the tests                                                            |\n" +
+			"| `npm run check`    | Checks formatting (oxfmt), lint (oxlint) and types                        |\n" +
+			"| `npm run fmt`      | Formats the code with oxfmt                                               |\n",
+	);
 };
 
 /** The app's Vite config: spacefn's plugin, for the target. Add your own plugins beside it. */
@@ -128,4 +188,5 @@ export function scaffold(dir: string, options: ScaffoldOptions): void {
 	);
 	writeFileSync(resolve(dir, "configs", "vite.ts"), viteConfig(options.target));
 	writeFileSync(resolve(dir, "app", "db", "main", "config.json"), dbConfig(options.target));
+	if (options.lint) withLint(dir);
 }

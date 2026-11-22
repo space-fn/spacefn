@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterAll, describe, expect, it } from "vitest";
@@ -56,6 +57,36 @@ describe("scaffold", () => {
 		});
 		expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).name).toBe("my-bun-app");
 		expect(() => scaffold(dir, { name: "x", target: "bun" })).toThrow("already exists");
+	});
+});
+
+describe("with --lint", () => {
+	it("adds oxlint and oxfmt, their configs and the check script, only when asked", () => {
+		const plain = packageJson({ name: "a", target: "bun" });
+		expect(plain.devDependencies).not.toHaveProperty("oxlint");
+		expect(plain.scripts).not.toHaveProperty("check");
+		const linted = packageJson({ name: "a", target: "bun", lint: true });
+		expect(linted.devDependencies).toHaveProperty("oxlint");
+		expect(linted.devDependencies).toHaveProperty("oxfmt");
+		expect(linted.scripts.check).toBe(
+			"oxfmt -c configs/oxfmt.json --check && oxlint -c configs/oxlint.json && tsc --noEmit",
+		);
+	});
+
+	it("starts formatted and lint-free", () => {
+		// Outside the repo: both tools skip what the repo's .gitignore lists, .scratch/ included.
+		const dir = join(mkdtempSync(join(tmpdir(), "spacefn-lint-")), "app");
+		try {
+			scaffold(dir, { name: "linted", target: "cloudflare", lint: true });
+			expect(readFileSync(join(dir, "AGENTS.md"), "utf8")).toContain("npm run check");
+			const tool = (name: string) => join(here, "..", "..", "node_modules", ".bin", name);
+			const fmt = sh(dir, tool("oxfmt"), ["-c", "configs/oxfmt.json", "--check"]);
+			expect(fmt.output).toContain("All matched files use the correct format");
+			expect(fmt.code).toBe(0);
+			expect(sh(dir, tool("oxlint"), ["-c", "configs/oxlint.json"]).code).toBe(0);
+		} finally {
+			rmSync(dirname(dir), { recursive: true, force: true });
+		}
 	});
 });
 

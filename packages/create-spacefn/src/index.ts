@@ -7,8 +7,11 @@ import { scaffold, TARGETS, type Target } from "./scaffold.ts";
 
 const { values, positionals } = parseArgs({
 	allowPositionals: true,
+	allowNegative: true,
 	options: {
 		target: { type: "string", short: "t" },
+		// oxlint and oxfmt; --no-lint skips the question.
+		lint: { type: "boolean" },
 		// Inside the spacefn repo, for the starter examples: workspace and catalog versions.
 		workspace: { type: "boolean" },
 	},
@@ -26,6 +29,16 @@ const askTarget = async (): Promise<Target> => {
 	return answer === "bun" ? "bun" : "cloudflare";
 };
 
+const askLint = async (): Promise<boolean> => {
+	if (!process.stdin.isTTY) return false;
+	const rl = createInterface({ input: process.stdin, output: process.stdout });
+	const answer = (await rl.question("Add oxlint and oxfmt, to lint and format? [y/N] "))
+		.trim()
+		.toLowerCase();
+	rl.close();
+	return answer === "y" || answer === "yes";
+};
+
 const target = values.target ?? (await askTarget());
 if (!TARGETS.includes(target as Target)) {
 	console.error(`Unknown target "${target}". Use --target cloudflare or --target bun.`);
@@ -40,6 +53,7 @@ try {
 		name,
 		target: target as Target,
 		workspace: values.workspace ?? false,
+		lint: values.lint ?? (await askLint()),
 	});
 } catch (error) {
 	console.error(error instanceof Error ? error.message : error);
