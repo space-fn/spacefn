@@ -12,7 +12,7 @@ What spacefn generates from `app/`: plain TypeScript you can read, but never edi
 ├── manifest.ts         the routes, middleware, queues, crons and databases, as data
 ├── db/
 │   └── main.ts         MainDb: the typed queries of app/db/main/
-├── assets.d.ts         the names assets(...) accepts, from app/client/
+├── assets.d.ts         the names assets(...) accepts, from app/assets/
 ├── entry.ts            the target's entry, running app/entry.ts
 ├── infra.ts            what configs/infra.ts creates, as plain data
 ├── vite.config.ts      points Vite at configs/vite.ts

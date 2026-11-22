@@ -1,14 +1,14 @@
 ---
-title: client/
+title: assets/
 icon: browser
 ---
 
-# app/client/
+# app/assets/
 
 The browser's entries. Each script or stylesheet directly in the folder is an entry that Vite bundles, named after its file: `main.ts` is `main`, `site.css` is `site`. A page loads the entries it needs with `assets("name", ...)`.
 
 ```txt
-app/client/
+app/assets/
 ├── site.css       @imports the base styles and each feature's
 ├── main.ts        what every page runs
 └── cart.tsx       only on the pages with a cart
@@ -18,13 +18,13 @@ app/client/
 
 Keep each entry to a few lines that import from `modules/` and `lib/`, so the code lives with its feature:
 
-```ts [app/client/cart.tsx]
+```ts [app/assets/cart.tsx]
 import { mountCart } from "#modules/cart/client/mount.tsx";
 
 mountCart();
 ```
 
-```css [app/client/site.css]
+```css [app/assets/site.css]
 @import "#lib/ui/base.css";
 @import "#modules/todos/todos.css";
 ```

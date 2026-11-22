@@ -73,9 +73,9 @@ describe("space dev on Cloudflare (alchemy dev)", () => {
 		});
 	});
 
-	it("serves public/ at /, and the client entries' tags", async () => {
+	it("serves public/ at /, and the asset entries' tags", async () => {
 		expect(await (await fetch(`${base}/robots.txt`)).text()).toBe("User-agent: *\n");
-		expect(await text(`${base}/`)).toContain('<script type="module" src="/app/client/main.ts">');
+		expect(await text(`${base}/`)).toContain('<script type="module" src="/app/assets/main.ts">');
 	});
 
 	it("binds the Durable Objects behind RateLimiter", async () => {

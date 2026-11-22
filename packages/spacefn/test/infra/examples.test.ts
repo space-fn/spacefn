@@ -68,16 +68,16 @@ describe("the CSS examples build", () => {
 
 describe("the island examples build", () => {
 	it.each([
-		["react", "app/client/cart.tsx"],
-		["solid", "app/client/cart.tsx"],
-		["vue", "app/client/cart.ts"],
-		["svelte", "app/client/cart.ts"],
+		["react", "app/assets/cart.tsx"],
+		["solid", "app/assets/cart.tsx"],
+		["vue", "app/assets/cart.ts"],
+		["svelte", "app/assets/cart.ts"],
 	])(
 		"%s: the cart entry, with its component compiled in",
 		async (name, entry) => {
 			const { js, manifest } = await built(name);
 			expect(manifest[entry]?.isEntry).toBe(true);
-			expect(manifest["app/client/site.css"]?.isEntry).toBe(true);
+			expect(manifest["app/assets/site.css"]?.isEntry).toBe(true);
 			expect(js).toContain("Total: ");
 		},
 		60_000,

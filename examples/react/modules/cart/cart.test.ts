@@ -16,13 +16,13 @@ describe("the shop", () => {
 		expect(page).toMatch(
 			/<script type="application\/json" id="cart-props">\s*\{"products":\[\{"id":"mug"/,
 		);
-		expect(page).toContain('<script type="module" src="/app/client/cart.tsx"></script>');
+		expect(page).toContain('<script type="module" src="/app/assets/cart.tsx"></script>');
 	});
 
 	it("doesn't load the cart on a page without it", async () => {
 		await using shop = app();
 		const page = await (await shop.fetch("/about")).text();
-		expect(page).toContain('<link rel="stylesheet" href="/app/client/site.css">');
-		expect(page).not.toContain("/app/client/cart");
+		expect(page).toContain('<link rel="stylesheet" href="/app/assets/site.css">');
+		expect(page).not.toContain("/app/assets/cart");
 	});
 });

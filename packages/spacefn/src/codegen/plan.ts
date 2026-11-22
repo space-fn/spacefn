@@ -73,8 +73,8 @@ export interface AppPlan {
 	readonly crons: readonly PlannedCron[];
 	readonly durableObjects: readonly PlannedClass[];
 	readonly workflows: readonly PlannedClass[];
-	/** Client entry files (scripts and stylesheets). */
-	readonly client: readonly string[];
+	/** Entry files in `app/assets/` (scripts and stylesheets). */
+	readonly assets: readonly string[];
 	readonly db: readonly PlannedDb[];
 }
 
@@ -153,8 +153,8 @@ const planClasses = (folder: string, files: readonly string[], prefix: string) =
 		units.map((unit) => ({ ...unit, className: pascalName(unit.name) })),
 	);
 
-/** A client entry's name for `assets(...)`: `app/client/main.ts` → `main`. */
-export const clientEntryName = (file: string): string =>
+/** An entry's name for `assets(...)`: `app/assets/main.ts` → `main`. */
+export const assetEntryName = (file: string): string =>
 	file
 		.split("/")
 		.pop()!
@@ -193,7 +193,7 @@ const checkPublic = Effect.fnUntraced(function* (
 		}
 });
 
-const planClient = Effect.fnUntraced(function* (files: readonly string[]) {
+const planAssets = Effect.fnUntraced(function* (files: readonly string[]) {
 	const entries = files.filter(
 		(file) =>
 			(CODE_FILE.test(file) || file.endsWith(".css")) &&
@@ -207,14 +207,14 @@ const planClient = Effect.fnUntraced(function* (files: readonly string[]) {
 		const previous = seen.get(base);
 		if (previous)
 			return yield* fail(
-				"CLIENT_DUP_ENTRY",
+				"ASSETS_DUP_ENTRY",
 				`Entries ${previous} and ${file} share the name "${base}", so their bundles would collide`,
 				"Rename one, or import the stylesheet from the script.",
-				`app/client/${file}`,
+				`app/assets/${file}`,
 			);
 		seen.set(base, file);
 	}
-	return entries.map((file) => `app/client/${file}`);
+	return entries.map((file) => `app/assets/${file}`);
 });
 
 /** Types a query file may name in `@column` / `@param`, with `?` for nullable. */
@@ -399,7 +399,7 @@ export const planApp = Effect.fnUntraced(function* (
 		crons: yield* planCrons(tree),
 		durableObjects,
 		workflows,
-		client: yield* planClient(tree.client),
+		assets: yield* planAssets(tree.assets),
 		db: yield* planDb(tree, config.target),
 	};
 });

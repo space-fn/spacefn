@@ -8,7 +8,7 @@ spacefn builds full-stack TypeScript apps from folders of convention files, on [
 
 Start with [Getting started](1-getting-started.md) and [Conventions](2-conventions.md), then read what you need. [Best practices](3-best-practices.md) says how to keep an app easy to change as it grows.
 
-**Folders.** A page for each folder and file of an app, to browse like a map: [`app/`](4-folders/1-app/index.md) and its [`entry.ts`](4-folders/1-app/1-entry.md), [`routes/`](4-folders/1-app/2-routes.md), [`db/`](4-folders/1-app/3-db.md), [`queues/`](4-folders/1-app/4-queues.md), [`crons/`](4-folders/1-app/5-crons.md), [`client/`](4-folders/1-app/6-client.md), [`durable-objects/`](4-folders/1-app/7-durable-objects.md) and [`workflows/`](4-folders/1-app/8-workflows.md); then [`modules/`](4-folders/2-modules.md), [`lib/`](4-folders/3-lib.md), [`public/`](4-folders/4-public.md), [`docs/`](4-folders/5-docs.md), [`configs/`](4-folders/6-configs.md), [`.space/`](4-folders/7-space.md), [`.env`](4-folders/8-env.md) and [`package.json`](4-folders/9-package-json.md). [See them all](4-folders/index.md).
+**Folders.** A page for each folder and file of an app, to browse like a map: [`app/`](4-folders/1-app/index.md) and its [`entry.ts`](4-folders/1-app/1-entry.md), [`routes/`](4-folders/1-app/2-routes.md), [`db/`](4-folders/1-app/3-db.md), [`queues/`](4-folders/1-app/4-queues.md), [`crons/`](4-folders/1-app/5-crons.md), [`assets/`](4-folders/1-app/6-assets.md), [`durable-objects/`](4-folders/1-app/7-durable-objects.md) and [`workflows/`](4-folders/1-app/8-workflows.md); then [`modules/`](4-folders/2-modules.md), [`lib/`](4-folders/3-lib.md), [`public/`](4-folders/4-public.md), [`docs/`](4-folders/5-docs.md), [`configs/`](4-folders/6-configs.md), [`.space/`](4-folders/7-space.md), [`.env`](4-folders/8-env.md) and [`package.json`](4-folders/9-package-json.md). [See them all](4-folders/index.md).
 
 **Deployment**
 
@@ -22,17 +22,17 @@ Start with [Getting started](1-getting-started.md) and [Conventions](2-conventio
 
 **Guides**
 
-| Page                                          | What it covers                                                         |
-| --------------------------------------------- | ---------------------------------------------------------------------- |
-| [The entry](6-guides/1-entry.md)              | `app/entry.ts`: services, middleware, extra routes, `onError`          |
-| [Routes and middleware](6-guides/2-routes.md) | HTTP endpoints, reading input, errors, middleware, CSRF                |
-| [Pages](6-guides/3-pages.md)                  | Server-rendered pages, form actions, live updates with Datastar        |
-| [Frontend](6-guides/4-frontend.md)            | Client entries, `public/`, CSS, framework islands, Datastar components |
-| [Database](6-guides/5-database.md)            | Migrations, typed SQL queries, drivers, a database per tenant          |
-| [Services](6-guides/6-services.md)            | Kv, Blob, Queue, Bus and RateLimiter, and what backs them per target   |
-| [Queues and crons](6-guides/7-jobs.md)        | Background jobs and scheduled jobs                                     |
-| [Auth](6-guides/8-auth.md)                    | Passwords, sessions, rate limiting, TOTP, signed tokens, OAuth         |
-| [Testing](6-guides/9-testing.md)              | Testing modules, pages and routes in memory                            |
+| Page                                          | What it covers                                                        |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| [The entry](6-guides/1-entry.md)              | `app/entry.ts`: services, middleware, extra routes, `onError`         |
+| [Routes and middleware](6-guides/2-routes.md) | HTTP endpoints, reading input, errors, middleware, CSRF               |
+| [Pages](6-guides/3-pages.md)                  | Server-rendered pages, form actions, live updates with Datastar       |
+| [Frontend](6-guides/4-frontend.md)            | Asset entries, `public/`, CSS, framework islands, Datastar components |
+| [Database](6-guides/5-database.md)            | Migrations, typed SQL queries, drivers, a database per tenant         |
+| [Services](6-guides/6-services.md)            | Kv, Blob, Queue, Bus and RateLimiter, and what backs them per target  |
+| [Queues and crons](6-guides/7-jobs.md)        | Background jobs and scheduled jobs                                    |
+| [Auth](6-guides/8-auth.md)                    | Passwords, sessions, rate limiting, TOTP, signed tokens, OAuth        |
+| [Testing](6-guides/9-testing.md)              | Testing modules, pages and routes in memory                           |
 
 **Reference**
 

@@ -39,13 +39,13 @@ my-app/
 │   │   └── main/
 │   │       ├── migrations/     the schema, in SQL
 │   │       └── queries/        one SQL query per file, typed for you
-│   └── client/
+│   └── assets/
 │       └── site.css            the stylesheet entry, loaded by assets("site")
 ├── modules/
 │   └── todos/
 │       ├── todos.ts            what the app does with todos: list, add, toggle
 │       ├── views.ts            the todos' HTML, from plain props
-│       ├── todos.css           their styles, imported by app/client/site.css
+│       ├── todos.css           their styles, imported by app/assets/site.css
 │       └── todos.test.ts       the feature tested through the page, in memory
 ├── lib/
 │   └── ui/

@@ -17,7 +17,7 @@ public/
 
 On both targets they're answered before the app runs: by Cloudflare's assets on Cloudflare, by `staticFiles()` in the entry on Bun. So a public file at a route's URL would hide the route, and `space gen` stops with `PUBLIC_SHADOWS_ROUTE` instead. An HTML file counts at its clean URL too: `about.html` is also `/about`.
 
-Use it for files that need a fixed URL: icons, `robots.txt`, `.well-known/` files, images linked from elsewhere. Import everything else from [`app/client/`](1-app/6-client.md), so it gets a hashed name and caches safely:
+Use it for files that need a fixed URL: icons, `robots.txt`, `.well-known/` files, images linked from elsewhere. Import everything else from [`app/assets/`](1-app/6-assets.md), so it gets a hashed name and caches safely:
 
 ```html
 <link rel="icon" href="/favicon.svg" />

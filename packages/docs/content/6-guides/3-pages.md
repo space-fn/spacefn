@@ -94,11 +94,11 @@ ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.r
 
 ## Scripts, styles and public files
 
-A page loads the browser code it needs with `assets("name")`, for the entries in `app/client/`. [Frontend](4-frontend.md) covers them, `public/`, CSS, client components from React, Vue, Solid or Svelte, and how to write Datastar components.
+A page loads the browser code it needs with `assets("name")`, for the entries in `app/assets/`. [Frontend](4-frontend.md) covers them, `public/`, CSS, client components from React, Vue, Solid or Svelte, and how to write Datastar components.
 
 ## Live updates with Datastar
 
-Pages speak [Datastar](https://data-star.dev): the new app's layout loads its client from a CDN (or install it and import it from `app/client/`). A `get` action that returns `Datastar.watch(topics, render)` keeps part of the page current:
+Pages speak [Datastar](https://data-star.dev): the new app's layout loads its client from a CDN (or install it and import it from `app/assets/`). A `get` action that returns `Datastar.watch(topics, render)` keeps part of the page current:
 
 ```ts
 live: action({

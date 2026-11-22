@@ -1,5 +1,5 @@
 /**
- * The `<script>` and `<link>` tags of `app/client/` entries, by name: the
+ * The `<script>` and `<link>` tags of `app/assets/` entries, by name: the
  * source files in dev, the hashed build files (with their CSS and preloads)
  * in a build. Put them in `<head>`, in the order they should load.
  *
@@ -15,12 +15,12 @@
 import type { Html } from "./html.ts";
 
 /**
- * The app's client entries, by name: `app/client/main.ts` is `main`.
+ * The app's asset entries, by name: `app/assets/main.ts` is `main`.
  * `.space/assets.d.ts` lists them, so a name that isn't one is a type error.
  */
 export interface ClientEntries {}
 
-/** The name of a file in `app/client/`, without its extension. */
+/** The name of a file in `app/assets/`, without its extension. */
 export type ClientEntry = Extract<keyof ClientEntries, string>;
 
 export const assets = (..._names: [ClientEntry, ...ClientEntry[]]): Html => {

@@ -29,7 +29,7 @@ my-app/
 │   │   └── main/           config.json (driver, migrateOn), migrations/ and queries/ in SQL
 │   ├── queues/             queue consumers, one per file
 │   ├── crons/              scheduled jobs, one per file
-│   └── client/             browser entries, bundled by Vite; a page loads them with assets("name")
+│   └── assets/             browser entries, bundled by Vite; a page loads them with assets("name")
 ├── modules/
 │   └── todos/              a feature: its logic, views, client code and tests
 ├── lib/

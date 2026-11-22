@@ -1,7 +1,7 @@
 import { html, type HtmlValue } from "spacefn";
 import { assets } from "spacefn/assets";
 
-/** Datastar's client, for live updates. Or install it and import it from app/client/. */
+/** Datastar's client, for live updates. Or install it and import it from app/assets/. */
 const DATASTAR = "https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.5/bundles/datastar.js";
 
 /** The HTML around every page: its title, the site's styles and Datastar. */

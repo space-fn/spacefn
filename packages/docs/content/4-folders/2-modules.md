@@ -12,7 +12,7 @@ modules/
 ├── todos/
 │   ├── todos.ts           what the feature does: Effects over the database and services
 │   ├── views.ts           its HTML: functions from props to html
-│   ├── todos.css          its styles, imported by app/client/site.css
+│   ├── todos.css          its styles, imported by app/assets/site.css
 │   ├── client/            its browser code: components, islands, web components
 │   │   └── mount.ts
 │   └── todos.test.ts      its tests

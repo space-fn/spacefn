@@ -26,7 +26,7 @@ Import it with `#lib/...`, in TypeScript and in CSS:
 import { layout } from "#lib/ui/layout.ts";
 ```
 
-```css [app/client/site.css]
+```css [app/assets/site.css]
 @import "#lib/ui/base.css";
 ```
 

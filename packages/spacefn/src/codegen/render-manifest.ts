@@ -61,7 +61,7 @@ export const renderManifest = (plan: AppPlan): string => {
 
 	return [
 		GENERATED,
-		// The client entries' names for assets(...): every app's entry imports this file.
+		// The asset entries' names for assets(...): every app's entry imports this file.
 		'/// <reference path="./assets.d.ts" />',
 		'import type { SpaceManifest } from "spacefn";',
 		...imports,

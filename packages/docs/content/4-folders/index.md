@@ -14,7 +14,7 @@ my-app/
 │   ├── db/                  one folder per database: SQL migrations and queries
 │   ├── queues/              one consumer per queue
 │   ├── crons/               one scheduled job per file
-│   ├── client/              browser entries, bundled by Vite
+│   ├── assets/              browser entries, bundled by Vite
 │   ├── durable-objects/     Durable Object classes (Cloudflare)
 │   └── workflows/           Workflow classes (Cloudflare)
 ├── modules/                 one folder per feature: logic, views, client code, tests
@@ -35,7 +35,7 @@ my-app/
 | [`app/db/`](1-app/3-db.md)                           | Databases: config, migrations and typed queries  |
 | [`app/queues/`](1-app/4-queues.md)                   | Queue consumers                                  |
 | [`app/crons/`](1-app/5-crons.md)                     | Scheduled jobs                                   |
-| [`app/client/`](1-app/6-client.md)                   | Scripts and stylesheets for the browser          |
+| [`app/assets/`](1-app/6-assets.md)                   | Scripts and stylesheets for the browser          |
 | [`app/durable-objects/`](1-app/7-durable-objects.md) | Durable Objects, on Cloudflare                   |
 | [`app/workflows/`](1-app/8-workflows.md)             | Workflows, on Cloudflare                         |
 | [`modules/`](2-modules.md)                           | The app's features                               |

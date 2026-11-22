@@ -26,15 +26,15 @@ const assetsOf = (tags: Record<string, string[]>) =>
 
 describe("entryTags", () => {
 	it("points at the source in dev, behind the Vite client", () => {
-		expect(entryTags("app/client/style.css", "/", undefined)).toEqual([
+		expect(entryTags("app/assets/style.css", "/", undefined)).toEqual([
 			'<script type="module" src="/@vite/client"></script>',
-			'<link rel="stylesheet" href="/app/client/style.css">',
+			'<link rel="stylesheet" href="/app/assets/style.css">',
 		]);
 	});
 
 	it("points at the hashed files of a build, with their CSS and preloads", () => {
 		const manifest = {
-			"app/client/main.ts": {
+			"app/assets/main.ts": {
 				file: "assets/main-1.js",
 				css: ["assets/main-2.css"],
 				imports: ["_shared.js"],
@@ -42,7 +42,7 @@ describe("entryTags", () => {
 			},
 			"_shared.js": { file: "assets/shared-3.js" },
 		};
-		expect(entryTags("app/client/main.ts", "/", manifest)).toEqual([
+		expect(entryTags("app/assets/main.ts", "/", manifest)).toEqual([
 			'<link rel="stylesheet" href="/assets/main-2.css">',
 			'<link rel="modulepreload" href="/assets/shared-3.js">',
 			'<script type="module" src="/assets/main-1.js"></script>',
@@ -79,9 +79,9 @@ describe("assets", () => {
 
 	it("names the entries when asked for one that isn't", () => {
 		expect(() => assets("mian")).toThrow(
-			"there's no client entry \"mian\"; the entries are app/client/'s files: site, main, admin",
+			"there's no entry \"mian\"; the entries are app/assets/'s files: site, main, admin",
 		);
-		expect(() => assets("toString")).toThrow("no client entry");
+		expect(() => assets("toString")).toThrow("no entry");
 	});
 });
 
@@ -120,8 +120,8 @@ describe("the Bun app", () => {
 		it("answers with the app and the source tags", async () => {
 			const page = await (await fetch(`${base}/`)).text();
 			expect(page).toContain('<script type="module" src="/@vite/client"></script>');
-			expect(page).toContain('<link rel="stylesheet" href="/app/client/style.css">');
-			expect((await fetch(`${base}/app/client/main.ts`)).status).toBe(200);
+			expect(page).toContain('<link rel="stylesheet" href="/app/assets/style.css">');
+			expect((await fetch(`${base}/app/assets/main.ts`)).status).toBe(200);
 		});
 
 		it("serves public/ at /", async () => {

@@ -7,7 +7,7 @@ import { Readable } from "node:stream";
 
 import { Cause, Effect, Exit } from "effect";
 import { formatSpaceError, SpaceError, type Target } from "spacefn";
-import { clientEntryName, genPlan } from "spacefn/internal/codegen";
+import { assetEntryName, genPlan } from "spacefn/internal/codegen";
 import {
 	isRunnableDevEnvironment,
 	type Manifest,
@@ -29,11 +29,11 @@ export interface SpaceViteOptions {
 	readonly root?: string;
 }
 
-/** What the plugins learn once Vite starts: the app root and, from codegen, its client entries. */
+/** What the plugins learn once Vite starts: the app root and, from codegen, its `app/assets/` entries. */
 interface App {
 	root: string;
-	/** Client entries, e.g. `app/client/main.ts`, relative to the root. */
-	client: readonly string[];
+	/** The browser's entries, e.g. `app/assets/main.ts`, relative to the root. */
+	assets: readonly string[];
 }
 
 const nearestPackage = (from: string) => {
@@ -100,7 +100,7 @@ export const devHead = (page: string, base: string): { tags: string; code: strin
 };
 
 /**
- * One client entry's tags, in load order: in dev, the plugins' {@link devHead}
+ * One asset entry's tags, in load order: in dev, the plugins' {@link devHead}
  * and then the source; in a build, its CSS, the chunks it imports and the
  * script, from the manifest.
  */
@@ -145,7 +145,7 @@ export const assets = (...names) => {
 	const seen = new Set();
 	for (const name of names) {
 		const entry = Object.hasOwn(tags, name) ? tags[name] : undefined;
-		if (!entry) throw new Error(\`spacefn/assets: there's no client entry "\${name}"; the entries are app/client/'s files: \${Object.keys(tags).join(", ") || "none"}\`);
+		if (!entry) throw new Error(\`spacefn/assets: there's no entry "\${name}"; the entries are app/assets/'s files: \${Object.keys(tags).join(", ") || "none"}\`);
 		for (const tag of entry) seen.add(tag);
 	}
 	return raw([...seen].join(""));
@@ -198,9 +198,9 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 		config: async (user, env) => {
 			app.root = options.root ?? nearestPackage(user.root ?? process.cwd());
 			const { root } = app;
-			app.client = (
+			app.assets = (
 				await generate(app, env.command === "build" ? "prod" : "dev", options.target)
-			).client;
+			).assets;
 			return {
 				root,
 				// Served as they are at /, before the app, and copied into the client build.
@@ -212,8 +212,8 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 							outDir: clientOut(),
 							emptyOutDir: true,
 							manifest: true,
-							...(app.client.length > 0
-								? { rolldownOptions: { input: app.client.map((file) => join(root, file)) } }
+							...(app.assets.length > 0
+								? { rolldownOptions: { input: app.assets.map((file) => join(root, file)) } }
 								: {}),
 						},
 					},
@@ -255,7 +255,7 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			if (id === RESOLVED_DEV_HEAD_ID) return server ? (await headOf(server)).code : "";
 			if (id !== RESOLVED_ASSETS_ID) return undefined;
 			const manifest =
-				config.command === "build" && app.client.length > 0
+				config.command === "build" && app.assets.length > 0
 					? (JSON.parse(
 							await readFile(join(clientOut(), ".vite", "manifest.json"), "utf8"),
 						) as Manifest)
@@ -263,8 +263,8 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			const tags = !manifest && server ? (await headOf(server)).tags : undefined;
 			return assetsModule(
 				Object.fromEntries(
-					app.client.map((file) => [
-						clientEntryName(file),
+					app.assets.map((file) => [
+						assetEntryName(file),
 						entryTags(file, config.base, manifest, tags),
 					]),
 				),
@@ -275,7 +275,7 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			order: "pre",
 			handler: async (builder) => {
 				const client = builder.environments.client;
-				if (client && app.client.length > 0 && !client.isBuilt) await builder.build(client);
+				if (client && app.assets.length > 0 && !client.isBuilt) await builder.build(client);
 			},
 		},
 		hotUpdate(update) {
@@ -449,6 +449,6 @@ const bun = (app: App): Plugin => {
  * ```
  */
 export const space = (options: SpaceViteOptions): Plugin[] => {
-	const app: App = { root: options.root ?? process.cwd(), client: [] };
+	const app: App = { root: options.root ?? process.cwd(), assets: [] };
 	return options.target === "bun" ? [core(options, app), bun(app)] : [core(options, app)];
 };

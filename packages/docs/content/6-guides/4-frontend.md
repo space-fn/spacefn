@@ -4,7 +4,7 @@ icon: palette
 
 # Frontend
 
-Pages are server-rendered `html` (see [Pages](3-pages.md)). What runs in the browser is bundled by Vite from `app/client/`, and each page loads only what it uses. Every section below has a tested app in `examples/`, which also ships in `node_modules/spacefn-docs/examples/`.
+Pages are server-rendered `html` (see [Pages](3-pages.md)). What runs in the browser is bundled by Vite from `app/assets/`, and each page loads only what it uses. Every section below has a tested app in `examples/`, which also ships in `node_modules/spacefn-docs/examples/`.
 
 ## Where browser code goes
 
@@ -13,7 +13,7 @@ The same split as the rest of the app (see [Conventions](../2-conventions.md#whe
 ```txt
 my-app/
 ├── app/
-│   └── client/
+│   └── assets/
 │       ├── main.ts          an entry: imports from modules/ and lib/, and starts them
 │       └── site.css         an entry: @imports the stylesheets
 ├── modules/
@@ -25,15 +25,15 @@ my-app/
 └── public/                  files served as they are at /
 ```
 
-An entry is each file directly in `app/client/`, named after the file: `app/client/main.ts` is `main`. Keep entries to a few lines, so the code itself lives with its feature:
+An entry is each file directly in `app/assets/`, named after the file: `app/assets/main.ts` is `main`. Keep entries to a few lines, so the code itself lives with its feature:
 
-```ts [app/client/cart.ts]
+```ts [app/assets/cart.ts]
 import { mountCart } from "#modules/cart/client/mount.ts";
 
 mountCart();
 ```
 
-```css [app/client/site.css]
+```css [app/assets/site.css]
 @import "#lib/ui/base.css";
 @import "#modules/todos/todos.css";
 ```
@@ -69,7 +69,7 @@ In dev the tags point at the sources, after Vite's client and what plugins add t
 
 ## Public files
 
-Files in `public/`, at the app root, are served as they are at `/`: `public/favicon.svg` is `/favicon.svg`. They are copied into the build and, on both targets, answered before the app runs, so a public file at a route's URL is an error from `space gen`. Put files there that need a fixed URL (icons, `robots.txt`, images linked from elsewhere); import the rest from `app/client/`, so they get hashed names.
+Files in `public/`, at the app root, are served as they are at `/`: `public/favicon.svg` is `/favicon.svg`. They are copied into the build and, on both targets, answered before the app runs, so a public file at a route's URL is an error from `space gen`. Put files there that need a fixed URL (icons, `robots.txt`, images linked from elsewhere); import the rest from `app/assets/`, so they get hashed names.
 
 ## CSS
 
@@ -109,7 +109,7 @@ export default defineConfig({ plugins: [tailwindcss(), space({ target: "bun" })]
 
 ## Client components
 
-A component from React, Vue, Solid or Svelte runs as an island: the server renders an element and the component's props as JSON, and a client entry starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
+A component from React, Vue, Solid or Svelte runs as an island: the server renders an element and the component's props as JSON, and an asset entry starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
 
 1. Add the framework's Vite plugin beside spacefn's in `configs/vite.ts`.
 2. Render the island from the page's view, with a small helper in `lib/ui/`:

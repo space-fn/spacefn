@@ -33,7 +33,7 @@ describe("scanApp", () => {
 				cronSources: {},
 				durableObjects: [],
 				workflows: [],
-				client: [],
+				assets: [],
 				public: [],
 				db: [],
 				gitignore: undefined,
@@ -50,8 +50,8 @@ describe("scanApp", () => {
 				"app/routes/users/_shared/x.ts": "",
 				"app/routes/_middleware.ts": "",
 				"app/durable-objects/chat-room.ts": "",
-				"app/client/main.ts": "",
-				"app/client/style.css": "",
+				"app/assets/main.ts": "",
+				"app/assets/style.css": "",
 				"public/favicon.ico": "",
 				"public/images/logo.svg": "",
 				".gitignore": ".space\n",
@@ -66,7 +66,7 @@ describe("scanApp", () => {
 				"users/[id].ts",
 			]);
 			expect(tree.durableObjects).toEqual(["chat-room.ts"]);
-			expect(tree.client).toEqual(["main.ts", "style.css"]);
+			expect(tree.assets).toEqual(["main.ts", "style.css"]);
 			expect(tree.public).toEqual(["favicon.ico", "images/logo.svg"]);
 			expect(tree.gitignore).toBe(".space\n");
 		}),

@@ -14,7 +14,7 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	cronSources: {},
 	durableObjects: [],
 	workflows: [],
-	client: [],
+	assets: [],
 	public: [],
 	db: [],
 	gitignore: "node_modules\n.space/\n",
@@ -129,12 +129,12 @@ describe("planApp units", () => {
 		expect(result.workflows[0]).toMatchObject({ className: "OrderFlow", binding: "WF_ORDER_FLOW" });
 	});
 
-	it("accepts scripts and stylesheets as client entries but not two with one name", () => {
-		expect(plan(tree({ client: ["main.ts", "style.css", "types.d.ts"] })).client).toEqual([
-			"app/client/main.ts",
-			"app/client/style.css",
+	it("accepts scripts and stylesheets as assets entries but not two with one name", () => {
+		expect(plan(tree({ assets: ["main.ts", "style.css", "types.d.ts"] })).assets).toEqual([
+			"app/assets/main.ts",
+			"app/assets/style.css",
 		]);
-		expect(planError(tree({ client: ["main.css", "main.ts"] })).code).toBe("CLIENT_DUP_ENTRY");
+		expect(planError(tree({ assets: ["main.css", "main.ts"] })).code).toBe("ASSETS_DUP_ENTRY");
 	});
 
 	it("refuses a public/ file at a route's URL, HTML ones at Cloudflare's URLs too", () => {

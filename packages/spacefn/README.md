@@ -15,7 +15,7 @@ This one package has everything: the framework, both targets, the Vite plugin an
 | `spacefn`            | App code: routes, pages, `html`, database, services, jobs, auth       |
 | `spacefn/infra`      | `configs/infra.ts`: `variables`, `InfraApp`                           |
 | `spacefn/testing`    | Tests: in-memory services, a test database and `testApp`              |
-| `spacefn/assets`     | `assets(...)`, the client entries' tags; the Vite plugin provides it  |
+| `spacefn/assets`     | `assets(...)`, the asset entries' tags; the Vite plugin provides it   |
 | `spacefn/cloudflare` | Cloudflare bindings spacefn doesn't wrap, through `CloudflareEnv`     |
 | `spacefn/bun`        | The Bun server; generated code uses it                                |
 | `spacefn/vite`       | The Vite plugin, in `configs/vite.ts`: `space({ target })`            |

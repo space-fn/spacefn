@@ -13,7 +13,7 @@ app/
 ├── db/
 ├── queues/
 ├── crons/
-├── client/
+├── assets/
 ├── durable-objects/
 └── workflows/
 ```

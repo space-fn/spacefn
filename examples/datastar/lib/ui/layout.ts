@@ -3,13 +3,13 @@ import { assets } from "spacefn/assets";
 
 /**
  * Datastar with Rocket, from the CDN: the bundle includes Datastar, so it loads
- * in place of datastar.js. app/client/main.ts imports the same URL for `rocket`,
+ * in place of datastar.js. app/assets/main.ts imports the same URL for `rocket`,
  * and the browser runs it once.
  */
 const DATASTAR =
 	"https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.5/bundles/datastar-rocket.js";
 
-/** The HTML around every page: its title, the site's styles, Datastar and the client entry. */
+/** The HTML around every page: its title, the site's styles, Datastar and the asset entry. */
 export const layout = (title: string, body: HtmlValue) =>
 	html`<!doctype html>
 		<html lang="en">

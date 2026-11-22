@@ -14,7 +14,7 @@ const empty: AppTree = {
 	cronSources: {},
 	durableObjects: [],
 	workflows: [],
-	client: [],
+	assets: [],
 	public: [],
 	db: [],
 	gitignore: ".space/\n",

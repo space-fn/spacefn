@@ -14,7 +14,7 @@ my-app/
 │   ├── db/<name>/           migrations/ and queries/     → Database
 │   ├── queues/              one consumer per file        → Queues and crons
 │   ├── crons/               one scheduled job per file   → Queues and crons
-│   ├── client/              browser scripts and styles   → Frontend
+│   ├── assets/              browser scripts and styles   → Frontend
 │   ├── durable-objects/     Durable Object classes       (Cloudflare only)
 │   └── workflows/           Workflow classes             (Cloudflare only)
 ├── modules/<feature>/       a feature's code: logic, views, client code, tests
@@ -133,6 +133,6 @@ Imports from the app root are [subpath imports](https://nodejs.org/api/packages.
 
 - `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
 - `#modules/...` and `#lib/...` are your own code. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
-- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/client/` entries (see [Frontend](6-guides/4-frontend.md#loading-entries)). The Vite plugin provides it.
+- `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/assets/` entries (see [Frontend](6-guides/4-frontend.md#loading-entries)). The Vite plugin provides it.
 
 Use relative imports with the `.ts` extension inside a folder.
