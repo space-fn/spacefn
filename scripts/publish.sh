@@ -70,7 +70,18 @@ for dir in "${packages[@]}"; do
   echo "🚀 Publishing $name@$version ($tag)"
   tarball="$tarballs/$name-$version.tgz"
   (cd "$dir" && pnpm build && pnpm pack --out "$tarball")
-  npm publish "$tarball" --access public --tag "$tag"
+  # npm's error is read from its own log, as piping its output would hide the one-time password prompt.
+  logs=$(mktemp -d)
+  if npm publish "$tarball" --access public --tag "$tag" --logs-dir "$logs"; then
+    rm -rf "$logs"
+  # npm takes minutes to show a publish to npm view, but refuses a second one at once.
+  elif grep -rqsi "cannot publish over the previously published versions" "$logs"; then
+    rm -rf "$logs"
+    echo "⏭️  $name@$version is already published; npm may take a few minutes to show it"
+  else
+    echo "❌ Publishing $name@$version failed; npm's log is in $logs" >&2
+    exit 1
+  fi
 done
 
 if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
