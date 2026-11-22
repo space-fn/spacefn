@@ -31,9 +31,7 @@ import {
 import { devBun } from "./dev.ts";
 import { docsMismatch, installDocs, loadDocs, spacefnVersion } from "./docs.ts";
 import { doctor, formatChecks } from "./doctor.ts";
-import { detectPackageManager } from "./package-manager.ts";
-import { run } from "./process.ts";
-import { installedSpacefn, providerUpgrades, readPackageJson, spacefnUpgrades } from "./upgrade.ts";
+import { upgrade } from "./upgrade.ts";
 import { loadTarget } from "./vite-config.ts";
 
 const summary = (result: WriteResult) => {
@@ -296,30 +294,12 @@ const doctorCommand = Command.make("doctor", {}, () =>
 ).pipe(Command.withDescription("Check what dev and deploy need"));
 
 const upgradeCommand = Command.make("upgrade", {}, () =>
-	Effect.gen(function* () {
-		const root = process.cwd();
-		const manager = detectPackageManager(root);
-		const runAll = (commands: readonly (readonly string[])[]) =>
-			Effect.gen(function* () {
-				for (const [command, ...args] of commands) {
-					yield* Console.log(`$ ${[command, ...args].join(" ")}`);
-					const code = yield* run(command!, args, { cwd: root });
-					if (code !== 0) return code;
-				}
-				return 0;
-			});
-		const app = yield* Effect.promise(() => readPackageJson(root));
-		const commands = spacefnUpgrades(manager, app);
-		if (commands.length === 0)
-			return yield* exitWith("space upgrade: spacefn isn't in package.json");
-		if ((yield* runAll(commands)) !== 0) return yield* exitCode(1);
-		const spacefn = yield* Effect.promise(() => installedSpacefn(root));
-		if (spacefn && (yield* runAll(providerUpgrades(manager, app, spacefn))) !== 0)
-			return yield* exitCode(1);
-		yield* generate(root, "dev");
-		yield* Console.log("space upgrade: done");
-	}).pipe(Effect.catch(report)),
-).pipe(Command.withDescription("Update spacefn, its Alchemy provider and docs, then .space/"));
+	upgrade(process.cwd()).pipe(Effect.catch(report)),
+).pipe(
+	Command.withDescription(
+		"Update spacefn, its docs and Alchemy, and what they need newer, then .space/",
+	),
+);
 
 const docsCommand = Command.make(
 	"docs",

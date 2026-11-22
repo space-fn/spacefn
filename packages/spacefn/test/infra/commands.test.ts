@@ -13,7 +13,7 @@ import { clean } from "../../src/infra/clean.ts";
 import type { DocsModule } from "../../src/infra/docs.ts";
 import { checkInfra, doctor, formatChecks } from "../../src/infra/doctor.ts";
 import { addCommand, detectPackageManager } from "../../src/infra/package-manager.ts";
-import { installedSpacefn, providerUpgrades, spacefnUpgrades } from "../../src/infra/upgrade.ts";
+import { installedSpacefn, upgradePlan, upgradeSteps } from "../../src/infra/upgrade.ts";
 import { fixtureApp } from "./fixture.ts";
 
 let root: string;
@@ -81,20 +81,67 @@ describe("package managers", () => {
 		expect(addCommand("npm", ["a@1"], true)).toEqual(["npm", "install", "--save-dev", "a@1"]);
 		expect(addCommand("bun", ["a@1"], false)).toEqual(["bun", "add", "a@1"]);
 	});
+});
 
-	it("upgrades spacefn to latest, then the provider and docs to what spacefn expects", () => {
-		const app = {
-			dependencies: { spacefn: "^0.11.0", effect: "^4.1.4" },
-			devDependencies: { "@alchemy.run/docker": "2.0.0-beta.80", "spacefn-docs": "^0.11.0" },
-		};
-		expect(spacefnUpgrades("pnpm", app)).toEqual([["pnpm", "add", "spacefn@latest"]]);
-		const spacefn = {
-			version: "0.12.0",
-			peerDependencies: { "@alchemy.run/docker": "2.0.0-beta.90" },
-		};
-		expect(providerUpgrades("pnpm", app, spacefn)).toEqual([
-			["pnpm", "add", "-D", "@alchemy.run/docker@2.0.0-beta.90", "spacefn-docs@0.12.0"],
+describe("upgrade", () => {
+	const release = {
+		version: "0.12.0",
+		dependencies: { alchemy: "2.0.0-beta.90" },
+		peerDependencies: {
+			"@alchemy.run/cloudflare": "2.0.0-beta.90",
+			"@alchemy.run/docker": "2.0.0-beta.90",
+			effect: "^4.2.0",
+			vite: "^8.3.8",
+		},
+	};
+	const app = {
+		dependencies: { spacefn: "^0.11.0", effect: "^4.1.4" },
+		devDependencies: {
+			"@alchemy.run/docker": "2.0.0-beta.87",
+			alchemy: "2.0.0-beta.87",
+			"spacefn-docs": "0.11.0",
+			vite: "^8.4.0",
+			vitest: "^5.0.0",
+		},
+	};
+
+	it("moves what spacefn needs, keeping pins, newer versions and the app's own choices", () => {
+		expect(upgradePlan(app, release)).toEqual([
+			{ field: "dependencies", name: "spacefn", from: "^0.11.0", to: "^0.12.0" },
+			{ field: "dependencies", name: "effect", from: "^4.1.4", to: "^4.2.0" },
+			{
+				field: "devDependencies",
+				name: "@alchemy.run/docker",
+				from: "2.0.0-beta.87",
+				to: "2.0.0-beta.90",
+			},
+			{ field: "devDependencies", name: "alchemy", from: "2.0.0-beta.87", to: "2.0.0-beta.90" },
+			{ field: "devDependencies", name: "spacefn-docs", from: "0.11.0", to: "0.12.0" },
 		]);
+	});
+
+	it("never moves an app back from a newer spacefn", () => {
+		for (const spacefn of ["^0.13.0", "0.12.1-beta.2"])
+			expect(upgradePlan({ dependencies: { spacefn } }, release)).toEqual([]);
+		expect(upgradePlan({ dependencies: { spacefn: "0.12.0-beta.10" } }, release)).toHaveLength(1);
+	});
+
+	it("refuses versions it can't edit, naming them", () => {
+		expect(() => upgradePlan({ dependencies: { spacefn: "catalog:" } }, release)).toThrow(
+			"spacefn@catalog:",
+		);
+	});
+
+	it("installs once, after npm has dropped the old versions from its tree", () => {
+		expect(upgradeSteps("npm", ["spacefn", "alchemy"])).toEqual({
+			before: [["npm", "uninstall", "--ignore-scripts", "spacefn", "alchemy"]],
+			install: ["npm", "install"],
+		});
+		expect(upgradeSteps("pnpm", ["spacefn"])).toEqual({
+			before: [],
+			install: ["pnpm", "install", "--no-frozen-lockfile"],
+		});
+		expect(upgradeSteps("bun", ["spacefn"])).toEqual({ before: [], install: ["bun", "install"] });
 	});
 });
 
