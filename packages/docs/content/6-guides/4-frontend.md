@@ -18,7 +18,7 @@ my-app/
 │       └── site.css         an entry: @imports the stylesheets
 ├── modules/
 │   └── <feature>/
-│       ├── ui/              its client components, and their *.island.tsx files
+│       ├── ui/              its client components; Name.island.tsx files are islands
 │       ├── client/          its other browser code, such as web components
 │       └── <feature>.css    its styles
 ├── lib/
@@ -113,43 +113,64 @@ export default defineConfig({ plugins: [tailwindcss(), space({ target: "bun" })]
 A component from React, Vue, Solid or Svelte runs as an island: a page renders an element with the component's props, and the browser starts the component in it. The component isn't rendered on the server; the island starts empty and fills in once its script runs.
 
 1. Add the framework's Vite plugin beside spacefn's in `configs/vite.ts`.
-2. Declare the island in a file named `*.island.ts` or `*.island.tsx`, next to the component. `start` is the framework's line to put the component in an element; return how to stop it, for when the element is removed:
+2. Name the component's file `<Name>.island.<ext>` and export the component as its default. The file's name is the island's:
 
-```tsx [modules/cart/ui/cart.island.tsx]
-import { createRoot } from "react-dom/client";
-import { island } from "spacefn/island";
-
+```tsx [modules/cart/ui/Cart.island.tsx]
 import type { Product } from "../cart.ts";
-import { Cart } from "./Cart.tsx";
 
-export const CartIsland = island("cart", (element, props: { products: readonly Product[] }) => {
-	const root = createRoot(element);
-	root.render(<Cart products={props.products} />);
-	return () => root.unmount();
-});
+export default function Cart({ products }: { readonly products: readonly Product[] }) {
+	// ...
+}
 ```
 
-3. Render it from the page's view. The props are checked against `start`'s:
+3. Render it from the page's view with `island(name, props)` from `#space/islands.ts`. The names and the props are checked against the components:
 
 ```ts [modules/cart/views.ts]
-import { CartIsland } from "./ui/cart.island.tsx";
+import { island } from "#space/islands.ts";
 
 export const shopPage = (products: readonly Product[]) =>
-	html`<main>${CartIsland.render({ products })}</main>`;
+	html`<main>${island("Cart", { products })}</main>`;
 ```
 
-`render` writes `<spacefn-island name="cart">` with the props as JSON inside, then the file's `<script>` through [`once`](3-pages.md#html), so a page with three carts loads it once and pages without one don't load it. Nothing goes in `app/assets/` or `assets(...)`: each island file is an entry of its own. In the browser, the file starts the component in every element with its name, also in ones added later, as by a Datastar patch.
+Codegen writes what's in between, into `.space/`, where you can read it:
 
-The server imports the same file but never runs its browser code: the plugin leaves out its imports and each `start`, so `react-dom/client` and `.svelte` files aren't loaded there. Keep an island file to its declarations, and put what the server and the component share, such as types and formatting, in a file that imports nothing server-only (`modules/cart/cart.ts`). Names are yours to keep unique; the props must survive JSON.
+```txt
+.space/
+├── islands.ts          island(name, props), with each component's props
+└── islands/
+    └── Cart.ts         the browser entry: starts Cart in its elements, and stops it when one is removed
+```
 
-| Framework | Plugin                                                              | Start                                   | Example           |
-| --------- | ------------------------------------------------------------------- | --------------------------------------- | ----------------- |
-| React     | `react()` from `@vitejs/plugin-react`                               | `createRoot(element).render(<Cart />)`  | `examples/react`  |
-| Solid     | `solid()` from `vite-plugin-solid`                                  | `render(() => <Cart />, element)`       | `examples/solid`  |
-| Vue       | `vue()` from `@vitejs/plugin-vue`                                   | `createApp(Cart, props).mount(element)` | `examples/vue`    |
-| Svelte    | `svelte({ configFile: false })` from `@sveltejs/vite-plugin-svelte` | `mount(Cart, { target, props })`        | `examples/svelte` |
+`island` writes `<spacefn-island name="Cart">` with the props as JSON inside, then the island's `<script>` through [`once`](3-pages.md#html), so a page with three carts loads it once and pages without one don't load it. Nothing goes in `app/assets/` or `assets(...)`: each island is an entry of its own. In the browser, the entry starts the component in every element with its name, also in ones added later, as by a Datastar patch. The server only imports the components' types, so the framework never runs there.
 
-Put what the server and the component share, such as types and formatting, in a file that imports nothing server-only (`modules/cart/cart.ts`). For `.tsx`, set `jsx` in `configs/tsconfig.json` (`react-jsx`, or `preserve` with `jsxImportSource: "solid-js"`). `tsc` doesn't read `.vue` or `.svelte` files: the examples declare them in `lib/types/`, and `vue-tsc` or `svelte-check` checks their insides. With Solid, set Vitest's `environment: "node"` in `configs/vitest.ts`, since its plugin switches it to jsdom.
+The extension says which framework starts the component:
+
+| File            | Framework                                | Plugin                                                              | Example           |
+| --------------- | ---------------------------------------- | ------------------------------------------------------------------- | ----------------- |
+| `.tsx` / `.jsx` | React, if `package.json` has `react-dom` | `react()` from `@vitejs/plugin-react`                               | `examples/react`  |
+| `.tsx` / `.jsx` | Solid, if `package.json` has `solid-js`  | `solid()` from `vite-plugin-solid`                                  | `examples/solid`  |
+| `.vue`          | Vue                                      | `vue()` from `@vitejs/plugin-vue`                                   | `examples/vue`    |
+| `.svelte`       | Svelte                                   | `svelte({ configFile: false })` from `@sveltejs/vite-plugin-svelte` | `examples/svelte` |
+| `.ts` / `.js`   | yours: the default export starts it      |                                                                     |                   |
+
+A `.ts` island starts the component itself, for what the others don't cover: a Vue plugin, React's root options, Preact or Lit, or plain DOM code. It exports `(element, props) => stop`:
+
+```ts [modules/chat/ui/Chat.island.ts]
+import { createPinia } from "pinia";
+import { createApp } from "vue";
+
+import Chat from "./Chat.vue";
+
+export default (element: HTMLElement, props: { room: string }) => {
+	const app = createApp(Chat, props).use(createPinia());
+	app.mount(element);
+	return () => app.unmount();
+};
+```
+
+Names are unique in the app, whatever their folders, and codegen says where two clash. A `.tsx` island in an app with both `react-dom` and `solid-js` is an error; write it as a `.ts` island. The props must survive JSON. Put what the server and the component share, such as types and formatting, in a file that imports nothing server-only (`modules/cart/cart.ts`).
+
+For `.tsx`, set `jsx` in `configs/tsconfig.json` (`react-jsx`, or `preserve` with `jsxImportSource: "solid-js"`). `tsc` doesn't read `.vue` or `.svelte` files: the examples declare them in `lib/types/`, so `tsc` takes any props for those islands, and `vue-tsc` or `svelte-check` checks them. With Solid, set Vitest's `environment: "node"` in `configs/vitest.ts`, since its plugin switches it to jsdom.
 
 ## Datastar
 

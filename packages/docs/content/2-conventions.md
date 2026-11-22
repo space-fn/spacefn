@@ -131,7 +131,7 @@ Imports from the app root are [subpath imports](https://nodejs.org/api/packages.
 }
 ```
 
-- `#space/db/<name>.ts` is the generated database for `app/db/<name>/`.
+- `#space/db/<name>.ts` is the generated database for `app/db/<name>/`, and `#space/islands.ts` gives `island(name, props)` for the `*.island.*` files (see [Frontend](6-guides/4-frontend.md#client-components)).
 - `#modules/...` and `#lib/...` are your own code. Add a line for another folder, such as `"#ui/*": "./src/ui/*"`.
 - `spacefn/assets` gives `assets("main", ...)`, the `<script>` and `<link>` tags of `app/assets/` entries (see [Frontend](6-guides/4-frontend.md#loading-entries)). The Vite plugin provides it.
 
