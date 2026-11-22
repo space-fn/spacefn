@@ -6,13 +6,16 @@ FROM oven/bun:${BUN_VERSION} AS build
 WORKDIR /app
 COPY . .
 # Without scripts: vite build generates .space/ itself.
-RUN bun install --ignore-scripts && bunx vite build --config configs/vite.ts
+# The cache mount keeps Bun's downloads between builds, and out of the image.
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+	bun install --ignore-scripts && bunx vite build --config configs/vite.ts
 
 FROM oven/bun:${BUN_VERSION}-slim
 WORKDIR /app
 COPY --from=build /app/dist .
 # The server bundle is self-contained but for native packages, installed here for the image's platform.
-RUN cd server && bun install --production --no-save \
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+	cd server && bun install --production --no-save \
 	&& mkdir -p /data && chown bun:bun /data
 
 ENV NODE_ENV=production PORT=3000 SPACE_DATA_DIR=/data

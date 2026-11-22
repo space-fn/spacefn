@@ -27,7 +27,7 @@ They share a libSQL **state database** behind `Kv`, `Queue`, `Bus` and `RateLimi
 
 ## The image
 
-`configs/Dockerfile` installs the dependencies, runs `vite build` and keeps only `dist/`. `configs/Dockerfile.dockerignore` keeps local files, such as `.env` and `.space/data`, out of it. The container gets a volume on `/data`, for file databases, the state database and blobs, and restarts unless stopped.
+`configs/Dockerfile` installs the dependencies, runs `vite build` and keeps only `dist/`. Bun's downloads go in a [cache mount](https://docs.docker.com/build/cache/optimize/#use-cache-mounts), so a rebuild only downloads what changed, and the image doesn't carry them; that needs BuildKit, Docker's default builder since 23. `configs/Dockerfile.dockerignore` keeps local files, such as `.env` and `.space/data`, out of it. The container gets a volume on `/data`, for file databases, the state database and blobs, and restarts unless stopped.
 
 ## Variables
 
