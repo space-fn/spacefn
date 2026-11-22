@@ -53,13 +53,13 @@ pnpm check        # format, lint, typecheck
 pnpm test
 ```
 
-`examples/` holds apps on the workspace packages. `examples/starter-cloudflare` and `examples/starter-bun` are made from the `create-spacefn` template: `cd examples/starter-bun && pnpm dev`. After changing the template, `pnpm examples` remakes them (a test fails until you do). Set `SPACE_TEST_DOCKER=1` to include the test that deploys to local Docker.
+`examples/` holds apps on the workspace packages. `examples/starter-cloudflare` and `examples/starter-bun` are copies of the `create-spacefn` template: `cd examples/starter-bun && pnpm dev`. After changing the template, make the same change in them (a test fails until you do). Set `SPACE_TEST_DOCKER=1` to include the test that deploys to local Docker.
 
 Config for the repo's tools lives in `configs/`. Commits follow conventional commits.
 
 The docs are in `packages/docs/content/`. `cd examples/starter-bun && pnpm docs` shows them as you write them, and their edit links open the files in your editor.
 
-`pnpm pack:check` packs `spacefn`, `spacefn-docs` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. It also checks `space upgrade` with npm, npx, pnpm and Bun. `pnpm run publish` runs it before publishing the three at one version, but checks `space upgrade` only if something it depends on changed since the last release tag.
+`pnpm run publish` lints and tests `spacefn`, `spacefn-docs` and `create-spacefn`, logs in to npm and publishes them. GitHub Actions publishes `vscode-spacefn` when a pull request into `release` is merged.
 
 ## License
 

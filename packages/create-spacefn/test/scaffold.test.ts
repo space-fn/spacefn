@@ -157,7 +157,7 @@ describe("the repo's starter examples", () => {
 		});
 
 	it.each(["cloudflare", "bun"] as const)(
-		"examples/starter-%s is the template; run pnpm examples",
+		"examples/starter-%s is the template; make the same change in both",
 		(target) => {
 			const starter = join(here, "..", "..", "examples", `starter-${target}`);
 			const fresh = join(scratch, `starter-${target}-${Date.now()}`);

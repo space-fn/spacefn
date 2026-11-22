@@ -1,6 +1,6 @@
 packages:
   - "packages/*"
-  # Example apps; `pnpm examples` remakes the starters from the create-spacefn template.
+  # Example apps; the starters are copies of the create-spacefn template.
   - "examples/*"
 allowBuilds:
   esbuild: true

@@ -15,4 +15,4 @@ Apps that show spacefn's conventions in full: `app/` only wires, the code is in 
 | `vue`, `svelte`       | Cloudflare | The same island with Vue and Svelte single-file components                           |
 | `mini-shopify`        | Bun        | A database per shop: created with Turso's Platform API, opened per request           |
 
-In the repo, `pnpm examples` remakes the starters from the `create-spacefn` template, and `pnpm install` gives every example the workspace's packages. Run one with `cd examples/<name> && pnpm dev`.
+In the repo, the starters are copies of the `create-spacefn` template, and `pnpm install` gives every example the workspace's packages. Run one with `cd examples/<name> && pnpm dev`.
