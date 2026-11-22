@@ -46,9 +46,13 @@ for dir in "${packages[@]}"; do
   echo "   $name: ${current:-not on npm yet} → $version"
 done
 
-echo "🔎 Checks and tests"
-pnpm check
-pnpm test
+# The examples aren't typechecked, tested or built here: pnpm check and pnpm test do that
+# in development and on pull requests, and pack-check tries the packages in fresh apps.
+echo "🔎 Checks and tests of the packages"
+pnpm fmt --check
+pnpm lint
+pnpm -r --filter './packages/*' typecheck
+pnpm -r --filter './packages/*' test --no-fsModuleCache --exclude '**/infra/examples.test.ts'
 
 echo "📦 Installing the packed packages into fresh apps"
 node scripts/pack-check.ts
