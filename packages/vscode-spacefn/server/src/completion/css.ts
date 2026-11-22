@@ -13,9 +13,9 @@ export function cssCompletions(
 ): CompletionItem[] {
 	const cursor = ctx.offset - region.start;
 	const beforeCursor = region.doc.getText().slice(0, cursor);
-	const m = beforeCursor.match(/--[a-zA-Z0-9_-]*$/);
-	const prefix = m ? m[0] : "";
-	if (prefix.startsWith("--") || beforeCursor.endsWith("-")) {
+	// A custom property being typed: hyphens that start a name, not the one in `background-`.
+	const prefix = beforeCursor.match(/(?<![\w-])(?:--[\w-]*|-)$/)?.[0];
+	if (prefix) {
 		const items = [...deps.customProps.entries()]
 			.filter(([name]) => name.toLowerCase().startsWith(prefix.toLowerCase()))
 			.map(([name, value]) => ({

@@ -87,6 +87,16 @@ describe.each(embeddings)("CSS in a %s", (_, wrap) => {
 		expect(await accept(wrap(".a { display: gr| }"), "grid")).toContain("display: grid");
 	});
 
+	test("a hyphen inside a name doesn't start a custom property", async () => {
+		const labels = (await items(wrap(".a { background-| }"))).map((i) => i.label);
+		expect(labels).toContain("background-color");
+	});
+
+	test("a hyphen that starts a name does", async () => {
+		const out = await accept(wrap(".a { color: var(-|); }"), "--brand-color");
+		expect(out).toContain("var(--brand-color)");
+	});
+
 	test("an edit leaves the ${} after it", async () => {
 		const out = await accept(wrap(".a { color: re|${tail}; }"), "red");
 		expect(out).toContain("red${tail}");
