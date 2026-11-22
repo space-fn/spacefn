@@ -52,9 +52,10 @@ pnpm test
 echo "📦 Installing the packed packages into fresh apps"
 node scripts/pack-check.ts
 
-if ! npm whoami >/dev/null 2>&1; then
-  echo "🔐 npm is not logged in; starting npm login"
-  npm login
+# pnpm's own login, as pnpm publishes: its auth.ini overrides ~/.npmrc, where npm login writes.
+if ! pnpm whoami >/dev/null 2>&1; then
+  echo "🔐 pnpm is not logged in to npm; starting pnpm login"
+  pnpm login
 fi
 
 for dir in "${packages[@]}"; do
