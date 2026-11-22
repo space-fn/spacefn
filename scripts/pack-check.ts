@@ -24,7 +24,8 @@ const targets = process.argv.length > 2 ? process.argv.slice(2) : ["cloudflare",
 
 const sh = (command: string, args: readonly string[], options: SpawnSyncOptions = {}) => {
 	console.log(`$ ${[command, ...args].join(" ")}`);
-	const result = spawnSync(command, args, { stdio: "inherit", ...options });
+	// No stdin: in a terminal the scaffolder would stop to ask its questions.
+	const result = spawnSync(command, args, { stdio: ["ignore", "inherit", "inherit"], ...options });
 	if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} exited ${result.status}`);
 };
 
