@@ -13,7 +13,7 @@ import { clean } from "../../src/infra/clean.ts";
 import type { DocsModule } from "../../src/infra/docs.ts";
 import { checkInfra, doctor, formatChecks } from "../../src/infra/doctor.ts";
 import { addCommand, detectPackageManager } from "../../src/infra/package-manager.ts";
-import { providerUpgrades, spacefnUpgrades } from "../../src/infra/upgrade.ts";
+import { installedSpacefn, providerUpgrades, spacefnUpgrades } from "../../src/infra/upgrade.ts";
 import { fixtureApp } from "./fixture.ts";
 
 let root: string;
@@ -95,6 +95,22 @@ describe("package managers", () => {
 		expect(providerUpgrades("pnpm", app, spacefn)).toEqual([
 			["pnpm", "add", "-D", "@alchemy.run/docker@2.0.0-beta.90", "spacefn-docs@0.12.0"],
 		]);
+	});
+});
+
+describe("installedSpacefn", () => {
+	it("finds spacefn as published, with exports only for import", async () => {
+		await touch(
+			"node_modules/spacefn/package.json",
+			JSON.stringify({
+				name: "spacefn",
+				version: "0.12.0",
+				type: "module",
+				exports: { ".": { types: "./dist/index.d.mts", import: "./dist/index.mjs" } },
+			}),
+		);
+		await touch("node_modules/spacefn/dist/index.mjs", "export {};");
+		expect(await installedSpacefn(root)).toMatchObject({ version: "0.12.0" });
 	});
 });
 

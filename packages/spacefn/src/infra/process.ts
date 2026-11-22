@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcess, type StdioOptions } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,12 +8,18 @@ import { Effect } from "effect";
 
 /**
  * The folder of an installed package, resolved from `from` (a file or folder).
- * Found from its entry, since not every package exports `package.json`.
+ * Found in node_modules, as `require.resolve` can't see a package that exports
+ * only for `import`, as spacefn does; else from its entry.
  */
 export const packageDir = (from: string, name: string): string | undefined => {
+	const require = createRequire(join(from, "noop.js"));
+	for (const modules of require.resolve.paths(name) ?? []) {
+		const dir = join(modules, name);
+		if (existsSync(join(dir, "package.json"))) return realpathSync(dir);
+	}
 	let entry: string;
 	try {
-		entry = createRequire(join(from, "noop.js")).resolve(name);
+		entry = require.resolve(name);
 	} catch {
 		return undefined;
 	}
