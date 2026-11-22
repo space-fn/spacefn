@@ -5,10 +5,9 @@ import { Kv, Queue } from "spacefn";
 export const Job = Schema.Struct({ at: Schema.String });
 
 /** What the last job left in KV, or `none`. */
-export const lastJob = Effect.map(
-	Kv.get("job"),
-	Option.getOrElse(() => "none"),
-);
+export const overview = Effect.map(Kv.get("job"), (job) => ({
+	job: Option.getOrElse(job, () => "none"),
+}));
 
 export const sendJob = (at: string) => Queue.send("jobs", { at });
 

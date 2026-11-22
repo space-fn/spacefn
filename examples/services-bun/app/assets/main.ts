@@ -1,3 +1,4 @@
-import { start } from "#modules/status/client.ts";
+// The browser entry, loaded by assets("main").
+import { markReady } from "#modules/status/client/ready.ts";
 
-start();
+markReady();
