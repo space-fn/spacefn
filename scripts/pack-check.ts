@@ -3,6 +3,7 @@
 // scaffolder, installs the packed spacefn and docs with npm, then generates,
 // typechecks and tests the app, serves its docs, and on Bun builds it and serves a request,
 // then (with Docker running) builds the app's configs/Dockerfile and serves a request from it.
+// Last, upgrades a Cloudflare app with space upgrade (upgrade-check.ts).
 // Usage: node scripts/pack-check.ts [cloudflare|bun ...]
 import { spawn, spawnSync, type SpawnSyncOptions } from "node:child_process";
 import {
@@ -17,6 +18,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+
+import { checkUpgrade } from "./upgrade-check.ts";
 
 const repo = resolve(import.meta.dirname, "..");
 const work = mkdtempSync(join(tmpdir(), "spacefn-pack-"));
@@ -154,6 +157,12 @@ try {
 			`✓ ${target}: installs from the tarballs, typechecks, passes its tests, serves its docs`,
 		);
 	}
+	if (targets.includes("cloudflare"))
+		await checkUpgrade(work, {
+			spacefn,
+			docs,
+			scaffolder: join(scaffolder, "package", "dist", "index.js"),
+		});
 } finally {
 	if (process.env.KEEP !== "1") rmSync(work, { recursive: true, force: true });
 	else console.log(`kept ${work}`);
