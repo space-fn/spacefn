@@ -29,7 +29,6 @@ export async function validateEmbedded(doc: TextDocument): Promise<Diagnostic[]>
 			await stmt.columns();
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
-			console.error("[spacefn] validateEmbedded error:", message);
 			const ident = extractBadIdentifier(message);
 			const range = (ident && rangeForIdentifier(doc, ident, tpl.contentStart, tpl.end)) || {
 				start: startPos,

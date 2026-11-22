@@ -88,7 +88,6 @@ export async function validateSqlDiagnostics(doc: TextDocument): Promise<Diagnos
 		}
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
-		console.error("[spacefn] validate error:", message);
 		const ident = extractBadIdentifier(message);
 		const range = (ident && rangeForIdentifier(doc, ident)) || {
 			start: { line: 0, character: 0 },
