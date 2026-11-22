@@ -75,6 +75,8 @@ export interface AppPlan {
 	readonly workflows: readonly PlannedClass[];
 	/** Entry files in `app/assets/` (scripts and stylesheets). */
 	readonly assets: readonly string[];
+	/** `*.island.*` files, each a browser entry of its own; tests and declarations left out. */
+	readonly islands: readonly string[];
 	readonly db: readonly PlannedDb[];
 }
 
@@ -400,6 +402,7 @@ export const planApp = Effect.fnUntraced(function* (
 		durableObjects,
 		workflows,
 		assets: yield* planAssets(tree.assets),
+		islands: tree.islands.filter((file) => !file.endsWith(".d.ts") && !isTestFile(file)),
 		db: yield* planDb(tree, config.target),
 	};
 });

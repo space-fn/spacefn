@@ -34,10 +34,29 @@ describe("scanApp", () => {
 				durableObjects: [],
 				workflows: [],
 				assets: [],
+				islands: [],
 				public: [],
 				db: [],
 				gitignore: undefined,
 			});
+		}),
+	);
+
+	it.effect("finds island files in app/ and the code folders it's given, at any depth", () =>
+		Effect.gen(function* () {
+			yield* write({
+				"modules/cart/ui/cart.island.tsx": "",
+				"modules/cart/ui/Cart.tsx": "",
+				"lib/ui/menu.island.ts": "",
+				"lib/node_modules/x/y.island.ts": "",
+				"app/assets/clock.island.ts": "",
+				"other/skipped.island.ts": "",
+			});
+			expect((yield* scanApp(root, ["lib", "modules"])).islands).toEqual([
+				"app/assets/clock.island.ts",
+				"lib/ui/menu.island.ts",
+				"modules/cart/ui/cart.island.tsx",
+			]);
 		}),
 	);
 

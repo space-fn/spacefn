@@ -15,6 +15,7 @@ const tree = (parts: Partial<AppTree> = {}): AppTree => ({
 	durableObjects: [],
 	workflows: [],
 	assets: [],
+	islands: [],
 	public: [],
 	db: [],
 	gitignore: "node_modules\n.space/\n",

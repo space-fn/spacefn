@@ -6,7 +6,14 @@ import { join } from "node:path";
 import { createBuilder, createServer, type ViteDevServer } from "vite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { assetsModule, DEV_HEAD_URL, devHead, entryTags } from "../../src/infra/vite.ts";
+import {
+	assetsModule,
+	DEV_HEAD_URL,
+	devHead,
+	entryTags,
+	islandModule,
+	serverIslandSource,
+} from "../../src/infra/vite.ts";
 import { fixtureApp } from "./fixture.ts";
 
 const until = async (check: () => Promise<boolean>, ms = 10_000) => {
@@ -20,7 +27,10 @@ const assetsOf = (tags: Record<string, string[]>) =>
 	// oxlint-disable-next-line typescript/no-implied-eval -- runs the generated module's own code
 	new Function(
 		assetsModule(tags)
-			.replace('import { raw } from "spacefn";', "const raw = (text) => text;")
+			.replace(
+				'import { html, once, raw } from "spacefn";',
+				"const raw = (text) => text, once = raw, html = (_, list) => list.join('');",
+			)
 			.replace("export const assets =", "return"),
 	)() as (...names: string[]) => string;
 
@@ -47,6 +57,42 @@ describe("entryTags", () => {
 			'<link rel="modulepreload" href="/assets/shared-3.js">',
 			'<script type="module" src="/assets/main-1.js"></script>',
 		]);
+	});
+});
+
+describe("islandModule", () => {
+	it("starts the component in the browser and renders the element with the file's tags on the server", () => {
+		expect(islandModule("client", [])).toContain('from "spacefn/internal/island/client"');
+		expect(islandModule("server", ['<script src="/a.ts"></script>'])).toContain(
+			'serverIsland(["<script src=\\"/a.ts\\"></script>"])',
+		);
+	});
+});
+
+describe("serverIslandSource", () => {
+	it("drops the browser code: imports other than spacefn/island and types, and each start", () => {
+		const source = [
+			'import { createRoot } from "react-dom/client";',
+			'import { island as define } from "spacefn/island";',
+			'import type { Product } from "../cart.ts";',
+			'import { Cart } from "./Cart.tsx";',
+			"// café: offsets stay right after non-ASCII text",
+			'export const CartIsland = define("cart", (element, props: { products: Product[] }) => {',
+			"\tcreateRoot(element).render(<Cart {...props} />);",
+			"});",
+			'export const Menu = define<string>("menu", (element) => void element);',
+		].join("\n");
+		expect(serverIslandSource(source, "/app/modules/cart/ui/cart.island.tsx")).toBe(
+			[
+				"",
+				'import { island as define } from "spacefn/island";',
+				'import type { Product } from "../cart.ts";',
+				"",
+				"// café: offsets stay right after non-ASCII text",
+				'export const CartIsland = define("cart", null);',
+				'export const Menu = define<string>("menu", null);',
+			].join("\n"),
+		);
 	});
 });
 

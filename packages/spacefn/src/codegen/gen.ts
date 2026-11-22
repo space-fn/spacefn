@@ -16,7 +16,7 @@ export const loadPlan = Effect.fnUntraced(function* (
 	target: Target,
 ): Effect.fn.Return<AppPlan, SpaceError> {
 	const config = yield* loadAppConfig(root, target);
-	const tree = yield* scanApp(root);
+	const tree = yield* scanApp(root, config.folders);
 	return yield* planApp(tree, config, mode);
 });
 

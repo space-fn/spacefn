@@ -30,6 +30,9 @@
 		".": "./src/index.ts",
 		"./testing": "./src/testing.ts",
 		"./assets": "./src/assets.ts",
+		"./island": "./src/island.ts",
+		"./internal/island/client": "./src/island/client.ts",
+		"./internal/island/server": "./src/island/server.ts",
 		"./platform": "./src/platform.ts",
 		"./libsql": "./src/libsql.ts",
 		"./internal/codegen": "./src/codegen/index.ts",
@@ -57,6 +60,18 @@
 			"./assets": {
 				"types": "./dist/assets.d.mts",
 				"import": "./dist/assets.mjs"
+			},
+			"./island": {
+				"types": "./dist/island.d.mts",
+				"import": "./dist/island.mjs"
+			},
+			"./internal/island/client": {
+				"types": "./dist/island/client.d.mts",
+				"import": "./dist/island/client.mjs"
+			},
+			"./internal/island/server": {
+				"types": "./dist/island/server.d.mts",
+				"import": "./dist/island/server.mjs"
 			},
 			"./libsql": {
 				"types": "./dist/libsql.d.mts",

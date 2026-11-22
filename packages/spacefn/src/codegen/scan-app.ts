@@ -34,6 +34,8 @@ export interface AppTree {
 	readonly durableObjects: readonly string[];
 	readonly workflows: readonly string[];
 	readonly assets: readonly string[];
+	/** `*.island.*` files in `app/` and the code folders, relative to the root. */
+	readonly islands: readonly string[];
 	/** Every file under `public/` at the app root, recursively. */
 	readonly public: readonly string[];
 	readonly db: readonly DbFolder[];
@@ -105,9 +107,28 @@ const scanDb = Effect.fnUntraced(function* (dir: string, name: string) {
 const readText = (file: string) =>
 	Effect.tryPromise({ try: () => readFile(file, "utf8"), catch: io(file) });
 
-/** Reads `<root>/app` into an {@link AppTree}. A missing folder is an empty listing. */
+const ISLAND_FILE = /\.island\.[cm]?[jt]sx?$/;
+
+/** Island files in `app/` and the app's code folders (`lib/`, `modules/`, ...), relative to the root. */
+const scanIslands = (root: string, folders: readonly string[]) =>
+	Effect.map(
+		Effect.forEach([...new Set(["app", ...folders])], (folder) =>
+			Effect.map(listFiles(join(root, folder), true), (files) =>
+				files
+					.filter((file) => ISLAND_FILE.test(file) && !file.includes("node_modules/"))
+					.map((file) => `${folder}/${file}`),
+			),
+		),
+		(lists) => lists.flat().sort(byName),
+	);
+
+/**
+ * Reads `<root>/app` into an {@link AppTree}. A missing folder is an empty
+ * listing. `folders` are the app's code folders, searched for island files.
+ */
 export const scanApp = Effect.fnUntraced(function* (
 	root: string,
+	folders: readonly string[] = [],
 ): Effect.fn.Return<AppTree, SpaceError> {
 	const app = join(root, "app");
 	const flat = (folder: string) => listFiles(join(app, folder), false);
@@ -134,6 +155,7 @@ export const scanApp = Effect.fnUntraced(function* (
 		durableObjects: yield* flat("durable-objects"),
 		workflows: yield* flat("workflows"),
 		assets: yield* flat("assets"),
+		islands: yield* scanIslands(root, folders),
 		public: yield* listFiles(join(root, "public"), true),
 		db: yield* Effect.forEach(dbNames, (name) => scanDb(join(app, "db", name), name)),
 		cronSources,
