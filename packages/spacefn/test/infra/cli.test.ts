@@ -45,9 +45,13 @@ describe("space dev on Cloudflare (alchemy dev)", () => {
 	let app: Awaited<ReturnType<typeof fixtureApp>>;
 	let dev: ReturnType<typeof space>;
 	let base: string;
+	const port = 4700 + Math.floor(Math.random() * 50);
 	beforeAll(async () => {
 		app = await fixtureApp("services-cloudflare");
-		dev = space(app.root, ["dev", "--stage", "test"], { GREETING: "hello", API_KEY: "sekret" });
+		dev = space(app.root, ["dev", "--stage", "test", "--port", String(port)], {
+			GREETING: "hello",
+			API_KEY: "sekret",
+		});
 		await until(() => /ready at (http:\/\/\S+)/.test(dev.log()));
 		base = /ready at (http:\/\/\S+)/.exec(dev.log())![1]!.replace(/\/$/, "");
 	}, 90_000);
@@ -55,6 +59,10 @@ describe("space dev on Cloudflare (alchemy dev)", () => {
 		await interrupt(dev);
 		expect(processes(app.root)).toEqual([]);
 		await app.cleanup();
+	});
+
+	it("serves on --port", () => {
+		expect(new URL(base).port).toBe(String(port));
 	});
 
 	it("binds D1 (migrated), KV, the env and its secrets", async () => {

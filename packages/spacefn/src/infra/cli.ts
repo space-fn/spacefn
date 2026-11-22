@@ -15,7 +15,7 @@ import {
 	type WriteResult,
 } from "spacefn/internal/codegen";
 
-import { runAlchemy } from "./alchemy.ts";
+import { checkDevPort, runAlchemy } from "./alchemy.ts";
 import { build } from "./build.ts";
 import { clean, KEPT } from "./clean.ts";
 import {
@@ -205,7 +205,9 @@ const devCommand = Command.make(
 	{
 		port: Flag.Int("port").pipe(
 			Flag.withAlias("p"),
-			Flag.withDescription("Port for the dev server (Bun). Default: Vite's"),
+			Flag.withDescription(
+				"Port for the dev server, which must be free. Default: 1337 on Cloudflare, Vite's on Bun",
+			),
 			Flag.optional,
 		),
 		stage: stageFlag,
@@ -214,6 +216,8 @@ const devCommand = Command.make(
 		Effect.gen(function* () {
 			const root = process.cwd();
 			const plan = yield* generate(root, "dev");
+			const asked = Option.getOrUndefined(port);
+			if (plan.target === "cloudflare") yield* checkDevPort(root, asked);
 			// Keep .space/ current while the dev server runs; Vite and Alchemy reload from it.
 			const watcher = yield* Effect.forkChild(
 				watchGen(root, "dev", plan.target).pipe(
@@ -228,8 +232,8 @@ const devCommand = Command.make(
 				),
 			);
 			const code = yield* plan.target === "cloudflare"
-				? runAlchemy(root, "dev", { stage: Option.getOrUndefined(stage) })
-				: devBun(root, Option.getOrUndefined(port));
+				? runAlchemy(root, "dev", { stage: Option.getOrUndefined(stage), port: asked })
+				: devBun(root, asked);
 			yield* Fiber.interrupt(watcher);
 			yield* exitCode(code);
 		}).pipe(Effect.catch(report)),

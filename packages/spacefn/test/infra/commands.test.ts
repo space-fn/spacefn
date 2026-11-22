@@ -1,12 +1,14 @@
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { createServer, type AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { Effect } from "effect";
 import * as docsPackage from "spacefn-docs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { alchemyArgs } from "../../src/infra/alchemy.ts";
+import { alchemyArgs, checkDevPort } from "../../src/infra/alchemy.ts";
 import { clean } from "../../src/infra/clean.ts";
 import type { DocsModule } from "../../src/infra/docs.ts";
 import { checkInfra, doctor, formatChecks } from "../../src/infra/doctor.ts";
@@ -42,6 +44,29 @@ describe("alchemyArgs", () => {
 			"--yes",
 			"--no-input",
 		]);
+	});
+});
+
+describe("checkDevPort", () => {
+	it("refuses a --port that configs/infra.ts would ignore", async () => {
+		await touch("configs/infra.ts", 'Cloudflare.Website.Vite("Worker", {})');
+		const check = (port?: number) => Effect.runPromise(checkDevPort(root, port));
+		await expect(check(4700)).rejects.toThrow("doesn't read SPACE_DEV_PORT");
+		await check();
+		await touch("configs/infra.ts", "dev: { port: Number(process.env.SPACE_DEV_PORT) }");
+		await check(0);
+	});
+
+	it("refuses a port that is taken or out of range", async () => {
+		const check = (port: number) => Effect.runPromise(checkDevPort(root, port));
+		const server = createServer();
+		await new Promise<void>((done) => server.listen(0, "localhost", done));
+		try {
+			await expect(check((server.address() as AddressInfo).port)).rejects.toThrow("it's in use");
+			await expect(check(70_000)).rejects.toThrow("isn't a port");
+		} finally {
+			await new Promise((done) => server.close(done));
+		}
 	});
 });
 
