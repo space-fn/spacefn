@@ -3,7 +3,7 @@ import { useState } from "react";
 import { formatPrice, type Product } from "../cart.ts";
 
 /** The cart: add products, see the total. Its state lives in the browser. */
-export function Cart({ products }: { readonly products: readonly Product[] }) {
+export default function Cart({ products }: { readonly products: readonly Product[] }) {
 	const [counts, setCounts] = useState<Readonly<Record<string, number>>>({});
 	const total = products.reduce(
 		(sum, product) => sum + product.price * (counts[product.id] ?? 0),

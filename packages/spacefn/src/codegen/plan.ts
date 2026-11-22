@@ -57,6 +57,17 @@ export interface PlannedDb {
 	readonly queries: readonly AnalyzedQuery[];
 }
 
+/** What starts an island: its file's framework, or `start` for a function that starts it by hand. */
+export type IslandFramework = "react" | "solid" | "vue" | "svelte" | "start";
+
+export interface PlannedIsland {
+	/** From the file's name: `Cart.island.tsx` is `Cart`. */
+	readonly name: string;
+	/** Path from the app root. */
+	readonly file: string;
+	readonly framework: IslandFramework;
+}
+
 /** Everything codegen needs, checked. Rendering it cannot fail. */
 export interface AppPlan {
 	readonly target: Target;
@@ -75,8 +86,8 @@ export interface AppPlan {
 	readonly workflows: readonly PlannedClass[];
 	/** Entry files in `app/assets/` (scripts and stylesheets). */
 	readonly assets: readonly string[];
-	/** `*.island.*` files, each a browser entry of its own; tests and declarations left out. */
-	readonly islands: readonly string[];
+	/** `*.island.*` files, by name; each gets a browser entry in `.space/islands/`. */
+	readonly islands: readonly PlannedIsland[];
 	readonly db: readonly PlannedDb[];
 }
 
@@ -217,6 +228,62 @@ const planAssets = Effect.fnUntraced(function* (files: readonly string[]) {
 		seen.set(base, file);
 	}
 	return entries.map((file) => `app/assets/${file}`);
+});
+
+const ISLAND_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+/** The framework of a `.tsx` / `.jsx` island: React or Solid, by which one the app has. */
+const jsxFramework = (packages: readonly string[]) => {
+	const found = (["react", "solid"] as const).filter((framework) =>
+		packages.includes(framework === "react" ? "react-dom" : "solid-js"),
+	);
+	return found.length === 1 ? found[0] : undefined;
+};
+
+const planIslands = Effect.fnUntraced(function* (
+	files: readonly string[],
+	packages: readonly string[],
+) {
+	const islands: PlannedIsland[] = [];
+	const byName = new Map<string, string>();
+	for (const file of files) {
+		if (file.endsWith(".d.ts") || isTestFile(file)) continue;
+		const [name = "", ext = ""] = file.split("/").pop()!.split(".island.");
+		if (!ISLAND_NAME.test(name))
+			return yield* fail(
+				"ISLAND_NAME",
+				`"${name}" is not a valid island name`,
+				"Start with a letter and use letters, digits, - and _ (e.g. Cart.island.tsx).",
+				file,
+			);
+		// Case aside, since each gets a file in .space/islands/.
+		const previous = byName.get(name.toLowerCase());
+		if (previous)
+			return yield* fail(
+				"ISLAND_DUP",
+				`${previous} and ${file} are both the island "${name}"`,
+				"Island names come from file names and are unique in the app: rename one.",
+				file,
+			);
+		byName.set(name.toLowerCase(), file);
+		const framework: IslandFramework | undefined =
+			ext === "vue"
+				? "vue"
+				: ext === "svelte"
+					? "svelte"
+					: ext.endsWith("x")
+						? jsxFramework(packages)
+						: "start";
+		if (!framework)
+			return yield* fail(
+				"ISLAND_FRAMEWORK",
+				`${file} is a JSX island, but package.json has ${packages.includes("react-dom") ? "both react-dom and solid-js" : "neither react-dom nor solid-js"}`,
+				"A .tsx island is React or Solid, whichever the app has. With both, or another JSX library, name it .island.ts and export default a function (element, props) that starts it.",
+				file,
+			);
+		islands.push({ name, file, framework });
+	}
+	return islands;
 });
 
 /** Types a query file may name in `@column` / `@param`, with `?` for nullable. */
@@ -402,7 +469,7 @@ export const planApp = Effect.fnUntraced(function* (
 		durableObjects,
 		workflows,
 		assets: yield* planAssets(tree.assets),
-		islands: tree.islands.filter((file) => !file.endsWith(".d.ts") && !isTestFile(file)),
+		islands: yield* planIslands(tree.islands, config.packages),
 		db: yield* planDb(tree, config.target),
 	};
 });

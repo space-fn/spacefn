@@ -20,7 +20,7 @@ export default defineConfig([
 		index: "src/index.ts",
 		testing: "src/testing.ts",
 		assets: "src/assets.ts",
-		island: "src/island.ts",
+		islands: "src/islands.ts",
 		"island/client": "src/island/client.ts",
 		"island/server": "src/island/server.ts",
 		platform: "src/platform.ts",

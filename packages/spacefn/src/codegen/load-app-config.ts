@@ -9,7 +9,12 @@ import { SpaceError } from "../errors.ts";
 interface PackageJson {
 	readonly name?: unknown;
 	readonly imports?: unknown;
+	readonly dependencies?: unknown;
+	readonly devDependencies?: unknown;
 }
+
+const names = (deps: unknown): string[] =>
+	typeof deps === "object" && deps !== null ? Object.keys(deps) : [];
 
 /** `"#lib/*": "./lib/*"` gives `lib`. Generated `.space/` is not the app's own code. */
 export const importFolders = (imports: unknown): string[] => {
@@ -22,7 +27,7 @@ export const importFolders = (imports: unknown): string[] => {
 	return [...folders];
 };
 
-/** The app's name and code folders from `package.json`, with the target from the Vite plugin. */
+/** The app's name, code folders and packages from `package.json`, with the target from the Vite plugin. */
 export const loadAppConfig = Effect.fnUntraced(function* (
 	root: string,
 	target: Target,
@@ -39,5 +44,10 @@ export const loadAppConfig = Effect.fnUntraced(function* (
 			hint: 'Set name in package.json to lowercase letters, digits and -, e.g. "name": "my-app".',
 			file: "package.json",
 		});
-	return { target, name, folders: importFolders(pkg.imports) };
+	return {
+		target,
+		name,
+		folders: importFolders(pkg.imports),
+		packages: [...new Set([...names(pkg.dependencies), ...names(pkg.devDependencies)])].sort(),
+	};
 });

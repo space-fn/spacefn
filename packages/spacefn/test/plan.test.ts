@@ -26,6 +26,7 @@ const config = (parts: Partial<AppConfig> = {}): AppConfig => ({
 	target: "cloudflare",
 	name: "todo",
 	folders: [],
+	packages: [],
 	...parts,
 });
 
@@ -270,4 +271,36 @@ describe("planApp target and config checks", () => {
 			expect(yield* code('export default cron("daily", job);')).toBe("CRON_SCHEDULE");
 		}),
 	);
+
+	it("names islands after their files and finds each one's framework", () => {
+		const islands = (files: string[], packages: string[] = []) =>
+			plan(tree({ islands: files }), config({ packages })).islands;
+		expect(
+			islands(
+				[
+					"modules/a/Cart.island.tsx",
+					"modules/a/Menu.island.vue",
+					"lib/Clock.island.svelte",
+					"lib/poll-meter.island.ts",
+					"lib/Cart.island.test.tsx",
+				],
+				["react-dom"],
+			),
+		).toEqual([
+			{ name: "Cart", file: "modules/a/Cart.island.tsx", framework: "react" },
+			{ name: "Menu", file: "modules/a/Menu.island.vue", framework: "vue" },
+			{ name: "Clock", file: "lib/Clock.island.svelte", framework: "svelte" },
+			{ name: "poll-meter", file: "lib/poll-meter.island.ts", framework: "start" },
+		]);
+		expect(islands(["Cart.island.jsx"], ["solid-js"])[0]?.framework).toBe("solid");
+	});
+
+	it("refuses islands with the same name, a bad name, or no clear JSX framework", () => {
+		const code = (files: string[], packages: string[] = []) =>
+			planError(tree({ islands: files }), config({ packages })).code;
+		expect(code(["a/Cart.island.tsx", "b/cart.island.vue"], ["react-dom"])).toBe("ISLAND_DUP");
+		expect(code(["a/1cart.island.ts"])).toBe("ISLAND_NAME");
+		expect(code(["a/Cart.island.tsx"])).toBe("ISLAND_FRAMEWORK");
+		expect(code(["a/Cart.island.tsx"], ["react-dom", "solid-js"])).toBe("ISLAND_FRAMEWORK");
+	});
 });

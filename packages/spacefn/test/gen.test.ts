@@ -40,6 +40,7 @@ describe("gen", () => {
 				"db/main.ts",
 				"entry.ts",
 				"infra.ts",
+				"islands.ts",
 				"manifest.ts",
 				"vite.config.ts",
 			]);

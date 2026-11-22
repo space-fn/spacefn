@@ -11,8 +11,7 @@ import {
 	DEV_HEAD_URL,
 	devHead,
 	entryTags,
-	islandModule,
-	serverIslandSource,
+	islandsModule,
 } from "../../src/infra/vite.ts";
 import { fixtureApp } from "./fixture.ts";
 
@@ -60,38 +59,24 @@ describe("entryTags", () => {
 	});
 });
 
-describe("islandModule", () => {
-	it("starts the component in the browser and renders the element with the file's tags on the server", () => {
-		expect(islandModule("client", [])).toContain('from "spacefn/internal/island/client"');
-		expect(islandModule("server", ['<script src="/a.ts"></script>'])).toContain(
-			'serverIsland(["<script src=\\"/a.ts\\"></script>"])',
+describe("islandsModule", () => {
+	it("looks an island's tags up by name in a build", async () => {
+		const code = islandsModule(
+			{ Cart: ['<script src="/assets/Cart-1.js"></script>'] },
+			{ head: "", base: "/" },
 		);
+		expect(code).toContain('import { islandsOf } from "spacefn/internal/island/server"');
+		expect(code).toContain('{"Cart":["<script src=\\"/assets/Cart-1.js\\"></script>"]}');
 	});
-});
 
-describe("serverIslandSource", () => {
-	it("drops the browser code: imports other than spacefn/island and types, and each start", () => {
-		const source = [
-			'import { createRoot } from "react-dom/client";',
-			'import { island as define } from "spacefn/island";',
-			'import type { Product } from "../cart.ts";',
-			'import { Cart } from "./Cart.tsx";',
-			"// café: offsets stay right after non-ASCII text",
-			'export const CartIsland = define("cart", (element, props: { products: Product[] }) => {',
-			"\tcreateRoot(element).render(<Cart {...props} />);",
-			"});",
-			'export const Menu = define<string>("menu", (element) => void element);',
-		].join("\n");
-		expect(serverIslandSource(source, "/app/modules/cart/ui/cart.island.tsx")).toBe(
-			[
-				"",
-				'import { island as define } from "spacefn/island";',
-				'import type { Product } from "../cart.ts";',
-				"",
-				"// café: offsets stay right after non-ASCII text",
-				'export const CartIsland = define("cart", null);',
-				'export const Menu = define<string>("menu", null);',
-			].join("\n"),
+	it("gives every name the dev head and its entry's source in dev", () => {
+		const code = islandsModule(undefined, {
+			head: '<script src="/@vite/client"></script>',
+			base: "/",
+		});
+		expect(code).toContain("const tags = {};");
+		expect(code).toContain(
+			'islandsOf((name) => ["<script src=\\"/@vite/client\\"></script>", `<script type="module" src="/.space/islands/${name}.ts"></script>`]);',
 		);
 	});
 });

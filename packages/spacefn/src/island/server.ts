@@ -1,23 +1,26 @@
-import { escapeHtml, html, once, raw } from "../html.ts";
-import type { Island, IslandStart } from "../island.ts";
+import { escapeHtml, html, once, raw, type Html } from "../html.ts";
 
 /** The JSON for a `<script>`: `<` escaped, so no string in it can close the script. */
 const scriptJson = (value: unknown) => (JSON.stringify(value) ?? "null").replaceAll("<", "\\u003c");
 
 /**
- * `island(...)` on the server, given its file's tags: `render` writes the
- * element and its props, then each tag through `once`, so a page loads the
- * file once however many of them it has.
+ * `island(name, props)` on the server, given each island's tags: the element
+ * and its props, then each tag through `once`, so a page loads an island's
+ * script once however many of it the page has.
  */
-export const serverIsland = (tags: readonly string[]) => {
-	const scripts = tags.map((tag) => once(raw(tag)));
-	return <P>(name: string, _start: IslandStart<P> | null): Island<P> => {
+export const islandsOf = (tagsOf: (name: string) => readonly string[] | undefined) => {
+	const cache = new Map<string, Html[]>();
+	return (name: string, props?: unknown): Html => {
+		let scripts = cache.get(name);
+		if (!scripts) {
+			const tags = tagsOf(name);
+			if (!tags)
+				throw new Error(`spacefn: there's no island "${name}"; an island is a *.island.* file`);
+			scripts = tags.map((tag) => once(raw(tag)));
+			cache.set(name, scripts);
+		}
 		const open = `<spacefn-island name="${escapeHtml(name)}" style="display: contents">`;
-		return {
-			name,
-			// A string, not an html template, so formatting the file can't add whitespace to it.
-			render: (props) =>
-				html`${raw(`${open}<script type="application/json">${scriptJson(props)}</script></spacefn-island>`)}${scripts}`,
-		};
+		// A string, not an html template, so formatting the file can't add whitespace to it.
+		return html`${raw(`${open}<script type="application/json">${scriptJson(props)}</script></spacefn-island>`)}${scripts}`;
 	};
 };

@@ -1,6 +1,6 @@
-import type { Island, IslandStart } from "../island.ts";
+import type { IslandStart } from "../islands.ts";
 
-type Start = IslandStart<unknown>;
+type Start = IslandStart;
 
 /** Shared by every copy of this module a page loads, so each island file finds the element class. */
 const starts: Map<string, Start> = ((globalThis as Record<symbol, unknown>)[
@@ -45,16 +45,10 @@ const define = () => {
 	);
 };
 
-/** `island(...)` in the browser: registers `start` and runs it in the page's elements with this name. */
-export const clientIsland = <P>(name: string, start: IslandStart<P>): Island<P> => {
-	starts.set(name, start as Start);
+/** Registers an island's `start` and runs it in the page's elements with this name. */
+export const defineIsland = (name: string, start: IslandStart): void => {
+	starts.set(name, start);
 	define();
 	for (const element of document.querySelectorAll(`${TAG}[name="${CSS.escape(name)}"]`))
 		(element as HTMLElement & { start(): void }).start();
-	return {
-		name,
-		render: () => {
-			throw new Error(`${name}: render() runs on the server; the browser starts the island itself`);
-		},
-	};
 };

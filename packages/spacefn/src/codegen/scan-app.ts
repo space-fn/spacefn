@@ -107,7 +107,8 @@ const scanDb = Effect.fnUntraced(function* (dir: string, name: string) {
 const readText = (file: string) =>
 	Effect.tryPromise({ try: () => readFile(file, "utf8"), catch: io(file) });
 
-const ISLAND_FILE = /\.island\.[cm]?[jt]sx?$/;
+/** `Cart.island.tsx`, `Cart.island.vue`, `Cart.island.svelte`, `clock.island.ts`... */
+export const ISLAND_FILE = /\.island\.(?:[cm]?[jt]sx?|vue|svelte)$/;
 
 /** Island files in `app/` and the app's code folders (`lib/`, `modules/`, ...), relative to the root. */
 const scanIslands = (root: string, folders: readonly string[]) =>

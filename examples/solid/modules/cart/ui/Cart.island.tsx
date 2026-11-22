@@ -3,7 +3,7 @@ import { createSignal, For } from "solid-js";
 import { formatPrice, type Product } from "../cart.ts";
 
 /** The cart: add products, see the total. Its state lives in the browser. */
-export function Cart(props: { readonly products: readonly Product[] }) {
+export default function Cart(props: { readonly products: readonly Product[] }) {
 	const [counts, setCounts] = createSignal<Readonly<Record<string, number>>>({});
 	const total = () =>
 		props.products.reduce((sum, product) => sum + product.price * (counts()[product.id] ?? 0), 0);

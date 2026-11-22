@@ -24,4 +24,6 @@ export interface AppConfig {
 	 * (`.space` aside). Read with `app/` where all the app's code is wanted.
 	 */
 	readonly folders: readonly string[];
+	/** `package.json` `dependencies` and `devDependencies` names: which framework a `.tsx` island is. */
+	readonly packages: readonly string[];
 }

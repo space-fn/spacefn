@@ -2,15 +2,14 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createRequire } from "node:module";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 
 import { Cause, Effect, Exit } from "effect";
 import { formatSpaceError, SpaceError, type Target } from "spacefn";
-import { assetEntryName, genPlan } from "spacefn/internal/codegen";
+import { assetEntryName, genPlan, islandEntry } from "spacefn/internal/codegen";
 import {
 	isRunnableDevEnvironment,
-	parseSync,
 	type Manifest,
 	type Plugin,
 	type ResolvedConfig,
@@ -35,7 +34,7 @@ interface App {
 	root: string;
 	/** The browser's entries, e.g. `app/assets/main.ts`, relative to the root. */
 	assets: readonly string[];
-	/** `*.island.*` files, entries of their own; codegen found them, a build bundles them. */
+	/** The islands' names; each has a browser entry in `.space/islands/`. */
 	islands: readonly string[];
 }
 
@@ -58,72 +57,27 @@ const generate = async (app: App, mode: "dev" | "prod", target: Target) => {
 export const ASSETS_ID = "spacefn/assets";
 const RESOLVED_ASSETS_ID = "\0space:assets";
 
-/** What an island file imports for `island(...)`; the plugin gives each one its own copy. */
-export const ISLAND_ID = "spacefn/island";
-const RESOLVED_ISLAND_ID = "\0space:island:";
-const ISLAND_FILE = /\.island\.[cm]?[jt]sx?$/;
+/** What `.space/islands.ts` imports for `island(name, props)`. */
+export const ISLANDS_ID = "spacefn/islands";
+const RESOLVED_ISLANDS_ID = "\0space:islands";
 
 /**
- * `spacefn/island` for one island file. In the browser it starts the
- * component; on the server it renders the element and the file's tags, each
- * through `once`, so a page with many of them loads the file once.
+ * `spacefn/islands` for the app: each island's tags, by name. In a build
+ * they're the manifest's; in dev they're the same for every name, so an
+ * island added while the server runs works at once.
  */
-export const islandModule = (consumer: "client" | "server", tags: readonly string[]): string =>
-	consumer === "client"
-		? 'export { clientIsland as island } from "spacefn/internal/island/client";\n'
-		: `import { serverIsland } from "spacefn/internal/island/server";
-export const island = serverIsland(${JSON.stringify(tags)});
+export const islandsModule = (
+	tags: Readonly<Record<string, readonly string[]>> | undefined,
+	dev: { readonly head: string; readonly base: string },
+): string => {
+	const lookup = tags
+		? "(name) => (Object.hasOwn(tags, name) ? tags[name] : undefined)"
+		: `(name) => [${JSON.stringify(dev.head)}, \`<script type="module" src="${dev.base}.space/islands/\${name}.ts"></script>\`]`;
+	return `import { islandsOf } from "spacefn/internal/island/server";
+const tags = ${JSON.stringify(tags ?? {})};
+const island = islandsOf(${lookup});
+export const islands = () => island;
 `;
-
-interface Node {
-	readonly type: string;
-	readonly start: number;
-	readonly end: number;
-	readonly [key: string]: unknown;
-}
-
-const isNode = (value: unknown): value is Node =>
-	typeof value === "object" && value !== null && typeof (value as Node).type === "string";
-
-const visit = (node: unknown, each: (node: Node) => void): void => {
-	if (Array.isArray(node)) for (const item of node) visit(item, each);
-	else if (isNode(node)) {
-		each(node);
-		for (const value of Object.values(node)) if (typeof value === "object") visit(value, each);
-	}
-};
-
-/**
- * An island file as the server runs it: without its imports, other than
- * `spacefn/island` and types, and with `null` for each `island(...)`'s start.
- * The browser code is never run on the server, where `react-dom/client` and
- * the like would fail, so an island file holds only island declarations.
- */
-export const serverIslandSource = (code: string, file: string): string => {
-	const { program } = parseSync(file, code) as unknown as { program: { body: readonly Node[] } };
-	const edits: { start: number; end: number; text: string }[] = [];
-	const names = new Set<string>();
-	for (const node of program.body) {
-		if (node.type !== "ImportDeclaration" || node.importKind === "type") continue;
-		if ((node.source as { value: string }).value !== ISLAND_ID) {
-			edits.push({ start: node.start, end: node.end, text: "" });
-			continue;
-		}
-		for (const specifier of node.specifiers as readonly Node[])
-			if ((specifier.imported as { name?: string } | undefined)?.name === "island")
-				names.add((specifier.local as { name: string }).name);
-	}
-	visit(program.body, (node) => {
-		if (node.type !== "CallExpression") return;
-		const callee = node.callee as Node & { name?: string };
-		const start = (node.arguments as readonly Node[])[1];
-		if (callee.type === "Identifier" && names.has(callee.name ?? "") && start)
-			edits.push({ start: start.start, end: start.end, text: "null" });
-	});
-	let out = code;
-	for (const { start, end, text } of edits.sort((a, b) => b.start - a.start))
-		out = out.slice(0, start) + text + out.slice(end);
-	return out;
 };
 
 /** What `app/entry.ts` imports for the target's services. */
@@ -283,8 +237,8 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			const { root } = app;
 			const plan = await generate(app, env.command === "build" ? "prod" : "dev", options.target);
 			app.assets = plan.assets;
-			app.islands = plan.islands;
-			const inputs = [...app.assets, ...app.islands];
+			app.islands = plan.islands.map((island) => island.name);
+			const inputs = [...app.assets, ...app.islands.map(islandEntry)];
 			return {
 				root,
 				// Served as they are at /, before the app, and copied into the client build.
@@ -324,28 +278,32 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 			server = dev;
 			if (dev.config.mode !== "test") await serveDocs(dev, app.root);
 		},
-		resolveId: (id, importer) => {
+		resolveId: (id) => {
 			if (id === ASSETS_ID) return RESOLVED_ASSETS_ID;
 			if (id === PLATFORM_ID) return RESOLVED_PLATFORM_ID;
+			if (id === ISLANDS_ID) return RESOLVED_ISLANDS_ID;
 			if (id === `/${DEV_HEAD_URL}`) return RESOLVED_DEV_HEAD_ID;
-			// By the file's name, not codegen's list, so an island added in dev works at once.
-			const file = importer?.split("?")[0];
-			if (id === ISLAND_ID && file && ISLAND_FILE.test(file))
-				return `${RESOLVED_ISLAND_ID}${relative(app.root, file).split(sep).join("/")}`;
 			return undefined;
 		},
-		async load(id) {
+		load: async (id) => {
 			// The target's platform, so app/entry.ts is the same file on both targets.
 			if (id === RESOLVED_PLATFORM_ID)
 				return `export { platform } from ${JSON.stringify(`spacefn/${options.target}`)};\n`;
 			if (id === RESOLVED_DEV_HEAD_ID) return server ? (await headOf(server)).code : "";
-			if (id.startsWith(RESOLVED_ISLAND_ID)) {
-				const consumer = this.environment.config.consumer;
-				if (consumer === "client") return islandModule("client", []);
+			if (id === RESOLVED_ISLANDS_ID) {
 				const { manifest, tags } = await built();
-				return islandModule(
-					"server",
-					entryTags(id.slice(RESOLVED_ISLAND_ID.length), config.base, manifest, tags),
+				return islandsModule(
+					manifest &&
+						Object.fromEntries(
+							app.islands.map((name) => [
+								name,
+								entryTags(islandEntry(name), config.base, manifest),
+							]),
+						),
+					{
+						head: tags ?? `<script type="module" src="${config.base}@vite/client"></script>`,
+						base: config.base,
+					},
 				);
 			}
 			if (id !== RESOLVED_ASSETS_ID) return undefined;
@@ -358,12 +316,6 @@ const core = (options: SpaceViteOptions, app: App): Plugin => {
 					]),
 				),
 			);
-		},
-		transform(code, id) {
-			const file = id.split("?")[0]!;
-			if (this.environment.config.consumer === "client" || !ISLAND_FILE.test(file)) return;
-			if (id.includes("\0")) return;
-			return { code: serverIslandSource(code, file), map: null };
 		},
 		buildApp: {
 			// The server bundles embed the client manifest, so the client goes first.

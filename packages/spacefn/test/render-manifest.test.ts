@@ -24,7 +24,11 @@ const empty: AppTree = {
 const render = (tree: Partial<AppTree>) =>
 	renderManifest(
 		Effect.runSync(
-			planApp({ ...empty, ...tree }, { target: "cloudflare", name: "todo", folders: [] }, "dev"),
+			planApp(
+				{ ...empty, ...tree },
+				{ target: "cloudflare", name: "todo", folders: [], packages: [] },
+				"dev",
+			),
 		),
 	);
 

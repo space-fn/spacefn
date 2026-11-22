@@ -48,13 +48,17 @@ describe("scanApp", () => {
 				"modules/cart/ui/cart.island.tsx": "",
 				"modules/cart/ui/Cart.tsx": "",
 				"lib/ui/menu.island.ts": "",
+				"lib/ui/Clock.island.svelte": "",
+				"lib/ui/Menu.island.vue": "",
 				"lib/node_modules/x/y.island.ts": "",
 				"app/assets/clock.island.ts": "",
 				"other/skipped.island.ts": "",
 			});
 			expect((yield* scanApp(root, ["lib", "modules"])).islands).toEqual([
 				"app/assets/clock.island.ts",
+				"lib/ui/Clock.island.svelte",
 				"lib/ui/menu.island.ts",
+				"lib/ui/Menu.island.vue",
 				"modules/cart/ui/cart.island.tsx",
 			]);
 		}),

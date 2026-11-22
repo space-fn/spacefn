@@ -30,7 +30,7 @@
 		".": "./src/index.ts",
 		"./testing": "./src/testing.ts",
 		"./assets": "./src/assets.ts",
-		"./island": "./src/island.ts",
+		"./islands": "./src/islands.ts",
 		"./internal/island/client": "./src/island/client.ts",
 		"./internal/island/server": "./src/island/server.ts",
 		"./platform": "./src/platform.ts",
@@ -61,9 +61,9 @@
 				"types": "./dist/assets.d.mts",
 				"import": "./dist/assets.mjs"
 			},
-			"./island": {
-				"types": "./dist/island.d.mts",
-				"import": "./dist/island.mjs"
+			"./islands": {
+				"types": "./dist/islands.d.mts",
+				"import": "./dist/islands.mjs"
 			},
 			"./internal/island/client": {
 				"types": "./dist/island/client.d.mts",

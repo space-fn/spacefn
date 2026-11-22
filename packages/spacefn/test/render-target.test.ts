@@ -25,7 +25,11 @@ const empty: AppTree = {
 const render = (target: Target, tree: Partial<AppTree> = {}) =>
 	renderApp(
 		Effect.runSync(
-			planApp({ ...empty, ...tree }, { target, name: "todo", folders: ["lib"] }, "dev"),
+			planApp(
+				{ ...empty, ...tree },
+				{ target, name: "todo", folders: ["lib"], packages: [] },
+				"dev",
+			),
 		),
 	);
 
@@ -48,6 +52,7 @@ describe("renderApp", () => {
 			"db/main.ts",
 			"entry.ts",
 			"infra.ts",
+			"islands.ts",
 			"manifest.ts",
 			"vite.config.ts",
 		]);
@@ -71,6 +76,7 @@ describe("renderApp", () => {
 			"app.ts",
 			"assets.d.ts",
 			"infra.ts",
+			"islands.ts",
 			"manifest.ts",
 			"server.ts",
 			"vite.config.ts",
@@ -120,6 +126,30 @@ describe("renderApp", () => {
 			}
 			"
 		`);
+	});
+
+	it("types island(name, props) by each component, and starts each with its framework", () => {
+		const files = renderApp(
+			Effect.runSync(
+				planApp(
+					{ ...empty, islands: ["modules/cart/ui/Cart.island.tsx", "lib/ui/Menu.island.vue"] },
+					{ target: "bun", name: "todo", folders: ["lib", "modules"], packages: ["react-dom"] },
+					"dev",
+				),
+			),
+		);
+		expect(files["islands.ts"]).toContain(
+			'\t"Cart": FunctionProps<typeof import("../modules/cart/ui/Cart.island.tsx").default>;',
+		);
+		expect(files["islands.ts"]).toContain(
+			'import { islands, type FunctionProps, type VueProps } from "spacefn/islands";',
+		);
+		expect(files["islands/Cart.ts"]).toContain('import { createRoot } from "react-dom/client";');
+		expect(files["islands/Cart.ts"]).toContain(
+			'import Component from "../../modules/cart/ui/Cart.island.tsx";',
+		);
+		expect(files["islands/Cart.ts"]).toContain('defineIsland("Cart", (element, props) => {');
+		expect(files["islands/Menu.ts"]).toContain("const app = createApp(Component, props);");
 	});
 
 	it("gives configs/infra.ts what the file conventions ask for, as plain data", () => {

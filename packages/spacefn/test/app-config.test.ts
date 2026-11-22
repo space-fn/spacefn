@@ -24,6 +24,7 @@ describe("loadAppConfig", () => {
 				target: "cloudflare",
 				name: "todo-app",
 				folders: [],
+				packages: [],
 			});
 		}),
 	);
@@ -41,6 +42,17 @@ describe("loadAppConfig", () => {
 				},
 			});
 			expect((yield* loadAppConfig(root, "bun")).folders).toEqual(["lib", "src/ui"]);
+		}),
+	);
+
+	it.effect("lists the app's packages, for the framework of a .tsx island", () =>
+		Effect.gen(function* () {
+			yield* writePackage({
+				name: "todo-app",
+				dependencies: { react: "19", "react-dom": "19" },
+				devDependencies: { vite: "8", react: "19" },
+			});
+			expect((yield* loadAppConfig(root, "bun")).packages).toEqual(["react", "react-dom", "vite"]);
 		}),
 	);
 
