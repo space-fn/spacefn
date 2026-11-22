@@ -1,12 +1,18 @@
 import { Effect, Schema } from "effect";
 import { Bus } from "spacefn";
 
+import Env from "#configs/env.ts";
 import MainDb, { type ListTodosRow } from "#space/db/main.ts";
 
 /** The Bus topic every change to the todos is announced on. */
 export const TOPIC = "todos";
 
 export type Todo = ListTodosRow;
+
+/** The page's heading, from configs/env.ts. */
+export const greeting = Effect.gen(function* () {
+	return (yield* Env).GREETING;
+});
 
 /** What adding a todo takes, from a form. */
 export const NewTodo = Schema.Struct({ title: Schema.NonEmptyString });

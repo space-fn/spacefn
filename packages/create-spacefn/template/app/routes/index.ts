@@ -1,7 +1,6 @@
 import { Effect, Schema } from "effect";
 import { action, actionUrl, Datastar, page, redirect } from "spacefn";
 
-import Env from "#configs/env.ts";
 import { layout } from "#lib/ui/layout.ts";
 import * as Todos from "#modules/todos/todos.ts";
 import { todoList, todosPage } from "#modules/todos/views.ts";
@@ -13,9 +12,7 @@ const list = Todos.list.pipe(
 );
 
 export default page({
-	loader: Effect.gen(function* () {
-		return { greeting: (yield* Env).GREETING, list: yield* list };
-	}),
+	loader: Effect.all({ greeting: Todos.greeting, list }),
 	actions: {
 		// After a form post, send the browser back to the list.
 		add: action({
