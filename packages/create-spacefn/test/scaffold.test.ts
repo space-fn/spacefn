@@ -42,6 +42,9 @@ describe("scaffold", () => {
 		});
 		expect(bun.devDependencies).toHaveProperty("@alchemy.run/docker", "catalog:");
 		expect(bun.devDependencies).toHaveProperty("spacefn-docs", "workspace:*");
+		// Only Cloudflare apps install workerd.
+		expect(cloudflare.allowScripts).toEqual({ workerd: false });
+		expect(bun).not.toHaveProperty("allowScripts");
 	});
 
 	it("writes the app: .gitignore, configs/vite.ts and package.json", () => {

@@ -95,6 +95,9 @@ export const packageJson = ({ name, target, workspace, lint }: ScaffoldOptions) 
 				other("vitest"),
 			]),
 		),
+		// npm blocks workerd's install script and warns until the app decides. workerd doesn't need
+		// it: the binary comes as an optional dependency, and the script only shortcuts to it.
+		...(target === "cloudflare" ? { allowScripts: { workerd: false } } : {}),
 	};
 };
 

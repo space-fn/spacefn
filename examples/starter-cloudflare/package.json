@@ -28,5 +28,8 @@
 		"typescript": "^7.0.2",
 		"vite": "catalog:",
 		"vitest": "catalog:"
+	},
+	"allowScripts": {
+		"workerd": false
 	}
 }
