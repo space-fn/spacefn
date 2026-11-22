@@ -1,4 +1,5 @@
-import { findCssTemplateRange, findHtmlTemplateRange, findSqlTemplateRange } from "../lib/helpers";
+import { cssRegionAt } from "../lib/cssRegions";
+import { findHtmlTemplateRange, findSqlTemplateRange } from "../lib/helpers";
 import { cssCompletions } from "./css";
 import { datastarCompletions } from "./datastar";
 import { sqlCompletions } from "./sql";
@@ -20,11 +21,9 @@ export async function complete(
 	resolveDbDir: (filePath: string) => { dbDir: string; targetDb: string } | null,
 ): Promise<CompletionResult> {
 	const { text, offset, filePath, isJsTs, doc } = ctx;
-	const cssTpl: TemplateRange | null = isJsTs ? findCssTemplateRange(text, offset) : null;
-	if (cssTpl) {
-		const css = cssCompletions(deps, { doc, text, offset }, cssTpl);
-		if (css && css.length) return css;
-	}
+	const css = isJsTs ? cssRegionAt(text, offset) : null;
+	// Nothing else applies inside CSS, so an empty list is the answer there.
+	if (css) return cssCompletions(deps, { doc, offset }, css);
 
 	const sqlRange: TemplateRange | null = isJsTs ? findSqlTemplateRange(text, offset) : null;
 	const directives = sqlDirectiveCompletions(
