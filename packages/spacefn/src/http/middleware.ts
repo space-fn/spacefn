@@ -10,9 +10,10 @@ export type HttpApp = Effect.Effect<HttpServerResponse.HttpServerResponse, unkno
 
 const MiddlewareTypeId = "~spacefn/Middleware";
 
+/** Wraps the rest of a request; a page's or route's `handle` takes the same function. */
 export interface Middleware {
+	(next: HttpApp): HttpApp;
 	readonly [MiddlewareTypeId]: typeof MiddlewareTypeId;
-	readonly apply: (next: HttpApp) => HttpApp;
 }
 
 /**
@@ -20,7 +21,8 @@ export interface Middleware {
  * code before `next`, change its response after, or answer without calling
  * it. `app/routes/_middleware.ts` wraps every request; one in a folder below
  * wraps that folder's routes and pages, inside the outer ones. Export one, or
- * an array that runs first to last, the first outermost.
+ * an array that runs first to last, the first outermost. A middleware is the
+ * function itself, so it is also a page's or route's `handle`.
  *
  * ```ts
  * // app/routes/admin/_middleware.ts
@@ -30,10 +32,8 @@ export interface Middleware {
  * ];
  * ```
  */
-export const middleware = (apply: (next: HttpApp) => HttpApp): Middleware => ({
-	[MiddlewareTypeId]: MiddlewareTypeId,
-	apply,
-});
+export const middleware = (apply: (next: HttpApp) => HttpApp): Middleware =>
+	Object.assign((next: HttpApp) => apply(next), { [MiddlewareTypeId]: MiddlewareTypeId } as const);
 
 export const isMiddleware = (value: unknown): value is Middleware =>
 	Predicate.hasProperty(value, MiddlewareTypeId);
@@ -61,7 +61,7 @@ const loadMiddleware = (
 const chainOf =
 	(chain: readonly Middleware[]) =>
 	(app: HttpApp): HttpApp =>
-		chain.reduceRight((next, middleware) => middleware.apply(next), app);
+		chain.reduceRight((next, middleware) => middleware(next), app);
 
 /**
  * Applies `before` (the entry's), then `app/routes/_middleware.ts`, to every request, with error handling
