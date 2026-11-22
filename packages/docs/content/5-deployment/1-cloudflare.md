@@ -48,6 +48,20 @@ const worker =
 
 `space dev` runs the same stack with `alchemy dev`: the Worker in workerd, with local D1, KV, R2, queues, Durable Objects and workflows. No account is needed, and the local state stays on your machine.
 
+It serves on port 1337, or the next free one. `space dev --port 3000` sets `SPACE_DEV_PORT`, which `configs/infra.ts` gives to the Worker; that port must be free:
+
+```ts [configs/infra.ts]
+const devPort = process.env.SPACE_DEV_PORT;
+const worker =
+	yield *
+	Cloudflare.Website.Vite("Worker", {
+		// ...
+		dev: devPort ? { port: Number(devPort), strictPort: true } : undefined,
+	});
+```
+
+An app made with spacefn 0.11.0 or earlier doesn't have these lines yet. Add them to use `--port`; until then `space dev --port` says they're missing.
+
 ## Things to know
 
 - **D1 has no transactions.** spacefn runs a migration, or other atomic work, as one batch.

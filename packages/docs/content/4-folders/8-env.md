@@ -26,9 +26,10 @@ Commit `.env.example` only: the scaffolded `.gitignore` keeps every other `.env`
 
 Besides your own, spacefn reads a few:
 
-| Variable                                       | What it's for                                       |
-| ---------------------------------------------- | --------------------------------------------------- |
-| `DB_<NAME>_URL`, `DB_<NAME>_AUTH_TOKEN`        | a libSQL database: Turso, `sqld`, or a `file:`      |
-| `SPACE_STATE_URL`, `SPACE_STATE_AUTH_TOKEN`    | the state database on Bun                           |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`, `_HEADERS`      | where traces, logs and metrics go                   |
-| `PORT`, `HOST`, `SPACE_DATA_DIR`, `SPACE_ROLE` | the Bun server; see [Bun](../5-deployment/2-bun.md) |
+| Variable                                       | What it's for                                                                       |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `DB_<NAME>_URL`, `DB_<NAME>_AUTH_TOKEN`        | a libSQL database: Turso, `sqld`, or a `file:`                                      |
+| `SPACE_STATE_URL`, `SPACE_STATE_AUTH_TOKEN`    | the state database on Bun                                                           |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`, `_HEADERS`      | where traces, logs and metrics go                                                   |
+| `PORT`, `HOST`, `SPACE_DATA_DIR`, `SPACE_ROLE` | the Bun server; see [Bun](../5-deployment/2-bun.md)                                 |
+| `SPACE_DEV_PORT`                               | `space dev --port` on Cloudflare; see [Cloudflare](../5-deployment/1-cloudflare.md) |
