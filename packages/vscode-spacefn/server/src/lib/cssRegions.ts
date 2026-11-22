@@ -1,6 +1,9 @@
+import { getLanguageService, TokenType } from "vscode-html-languageservice";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
-import { taggedTemplates, type Span } from "./templates";
+import { taggedTemplates, type Span, type TaggedTemplate } from "./templates";
+
+const htmlLS = getLanguageService();
 
 /** CSS embedded in a JS/TS file: `[start, end)` is in the host, `holes` and `doc` start from 0. */
 export interface CssRegion extends Span {
@@ -55,11 +58,51 @@ function region(text: string, { start, end }: Span, templateHoles: readonly Span
 	return { start, end, holes, doc };
 }
 
-/** Every piece of CSS in a JS/TS file. */
+/** What is between each `<style>` and `</style>` of an html template, unless its type isn't CSS. */
+function styleBodies(text: string, { contentStart, end, holes }: TaggedTemplate): Span[] {
+	// A `>`, a quote or a tag inside a `${...}` is JavaScript, so the HTML scanner mustn't see it.
+	let markup = "";
+	let at = contentStart;
+	for (const hole of holes) {
+		markup += text.slice(at, hole.start) + "x".repeat(hole.end - hole.start);
+		at = hole.end;
+	}
+	markup += text.slice(at, end);
+	if (!/<style/i.test(markup)) return [];
+
+	const bodies: Span[] = [];
+	const scanner = htmlLS.createScanner(markup);
+	let tag = "";
+	let attribute = "";
+	let type = "";
+	for (let token = scanner.scan(); token !== TokenType.EOS; token = scanner.scan()) {
+		if (token === TokenType.StartTag) {
+			tag = scanner.getTokenText().toLowerCase();
+			type = "";
+		} else if (token === TokenType.AttributeName) {
+			attribute = scanner.getTokenText().toLowerCase();
+		} else if (token === TokenType.AttributeValue && attribute === "type") {
+			type = scanner.getTokenText().replace(/["']/g, "").toLowerCase();
+		} else if (token === TokenType.StartTagClose && tag === "style") {
+			if (type && type !== "text/css") continue;
+			const start = scanner.getTokenEnd();
+			const rest = markup.slice(start);
+			// While the closing tag is being typed, the CSS ends at the first `</`.
+			let length = rest.search(/<\/style/i);
+			if (length === -1) length = rest.indexOf("</");
+			if (length === -1) length = rest.length;
+			bodies.push({ start: contentStart + start, end: contentStart + start + length });
+		}
+	}
+	return bodies;
+}
+
+/** Every piece of CSS in a JS/TS file: `css` templates, and `<style>` in `html` templates. */
 export function cssRegions(text: string): CssRegion[] {
-	return taggedTemplates(text, ["css"]).map((t) =>
-		region(text, { start: t.contentStart, end: t.end }, t.holes),
-	);
+	return taggedTemplates(text, ["css", "html"]).flatMap((t) => {
+		const spans = t.tag === "css" ? [{ start: t.contentStart, end: t.end }] : styleBodies(text, t);
+		return spans.map((span) => region(text, span, t.holes));
+	});
 }
 
 /** The CSS at `offset`, or null outside CSS and inside its `${...}`, which is JavaScript. */

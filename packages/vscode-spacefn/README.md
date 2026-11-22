@@ -1,11 +1,11 @@
 # spacefn VS Code extension
 
-Language support for spacefn projects: SQL diagnostics in query files and `` sql`...` `` templates, CSS diagnostics/completion/hover inside `` css`...` `` templates, Datastar attribute validation in `` html`...` ``, and custom-property completion from a project's `variables.css`.
+Language support for spacefn projects: SQL diagnostics in query files and `` sql`...` `` templates, CSS diagnostics/completion/hover inside `` css`...` `` templates and `<style>` tags, Datastar attribute validation in `` html`...` ``, and custom-property completion from a project's `variables.css`.
 
 ## Features
 
 - SQL diagnostics, completion, hover and go-to-definition in `app/db/<name>/queries/*.sql` and in `` sql`...` `` templates. A template is checked against the database the file imports (`#space/db/<name>.ts`), or the app's only one; templates built with `sql("table")` or `sql.in(...)` are skipped
-- CSS diagnostics, hover, and completion inside `css` templates
+- CSS diagnostics, hover, and completion inside `css` templates and in the `<style>` tags of `html` templates. A `${...}` there stands for a value, a selector or whole rules; problems that touch one aren't reported. A `<style>` with a `type` other than `text/css` is skipped
 - Datastar HTML validation in `html` tagged templates
 - Commands that run the `space` CLI
 

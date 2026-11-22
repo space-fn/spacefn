@@ -17,7 +17,7 @@ function causedByHole({ doc, holes }: CssRegion, found: cssService.Diagnostic): 
 	return holes.some((h) => h.start >= end && h.end <= close);
 }
 
-export async function validateCssTemplates(doc: TextDocument): Promise<Diagnostic[]> {
+export async function validateCss(doc: TextDocument): Promise<Diagnostic[]> {
 	const diagnostics: Diagnostic[] = [];
 	for (const region of cssRegions(doc.getText())) {
 		const css = region.doc;

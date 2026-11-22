@@ -46,4 +46,4 @@ Start with [Getting started](1-getting-started.md) and [Conventions](2-conventio
 
 You need to know a little Effect: handlers are `Effect`s, and you get a service with `yield*` inside `Effect.gen`. Effect's own docs cover the rest.
 
-The VS Code extension (`wai-lin.vscode-spacefn`) checks SQL against your migrations, in query files and in `` sql`...` `` templates, and validates Datastar attributes in `` html`...` ``.
+The VS Code extension (`wai-lin.vscode-spacefn`) checks SQL against your migrations, in query files and in `` sql`...` `` templates, validates Datastar attributes in `` html`...` ``, and checks and completes the CSS in their `<style>` tags.

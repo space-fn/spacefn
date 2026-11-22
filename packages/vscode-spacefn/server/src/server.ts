@@ -17,7 +17,7 @@ import {
 
 import { complete } from "./completion";
 import { datastarDocs, datastarActionDocs } from "./completion/data";
-import { validateCssTemplates } from "./diagnostics/css";
+import { validateCss } from "./diagnostics/css";
 import { validateHtmlDatastar } from "./diagnostics/datastar";
 import { resolveDbDir, validateEmbedded } from "./diagnostics/embedded";
 import { loadMigrations, validateSqlDiagnostics } from "./diagnostics/sql";
@@ -80,7 +80,7 @@ async function getSchema(dbDir: string, targetDb: string): Promise<SchemaInfo> {
 async function validateJsTs(doc: TextDocument): Promise<void> {
 	const all: Diagnostic[] = [];
 	all.push(...(await validateHtmlDatastar(doc)));
-	all.push(...(await validateCssTemplates(doc)));
+	all.push(...(await validateCss(doc)));
 	all.push(...(await validateEmbedded(doc)));
 	void connection.sendDiagnostics({ uri: doc.uri, diagnostics: all });
 }
