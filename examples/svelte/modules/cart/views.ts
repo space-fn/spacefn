@@ -1,7 +1,8 @@
 import { html } from "spacefn";
 
+import { island } from "#space/islands.ts";
+
 import type { Product } from "./cart.ts";
-import { CartIsland } from "./ui/cart.island.ts";
 
 /** The shop's page: server-rendered, with the Svelte cart as an island. */
 export const shopPage = (props: {
@@ -10,7 +11,7 @@ export const shopPage = (props: {
 }) =>
 	html`<main>
 		<h1>${props.title}</h1>
-		${CartIsland.render({ products: props.products })}
+		${island("Cart", { products: props.products })}
 		<noscript>The cart needs JavaScript.</noscript>
 	</main>`;
 

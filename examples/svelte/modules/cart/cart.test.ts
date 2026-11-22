@@ -13,9 +13,9 @@ describe("the shop", () => {
 		await using shop = app();
 		const page = await (await shop.fetch("/")).text();
 		expect(page).toMatch(
-			/<spacefn-island name="cart"[^>]*><script type="application\/json">\{"products":\[\{"id":"mug"/,
+			/<spacefn-island name="Cart"[^>]*><script type="application\/json">\{"products":\[\{"id":"mug"/,
 		);
-		const script = '<script type="module" src="/modules/cart/ui/cart.island.ts"></script>';
+		const script = '<script type="module" src="/.space/islands/Cart.ts"></script>';
 		expect(page.split(script).length).toBe(2);
 	});
 
@@ -23,6 +23,6 @@ describe("the shop", () => {
 		await using shop = app();
 		const page = await (await shop.fetch("/about")).text();
 		expect(page).toContain('<link rel="stylesheet" href="/app/assets/site.css">');
-		expect(page).not.toContain("cart.island");
+		expect(page).not.toContain("islands/Cart");
 	});
 });
