@@ -3,8 +3,9 @@
 // scaffolder, installs the packed spacefn and docs with npm, then generates,
 // typechecks and tests the app, serves its docs, and on Bun builds it and serves a request,
 // then (with Docker running) builds the app's configs/Dockerfile and serves a request from it.
-// Last, upgrades a Cloudflare app with space upgrade (upgrade-check.ts).
-// Usage: node scripts/pack-check.ts [cloudflare|bun ...]
+// Last, upgrades a Cloudflare app with space upgrade (upgrade-check.ts). That takes about 90
+// seconds, so with --upgrade-if-changed, as publish.sh runs it, only if upgrade-changed.ts says so.
+// Usage: node scripts/pack-check.ts [--upgrade-if-changed] [cloudflare|bun ...]
 import { spawn, spawnSync, type SpawnSyncOptions } from "node:child_process";
 import {
 	copyFileSync,
@@ -19,11 +20,15 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { upgradeChange } from "./upgrade-changed.ts";
 import { checkUpgrade } from "./upgrade-check.ts";
 
 const repo = resolve(import.meta.dirname, "..");
 const work = mkdtempSync(join(tmpdir(), "spacefn-pack-"));
-const targets = process.argv.length > 2 ? process.argv.slice(2) : ["cloudflare", "bun"];
+const IF_CHANGED = "--upgrade-if-changed";
+const named = process.argv.slice(2).filter((arg) => arg !== IF_CHANGED);
+const targets = named.length > 0 ? named : ["cloudflare", "bun"];
+const upgradeReason = process.argv.includes(IF_CHANGED) ? upgradeChange(repo) : "a full pack-check";
 
 const sh = (command: string, args: readonly string[], options: SpawnSyncOptions = {}) => {
 	console.log(`$ ${[command, ...args].join(" ")}`);
@@ -157,12 +162,19 @@ try {
 			`✓ ${target}: installs from the tarballs, typechecks, passes its tests, serves its docs`,
 		);
 	}
-	if (targets.includes("cloudflare"))
+	if (!targets.includes("cloudflare")) console.log("skipped space upgrade: it needs cloudflare");
+	else if (!upgradeReason)
+		console.log(
+			"skipped space upgrade: nothing it depends on changed since the last release (pnpm pack:check always runs it)",
+		);
+	else {
+		console.log(`checking space upgrade: ${upgradeReason}`);
 		await checkUpgrade(work, {
 			spacefn,
 			docs,
 			scaffolder: join(scaffolder, "package", "dist", "index.js"),
 		});
+	}
 } finally {
 	if (process.env.KEEP !== "1") rmSync(work, { recursive: true, force: true });
 	else console.log(`kept ${work}`);

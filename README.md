@@ -59,7 +59,7 @@ Config for the repo's tools lives in `configs/`. Commits follow conventional com
 
 The docs are in `packages/docs/content/`. `cd examples/starter-bun && pnpm docs` shows them as you write them, and their edit links open the files in your editor.
 
-`pnpm pack:check` packs `spacefn`, `spacefn-docs` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. `pnpm run publish` runs it before publishing the three at one version.
+`pnpm pack:check` packs `spacefn`, `spacefn-docs` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. It also checks `space upgrade` with npm, npx, pnpm and Bun. `pnpm run publish` runs it before publishing the three at one version, but checks `space upgrade` only if something it depends on changed since the last release tag.
 
 ## License
 

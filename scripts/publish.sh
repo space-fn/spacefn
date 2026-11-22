@@ -55,7 +55,7 @@ pnpm -r --filter './packages/*' typecheck
 pnpm -r --filter './packages/*' test --no-fsModuleCache --exclude '**/infra/examples.test.ts'
 
 echo "📦 Installing the packed packages into fresh apps"
-node scripts/pack-check.ts
+node scripts/pack-check.ts --upgrade-if-changed
 
 if ! npm whoami >/dev/null 2>&1; then
   echo "🔐 npm is not logged in; starting npm login"
