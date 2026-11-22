@@ -1,4 +1,6 @@
-import { Schema } from "effect";
+import { Effect, Schema } from "effect";
+
+import Env from "#configs/env.ts";
 
 export interface Member {
 	readonly name: string;
@@ -6,13 +8,21 @@ export interface Member {
 	readonly lead: boolean;
 }
 
-/** The team. An app would read it from a database; the example keeps it in code. */
-export const MEMBERS: readonly Member[] = [
+/** The team. */
+const MEMBERS: readonly Member[] = [
 	{ name: "Ada", role: "Engineering", lead: true },
 	{ name: "Grace", role: "Engineering", lead: false },
 	{ name: "Hedy", role: "Design", lead: true },
 	{ name: "Katherine", role: "Research", lead: false },
 ];
+
+/** The team's name, from configs/env.ts. */
+export const title = Effect.gen(function* () {
+	return (yield* Env).TEAM_NAME;
+});
+
+/** Everyone. An app would read them from a database; the example keeps them in code. */
+export const members = Effect.succeed(MEMBERS);
 
 /** What the live search sends: the page's signals, which this feature keeps under `team`. */
 export const Search = Schema.Struct({ team: Schema.Struct({ query: Schema.String }) });

@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 export interface Release {
 	readonly version: string;
 	/** `YYYY-MM-DD`. */
@@ -5,8 +7,8 @@ export interface Release {
 	readonly notes: readonly string[];
 }
 
-/** The releases, newest first. An app would read them from a database; the example keeps them in code. */
-export const RELEASES: readonly Release[] = [
+/** The releases, newest first. */
+const RELEASES: readonly Release[] = [
 	{
 		version: "1.1.0",
 		date: "2026-11-02",
@@ -14,3 +16,6 @@ export const RELEASES: readonly Release[] = [
 	},
 	{ version: "1.0.0", date: "2026-10-01", notes: ["First release"] },
 ];
+
+/** The releases, newest first. An app would read them from a database; the example keeps them in code. */
+export const list = Effect.succeed(RELEASES);

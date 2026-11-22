@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 import { action, Datastar, page } from "spacefn";
 
-import Env from "#configs/env.ts";
 import { layout } from "#lib/ui/layout.ts";
 import * as Team from "#modules/team/team.ts";
 import { memberList, teamPage } from "#modules/team/views.ts";
@@ -9,9 +8,7 @@ import { memberList, teamPage } from "#modules/team/views.ts";
 // The team page at /. It only connects the team module to the web.
 
 export default page({
-	loader: Effect.gen(function* () {
-		return { title: (yield* Env).TEAM_NAME, members: Team.MEMBERS };
-	}),
+	loader: Effect.all({ title: Team.title, members: Team.members }),
 	actions: {
 		// The search box: a Datastar @get with the signals, answered with the list to swap in.
 		search: action({

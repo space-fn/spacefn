@@ -1,10 +1,16 @@
 import { Effect, Schema } from "effect";
 import { Bus } from "spacefn";
 
+import Env from "#configs/env.ts";
 import MainDb from "#space/db/main.ts";
 
 /** The Bus topic each vote is announced on. */
 export const TOPIC = "poll";
+
+/** The poll's question, from configs/env.ts. */
+export const question = Effect.gen(function* () {
+	return (yield* Env).QUESTION;
+});
 
 /** The answers, by the id a vote sends. */
 export const CHOICES = {

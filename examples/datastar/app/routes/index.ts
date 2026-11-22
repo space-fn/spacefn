@@ -1,7 +1,6 @@
 import { Effect, Schema } from "effect";
 import { action, Datastar, page } from "spacefn";
 
-import Env from "#configs/env.ts";
 import { layout } from "#lib/ui/layout.ts";
 import * as Poll from "#modules/poll/poll.ts";
 import { pollPage, results } from "#modules/poll/views.ts";
@@ -9,9 +8,7 @@ import { pollPage, results } from "#modules/poll/views.ts";
 // The poll at /. It only connects the poll module to the web.
 
 export default page({
-	loader: Effect.gen(function* () {
-		return { question: (yield* Env).QUESTION, results: yield* Poll.results };
-	}),
+	loader: Effect.all({ question: Poll.question, results: Poll.results }),
 	actions: {
 		// A Datastar @post: it answers with signals to patch, not a page.
 		vote: action({
