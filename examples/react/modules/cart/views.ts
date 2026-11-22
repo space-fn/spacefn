@@ -1,8 +1,7 @@
 import { html } from "spacefn";
 
-import { island } from "#lib/ui/island.ts";
-
 import type { Product } from "./cart.ts";
+import { CartIsland } from "./ui/cart.island.tsx";
 
 /** The shop's page: server-rendered, with the React cart as an island. */
 export const shopPage = (props: {
@@ -11,7 +10,7 @@ export const shopPage = (props: {
 }) =>
 	html`<main>
 		<h1>${props.title}</h1>
-		${island("cart", { products: props.products })}
+		${CartIsland.render({ products: props.products })}
 		<noscript>The cart needs JavaScript.</noscript>
 	</main>`;
 

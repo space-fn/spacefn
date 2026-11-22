@@ -3,7 +3,7 @@ import { assets } from "spacefn/assets";
 
 /**
  * The HTML around every page: its title and the site's styles. A page that
- * needs more, such as a client component's entry, passes its tags as `head`.
+ * needs more passes its tags as `head`.
  */
 export const layout = (title: string, body: HtmlValue, head: HtmlValue = "") =>
 	html`<!doctype html>

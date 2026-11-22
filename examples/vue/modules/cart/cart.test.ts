@@ -9,20 +9,20 @@ const app = () =>
 	testApp(manifest, Layer.mergeAll(memoryServices, Env.layer.pipe(Layer.provide(testEnv({})))));
 
 describe("the shop", () => {
-	it("renders the cart's island with its props, and loads its entry", async () => {
+	it("renders the cart's island with its props, and loads its script once", async () => {
 		await using shop = app();
 		const page = await (await shop.fetch("/")).text();
-		expect(page).toContain('<div id="cart"></div>');
 		expect(page).toMatch(
-			/<script type="application\/json" id="cart-props">\s*\{"products":\[\{"id":"mug"/,
+			/<spacefn-island name="cart"[^>]*><script type="application\/json">\{"products":\[\{"id":"mug"/,
 		);
-		expect(page).toContain('<script type="module" src="/app/assets/cart.ts"></script>');
+		const script = '<script type="module" src="/modules/cart/ui/cart.island.ts"></script>';
+		expect(page.split(script).length).toBe(2);
 	});
 
 	it("doesn't load the cart on a page without it", async () => {
 		await using shop = app();
 		const page = await (await shop.fetch("/about")).text();
 		expect(page).toContain('<link rel="stylesheet" href="/app/assets/site.css">');
-		expect(page).not.toContain("/app/assets/cart");
+		expect(page).not.toContain("cart.island");
 	});
 });

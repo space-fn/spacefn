@@ -68,10 +68,10 @@ describe("the CSS examples build", () => {
 
 describe("the island examples build", () => {
 	it.each([
-		["react", "app/assets/cart.tsx"],
-		["solid", "app/assets/cart.tsx"],
-		["vue", "app/assets/cart.ts"],
-		["svelte", "app/assets/cart.ts"],
+		["react", "modules/cart/ui/cart.island.tsx"],
+		["solid", "modules/cart/ui/cart.island.tsx"],
+		["vue", "modules/cart/ui/cart.island.ts"],
+		["svelte", "modules/cart/ui/cart.island.ts"],
 	])(
 		"%s: the cart entry, with its component compiled in",
 		async (name, entry) => {
