@@ -3,6 +3,7 @@ import { cp, mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 
 import { Effect } from "effect";
 import { gen } from "spacefn/internal/codegen";
@@ -55,7 +56,8 @@ export const space = (cwd: string, args: readonly string[], env: Record<string, 
 	child.stdout!.on("data", (chunk) => (log += chunk));
 	child.stderr!.on("data", (chunk) => (log += chunk));
 	const exited = new Promise<number | null>((resolve) => child.once("exit", resolve));
-	return { child, exited, log: () => log };
+	// In a terminal pnpm sets FORCE_COLOR, so the child colors even what it pipes here.
+	return { child, exited, log: () => stripVTControlCharacters(log) };
 };
 
 export const until = async (check: () => Promise<boolean> | boolean, ms = 60_000) => {
