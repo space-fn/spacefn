@@ -25,25 +25,23 @@ export function maskSql(sql: string): string {
 }
 
 /**
- * The statement containing `offset`: in a `.sql` file the `;`/`-- name:` separated part of the
- * file, in JS/TS the part of the sql`` or db`` template. Null when the cursor is not in SQL.
+ * The statement containing `offset`: in a `.sql` file the `;` separated part of the
+ * file, in JS/TS the part of the sql`` template. Null when the cursor is not in SQL.
  */
 export function statementAt(text: string, offset: number, isSqlFile: boolean): SqlStatement | null {
 	let start = 0;
 	let end = text.length;
 	if (!isSqlFile) {
-		const tpl = templateAt(text, offset, ["sql", "db"]);
+		const tpl = templateAt(text, offset, ["sql"]);
 		if (!tpl) return null;
 		start = tpl.contentStart;
 		end = tpl.end;
 	}
-	// Separators are found on the masked text; `-- name:` lines are blanked by masking, so look
-	// for them on the raw text.
+	// Separators are found on the masked text, so a `;` in a string or comment doesn't count.
 	const raw = text.slice(start, end);
 	const masked = maskSql(raw);
 	const cuts = [0];
 	for (let i = 0; i < masked.length; i++) if (masked[i] === ";") cuts.push(i + 1);
-	for (const m of raw.matchAll(/^[ \t]*--\s*name:/gm)) cuts.push(m.index!);
 	cuts.push(masked.length);
 	cuts.sort((a, b) => a - b);
 	const rel = offset - start;

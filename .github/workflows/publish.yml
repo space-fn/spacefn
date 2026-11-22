@@ -20,11 +20,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: voidzero-dev/setup-vp@v1.22.0
+      - uses: pnpm/action-setup@v6.1.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 26.13.0
-          cache: true
-          run-install: false
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Test extension
         run: pnpm --filter vscode-spacefn test
@@ -35,6 +35,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/vscode-spacefn"
           rsync -a --exclude=node_modules packages/vscode-spacefn/ "$RUNNER_TEMP/vscode-spacefn/"
           cd "$RUNNER_TEMP/vscode-spacefn"
+          # Workspace and catalog devDependencies are already bundled and npm can't resolve them.
+          node -e 'const fs = require("node:fs"); const p = JSON.parse(fs.readFileSync("package.json", "utf8")); delete p.devDependencies; fs.writeFileSync("package.json", JSON.stringify(p, null, 2) + "\n");'
           npm install --omit=dev --package-lock=false
       - name: Publish extension
         working-directory: ${{ runner.temp }}/vscode-spacefn

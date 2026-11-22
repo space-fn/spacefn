@@ -1,164 +1,173 @@
-import { splitStatements } from "./split";
+import { Effect, Schema } from "effect";
+import type { SqlError } from "effect/sql";
 
-export interface Migration {
-	/** File name without extension, e.g. `0001_create_todos`. */
-	id: string;
-	/** The "up" SQL. */
-	sql: string;
-	/** The "down" SQL (optional). */
-	down?: string;
-}
+import { splitStatements, type Migration } from "../sql/index.ts";
+import type { DbConnection, SqlStatement } from "./connection.ts";
 
-/** One statement in a transaction, with optional bound parameters. */
-export type MigrationStatement = string | { sql: string; params?: unknown[] };
+export type { Migration };
 
-/** What the runner needs from a database. D1 and Durable Object adapters implement this. */
-export interface MigrationExecutor {
-	/** Reads rows. */
-	query<T>(sql: string, params?: unknown[]): Promise<T[]>;
-	/** Runs `statements` as one atomic unit: all of them apply, or none. */
-	transaction(statements: MigrationStatement[]): Promise<void>;
-}
-
+/** The table that records applied migrations. */
 export const LEDGER = "space_migrations";
 
-export class MigrationError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = "MigrationError";
-	}
-}
+export class MigrationError extends Schema.TaggedError<MigrationError>()("MigrationError", {
+	reason: Schema.Literals(["changed", "no-down", "invalid-id", "invalid-steps"]),
+	id: Schema.optional(Schema.String),
+	message: Schema.String,
+}) {}
 
-export async function checksum(sql: string): Promise<string> {
-	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sql));
-	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-/** Migration ids become SQL identifiers and file names, so they stay boring. */
-function assertValidId(id: string): void {
-	if (!/^[A-Za-z0-9_.-]+$/.test(id)) {
-		throw new MigrationError(`Migration name "${id}" may only use letters, digits, _, - and .`);
-	}
-}
-
-export interface RollbackOptions {
-	/** How many applied migrations to roll back, newest first. Defaults to 1. */
-	steps?: number;
-}
-
-/**
- * Rolls back the newest applied migrations, one by default. Every step is
- * checked before anything runs: a migration without a `down` section, or one
- * that changed since it was applied, refuses the whole rollback. Returns the
- * ids rolled back, newest first.
- */
-export async function rollbackMigrations(
-	db: MigrationExecutor,
-	migrations: Migration[],
-	options: RollbackOptions = {},
-): Promise<string[]> {
-	const steps = options.steps ?? 1;
-	if (!Number.isInteger(steps) || steps < 1) {
-		throw new MigrationError("Rollback steps must be a positive integer");
-	}
-	const rows = await db.query<{ id: string; checksum: string }>(
-		`SELECT id, checksum FROM ${LEDGER}`,
-	);
-	const applied = new Map(rows.map((row) => [row.id, row.checksum]));
-	const toRoll = migrations
-		.filter((m) => applied.has(m.id))
-		.slice(-steps)
-		.reverse();
-
-	const verified: { id: string; down: string }[] = [];
-	for (const migration of toRoll) {
-		assertValidId(migration.id);
-		if (migration.down === undefined) {
-			throw new MigrationError(
-				`Migration ${migration.id} has no down section. Refusing to roll back.`,
-			);
-		}
-		const sum = await checksum(migration.sql);
-		if (applied.get(migration.id) !== sum) {
-			throw new MigrationError(
-				`Migration ${migration.id} changed after it was applied. Refusing to roll back.`,
-			);
-		}
-		verified.push({ id: migration.id, down: migration.down });
-	}
-
-	const ran: string[] = [];
-	for (const step of verified) {
-		await db.transaction([
-			...splitStatements(step.down),
-			{ sql: `DELETE FROM ${LEDGER} WHERE id = ?`, params: [step.id] },
-		]);
-		ran.push(step.id);
-	}
-	return ran;
-}
-
-/**
- * Applies pending migrations in order. Each runs atomically together with its
- * ledger row. A migration whose file changed after it was applied is an error.
- * Returns the ids applied by this call.
- */
-export async function applyMigrations(
-	db: MigrationExecutor,
-	migrations: Migration[],
-): Promise<string[]> {
-	await db.transaction([
-		`CREATE TABLE IF NOT EXISTS ${LEDGER} (
-			id TEXT PRIMARY KEY,
-			checksum TEXT NOT NULL,
-			applied_at TEXT NOT NULL
-		)`,
-	]);
-
-	const applied = new Map(
-		(await db.query<{ id: string; checksum: string }>(`SELECT id, checksum FROM ${LEDGER}`)).map(
-			(row) => [row.id, row.checksum],
+/** Hex SHA-256 of a migration's up SQL. */
+export const checksum = (sql: string): Effect.Effect<string> =>
+	Effect.promise(() => crypto.subtle.digest("SHA-256", new TextEncoder().encode(sql))).pipe(
+		Effect.map((digest) =>
+			Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(""),
 		),
 	);
 
+// Ids become ledger keys and file names, so they stay boring.
+const checkId = (id: string) =>
+	/^[A-Za-z0-9_.-]+$/.test(id)
+		? Effect.void
+		: Effect.fail(
+				new MigrationError({
+					reason: "invalid-id",
+					id,
+					message: `Migration name "${id}" may only use letters, digits, _, - and .`,
+				}),
+			);
+
+const statements = (script: string): SqlStatement[] =>
+	splitStatements(script).map((sql) => ({ sql }));
+
+const ensureLedger = (db: DbConnection) =>
+	db.atomic([
+		{
+			sql: `CREATE TABLE IF NOT EXISTS ${LEDGER} (id TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at TEXT NOT NULL)`,
+		},
+	]);
+
+const readLedger = (db: DbConnection) =>
+	db.sql
+		.unsafe<{ id: string; checksum: string }>(`SELECT id, checksum FROM ${LEDGER} ORDER BY id`)
+		.pipe(Effect.map((rows) => new Map(rows.map((row) => [row.id, row.checksum]))));
+
+export type MigrationState = "applied" | "pending" | "changed";
+
+export interface MigrationStatus {
+	readonly migrations: readonly { readonly id: string; readonly state: MigrationState }[];
+	/** Ledger rows with no migration file: applied elsewhere, or the file was deleted. */
+	readonly unknown: readonly string[];
+}
+
+/** Compares the migration files with the ledger. Creates the ledger when it is missing. */
+export const migrationStatus = Effect.fnUntraced(function* (
+	db: DbConnection,
+	migrations: readonly Migration[],
+): Effect.fn.Return<MigrationStatus, SqlError.SqlError> {
+	yield* ensureLedger(db);
+	const applied = yield* readLedger(db);
+	const known = new Set(migrations.map((m) => m.id));
+	const states = yield* Effect.forEach(migrations, (m) =>
+		Effect.map(checksum(m.sql), (sum) => {
+			const recorded = applied.get(m.id);
+			const state: MigrationState =
+				recorded === undefined ? "pending" : recorded === sum ? "applied" : "changed";
+			return { id: m.id, state };
+		}),
+	);
+	return { migrations: states, unknown: [...applied.keys()].filter((id) => !known.has(id)) };
+});
+
+const applyOnce = Effect.fnUntraced(function* (
+	db: DbConnection,
+	migrations: readonly Migration[],
+): Effect.fn.Return<string[], SqlError.SqlError | MigrationError> {
+	yield* ensureLedger(db);
+	const applied = yield* readLedger(db);
 	const ran: string[] = [];
 	for (const migration of migrations) {
-		assertValidId(migration.id);
-		const sum = await checksum(migration.sql);
-		const known = applied.get(migration.id);
-		if (known !== undefined) {
-			if (known !== sum) {
-				throw new MigrationError(
-					`Migration ${migration.id} changed after it was applied. Add a new migration instead of editing it.`,
-				);
-			}
+		yield* checkId(migration.id);
+		const sum = yield* checksum(migration.sql);
+		const recorded = applied.get(migration.id);
+		if (recorded !== undefined) {
+			if (recorded !== sum)
+				return yield* new MigrationError({
+					reason: "changed",
+					id: migration.id,
+					message: `Migration ${migration.id} changed after it was applied. Add a new migration instead of editing it.`,
+				});
 			continue;
 		}
-		await db.transaction([
-			...splitStatements(migration.sql),
+		yield* db.atomic([
+			...statements(migration.sql),
 			{
 				sql: `INSERT INTO ${LEDGER} (id, checksum, applied_at) VALUES (?, ?, ?)`,
-				// A bound timestamp works on every dialect; datetime('now') is SQLite-only.
 				params: [migration.id, sum, new Date().toISOString()],
 			},
 		]);
 		ran.push(migration.id);
 	}
 	return ran;
-}
+});
 
 /**
- * Applies pending migrations, retrying once. A cold start can race another isolate
- * to the same migration: the loser's batch fails and rolls back. The retry reads
- * the ledger again, finds the winner's rows, and applies only what is left.
+ * Applies pending migrations in order, each atomically with its ledger row,
+ * and returns the ids it applied. A migration edited after it was applied is
+ * refused. A SQL failure is retried once: two isolates starting cold can race
+ * to the same migration, and the loser's retry finds the winner's ledger rows.
  */
-export async function applyMigrationsWithRetry(
-	db: MigrationExecutor,
-	migrations: Migration[],
-): Promise<string[]> {
-	try {
-		return await applyMigrations(db, migrations);
-	} catch {
-		return applyMigrations(db, migrations);
+export const applyMigrations = (
+	db: DbConnection,
+	migrations: readonly Migration[],
+): Effect.Effect<string[], SqlError.SqlError | MigrationError> =>
+	applyOnce(db, migrations).pipe(
+		Effect.catchTag("SqlError", () => applyOnce(db, migrations)),
+		Effect.withSpan("db.migrate", { attributes: { "db.migrations.total": migrations.length } }),
+	);
+
+/**
+ * Rolls back the newest `steps` applied migrations, newest first, and returns
+ * their ids. Everything is checked first: a migration without a down section,
+ * or one edited since it was applied, refuses the whole rollback.
+ */
+export const rollbackMigrations = Effect.fnUntraced(function* (
+	db: DbConnection,
+	migrations: readonly Migration[],
+	steps = 1,
+): Effect.fn.Return<string[], SqlError.SqlError | MigrationError> {
+	if (!Number.isInteger(steps) || steps < 1)
+		return yield* new MigrationError({
+			reason: "invalid-steps",
+			message: "Rollback steps must be a positive integer",
+		});
+	yield* ensureLedger(db);
+	const applied = yield* readLedger(db);
+	const chosen = migrations
+		.filter((m) => applied.has(m.id))
+		.slice(-steps)
+		.reverse();
+
+	const verified: { id: string; down: string }[] = [];
+	for (const migration of chosen) {
+		yield* checkId(migration.id);
+		if (migration.down === undefined)
+			return yield* new MigrationError({
+				reason: "no-down",
+				id: migration.id,
+				message: `Migration ${migration.id} has no down section, so it can't be rolled back.`,
+			});
+		if (applied.get(migration.id) !== (yield* checksum(migration.sql)))
+			return yield* new MigrationError({
+				reason: "changed",
+				id: migration.id,
+				message: `Migration ${migration.id} changed after it was applied, so its down section may not undo it.`,
+			});
+		verified.push({ id: migration.id, down: migration.down });
 	}
-}
+
+	for (const step of verified)
+		yield* db.atomic([
+			...statements(step.down),
+			{ sql: `DELETE FROM ${LEDGER} WHERE id = ?`, params: [step.id] },
+		]);
+	return verified.map((step) => step.id);
+});

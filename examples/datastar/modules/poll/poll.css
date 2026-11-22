@@ -1,0 +1,13 @@
+/* The poll's own styles. <poll-meter> styles itself, in its shadow root. */
+.ballot {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space);
+}
+.ballot .chosen {
+	outline: 2px solid currentColor;
+}
+.results {
+	padding: 0;
+	list-style: none;
+}

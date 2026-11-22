@@ -1,0 +1,23 @@
+/* The design tokens and breakpoints every stylesheet shares. */
+@custom-media --narrow (width < 40rem);
+
+:root {
+	color-scheme: light dark;
+	--ink: light-dark(#1f2937, #e5e7eb);
+	--paper: light-dark(#ffffff, #111827);
+	--accent: light-dark(#4338ca, #a5b4fc);
+	--space: 0.5rem;
+	font-family: system-ui, sans-serif;
+	color: var(--ink);
+	background: var(--paper);
+}
+
+body {
+	max-width: 40rem;
+	margin: calc(var(--space) * 6) auto;
+	padding: 0 calc(var(--space) * 2);
+
+	@media (--narrow) {
+		margin-top: calc(var(--space) * 2);
+	}
+}

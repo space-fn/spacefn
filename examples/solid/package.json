@@ -1,0 +1,35 @@
+{
+	"name": "solid",
+	"private": true,
+	"description": "A Solid island on a server-rendered spacefn page: a client-only cart, loaded only on the page that uses it.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"docs": "space docs",
+		"test": "vitest run --config configs/vitest.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"effect": "catalog:",
+		"solid-js": "1.9.18",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/docker": "catalog:",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vite-plugin-solid": "2.11.15",
+		"vitest": "catalog:"
+	}
+}

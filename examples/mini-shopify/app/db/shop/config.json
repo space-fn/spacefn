@@ -1,0 +1,6 @@
+{
+	"$schema": "../../../node_modules/spacefn/schemas/db.json",
+	"driver": "libsql",
+	"migrateOn": "startup",
+	"open": "manual"
+}

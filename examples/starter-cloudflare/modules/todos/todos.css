@@ -1,0 +1,16 @@
+/* The todos page and list. */
+input[name="title"] {
+	flex: 1;
+}
+#todos {
+	padding: 0;
+	list-style: none;
+}
+#todos button {
+	all: unset;
+	cursor: pointer;
+}
+#todos .done {
+	text-decoration: line-through;
+	opacity: 0.6;
+}

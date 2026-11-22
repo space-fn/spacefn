@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
-  - "playground"
+  # Example apps; `pnpm examples` remakes the starters from the create-spacefn template.
+  - "examples/*"
 allowBuilds:
   esbuild: true
   keytar: true
@@ -15,13 +16,25 @@ minimumReleaseAgeExclude:
   - cf@1.0.0-beta.26
   - spacefn@0.1.1
   - "@cloudflare/workers-types@5.20261030.1"
+  - "@vitest/coverage-v8@5.1.1"
+  - "@vitest/mocker@5.1.1"
+  - "@vitest/spy@5.1.1"
+  - vitest@5.1.1
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
-  vite-plus: 1.4.0
-overrides:
-  vite@*: "catalog:"
-peerDependencyRules:
-  allowAny:
-    - vite
-  allowedVersions:
-    vite: "*"
+  alchemy: 2.0.0-beta.87
+  "@alchemy.run/cloudflare": 2.0.0-beta.87
+  "@alchemy.run/docker": 2.0.0-beta.87
+  vite: 8.3.8
+  vitest: 5.1.1
+  "@vitest/coverage-v8": 5.1.1
+  "@effect/vitest": 4.1.4
+  "@effect/platform-node": 4.1.4
+  "@effect/sql-d1": 4.1.4
+  "@effect/sql-libsql": 4.1.4
+  "@effect/sql-sqlite-do": 4.1.4
+  "@effect/sql-sqlite-node": 4.1.4
+  "@libsql/client": 0.18.0
+  effect: 4.1.4
+  esbuild: 0.28.2
+  miniflare: 4.20260730.0
+  tsdown: 0.23.7

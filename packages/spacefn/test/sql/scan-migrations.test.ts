@@ -1,0 +1,64 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach, beforeEach, expect, test } from "vitest";
+
+import { scanMigrations } from "../../src/sql/node/scan.ts";
+
+let root: string;
+let dir: string;
+
+beforeEach(async () => {
+	root = await mkdtemp(join(tmpdir(), "space-db-"));
+	dir = join(root, "app", "db", "main_db", "migrations");
+	await mkdir(dir, { recursive: true });
+	await mkdir(join(root, "app"), { recursive: true });
+});
+
+afterEach(() => rm(root, { recursive: true, force: true }));
+
+test("reads migrations in numeric order and ignores other files", async () => {
+	await writeFile(join(dir, "0002_done.sql"), "-- up\nALTER TABLE t ADD c;");
+	await writeFile(join(dir, "0001_create.sql"), "-- up\nCREATE TABLE t (id);");
+	await writeFile(join(dir, "notes.md"), "");
+	await writeFile(join(dir, "_draft.sql"), "");
+	expect(await scanMigrations(dir)).toEqual([
+		{ id: "0001_create", sql: "CREATE TABLE t (id);" },
+		{ id: "0002_done", sql: "ALTER TABLE t ADD c;" },
+	]);
+});
+
+test("rejects names without a number", async () => {
+	await writeFile(join(dir, "create.sql"), "");
+	await expect(scanMigrations(dir)).rejects.toThrow("must be named NNNN_name.sql");
+});
+
+test("rejects two migrations with the same number", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "");
+	await writeFile(join(dir, "0001_b.sql"), "");
+	const error = await scanMigrations(dir).then(
+		() => undefined,
+		(e: Error) => e,
+	);
+	expect(error?.message).toMatch(/share the number 1/);
+	expect(error?.message).toContain("0001_a");
+	expect(error?.message).toContain("0001_b");
+});
+
+test("returns nothing without a migrations folder", async () => {
+	expect(await scanMigrations(join(root, "nope"))).toEqual([]);
+});
+
+test("refuses a migration with no -- up section", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "CREATE TABLE a (id);");
+	await expect(scanMigrations(dir)).rejects.toThrow(/-- up/);
+});
+
+test("separates the up and down sections in either order", async () => {
+	await writeFile(join(dir, "0001_a.sql"), "-- down\nDROP TABLE a;\n-- up\nCREATE TABLE a;\n");
+	await writeFile(join(dir, "0002_b.sql"), "-- up\nCREATE TABLE b;\n-- down\nDROP TABLE b;\n");
+	const [first, second] = await scanMigrations(dir);
+	expect(first).toEqual({ id: "0001_a", sql: "CREATE TABLE a;", down: "DROP TABLE a;" });
+	expect(second).toEqual({ id: "0002_b", sql: "CREATE TABLE b;", down: "DROP TABLE b;" });
+});

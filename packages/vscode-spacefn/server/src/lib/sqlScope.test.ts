@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 
 import { sqlContext } from "../completion/sql";
 import { qualifierBefore, resolveSymbol, scopeOf, scopesAt, statementAt } from "./sqlScope";
@@ -14,9 +14,8 @@ const schema = {
 };
 
 describe("statementAt", () => {
-	test("picks the named query under the cursor in a .sql file", () => {
-		const text =
-			"-- name: a :one\nSELECT id FROM users;\n-- name: b :many\nSELECT title FROM todos;";
+	test("picks the statement under the cursor in a .sql file", () => {
+		const text = "-- :one\nSELECT id FROM users;\nSELECT title FROM todos;";
 		const stmt = statementAt(text, text.indexOf("title"), true)!;
 		expect(scopeOf(stmt.sql).tables).toEqual(["todos"]);
 	});

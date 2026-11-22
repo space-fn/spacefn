@@ -1,77 +1,28 @@
 # spacefn
 
-All-in-one framework for Cloudflare Workers. File-based conventions, full
-observability (OTLP), hand-rolled auth primitives, multi-database support.
+Full-stack TypeScript apps from folders of convention files, on [Effect](https://effect.website). Write pages, routes, SQL and jobs in `app/`; spacefn generates the wiring, and the `space` CLI runs, builds and deploys it, to **Cloudflare Workers** or to **Bun** in Docker.
 
-## Install
+Start a new app with the scaffolder:
 
-```bash
-# Scaffold a new app (recommended)
-pnpm create spacefn my-app
-
-# Or add to an existing project
-pnpm add spacefn hono cf
-pnpm add -D @cloudflare/vite-plugin
+```sh
+npm create spacefn@latest my-app
 ```
 
-`hono`, `cf` and `@cloudflare/vite-plugin` are app-owned dependencies. The
-template pins them; you can bump them directly for security patches without
-waiting for a `spacefn` release. The `space` CLI binary ships with the
-`spacefn` package.
+This one package has everything: the framework, both targets, the Vite plugin and the `space` CLI. An app's `configs/infra.ts` is its own Alchemy stack, so the app also installs `alchemy` and its target's provider: `@alchemy.run/cloudflare`, or `@alchemy.run/docker` on Bun. The providers are optional peers, so a Bun app never downloads workerd.
 
-## Quickstart
+| Import               | For                                                                   |
+| -------------------- | --------------------------------------------------------------------- |
+| `spacefn`            | App code: routes, pages, `html`, database, services, jobs, auth       |
+| `spacefn/infra`      | `configs/infra.ts`: `variables`, `InfraApp`                           |
+| `spacefn/testing`    | Tests: in-memory services, a test database and `testApp`              |
+| `spacefn/assets`     | `assets(...)`, the asset entries' tags; the Vite plugin provides it   |
+| `spacefn/cloudflare` | Cloudflare bindings spacefn doesn't wrap, through `CloudflareEnv`     |
+| `spacefn/bun`        | The Bun server; generated code uses it                                |
+| `spacefn/vite`       | The Vite plugin, in `configs/vite.ts`: `space({ target })`            |
+| `spacefn/platform`   | The target's services, in `app/entry.ts`; the Vite plugin provides it |
+| `spacefn/internal/*` | Generated code, the CLI and the editor extension; not a public API    |
 
-```bash
-pnpm create spacefn my-app
-cd my-app
-pnpm install
-pnpm dev          # `vp dev` under the hood
-```
-
-## Subpath exports
-
-Import from the subpath that owns the thing you need. There is no root
-barrel export.
-
-| Subpath                                         | Purpose                                                                           |
-| ----------------------------------------------- | --------------------------------------------------------------------------------- |
-| `spacefn/handler`                               | `defineHandler`, `onError`                                                        |
-| `spacefn/http`                                  | `readUploads`, `putUpload`                                                        |
-| `spacefn/ws`                                    | `acceptSocket`, `broadcast`, `readMessage`, `requireWebSocket`                    |
-| `spacefn/middleware`                            | `defineMiddleware`                                                                |
-| `spacefn/pages` / `spacefn/html`                | `definePage`, `defineLoader`, `defineActions`, `html`, `raw`, `css`, `minifyHtml` |
-| `spacefn/runtime`                               | request context, env                                                              |
-| `spacefn/cloudflare`                            | `envBindings` (derived bindings from an `env.ts` schema)                          |
-| `spacefn/env`                                   | `defineEnv`, field helpers                                                        |
-| `spacefn/db`                                    | `d1Executor`, migration helpers                                                   |
-| `spacefn/auth`                                  | password hashing, sessions, CSRF, TOTP                                            |
-| `spacefn/tenancy`                               | multi-tenant DO helpers                                                           |
-| `spacefn/queues` / `spacefn/crons`              | queue/cron definitions                                                            |
-| `spacefn/durable-objects` / `spacefn/workflows` | DO/workflow helpers                                                               |
-| `spacefn/trace`                                 | OTLP tracing                                                                      |
-| `spacefn/sync`                                  | codegen entry point                                                               |
-| `spacefn/vite`                                  | Vite plugin                                                                       |
-| `spacefn/testing`                               | test helpers                                                                      |
-| `spacefn/cli`                                   | `space` CLI (internal)                                                            |
-
-## Conventions
-
-- `app/` is the only supported layout. `.space/` is generated at the project root.
-- `app/routes/` — file-based HTTP routes (`index.ts`, `[id].ts`).
-- `app/pages/` — server-rendered pages.
-- `app/db/<name>/` — per-database migrations + typed queries.
-- `app/durable-objects/`, `app/workflows/` — scanned and exported.
-- `app/middleware/`, `app/queues/`, `app/crons/` — scanned.
-- `modules/`, `utils/`, `lib/` — business logic (not scanned).
-
-## Path aliases (template)
-
-`@space/*`, `@app/*`, `@modules/*`, `@utils/*`, `@lib/*`.
-
-## Docs
-
-Full docs live in `docs/spacefn/` (bundled in `create-spacefn`). In dev mode,
-visit `/__space_docs` to browse them rendered.
+Read the [docs](https://github.com/space-fn/spacefn/blob/main/packages/docs/content/index.md).
 
 ## License
 

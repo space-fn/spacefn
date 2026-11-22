@@ -1,24 +1,22 @@
 # create-spacefn
 
-Scaffold a new spacefn project.
+Creates a [spacefn](https://github.com/space-fn/spacefn) app.
 
-## Usage
-
-```bash
-pnpm create spacefn my-app
-cd my-app
-pnpm install
-pnpm space dev
+```sh
+npm create spacefn@latest my-app
+npm create spacefn@latest my-app -- --target bun --lint
 ```
 
-The generated project includes:
+It asks whether the app runs on Cloudflare Workers or Bun, unless `--target cloudflare` or `--target bun` says so, and whether to add [oxlint](https://oxc.rs/docs/guide/usage/linter) and [oxfmt](https://oxc.rs/docs/guide/usage/formatter), unless `--lint` or `--no-lint` does. With them, the app gets their settings in `configs/` and `npm run check` (format, lint and types) and `npm run fmt`. The app is a small todo list: a page with form actions and a live list, a SQLite database with typed queries, CSRF protection, and a test.
 
-- `app/` layout with `routes/`, plus `pages/`, `db/`, `durable-objects/`, `workflows/` when you need them.
-- `app/entry.ts` — the Worker entry you can customize.
-- Path aliases (`@space/*`, `@app/*`, `@modules/*`, `@utils/*`, `@lib/*`).
-- vite-plus test setup with scaffold tests.
-- `docs/spacefn/` — bundled framework docs.
-- `.gitignore` with OS/env/log/coverage ignores.
+```sh
+cd my-app
+cp .env.example .env
+npm install
+npm run dev
+```
+
+See the [docs](https://github.com/space-fn/spacefn/blob/main/packages/docs/content/1-getting-started.md).
 
 ## License
 

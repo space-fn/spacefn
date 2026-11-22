@@ -1,0 +1,35 @@
+{
+	"name": "mini-shopify",
+	"private": true,
+	"description": "Shops that each get their own database: created with the Turso Platform API (or as local files), opened per request with a LayerMap.",
+	"type": "module",
+	"imports": {
+		"#configs/*": "./configs/*",
+		"#lib/*": "./lib/*",
+		"#modules/*": "./modules/*",
+		"#space/*": "./.space/*"
+	},
+	"scripts": {
+		"postinstall": "space gen",
+		"dev": "space dev",
+		"build": "space build",
+		"deploy": "space deploy",
+		"docs": "space docs",
+		"test": "vitest run --config configs/vitest.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@tursodatabase/api": "2.0.6",
+		"effect": "catalog:",
+		"spacefn": "workspace:*"
+	},
+	"devDependencies": {
+		"@alchemy.run/docker": "catalog:",
+		"@types/bun": "^1.4.4",
+		"alchemy": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"typescript": "^7.0.2",
+		"vite": "catalog:",
+		"vitest": "catalog:"
+	}
+}

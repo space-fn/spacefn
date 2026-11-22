@@ -1,65 +1,66 @@
-# SpaceFn
+<p align="center"><img src="packages/docs/content/logo.svg" alt="spacefn" width="96" /></p>
 
-SpaceFn is one TypeScript package for building full-stack apps on Cloudflare Workers. File-based conventions, typed SQL, multi-tenancy, observability and hand-rolled auth primitives.
+# spacefn
 
-## Packages
-
-| Package          | Purpose                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| `spacefn`        | Framework and `space` CLI (`dev`, `build`, `gen`, `deploy`, `db doctor`, `clean`, `doctor`) |
-| `create-spacefn` | Scaffold a project                                                                          |
-
-## Quick start
+Full-stack TypeScript apps from folders of convention files, on [Effect](https://effect.website). Write pages, routes, SQL and jobs in `app/`; spacefn generates the wiring, and the `space` CLI runs, builds and deploys it, to **Cloudflare Workers** or to **Bun** in Docker.
 
 ```sh
 npm create spacefn@latest my-app
-cd my-app
-pnpm install
-pnpm dev
+cd my-app && cp .env.example .env && npm install && npm run dev
 ```
-
-Or use the playground in this repo:
-
-```sh
-pnpm install
-cd playground
-pnpm dev
-```
-
-## Conventions
-
-A project is a folder of convention files. `spacefn` scans them and generates `.space/`.
 
 ```txt
-app/routes/                 HTTP endpoints
-app/pages/                  server-rendered pages with loaders and actions
-app/middleware/             numbered middleware
-app/queues/                 queue consumers
-app/crons/                  scheduled jobs
-app/env.ts                  environment schema
-app/db/<name>/migrations/   SQL migrations
-app/db/<name>/queries/      named, typed SQL queries
-app/durable-objects/        Durable Object classes
-app/workflows/              Workflow classes
+my-app/
+├── app/
+│   ├── entry.ts        the app's services, middleware and error handling, in one file
+│   ├── routes/         pages and HTTP endpoints, and _middleware.ts around them
+│   ├── db/<name>/      config.json, migrations/ and queries/ in SQL, typed for you
+│   ├── queues/         queue consumers
+│   └── crons/          scheduled jobs
+├── modules/<feature>/  a feature's logic, views, client code and tests
+├── lib/                code features share: UI kit, design tokens, helpers
+└── configs/            env.ts (the variables the app reads), vite.ts (with the target), vitest.ts, optional infra.ts
 ```
 
-## Docs
+Read the [docs](packages/docs/content/index.md), starting with [Getting started](packages/docs/content/getting-started.md).
 
-- [Getting started](docs/getting-started/index.md)
-- [Conventions](docs/concepts/conventions.md)
-- [Environment](docs/directory-structure/env.md)
-- [Tracing](docs/guides/tracing.md)
-- [Database](docs/directory-structure/database.md)
-- [Tenancy](docs/guides/tenancy.md)
-- [Auth](docs/guides/auth.md)
-- [Pages](docs/api-reference/pages.md)
-- [CLI](docs/api-reference/cli.md)
+## Packages
 
-## Local development
+| Package          | What it is                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `spacefn`        | Everything an app installs: the framework, both targets, the Vite plugin, the CLI         |
+| `spacefn-docs`   | spacefn's docs and the reader `space docs` shows them with, a dev dependency of every app |
+| `create-spacefn` | `npm create spacefn`                                                                      |
+| `vscode-spacefn` | VS Code: SQL checked against migrations, Datastar and CSS in templates                    |
+
+Inside `packages/spacefn/src/`, each area is a folder, and `test/boundaries.test.ts` keeps them apart:
+
+| Folder        | Import                                           | What it is                                                        |
+| ------------- | ------------------------------------------------ | ----------------------------------------------------------------- |
+| (the rest)    | `spacefn`, …                                     | The core: routes, pages, database, services, jobs, auth, codegen  |
+| `sql/`        | `spacefn/internal/sql`                           | Parses and checks migrations and queries, with no dependencies    |
+| `cloudflare/` | `spacefn/cloudflare`                             | Runs an app as a Worker                                           |
+| `bun/`        | `spacefn/bun`                                    | Runs an app on Bun: web, queue and cron processes                 |
+| `infra/`      | `spacefn/vite`, `spacefn/infra`, the `space` bin | The CLI, the Vite plugin and `variables()` for `configs/infra.ts` |
+
+The core never imports a target or the infra. The targets and the infra import the core by its package name (`spacefn/internal/runtime`), not by relative path, so a build shares one copy of it.
+
+## Working on spacefn
 
 ```sh
 pnpm install
-vp check
-vp test run
-cd playground && pnpm dev
+pnpm check        # format, lint, typecheck
+pnpm test
 ```
+
+`examples/` holds apps on the workspace packages. `examples/starter-cloudflare` and `examples/starter-bun` are made from the `create-spacefn` template: `cd examples/starter-bun && pnpm dev`. After changing the template, `pnpm examples` remakes them (a test fails until you do). Set `SPACE_TEST_DOCKER=1` to include the test that deploys to local Docker.
+
+Config for the repo's tools lives in `configs/`. Commits follow conventional commits.
+
+The docs are in `packages/docs/content/`. `cd examples/starter-bun && pnpm docs` shows them as you write them, and their edit links open the files in your editor.
+
+`pnpm pack:check` packs `spacefn`, `spacefn-docs` and `create-spacefn`, scaffolds an app per target outside the workspace, installs the tarballs with npm, and typechecks, tests and (on Bun) builds and serves it. `pnpm run publish` runs it before publishing the three at one version.
+
+## License
+
+Apache-2.0

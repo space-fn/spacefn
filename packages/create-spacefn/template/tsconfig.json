@@ -1,20 +1,4 @@
 {
-	"compilerOptions": {
-		"target": "ES2023",
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"strict": true,
-		"skipLibCheck": true,
-		"verbatimModuleSyntax": true,
-		"noEmit": true,
-		"paths": {
-			"@space/*": ["./.space/*"],
-			"@app/*": ["./app/*"],
-			"@modules/*": ["./modules/*"],
-			"@utils/*": ["./utils/*"],
-			"@lib/*": ["./lib/*"]
-		}
-	},
-	"include": ["app", "modules", "utils", "lib", ".space/**/*", "cloudflare.config.ts"],
-	"exclude": ["app/client"]
+	"//": "Editors and tsc look for this file here; the settings are in configs/tsconfig.json.",
+	"extends": "./configs/tsconfig.json"
 }

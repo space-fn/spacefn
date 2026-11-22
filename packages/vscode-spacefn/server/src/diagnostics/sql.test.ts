@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vitest";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { extractBadIdentifier, rangeForIdentifier } from "./sql";

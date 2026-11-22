@@ -1,145 +1,161 @@
 {
 	"name": "spacefn",
-	"version": "0.10.0",
-	"description": "All-in-one framework for Cloudflare Workers",
+	"version": "0.11.0",
+	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun, with its CLI and deploys",
+	"keywords": [
+		"bun",
+		"cloudflare-workers",
+		"datastar",
+		"effect",
+		"framework",
+		"sqlite"
+	],
+	"homepage": "https://github.com/space-fn/spacefn#readme",
 	"license": "Apache-2.0",
 	"author": "wai-lin",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/space-fn/spacefn.git",
+		"directory": "packages/spacefn"
+	},
 	"bin": {
-		"space": "./dist/cli.mjs"
+		"space": "./src/infra/cli.ts"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"schemas"
 	],
 	"type": "module",
-	"main": "./dist/pages.mjs",
-	"types": "./dist/pages.d.mts",
 	"exports": {
-		"./runtime": {
-			"types": "./dist/runtime.d.mts",
-			"import": "./dist/runtime.mjs"
+		".": "./src/index.ts",
+		"./testing": "./src/testing.ts",
+		"./assets": "./src/assets.ts",
+		"./islands": "./src/islands.ts",
+		"./internal/island/client": "./src/island/client.ts",
+		"./internal/island/server": "./src/island/server.ts",
+		"./platform": "./src/platform.ts",
+		"./libsql": "./src/libsql.ts",
+		"./internal/codegen": "./src/codegen/index.ts",
+		"./internal/runtime": "./src/runtime.ts",
+		"./internal/sql": "./src/sql/index.ts",
+		"./internal/sql/node": "./src/sql/node/index.ts",
+		"./cloudflare": "./src/cloudflare/index.ts",
+		"./bun": "./src/bun/index.ts",
+		"./vite": "./src/infra/vite.ts",
+		"./infra": "./src/infra/index.ts"
+	},
+	"publishConfig": {
+		"bin": {
+			"space": "./dist/infra/cli.mjs"
 		},
-		"./vite": {
-			"types": "./dist/vite.d.mts",
-			"import": "./dist/vite.mjs"
-		},
-		"./cloudflare": {
-			"types": "./dist/cloudflare.d.mts",
-			"import": "./dist/cloudflare.mjs"
-		},
-		"./env": {
-			"types": "./dist/env.d.mts",
-			"import": "./dist/env.mjs"
-		},
-		"./trace": {
-			"types": "./dist/trace.d.mts",
-			"import": "./dist/trace.mjs"
-		},
-		"./queues": {
-			"types": "./dist/queues.d.mts",
-			"import": "./dist/queues.mjs"
-		},
-		"./crons": {
-			"types": "./dist/crons.d.mts",
-			"import": "./dist/crons.mjs"
-		},
-		"./db": {
-			"types": "./dist/db.d.mts",
-			"import": "./dist/db.mjs"
-		},
-		"./tenancy": {
-			"types": "./dist/tenancy.d.mts",
-			"import": "./dist/tenancy.mjs"
-		},
-		"./auth": {
-			"types": "./dist/auth.d.mts",
-			"import": "./dist/auth.mjs"
-		},
-		"./html": {
-			"types": "./dist/html.d.mts",
-			"import": "./dist/html.mjs"
-		},
-		"./pages": {
-			"types": "./dist/pages.d.mts",
-			"import": "./dist/pages.mjs"
-		},
-		"./sync": {
-			"types": "./dist/sync.d.mts",
-			"import": "./dist/sync.mjs"
-		},
-		"./durable-objects": {
-			"types": "./dist/durable-objects.d.mts",
-			"import": "./dist/durable-objects.mjs"
-		},
-		"./workflows": {
-			"types": "./dist/workflows.d.mts",
-			"import": "./dist/workflows.mjs"
-		},
-		"./testing": {
-			"types": "./dist/testing/index.d.mts",
-			"import": "./dist/testing/index.mjs"
-		},
-		"./handler": {
-			"types": "./dist/handler.d.mts",
-			"import": "./dist/handler.mjs"
-		},
-		"./middleware": {
-			"types": "./dist/middleware.d.mts",
-			"import": "./dist/middleware.mjs"
-		},
-		"./http": {
-			"types": "./dist/http.d.mts",
-			"import": "./dist/http.mjs"
-		},
-		"./ws": {
-			"types": "./dist/ws.d.mts",
-			"import": "./dist/ws.mjs"
-		},
-		"./sse": {
-			"types": "./dist/sse.d.mts",
-			"import": "./dist/sse.mjs"
+		"exports": {
+			".": {
+				"types": "./dist/index.d.mts",
+				"import": "./dist/index.mjs"
+			},
+			"./testing": {
+				"types": "./dist/testing.d.mts",
+				"import": "./dist/testing.mjs"
+			},
+			"./assets": {
+				"types": "./dist/assets.d.mts",
+				"import": "./dist/assets.mjs"
+			},
+			"./islands": {
+				"types": "./dist/islands.d.mts",
+				"import": "./dist/islands.mjs"
+			},
+			"./internal/island/client": {
+				"types": "./dist/island/client.d.mts",
+				"import": "./dist/island/client.mjs"
+			},
+			"./internal/island/server": {
+				"types": "./dist/island/server.d.mts",
+				"import": "./dist/island/server.mjs"
+			},
+			"./libsql": {
+				"types": "./dist/libsql.d.mts",
+				"import": "./dist/libsql.mjs"
+			},
+			"./platform": {
+				"types": "./dist/platform.d.mts",
+				"import": "./dist/platform.mjs"
+			},
+			"./internal/codegen": {
+				"types": "./dist/codegen/index.d.mts",
+				"import": "./dist/codegen/index.mjs"
+			},
+			"./internal/runtime": {
+				"types": "./dist/runtime.d.mts",
+				"import": "./dist/runtime.mjs"
+			},
+			"./internal/sql": {
+				"types": "./dist/sql/index.d.mts",
+				"import": "./dist/sql/index.mjs"
+			},
+			"./internal/sql/node": {
+				"types": "./dist/sql/node/index.d.mts",
+				"import": "./dist/sql/node/index.mjs"
+			},
+			"./cloudflare": {
+				"types": "./dist/cloudflare/index.d.mts",
+				"import": "./dist/cloudflare/index.mjs"
+			},
+			"./bun": {
+				"types": "./dist/bun/index.d.mts",
+				"import": "./dist/bun/index.mjs"
+			},
+			"./vite": {
+				"types": "./dist/vite.d.mts",
+				"import": "./dist/vite.mjs"
+			},
+			"./infra": {
+				"types": "./dist/infra/index.d.mts",
+				"import": "./dist/infra/index.mjs"
+			}
 		}
 	},
 	"scripts": {
-		"build": "vp pack",
-		"typecheck": "tsc --noEmit",
-		"test": "vp test"
+		"build": "rm -rf dist && tsdown",
+		"typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.cloudflare.json && tsc --noEmit -p tsconfig.bun.json",
+		"test": "vitest run"
 	},
 	"dependencies": {
-		"commander": "^12.1.0",
-		"yaml": "^2.9.1"
+		"@effect/platform-node": "^4.1.4",
+		"@effect/sql-d1": "^4.1.4",
+		"@effect/sql-libsql": "^4.1.4",
+		"@effect/sql-sqlite-do": "^4.1.4",
+		"@effect/sql-sqlite-node": "^4.1.4",
+		"@libsql/client": "^0.18.0",
+		"alchemy": "catalog:"
 	},
 	"devDependencies": {
-		"@cloudflare/vite-plugin": "2.0.0-beta.v.1",
+		"@alchemy.run/cloudflare": "catalog:",
+		"@alchemy.run/docker": "catalog:",
 		"@cloudflare/workers-types": "^5.20261030.1",
-		"@electric-sql/pglite": "^0.2.0",
+		"@effect/vitest": "catalog:",
+		"@types/bun": "^1.4.4",
 		"@types/node": "^26.6.6",
-		"@vitest/coverage-v8": "^5.0.5",
-		"cf": "1.0.0-beta.26",
-		"hono": "^4.13.14",
+		"effect": "catalog:",
+		"esbuild": "catalog:",
+		"miniflare": "catalog:",
+		"spacefn-docs": "workspace:*",
+		"tsdown": "catalog:",
 		"typescript": "^7.0.2",
-		"vite-plus": "^1.4.0"
+		"vite": "catalog:",
+		"vitest": "catalog:"
 	},
 	"peerDependencies": {
-		"@cloudflare/vite-plugin": ">=2.0.0-beta.v.1",
-		"@electric-sql/pglite": ">=0.2",
-		"cf": ">=1.0.0-beta.18",
-		"hono": "^4.13.13",
-		"marked": ">=9",
-		"shiki": ">=1",
-		"vite": ">=8",
-		"vite-plus": ">=1"
+		"@alchemy.run/cloudflare": "2.0.0-beta.87",
+		"@alchemy.run/docker": "2.0.0-beta.87",
+		"effect": "^4.1.4",
+		"vite": "^8.3.8"
 	},
 	"peerDependenciesMeta": {
-		"vite": {
-			"optional": false
-		},
-		"@electric-sql/pglite": {
+		"@alchemy.run/cloudflare": {
 			"optional": true
 		},
-		"marked": {
-			"optional": true
-		},
-		"shiki": {
+		"@alchemy.run/docker": {
 			"optional": true
 		}
 	}

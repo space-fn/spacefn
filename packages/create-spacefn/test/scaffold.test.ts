@@ -1,90 +1,172 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, test } from "vite-plus/test";
+import { afterAll, describe, expect, it } from "vitest";
 
-import { scaffold } from "../src/scaffold";
+import { packageJson, scaffold, type Target } from "../src/scaffold.ts";
 
-const created: string[] = [];
+const here = fileURLToPath(new URL("..", import.meta.url));
+// Inside the package, so the scaffolded app resolves spacefn from this workspace.
+const scratch = join(here, ".scratch");
+afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
-afterEach(() => {
-	for (const dir of created.splice(0)) {
-		if (existsSync(dir)) {
-			rmSync(dir, { recursive: true, force: true });
-		}
-	}
-});
+const bin = (name: string) => join(here, "node_modules", ".bin", name);
+const space = join(here, "..", "spacefn", "src", "infra", "cli.ts");
+const sh = (cwd: string, command: string, args: string[]) => {
+	const result = spawnSync(command, args, { cwd, encoding: "utf8" });
+	return { code: result.status, output: `${result.stdout}${result.stderr}` };
+};
 
-function scaffoldProject(name: string): string {
-	const parent = mkdtempSync(join(tmpdir(), "create-spacefn-"));
-	const target = join(parent, name);
-	created.push(parent);
-	scaffold(target, name);
-	return target;
-}
+const create = (target: Target) => {
+	const dir = join(scratch, `${target}-${Date.now()}`);
+	scaffold(dir, { name: `my-${target}-app`, target });
+	return dir;
+};
 
 describe("scaffold", () => {
-	test("writes .gitignore (npm strips dot-gitignore from the package)", () => {
-		const target = scaffoldProject("my-app");
-		expect(existsSync(join(target, ".gitignore"))).toBe(true);
-		expect(existsSync(join(target, "gitignore"))).toBe(false);
-		const gitignore = readFileSync(join(target, ".gitignore"), "utf8");
-		expect(gitignore).toContain(".dev.vars");
-		expect(gitignore).toContain(".env");
-		expect(gitignore).toContain("node_modules");
+	it("gives each target its runtime and Alchemy provider", () => {
+		const cloudflare = packageJson({ name: "a", target: "cloudflare" });
+		expect(Object.keys(cloudflare.dependencies)).toEqual(["effect", "spacefn"]);
+		// Released together: a new app gets the spacefn of the same release.
+		const released = JSON.parse(readFileSync(join(here, "..", "spacefn", "package.json"), "utf8"));
+		expect(cloudflare.dependencies.spacefn).toBe(`^${released.version}`);
+		expect(cloudflare.devDependencies).toHaveProperty("@alchemy.run/cloudflare");
+		expect(cloudflare.devDependencies).toHaveProperty("spacefn-docs", `^${released.version}`);
+		const bun = packageJson({ name: "a", target: "bun", workspace: true });
+		expect(bun.dependencies).toEqual({
+			effect: "catalog:",
+			spacefn: "workspace:*",
+		});
+		expect(bun.devDependencies).toHaveProperty("@alchemy.run/docker", "catalog:");
+		expect(bun.devDependencies).toHaveProperty("spacefn-docs", "workspace:*");
+		// Only Cloudflare apps install workerd.
+		expect(cloudflare.allowScripts).toEqual({ workerd: false });
+		expect(bun).not.toHaveProperty("allowScripts");
 	});
 
-	test("names the package after the project", () => {
-		const target = scaffoldProject("my-app");
-		const pkg = JSON.parse(readFileSync(join(target, "package.json"), "utf8")) as {
-			name: string;
-			dependencies: Record<string, string>;
-			devDependencies: Record<string, string>;
-		};
-		expect(pkg.name).toBe("my-app");
-		expect(pkg.dependencies.hono).toBeDefined();
-		expect(pkg.dependencies.cf).toBeDefined();
-		expect(pkg.devDependencies["@cloudflare/vite-plugin"]).toBeDefined();
+	it("writes the app: .gitignore, configs/vite.ts and package.json", () => {
+		const dir = create("bun");
+		expect(readFileSync(join(dir, ".gitignore"), "utf8")).toContain(".space/");
+		expect(existsSync(join(dir, "gitignore"))).toBe(false);
+		expect(readFileSync(join(dir, "configs/vite.ts"), "utf8")).toContain(
+			'space({ target: "bun" })',
+		);
+		expect(JSON.parse(readFileSync(join(dir, "app/db/main/config.json"), "utf8"))).toMatchObject({
+			driver: "libsql",
+			migrateOn: "startup",
+		});
+		expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).name).toBe("my-bun-app");
+		expect(() => scaffold(dir, { name: "x", target: "bun" })).toThrow("already exists");
+	});
+});
+
+describe("with --lint", () => {
+	it("adds oxlint and oxfmt, their configs and the check script, only when asked", () => {
+		const plain = packageJson({ name: "a", target: "bun" });
+		expect(plain.devDependencies).not.toHaveProperty("oxlint");
+		expect(plain.scripts).not.toHaveProperty("check");
+		const linted = packageJson({ name: "a", target: "bun", lint: true });
+		expect(linted.devDependencies).toHaveProperty("oxlint");
+		expect(linted.devDependencies).toHaveProperty("oxfmt");
+		expect(linted.scripts.check).toBe(
+			"oxfmt -c configs/oxfmt.json --check && oxlint -c configs/oxlint.json && tsc --noEmit",
+		);
 	});
 
-	test("copies the expected template files", () => {
-		const target = scaffoldProject("my-app");
-		for (const file of [
-			"package.json",
-			"tsconfig.json",
-			"vite.config.ts",
-			"AGENTS.md",
-			"app/entry.ts",
-			"app/env.ts",
-			"app/routes/index.ts",
-			"cloudflare.config.ts",
-			"docs/spacefn/directory-structure/pages.md",
-			"docs/spacefn/directory-structure/database.md",
-			"docs/spacefn/directory-structure/routes.md",
-			"docs/spacefn/directory-structure/middleware.md",
-			"docs/spacefn/directory-structure/queues.md",
-			"docs/spacefn/directory-structure/crons.md",
-			"docs/spacefn/directory-structure/durable-objects.md",
-			"docs/spacefn/directory-structure/workflows.md",
-			"docs/spacefn/directory-structure/modules.md",
-		]) {
-			expect(existsSync(join(target, file)), file).toBe(true);
+	it("starts formatted and lint-free", () => {
+		// Outside the repo: both tools skip what the repo's .gitignore lists, .scratch/ included.
+		const dir = join(mkdtempSync(join(tmpdir(), "spacefn-lint-")), "app");
+		try {
+			scaffold(dir, { name: "linted", target: "cloudflare", lint: true });
+			expect(readFileSync(join(dir, "AGENTS.md"), "utf8")).toContain("npm run check");
+			const tool = (name: string) => join(here, "..", "..", "node_modules", ".bin", name);
+			const fmt = sh(dir, tool("oxfmt"), ["-c", "configs/oxfmt.json", "--check"]);
+			expect(fmt.output).toContain("All matched files use the correct format");
+			expect(fmt.code).toBe(0);
+			expect(sh(dir, tool("oxlint"), ["-c", "configs/oxlint.json"]).code).toBe(0);
+		} finally {
+			rmSync(dirname(dir), { recursive: true, force: true });
 		}
 	});
+});
 
-	test("skips local test residue", () => {
-		const target = scaffoldProject("my-app");
-		for (const dir of [".space", ".cloudflare", "node_modules", "dist"]) {
-			expect(existsSync(join(target, dir)), dir).toBe(false);
+describe.each(["cloudflare", "bun"] as const)("a new %s app", (target) => {
+	const dir = create(target);
+
+	it("generates, typechecks and passes its own tests", () => {
+		expect(sh(dir, process.execPath, [space, "gen"]).code).toBe(0);
+		const types = sh(dir, bin("tsc"), ["--noEmit", "-p", "."]);
+		expect(types.output).toBe("");
+		// Without Vitest's shared module cache, which races with the repo's other test runs.
+		const tests = sh(dir, bin("vitest"), [
+			"run",
+			"--config",
+			"configs/vitest.ts",
+			"--no-fsModuleCache",
+		]);
+		expect(tests.output).toContain("2 passed");
+	}, 120_000);
+});
+
+describe.skipIf(spawnSync("bun", ["--version"]).status !== 0)("a new Bun app, built", () => {
+	it("serves the todos page with its assets and Datastar", async () => {
+		const dir = create("bun");
+		expect(sh(dir, process.execPath, [space, "build"]).code).toBe(0);
+		const port = 4950 + Math.floor(Math.random() * 40);
+		const server = spawn("bun", ["dist/server/index.js"], {
+			cwd: dir,
+			env: { ...process.env, PORT: String(port), SPACE_DATA_DIR: join(dir, ".space", "data") },
+			stdio: "ignore",
+		});
+		try {
+			const base = `http://127.0.0.1:${port}`;
+			let page = "";
+			for (let i = 0; i < 50 && !page; i++) {
+				page = await fetch(base).then(
+					(r) => r.text(),
+					() => "",
+				);
+				if (!page) await new Promise((r) => setTimeout(r, 100));
+			}
+			expect(page).toContain("<h1>Hello from spacefn</h1>");
+			expect(page).toMatch(/href="\/assets\/site-[\w-]+\.css"/);
+			expect(page).toContain("starfederation/datastar@1.0.5");
+			const added = await fetch(`${base}/?__action=add`, {
+				method: "POST",
+				redirect: "manual",
+				headers: { origin: base, "content-type": "application/x-www-form-urlencoded" },
+				body: "title=Ship",
+			});
+			expect(added.status).toBe(303);
+			expect(await (await fetch(base)).text()).toContain("Ship");
+		} finally {
+			server.kill("SIGTERM");
 		}
-	});
+	}, 120_000);
+});
 
-	test("refuses an existing directory", () => {
-		const parent = mkdtempSync(join(tmpdir(), "create-spacefn-"));
-		created.push(parent);
-		const target = join(parent, "my-app");
-		scaffold(target, "my-app");
-		expect(() => scaffold(target, "my-app")).toThrow(/already exists/);
-	});
+describe("the repo's starter examples", () => {
+	const files = (dir: string, prefix = ""): string[] =>
+		readdirSync(join(dir, prefix), { withFileTypes: true }).flatMap((entry) => {
+			const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+			if (["node_modules", ".space", ".env"].includes(entry.name)) return [];
+			return entry.isDirectory() ? files(dir, path) : [path];
+		});
+
+	it.each(["cloudflare", "bun"] as const)(
+		"examples/starter-%s is the template; run pnpm examples",
+		(target) => {
+			const starter = join(here, "..", "..", "examples", `starter-${target}`);
+			const fresh = join(scratch, `starter-${target}-${Date.now()}`);
+			scaffold(fresh, { name: `starter-${target}`, target, workspace: true });
+			expect(files(starter).sort()).toEqual(files(fresh).sort());
+			for (const file of files(fresh))
+				expect(readFileSync(join(starter, file), "utf8"), file).toBe(
+					readFileSync(join(fresh, file), "utf8"),
+				);
+		},
+	);
 });

@@ -1,8 +1,8 @@
-import { TextDocument } from "vscode-languageserver-textdocument";
-import type { Hover } from "vscode-languageserver/node";
+import type { Hover, Position } from "vscode-languageserver/node";
 
 import { resolveDbDir } from "../diagnostics/embedded";
-import { findCssTemplateRange, findHtmlTemplateRange, wordRangeAt } from "../lib/helpers";
+import { cssRegionAt } from "../lib/cssRegions";
+import { findHtmlTemplateRange, wordRangeAt } from "../lib/helpers";
 import { qualifierBefore, resolveSymbol, scopesAt, statementAt } from "../lib/sqlScope";
 import type { LanguageCtx, LanguageDeps, SchemaInfo } from "./types";
 
@@ -14,15 +14,17 @@ export async function hover(ctx: LanguageCtx, deps: LanguageDeps): Promise<Hover
 	const filePath = ctx.filePath;
 	const isJsTs = ctx.isJsTs;
 	const tpl = isJsTs ? findHtmlTemplateRange(text, offset) : null;
-	const cssTpl = isJsTs ? findCssTemplateRange(text, offset) : null;
-	if (cssTpl && offset >= cssTpl.contentStart && offset <= cssTpl.end) {
-		const cssContent = text.slice(cssTpl.contentStart, cssTpl.end);
-		const safe = cssContent.replace(/\${[\s\S]*?}/g, (s) => " ".repeat(s.length));
-		const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
-		const cssPos = cssDoc.positionAt(offset - cssTpl.contentStart);
-		const stylesheet = cssLS.parseStylesheet(cssDoc);
-		const h = cssLS.doHover(cssDoc, cssPos, stylesheet);
-		if (h) return h as any;
+	const css = isJsTs ? cssRegionAt(text, offset) : null;
+	if (css) {
+		const position = css.doc.positionAt(offset - css.start);
+		const found = cssLS.doHover(css.doc, position, cssLS.parseStylesheet(css.doc));
+		if (!found) return null;
+		const toHost = (p: Position) => ctx.doc.positionAt(css.start + css.doc.offsetAt(p));
+		const range = found.range && {
+			start: toHost(found.range.start),
+			end: toHost(found.range.end),
+		};
+		return { ...found, range } as Hover;
 	}
 	if (tpl && offset >= tpl.contentStart && offset <= tpl.end) {
 		let htmlText = text.slice(tpl.contentStart, tpl.end);

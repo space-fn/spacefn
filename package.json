@@ -7,12 +7,21 @@
 	"author": "wai-lin",
 	"type": "module",
 	"scripts": {
+		"check": "pnpm fmt --check && pnpm lint && pnpm typecheck",
+		"fmt": "oxfmt -c configs/oxfmt.json",
+		"lint": "oxlint -c configs/oxlint.json --deny-warnings --ignore-pattern 'packages/create-spacefn/template/**'",
+		"prepare": "git config core.hooksPath configs/hooks",
 		"publish": "./scripts/publish.sh",
 		"publish:vscode": "./scripts/publish-vscode.sh",
-		"prepare": "vp config"
+		"typecheck": "pnpm -r --filter './packages/*' --filter './examples/*' typecheck",
+		"test": "pnpm -r --filter './packages/*' --filter './examples/*' test --no-fsModuleCache",
+		"examples": "node scripts/examples.ts && pnpm install",
+		"pack:check": "node scripts/pack-check.ts"
 	},
 	"devDependencies": {
-		"vite-plus": "catalog:"
+		"oxfmt": "0.79.0",
+		"oxlint": "1.94.0",
+		"oxlint-tsgolint": "7.0.2007"
 	},
 	"packageManager": "pnpm@12.15.0"
 }

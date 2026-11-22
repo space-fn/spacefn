@@ -1,0 +1,9 @@
+# What configs/Dockerfile's build leaves out: installed, generated and local files.
+node_modules
+.space
+dist
+.alchemy
+.git
+.env
+.env.*
+*.log

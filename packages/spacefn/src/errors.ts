@@ -1,45 +1,92 @@
+import { Schema } from "effect";
+
 /**
- * When to use SpaceError vs a plain Error:
- *
- * - Use SpaceError for errors a user can act on: bad config, bad convention file,
- *   failed validation of user input, missing binding, oversize upload. Give it a
- *   stable code, a hint, and (for HTTP-facing code) a status.
- * - Use a plain Error for internal/programmer errors and low-level validators
- *   (password rules, slug rules, totp parsing, sql splitting, trace config) where
- *   the caller already knows the context and a code adds no value.
+ * Errors a handler can fail with to answer with a specific HTTP status.
+ * They are schema-backed, so they survive serialization (Durable Object RPC,
+ * queues) and can be matched with `Effect.catchTag`.
  */
-/** A structured error with a stable code, a human hint, and an optional file location. */
-export class SpaceError extends Error {
-	readonly code: string;
-	readonly hint?: string;
-	readonly file?: string;
-	readonly line?: number;
-	readonly status?: number;
+export class BadRequest extends Schema.TaggedError<BadRequest>()("BadRequest", {
+	message: Schema.String,
+	issues: Schema.optional(
+		Schema.Array(Schema.Struct({ path: Schema.String, message: Schema.String })),
+	),
+}) {}
 
-	constructor(
-		code: string,
-		message: string,
-		options?: { hint?: string; file?: string; line?: number; status?: number; cause?: unknown },
-	) {
-		super(message, options?.cause ? { cause: options.cause } : undefined);
-		this.name = "SpaceError";
-		this.code = code;
-		this.hint = options?.hint;
-		this.file = options?.file;
-		this.line = options?.line;
-		this.status = options?.status;
-	}
+export class Unauthorized extends Schema.TaggedError<Unauthorized>()("Unauthorized", {
+	message: Schema.optional(Schema.String),
+}) {}
 
-	toString(): string {
-		const loc = this.file ? `${this.file}${this.line ? `:${this.line}` : ""}` : "";
-		const head = loc ? `[${this.code}] ${loc}: ${this.message}` : `[${this.code}] ${this.message}`;
-		return this.hint ? `${head}\n  hint: ${this.hint}` : head;
-	}
-}
+export class Forbidden extends Schema.TaggedError<Forbidden>()("Forbidden", {
+	message: Schema.optional(Schema.String),
+}) {}
 
-/** Format any thrown value for CLI output. */
-export function formatError(error: unknown): string {
-	if (error instanceof SpaceError) return error.toString();
-	if (error instanceof Error) return error.message;
-	return String(error);
-}
+export class NotFound extends Schema.TaggedError<NotFound>()("NotFound", {
+	message: Schema.optional(Schema.String),
+}) {}
+
+export class Conflict extends Schema.TaggedError<Conflict>()("Conflict", {
+	message: Schema.String,
+}) {}
+
+export class PayloadTooLarge extends Schema.TaggedError<PayloadTooLarge>()("PayloadTooLarge", {
+	limitBytes: Schema.Number,
+}) {}
+
+export class UnsupportedMediaType extends Schema.TaggedError<UnsupportedMediaType>()(
+	"UnsupportedMediaType",
+	{ message: Schema.String },
+) {}
+
+export class TooManyRequests extends Schema.TaggedError<TooManyRequests>()("TooManyRequests", {
+	retryAfterSeconds: Schema.optional(Schema.Number),
+}) {}
+
+export type HttpError =
+	| BadRequest
+	| Unauthorized
+	| Forbidden
+	| NotFound
+	| Conflict
+	| PayloadTooLarge
+	| UnsupportedMediaType
+	| TooManyRequests;
+
+const STATUS: Record<HttpError["_tag"], number> = {
+	BadRequest: 400,
+	Unauthorized: 401,
+	Forbidden: 403,
+	NotFound: 404,
+	Conflict: 409,
+	PayloadTooLarge: 413,
+	UnsupportedMediaType: 415,
+	TooManyRequests: 429,
+};
+
+export const isHttpError = (error: unknown): error is HttpError =>
+	typeof error === "object" &&
+	error !== null &&
+	"_tag" in error &&
+	Object.hasOwn(STATUS, (error as { _tag: string })._tag);
+
+/** The HTTP status for an error: its own for an {@link HttpError}, 500 for anything else. */
+export const httpStatus = (error: unknown): number =>
+	isHttpError(error) ? STATUS[error._tag] : 500;
+
+/**
+ * A problem in the app's own files (config, conventions, env) that the author
+ * can fix. `code` is stable, so tools can match on it.
+ */
+export class SpaceError extends Schema.TaggedError<SpaceError>()("SpaceError", {
+	code: Schema.String,
+	message: Schema.String,
+	hint: Schema.optional(Schema.String),
+	file: Schema.optional(Schema.String),
+}) {}
+
+/** One line for terminal output: `[CODE] file: message` plus the hint. */
+export const formatSpaceError = (error: SpaceError): string => {
+	const head = error.file
+		? `[${error.code}] ${error.file}: ${error.message}`
+		: `[${error.code}] ${error.message}`;
+	return error.hint ? `${head}\n  hint: ${error.hint}` : head;
+};

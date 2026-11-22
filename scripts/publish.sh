@@ -1,68 +1,95 @@
 #!/bin/bash
-# Publish npm packages in dependency order.
-# Usage: ./scripts/publish.sh
+# Publish spacefn, spacefn-docs and create-spacefn, released together at one version:
+# an app scaffolded by create-spacefn@X depends on spacefn@^X and spacefn-docs@^X.
+# pnpm builds and packs, npm publishes the tarball: pnpm pack turns catalog: and
+# workspace: into real versions and applies publishConfig (dist/ exports and bin),
+# which npm publish wouldn't do from the folder.
+# vscode-spacefn has its own version and its own script: pnpm publish:vscode.
+# Usage: pnpm run publish
 
-set -e
+set -euo pipefail
 
-published=0
-skipped=0
-failed=0
+root_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root_dir"
 
-echo "🔎 Checks"
-vp check
+# In publish order: create-spacefn last, since the apps it scaffolds need the other two.
+packages=(packages/spacefn packages/docs packages/create-spacefn)
 
-# The template pins the spacefn version being released.
-spacefn_version=$(node -p "require('./packages/spacefn/package.json').version")
-node -e '
-const fs = require("node:fs");
-const path = "packages/create-spacefn/template/package.json";
-const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
-pkg.dependencies.spacefn = "^" + process.argv[1];
-fs.writeFileSync(path, JSON.stringify(pkg, null, "\t") + "\n");
-' "$spacefn_version"
-echo "📌 template pins spacefn ^$spacefn_version"
+version=$(node -p "require('./packages/spacefn/package.json').version")
+for dir in "${packages[@]}"; do
+  other=$(node -p "require('./$dir/package.json').version")
+  if [ "$other" != "$version" ]; then
+    echo "❌ spacefn is $version but $dir is $other; release them at one version" >&2
+    exit 1
+  fi
+done
 
-publish_one() {
-  local dir="$1"
-  local test_cmd="$2"
-  local name version
-  name=$(cd "$dir" && node -p "require('./package.json').name")
-  version=$(cd "$dir" && node -p "require('./package.json').version")
+# A release is what's committed on main, so the tag below names exactly what was published.
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" != "main" ]; then
+  echo "❌ On $branch: publish from main" >&2
+  exit 1
+fi
+if [ -n "$(git status --porcelain)" ]; then
+  echo "❌ The working tree has changes: commit or stash them first" >&2
+  exit 1
+fi
 
+# A prerelease goes to the next tag, so `npm create spacefn` keeps giving the last release.
+tag=latest
+[[ "$version" == *-* ]] && tag=next
+
+echo "📋 Releasing $version ($tag):"
+for dir in "${packages[@]}"; do
+  name=$(node -p "require('./$dir/package.json').name")
+  current=$(npm view "$name" dist-tags.latest 2>/dev/null || true)
+  echo "   $name: ${current:-not on npm yet} → $version"
+done
+
+echo "🔎 Checks and tests"
+pnpm check
+pnpm test
+
+echo "📦 Installing the packed packages into fresh apps"
+node scripts/pack-check.ts
+
+if ! npm whoami >/dev/null 2>&1; then
+  echo "🔐 npm is not logged in; starting npm login"
+  npm login
+fi
+
+tarballs=$(mktemp -d)
+trap 'rm -rf "$tarballs"' EXIT
+
+for dir in "${packages[@]}"; do
+  name=$(node -p "require('./$dir/package.json').name")
   if npm view "$name@$version" version >/dev/null 2>&1; then
-    echo "⏭️  $name@$version already published, skipping"
-    skipped=$((skipped + 1))
-    return
+    echo "⏭️  $name@$version is already published"
+    continue
   fi
-
-  echo "🔎 Testing $name@$version"
-  (cd "$dir" && eval "$test_cmd")
-
-  echo "📦 Building $name@$version"
-  (cd "$dir" && npm run build)
-
-  echo "📦 Publishing $name@$version"
-  if ! npm whoami >/dev/null 2>&1; then
-    echo "🔐 npm is not logged in; starting npm login"
-    npm login
-    if ! npm whoami >/dev/null 2>&1; then
-      echo "❌ npm login completed, but npm is still not authenticated" >&2
-      exit 1
-    fi
-  fi
-  if (cd "$dir" && npm publish --access public); then
-    published=$((published + 1))
+  echo "🚀 Publishing $name@$version ($tag)"
+  tarball="$tarballs/$name-$version.tgz"
+  (cd "$dir" && pnpm build && pnpm pack --out "$tarball")
+  # npm's error is read from its own log, as piping its output would hide the one-time password prompt.
+  logs=$(mktemp -d)
+  if npm publish "$tarball" --access public --tag "$tag" --logs-dir "$logs"; then
+    rm -rf "$logs"
+  # npm takes minutes to show a publish to npm view, but refuses a second one at once.
+  elif grep -rqsi "cannot publish over the previously published versions" "$logs"; then
+    rm -rf "$logs"
+    echo "⏭️  $name@$version is already published; npm may take a few minutes to show it"
   else
-    echo "❌ Failed to publish $name@$version"
-    failed=$((failed + 1))
+    echo "❌ Publishing $name@$version failed; npm's log is in $logs" >&2
+    exit 1
   fi
-}
+done
 
-# Order matters: spacefn first, then create-spacefn.
-publish_one "packages/spacefn" "pnpm test -- --coverage"
-publish_one "packages/create-spacefn" "pnpm test"
+if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+  echo "⏭️  Tag v$version already exists"
+else
+  git tag -a "v$version" -m "spacefn $version"
+  echo "🏷️  Tagged v$version; push it with: git push origin v$version"
+fi
 
-echo ""
-echo "Done: $published published, $skipped skipped, $failed failed"
-[ "$failed" -eq 0 ] || exit 1
-echo "To publish vscode-spacefn after the npm packages, run: pnpm publish:vscode"
+vscode=$(node -p "require('./packages/vscode-spacefn/package.json').version")
+echo "Done. vscode-spacefn is at $vscode; to publish it, run: pnpm publish:vscode"

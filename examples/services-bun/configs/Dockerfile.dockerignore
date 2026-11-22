@@ -1,0 +1,4 @@
+node_modules
+.space
+.alchemy
+dist/server/node_modules

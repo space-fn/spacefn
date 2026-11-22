@@ -1,4 +1,4 @@
-import { parseQueryFile } from "spacefn/db";
+import { parseQueryFile } from "spacefn/internal/sql";
 import { Position } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
@@ -17,7 +17,7 @@ export function findCssTemplateRange(text: string, offset: number): Range | null
 }
 
 export function findSqlTemplateRange(text: string, offset: number): Range | null {
-	return pick(templateAt(text, offset, ["sql", "db"]));
+	return pick(templateAt(text, offset, ["sql"]));
 }
 // Extract signals from data-signals:* attributes in HTML
 
@@ -103,15 +103,6 @@ export function validateSqlDirectives(text: string, file: string): SqlDiagnostic
 		parseQueryFile(file, text);
 	} catch (err) {
 		out.push({ severity: 1, message: err instanceof Error ? err.message : String(err) });
-	}
-	const nameLine = text.split("\n").find((l) => l.trim().startsWith("-- name:"));
-	if (nameLine) {
-		const m = nameLine.match(/--\s*name:\s*(\S+)(?:\s+:(one|many|exec))?/);
-		if (!m) {
-			out.push({ severity: 1, message: "Invalid -- name: directive" });
-		} else if (!m[2]) {
-			out.push({ severity: 1, message: "Query mode must be :one, :many, or :exec" });
-		}
 	}
 	return out;
 }

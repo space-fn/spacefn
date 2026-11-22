@@ -1,0 +1,20 @@
+/* The release notes: nested rules, and the shared --narrow breakpoint. */
+.releases {
+	display: grid;
+	gap: calc(var(--space) * 3);
+	padding: 0;
+	list-style: none;
+
+	& h2 {
+		margin: 0;
+		color: var(--accent);
+	}
+
+	& time {
+		opacity: 0.7;
+
+		@media (--narrow) {
+			display: block;
+		}
+	}
+}

@@ -2,9 +2,9 @@ import type { CompletionItem } from "vscode-languageserver/node";
 
 import { inRange, type TemplateRange } from "./types";
 
-const DIRECTIVES = ["name:", "@param", "@column", "case", "when", "end"];
+// The mode lines (`-- :one`) override what the statement implies; the name comes from the file.
+const DIRECTIVES = [":one", ":many", ":exec", "@param", "@column", "case", "when", "end"];
 const SQL_TYPES = ["integer", "text", "real", "boolean", "timestamp", "uuid", "json"];
-const MODES = [":one", ":many", ":exec"];
 
 /** Completions for `--` directive comments in SQL files and sql`` templates. Pure. */
 export function sqlDirectiveCompletions(
@@ -39,13 +39,6 @@ export function sqlDirectiveCompletions(
 		items = paramNames
 			.filter((n) => n.toLowerCase().startsWith(prefix.toLowerCase()))
 			.map((n) => ({ label: n, kind: 6, insertText: n, detail: "param" }));
-	} else if (afterDashes.startsWith("name:")) {
-		items = MODES.filter((m) => m.startsWith(afterDashes.slice(5).trim())).map((m) => ({
-			label: m,
-			kind: 14,
-			insertText: m,
-			detail: "query mode",
-		}));
 	} else if (afterDashes.startsWith("@param") || afterDashes.startsWith("@column")) {
 		const rest = afterDashes.replace(/^@(param|column)\s+\w*\s*/, "");
 		items = SQL_TYPES.filter((t) => t.startsWith(rest)).map((t) => ({

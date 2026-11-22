@@ -1,9 +1,17 @@
+/** A stretch of source: `[start, end)`. */
+export interface Span {
+	start: number;
+	end: number;
+}
+
 /** A tagged template literal such as html`...`: `start` is the tag, `contentStart`/`end` bound the body. */
 export interface TaggedTemplate {
 	tag: string;
 	start: number;
 	contentStart: number;
 	end: number;
+	/** Its own `${...}`, braces included. */
+	holes: Span[];
 }
 
 /**
@@ -54,13 +62,23 @@ export function taggedTemplates(text: string, tags: readonly string[]): TaggedTe
 		const tag = /([A-Za-z_$][\w$]*)\s*$/.exec(text.slice(Math.max(0, i - 64), i));
 		const contentStart = i + 1;
 		i = contentStart;
+		const holes: Span[] = [];
 		while (i < text.length && text[i] !== "`") {
 			if (text[i] === "\\") i += 2;
-			else if (text[i] === "$" && text[i + 1] === "{") i = code(i + 2, true);
-			else i++;
+			else if (text[i] === "$" && text[i + 1] === "{") {
+				const start = i;
+				i = code(i + 2, true);
+				holes.push({ start, end: i });
+			} else i++;
 		}
 		if (tag && tags.includes(tag[1]!) && i < text.length) {
-			out.push({ tag: tag[1]!, start: contentStart - 1 - tag[0].length, contentStart, end: i });
+			out.push({
+				tag: tag[1]!,
+				start: contentStart - 1 - tag[0].length,
+				contentStart,
+				end: i,
+				holes,
+			});
 		}
 		return i + 1;
 	};

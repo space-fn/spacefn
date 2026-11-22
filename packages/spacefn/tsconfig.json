@@ -1,14 +1,9 @@
 {
+	"extends": "../../configs/tsconfig.base.json",
 	"compilerOptions": {
-		"target": "ES2023",
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"skipLibCheck": true,
-		"verbatimModuleSyntax": true,
-		"noEmit": true,
-		"types": ["node", "@cloudflare/workers-types"]
+		"types": ["node"]
 	},
-	"include": ["src", "test"]
+	"include": ["src", "test"],
+	// The targets check with their runtime's globals: tsconfig.<target>.json.
+	"exclude": ["src/cloudflare", "test/cloudflare", "src/bun", "test/bun"]
 }

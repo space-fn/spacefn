@@ -1,24 +1,21 @@
-import { TextDocument } from "vscode-languageserver-textdocument";
+import type { TextDocument } from "vscode-languageserver-textdocument";
 import type { CompletionItem } from "vscode-languageserver/node";
 
-import type { CompletionDeps, TemplateRange } from "./types";
-import { editAt, inRange, mapItemEdit } from "./types";
+import type { CssRegion } from "../lib/cssRegions";
+import type { CompletionDeps } from "./types";
+import { editAt, mapItemEdit } from "./types";
 
-/** Completions inside a `css` tagged template: custom properties then the CSS language service. */
+/** Completions inside CSS: custom properties, then the CSS language service. */
 export function cssCompletions(
 	deps: CompletionDeps,
-	ctx: {
-		doc: import("vscode-languageserver-textdocument").TextDocument;
-		text: string;
-		offset: number;
-	},
-	cssTpl: TemplateRange,
-): CompletionItem[] | null {
-	if (!inRange(cssTpl, ctx.offset)) return null;
-	const beforeCursor = ctx.text.slice(cssTpl.contentStart, ctx.offset);
-	const m = beforeCursor.match(/--[a-zA-Z0-9_-]*$/);
-	const prefix = m ? m[0] : "";
-	if (prefix.startsWith("--") || beforeCursor.endsWith("-")) {
+	ctx: { doc: TextDocument; offset: number },
+	region: CssRegion,
+): CompletionItem[] {
+	const cursor = ctx.offset - region.start;
+	const beforeCursor = region.doc.getText().slice(0, cursor);
+	// A custom property being typed: hyphens that start a name, not the one in `background-`.
+	const prefix = beforeCursor.match(/(?<![\w-])(?:--[\w-]*|-)$/)?.[0];
+	if (prefix) {
 		const items = [...deps.customProps.entries()]
 			.filter(([name]) => name.toLowerCase().startsWith(prefix.toLowerCase()))
 			.map(([name, value]) => ({
@@ -29,19 +26,19 @@ export function cssCompletions(
 			}));
 		if (items.length) return items as CompletionItem[];
 	}
-	const cssContent = ctx.text.slice(cssTpl.contentStart, cssTpl.end);
-	const safe = cssContent.replace(/\${[\s\S]*?}/g, (s) => " ".repeat(s.length));
-	const cssDoc = TextDocument.create("file:///css-template.css", "css", 1, safe);
-	const cssPos = cssDoc.positionAt(ctx.offset - cssTpl.contentStart);
-	const stylesheet = deps.cssLS.parseStylesheet(cssDoc);
-	const cssCompletions = deps.cssLS.doComplete(cssDoc, cssPos, stylesheet);
-	if (cssCompletions && cssCompletions.items && cssCompletions.items.length) {
-		// Keep the service's edit range (mapped into the host file) and snippet format: a bare
-		// insertText makes VS Code replace only its JS word, so `background-co` became
-		// `background-background-color`.
-		return cssCompletions.items.map((it) =>
-			mapItemEdit(it, cssDoc, ctx.doc, (o) => cssTpl.contentStart + o),
-		);
+	// An edit stops at a `${...}`: the service sees it as part of the word and would delete it.
+	let min = 0;
+	let max = region.end - region.start;
+	for (const hole of region.holes) {
+		if (hole.end <= cursor) min = Math.max(min, hole.end);
+		else if (hole.start >= cursor) max = Math.min(max, hole.start);
 	}
-	return null;
+	const toHost = (o: number) => region.start + Math.min(Math.max(o, min), max);
+
+	const stylesheet = deps.cssLS.parseStylesheet(region.doc);
+	const found = deps.cssLS.doComplete(region.doc, region.doc.positionAt(cursor), stylesheet);
+	// Keep the service's edit range (mapped into the host file) and snippet format: a bare
+	// insertText makes VS Code replace only its JS word, so `background-co` became
+	// `background-background-color`.
+	return found.items.map((it) => mapItemEdit(it, region.doc, ctx.doc, toHost));
 }

@@ -2,8 +2,8 @@
 
 ## Check list after each development
 
-- [ ] `vp check`
-- [ ] `vp test run`
+- [ ] `pnpm check`
+- [ ] `pnpm test`
 
 ## Commit convention
 
