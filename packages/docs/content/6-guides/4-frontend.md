@@ -213,7 +213,7 @@ html`<button data-on:click="$poll.choice = 'tabs'; @post('${props.vote}')">Tabs<
 
 Outside `render`, where there's no `ctx`, `actionUrl("vote")` gives the same URL as `ctx.actions.vote.url`.
 
-**Web components with Rocket.** For a reusable element with its own state and styles, Datastar's [Rocket](https://data-star.dev/reference/rocket) defines custom elements whose templates use Datastar attributes. Put each in `modules/<feature>/client/<name>.ts`, name it after the feature (`poll-meter`), and register it from an entry. Rocket is in beta and comes in the `datastar-rocket.js` bundle, which includes Datastar, so load it in place of `datastar.js`; check its license before you ship it.
+**Web components with Rocket.** For a reusable element with its own state and styles, Datastar's [Rocket](https://data-star.dev/reference/rocket) defines custom elements whose templates use Datastar attributes. Put each in `modules/<feature>/client/<name>.ts`, name it after the feature (`poll-meter`), and register it from an entry. Rocket is in beta and comes in the `datastar-rocket.js` bundle, which includes Datastar, so load it in place of `datastar.js`; check its license before you ship it. TypeScript has no types for an import from a URL, so declare that module once for the whole app, in `lib/types/rocket.d.ts` (`examples/datastar` has one).
 
 ```ts [modules/poll/client/poll-meter.ts]
 import { rocket } from "https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.5/bundles/datastar-rocket.js";
