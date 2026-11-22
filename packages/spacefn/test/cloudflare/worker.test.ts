@@ -14,7 +14,14 @@ import {
 } from "spacefn";
 
 import { platform, worker } from "../../src/cloudflare/worker.ts";
+import { captureLogs, REQUEST_LOG } from "../logs.ts";
 import { fakeContext, fakeKv, fakeMessage, fakeQueue } from "./fakes.ts";
+
+const logged = captureLogs(
+	REQUEST_LOG,
+	/ERROR .*Queue emails: message 2 failed, retrying[^]*smtp down/,
+	/QUEUE_NO_CONSUMER.*"other"/,
+);
 
 const AppEnv = defineEnv({ GREETING: Env.string() });
 
@@ -116,6 +123,7 @@ describe("worker", () => {
 		await settle();
 		expect(values.get("last")?.value).toBe("mailed ada");
 		expect([ok.settled, bad.settled]).toEqual([["ack"], ["retry 60s"]]);
+		expect(logged).toEqual([expect.stringContaining("message 2 failed, retrying")]);
 	});
 
 	it("rejects a batch for a queue without a consumer, so it is redelivered", async () => {
@@ -124,6 +132,7 @@ describe("worker", () => {
 		await expect(app.queue!({ queue: "other", messages: [] } as any, env, ctx)).rejects.toThrow(
 			/No consumer for queue "other"/,
 		);
+		expect(logged).toEqual([expect.stringContaining("hint: Add app/queues/other.ts.")]);
 	});
 
 	it("runs the crons on the schedule that fired", async () => {

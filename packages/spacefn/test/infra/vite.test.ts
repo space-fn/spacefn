@@ -13,7 +13,10 @@ import {
 	entryTags,
 	islandsModule,
 } from "../../src/infra/vite.ts";
+import { captureLogs, REQUEST_LOG } from "../logs.ts";
 import { fixtureApp } from "./fixture.ts";
+
+captureLogs(REQUEST_LOG);
 
 const until = async (check: () => Promise<boolean>, ms = 10_000) => {
 	for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 100)))

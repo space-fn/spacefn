@@ -3,7 +3,12 @@ import { Effect, Fiber, Layer, Schema } from "effect";
 import { Queue, queue } from "spacefn";
 
 import { consumeQueue, MAX_RETRIES, queueLayer } from "../../src/bun/queue.ts";
+import { captureLogs } from "../logs.ts";
 import { build, stateAt } from "./helpers.ts";
+
+const logged = captureLogs(
+	/ERROR .*Queue emails: message \S+ (failed, retrying[^]*smtp down|dropped after)/,
+);
 
 describe("queue", () => {
 	it.live("Queue delivers, retries, then drops a message", () =>
@@ -37,6 +42,10 @@ describe("queue", () => {
 				"ada#1",
 				...Array.from({ length: MAX_RETRIES + 1 }, (_, i) => `bad#${i + 1}`),
 			]);
+			expect(logged.filter((line) => line.includes("failed, retrying"))).toHaveLength(
+				MAX_RETRIES + 1,
+			);
+			expect(logged.at(-1)).toContain(`dropped after ${MAX_RETRIES + 1} attempts`);
 		}).pipe(Effect.scoped),
 	);
 });

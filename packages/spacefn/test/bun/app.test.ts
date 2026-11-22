@@ -4,8 +4,10 @@ import { app, clientAddress, databases, route, type SpaceManifest } from "spacef
 import { database } from "spacefn/internal/runtime";
 
 import { bunApp, platform } from "../../src/bun/app.ts";
+import { captureLogs, REQUEST_LOG } from "../logs.ts";
 import { dir } from "./helpers.ts";
 
+captureLogs(REQUEST_LOG);
 process.env.SPACE_DATA_DIR = `${dir}/app`;
 
 const empty = { name: "t", middleware: [], queues: [], crons: [], db: [] } as const;

@@ -7,6 +7,10 @@ import { build } from "esbuild";
 import { Miniflare } from "miniflare";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { captureLogs, REQUEST_LOG } from "../logs.ts";
+
+captureLogs(REQUEST_LOG);
+
 let dir: string;
 let mf: Miniflare;
 
