@@ -19,6 +19,9 @@ if ! publishers="$(pnpm --filter vscode-spacefn exec vsce ls-publishers 2>/dev/n
   fi
 fi
 
+echo "🔎 Linting vscode-spacefn"
+pnpm lint packages/vscode-spacefn
+
 echo "🔎 Testing vscode-spacefn"
 pnpm --filter vscode-spacefn test
 
