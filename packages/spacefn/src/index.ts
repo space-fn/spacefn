@@ -57,7 +57,14 @@ export { errorPage, type ErrorHandler } from "./http/respond.ts";
 export { staticFiles } from "./http/static.ts";
 export { telemetry } from "./telemetry.ts";
 export { Upload, type UploadLimits } from "./http/multipart.ts";
-export { route, type Handler, type Method, type Route, type RouteMethods } from "./http/route.ts";
+export {
+	route,
+	type Handle,
+	type Handler,
+	type Method,
+	type Route,
+	type RouteMethods,
+} from "./http/route.ts";
 export { escapeHtml, html, Html, raw, type HtmlValue } from "./html.ts";
 export {
 	Datastar,

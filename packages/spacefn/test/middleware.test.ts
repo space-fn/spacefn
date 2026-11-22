@@ -97,6 +97,35 @@ describe("middleware", () => {
 		expect((await fetch("/hello", { "x-key": "ok" })).body).toBe("hello");
 	});
 
+	it("wraps every method of a route in its handle, inside the folders' middleware", async () => {
+		const both: ManifestRoute = {
+			path: "/admin/both",
+			params: [],
+			file: "app/routes/admin/both.ts",
+			module: {
+				default: route({
+					handle: trace("route"),
+					GET: Effect.succeed("got"),
+					POST: Effect.succeed("posted"),
+				}),
+			},
+		};
+		const fetch = serve([use("app/routes/admin", trace("admin"))], [both]);
+		expect(await fetch("/admin/both")).toMatchObject({ body: "got" });
+		expect((await fetch("/admin/both")).headers.get("x-trace")).toBe("admin,route");
+		const app = HttpRouter.toWebHandler(
+			httpLayer({ routes: [both], middleware: [] }).pipe(Layer.provide(HttpServer.layerServices)),
+			{ disableLogger: true },
+		);
+		const posted = await app.handler(new Request("http://app.test/admin/both", { method: "POST" }));
+		expect(await posted.text()).toBe("posted");
+		expect(posted.headers.get("x-trace")).toBe("route");
+		const put = await app.handler(new Request("http://app.test/admin/both", { method: "PUT" }));
+		expect(put.status).toBe(405);
+		expect(put.headers.get("x-trace")).toBeNull();
+		await app.dispose();
+	});
+
 	it("answers an unknown path with a JSON 404, with middleware installed", async () => {
 		const fetch = serve([use("app/routes", trace("a"))]);
 		const response = await fetch("/nope");

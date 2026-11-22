@@ -3,7 +3,7 @@ import { HttpRouter, HttpServerResponse } from "effect/http";
 
 import { SpaceError } from "../errors.ts";
 import type { ManifestRoute, Unchecked } from "../manifest.ts";
-import { noMiddleware, type AroundRoute } from "./middleware.ts";
+import { noMiddleware, type AroundRoute, type HttpApp } from "./middleware.ts";
 import { handleErrors, toResponse } from "./respond.ts";
 
 export const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"] as const;
@@ -16,9 +16,13 @@ export type RouteMethods = { readonly [M in Method]?: Handler };
 
 const RouteTypeId = "~spacefn/Route";
 
+/** Wraps each of a page's or route's requests, inside the folders' `_middleware.ts`: a {@link middleware}, or any function like one. */
+export type Handle = (next: HttpApp) => HttpApp;
+
 export interface Route<Methods extends RouteMethods = RouteMethods> {
 	readonly [RouteTypeId]: typeof RouteTypeId;
 	readonly methods: Methods;
+	readonly handle: Handle | undefined;
 }
 
 /**
@@ -32,10 +36,17 @@ export interface Route<Methods extends RouteMethods = RouteMethods> {
  *   }),
  * });
  * ```
+ *
+ * `handle` wraps every method, e.g. a guard for the whole route:
+ * `handle: (next) => Effect.andThen(requireAdmin, next)`.
  */
-export const route = <const Methods extends RouteMethods>(methods: Methods): Route<Methods> => ({
+export const route = <const Methods extends RouteMethods>({
+	handle,
+	...methods
+}: Methods & { readonly handle?: Handle }): Route<Methods> => ({
 	[RouteTypeId]: RouteTypeId,
-	methods,
+	methods: methods as unknown as Methods,
+	handle,
 });
 
 export const isRoute = (value: unknown): value is Route =>
@@ -67,6 +78,8 @@ const definitionOf = (entry: Unchecked<ManifestRoute>): Effect.Effect<Route, Spa
 	return Effect.succeed(value);
 };
 
+export const noHandle: Handle = (next) => next;
+
 const methodNotAllowed = (allowed: readonly Method[]) =>
 	HttpServerResponse.jsonUnsafe(
 		{ error: "MethodNotAllowed", message: `Use ${allowed.join(", ")}` },
@@ -91,7 +104,7 @@ export const routesLayer = (
 		Effect.gen(function* () {
 			const router = yield* HttpRouter.HttpRouter;
 			for (const entry of routes) {
-				const { methods } = yield* definitionOf(entry);
+				const { methods, handle = noHandle } = yield* definitionOf(entry);
 				const current = CurrentRoute.of({ file: entry.file, catchAll: entry.catchAll });
 				const allowed = METHODS.filter((method) => methods[method] !== undefined);
 				for (const method of allowed) {
@@ -99,9 +112,12 @@ export const routesLayer = (
 					yield* router.add(
 						method,
 						entry.path,
-						// The folders' middleware wraps the handler; its own failures are answered too.
+						// `handle`, then the folders' middleware, wrap the handler; their failures are answered too.
 						handleErrors(
-							around(entry.file, handleErrors(Effect.flatMap(handler, toResponse))),
+							around(
+								entry.file,
+								handleErrors(handle(handleErrors(Effect.flatMap(handler, toResponse)))),
+							),
 						).pipe(
 							Effect.provideService(CurrentRoute, current),
 						) as Effect.Effect<HttpServerResponse.HttpServerResponse>, // see the note above

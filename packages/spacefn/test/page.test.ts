@@ -1,10 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Ref, Schema } from "effect";
-import { HttpRouter } from "effect/http";
+import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 
-import { NotFound } from "../src/errors.ts";
+import { NotFound, Unauthorized } from "../src/errors.ts";
 import { html } from "../src/html.ts";
 import { Input } from "../src/http/input.ts";
+import { middleware } from "../src/http/middleware.ts";
 import { redirect } from "../src/http/respond.ts";
 import { route } from "../src/http/route.ts";
 import type { ManifestRoute } from "../src/manifest.ts";
@@ -95,6 +96,35 @@ describe("page", () => {
 		const app = testApp({ routes: [at("/todos", todos)] });
 		expect(await markup(await app.fetch("/todos"))).toContain(`action="${actionUrl("add")}"`);
 		expect(actionUrl("a b")).toBe("?__action=a%20b");
+		await app.dispose();
+	});
+
+	it("wraps every request it answers in handle, before and after", async () => {
+		reset();
+		const keyed = middleware((next) =>
+			Effect.gen(function* () {
+				const request = yield* HttpServerRequest.HttpServerRequest;
+				if (request.headers["x-key"] !== "ok")
+					return yield* new Unauthorized({ message: "No key" });
+				return yield* next;
+			}),
+		);
+		const guarded = page({
+			...todos.definition,
+			handle: (next) => Effect.map(keyed(next), HttpServerResponse.setHeader("x-handled", "yes")),
+		});
+		const app = testApp({ routes: [at("/todos", guarded)] });
+		expect((await app.fetch("/todos")).status).toBe(401);
+		expect((await app.fetch("/todos?__action=add", form({ title: "Ship" }))).status).toBe(401);
+		const key = { "x-key": "ok" };
+		const response = await app.fetch("/todos", { headers: key });
+		expect(response.headers.get("x-handled")).toBe("yes");
+		expect(await markup(response)).toContain("<li>Write</li>");
+		const added = await app.fetch("/todos?__action=add", {
+			...form({ title: "Ship" }),
+			headers: { ...form({}).headers, ...key },
+		});
+		expect(await markup(added)).toContain("<p>Added Ship</p><");
 		await app.dispose();
 	});
 

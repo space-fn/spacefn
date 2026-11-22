@@ -7,7 +7,7 @@ import { mediaType, readSimpleBody } from "../http/body.ts";
 import { noMiddleware, type AroundRoute } from "../http/middleware.ts";
 import { readMultipart, type UploadLimits } from "../http/multipart.ts";
 import { handleErrors, htmlResponse, toResponse } from "../http/respond.ts";
-import { CurrentRoute, METHODS } from "../http/route.ts";
+import { CurrentRoute, METHODS, noHandle, type Handle } from "../http/route.ts";
 import type { ManifestRoute, Unchecked } from "../manifest.ts";
 import { Datastar } from "./datastar.ts";
 
@@ -93,6 +93,8 @@ export interface PageDefinition<L, Acts extends Actions> {
 	readonly loader?: Effect.Effect<L, any, any>;
 	readonly actions?: Acts;
 	readonly render: (ctx: PageContext<Exclude<L, Response>, Acts>) => Html;
+	/** Wraps every request the page answers (GET, POST, each action): `(next) => Effect.andThen(requireAdmin, next)`. */
+	readonly handle?: Handle;
 }
 
 const PageTypeId = "~spacefn/Page";
@@ -299,10 +301,14 @@ export const pagesLayer = (
 			for (const entry of routes) {
 				const definition = yield* definitionOf(entry);
 				const current = CurrentRoute.of({ file: entry.file, catchAll: entry.catchAll });
+				const handle = definition.handle ?? noHandle;
 				const serve = (effect: Eff<Response>) =>
-					handleErrors(around(entry.file, handleErrors(Effect.flatMap(effect, toResponse)))).pipe(
-						Effect.provideService(CurrentRoute, current),
-					) as Effect.Effect<Response>;
+					handleErrors(
+						around(
+							entry.file,
+							handleErrors(handle(handleErrors(Effect.flatMap(effect, toResponse)))),
+						),
+					).pipe(Effect.provideService(CurrentRoute, current)) as Effect.Effect<Response>;
 				const get = Effect.flatMap(HttpServerRequest.ParsedSearchParams, (search) =>
 					ACTION_PARAM in search ? runAction(definition, "get") : renderPage(definition, undefined),
 				);
