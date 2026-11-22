@@ -19,7 +19,7 @@ const fakeProvider = (responses: Record<string, unknown>, tokenStatus = 200) => 
 	const layer = Layer.succeed(
 		HttpClient.HttpClient,
 		HttpClient.make((request, url) =>
-			Effect.gen(function* () {
+			Effect.sync(() => {
 				const body =
 					request.body._tag === "Uint8Array" ? new TextDecoder().decode(request.body.body) : "";
 				sent.push({ url: url.toString(), body, auth: request.headers.authorization });
