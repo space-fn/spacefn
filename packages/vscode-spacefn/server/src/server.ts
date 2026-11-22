@@ -85,36 +85,22 @@ async function validateJsTs(doc: TextDocument): Promise<void> {
 	void connection.sendDiagnostics({ uri: doc.uri, diagnostics: all });
 }
 
+/** Runs every check for a document's kind. Diagnostics replace what was sent, so never run only some. */
+function validate(doc: TextDocument): void {
+	if (doc.uri.endsWith(".sql")) void validateSqlFile(doc);
+	else if (/\.(js|ts|jsx|tsx)$/.test(doc.uri)) void validateJsTs(doc);
+	else
+		void validateEmbedded(doc).then((d) => {
+			void connection.sendDiagnostics({ uri: doc.uri, diagnostics: d });
+		});
+}
+
 documents.onDidChangeContent((change) => {
 	if (change.document.uri.includes("/migrations/") || change.document.uri.includes("/db/"))
 		schemaCache.clear();
-	if (change.document.uri.endsWith(".sql")) void validateSqlFile(change.document);
-	else if (
-		change.document.uri.endsWith(".js") ||
-		change.document.uri.endsWith(".ts") ||
-		change.document.uri.endsWith(".jsx") ||
-		change.document.uri.endsWith(".tsx")
-	) {
-		void validateJsTs(change.document);
-	} else
-		void validateEmbedded(change.document).then((d) => {
-			void connection.sendDiagnostics({ uri: change.document.uri, diagnostics: d });
-		});
+	validate(change.document);
 });
-documents.onDidOpen((e) => {
-	if (e.document.uri.endsWith(".sql")) void validateSqlFile(e.document);
-	else if (
-		e.document.uri.endsWith(".js") ||
-		e.document.uri.endsWith(".ts") ||
-		e.document.uri.endsWith(".jsx") ||
-		e.document.uri.endsWith(".tsx")
-	) {
-		void validateJsTs(e.document);
-	} else
-		void validateEmbedded(e.document).then((d) => {
-			void connection.sendDiagnostics({ uri: e.document.uri, diagnostics: d });
-		});
-});
+documents.onDidOpen((e) => validate(e.document));
 
 const htmlLS = htmlService.getLanguageService();
 
@@ -578,13 +564,7 @@ connection.onInitialized(async () => {
 
 connection.onDidChangeWatchedFiles((params) => {
 	schemaCache.clear();
-	for (const doc of documents.all()) {
-		if (doc.uri.endsWith(".sql")) void validateSqlFile(doc);
-		else
-			void validateEmbedded(doc).then((d) => {
-				void connection.sendDiagnostics({ uri: doc.uri, diagnostics: d });
-			});
-	}
+	for (const doc of documents.all()) validate(doc);
 	if (params.changes.some((c) => c.uri.endsWith("variables.css"))) {
 		scanCustomProps(workspaceRoot);
 	}
