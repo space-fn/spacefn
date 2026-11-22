@@ -1,6 +1,6 @@
 {
 	"name": "spacefn",
-	"version": "0.11.0",
+	"version": "0.11.1",
 	"description": "Folder-convention framework on Effect, portable across Cloudflare and Bun, with its CLI and deploys",
 	"keywords": [
 		"bun",
