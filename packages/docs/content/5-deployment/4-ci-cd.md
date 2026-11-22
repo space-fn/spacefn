@@ -36,6 +36,43 @@ On your machine, the first deploy signs you in through the browser. CI can't, so
 
 Alchemy keeps the deploy state in the account too, so CI and your machine see the same deploys and either can deploy next.
 
+## Cloudflare dashboard
+
+[Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/) deploys on every push to a branch, from a repository you link in the dashboard. The app needs no Wrangler file: you replace the default `npx wrangler deploy` with `space deploy`.
+
+1. Deploy once from your machine, with the production values in `.env.prod`, so the Worker exists:
+
+   ```sh
+   npx space deploy --stage prod
+   ```
+
+2. In **Workers & Pages**, open that Worker, named like `<app>-worker-prod-<id>`, then **Settings → Builds → Connect**, and pick the repository. Don't use **Create application**: Alchemy names the Worker itself, so you'd get a second, unused one.
+
+3. Set the build:
+
+   | Setting            | Value                                                                                                          |
+   | ------------------ | -------------------------------------------------------------------------------------------------------------- |
+   | **Git branch**     | `main`                                                                                                         |
+   | **Build command**  | `npm test`, or empty: the deploy builds the app                                                                |
+   | **Deploy command** | `npx space deploy --stage prod --yes`                                                                          |
+   | **Preview builds** | off: their default, `wrangler preview`, needs a Wrangler file                                                  |
+   | **Root directory** | the app's folder, if it isn't the repository's root                                                            |
+   | **API token**      | the token from [Cloudflare credentials](#cloudflare-credentials), not a generated one, which lacks permissions |
+
+4. Under **Build variables and secrets**, add:
+
+   - `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_API_TOKEN` as a secret, with the same token;
+   - what `.env.prod` has, as it isn't committed: the fields of `configs/env.ts`, and any `DB_<NAME>_*` and `OTEL_*` variables, with secrets as secrets.
+
+5. Push to `main`. The build installs the dependencies, which runs `space gen`, then runs the two commands.
+
+> [!WARNING]
+> Change the app's variables in **Build variables and secrets**, then deploy again. A deploy doesn't read the Worker's own **Variables and Secrets**, and replaces the plain variables set there.
+
+For another stage, such as `staging`, do the same with that stage's Worker, its branch and `--stage staging`. For a stage per pull request, use [GitHub Actions](#a-stage-per-pull-request): Workers Builds has no step to destroy a stage when the pull request closes.
+
+Workers Builds has its own default versions of Node and the package managers. If installing fails there but works on your machine, pin yours with `packageManager` in `package.json` and a `.node-version` file.
+
 ## GitHub
 
 Deploy `main` to `prod` after the tests pass:

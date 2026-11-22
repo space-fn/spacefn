@@ -12,13 +12,13 @@ Start with [Getting started](1-getting-started.md) and [Conventions](2-conventio
 
 **Deployment**
 
-| Page                                               | What it covers                                               |
-| -------------------------------------------------- | ------------------------------------------------------------ |
-| [Deployment](5-deployment/index.md)                | `space deploy`, stages, telemetry                            |
-| [Cloudflare](5-deployment/1-cloudflare.md)         | What a deploy creates, domains, local dev                    |
-| [Bun](5-deployment/2-bun.md)                       | The processes, the image, servers, more than one machine     |
-| [Infrastructure](5-deployment/3-infrastructure.md) | `configs/infra.ts`, `#space/infra.ts`, `variables`, state    |
-| [CI/CD](5-deployment/4-ci-cd.md)                   | Cloudflare tokens, GitHub Actions, GitLab CI, preview stages |
+| Page                                               | What it covers                                                             |
+| -------------------------------------------------- | -------------------------------------------------------------------------- |
+| [Deployment](5-deployment/index.md)                | `space deploy`, stages, telemetry                                          |
+| [Cloudflare](5-deployment/1-cloudflare.md)         | What a deploy creates, domains, local dev                                  |
+| [Bun](5-deployment/2-bun.md)                       | The processes, the image, servers, more than one machine                   |
+| [Infrastructure](5-deployment/3-infrastructure.md) | `configs/infra.ts`, `#space/infra.ts`, `variables`, state                  |
+| [CI/CD](5-deployment/4-ci-cd.md)                   | Cloudflare tokens and dashboard, GitHub Actions, GitLab CI, preview stages |
 
 **Guides**
 

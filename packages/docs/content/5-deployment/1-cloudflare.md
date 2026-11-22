@@ -10,7 +10,7 @@ On Cloudflare, one Worker serves the pages and routes, consumes the queues and r
 space deploy
 ```
 
-The first deploy asks you to sign in to Cloudflare in the browser. In CI, set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` instead; see [CI/CD](4-ci-cd.md).
+The first deploy asks you to sign in to Cloudflare in the browser. In CI, set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` instead; see [CI/CD](4-ci-cd.md). To deploy on push from the Cloudflare dashboard, see [Cloudflare dashboard](4-ci-cd.md#cloudflare-dashboard).
 
 ## What it creates
 
