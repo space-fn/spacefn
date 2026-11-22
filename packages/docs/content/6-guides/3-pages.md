@@ -88,6 +88,21 @@ ${ctx.actions.rename.error?.fields.title && html`<p role="alert">${ctx.actions.r
 
 `ctx.actions.<name>.ok` says whether this render answers a submission of that action: `true` when its handler ran (so a handler that returns nothing still shows as done), `false` when its input didn't decode, and `undefined` otherwise, when `error` and `data` are `undefined` too.
 
+### Guarding a page
+
+The loader and each action's handler run on separate requests, so a check on the loader alone leaves the actions open. `handle` wraps them all:
+
+```ts
+export default page({
+	handle: (next) => Effect.andThen(requireAdmin, next),
+	loader: ...,
+	actions: { ... },
+	render: ...,
+});
+```
+
+It takes the same function as `middleware(...)`, so a middleware from `lib/` works too. See [one page or route](2-routes.md#one-page-or-route).
+
 ## HTML
 
 `` html`...` `` escapes every value, so user input is safe to interpolate. Arrays render each item, and `null`, `undefined` and `false` render nothing. `raw(string)` inserts markup you trust as it is. Routes can return `html` too.

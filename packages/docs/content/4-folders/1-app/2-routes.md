@@ -81,7 +81,7 @@ export default page({
 
 ## Middleware
 
-`_middleware.ts` exports one `middleware(...)`, or an array that runs in order. The one at the top wraps every request, including the 404 for a URL nothing serves; one in a folder wraps that folder and its subfolders, inside the outer ones.
+`_middleware.ts` exports one `middleware(...)`, or an array that runs in order. The one at the top wraps every request, including the 404 for a URL nothing serves; one in a folder wraps that folder and its subfolders, inside the outer ones. For a single page or route, pass the same middleware as its `handle`.
 
 ```ts [app/routes/_middleware.ts]
 import { csrf } from "spacefn";

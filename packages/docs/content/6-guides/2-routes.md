@@ -125,6 +125,32 @@ export default middleware((next) => Effect.andThen(requireAdmin, next));
 
 A `(group)` folder works too, so `(account)/_middleware.ts` covers its pages without adding to their URLs.
 
+### One page or route
+
+`handle` wraps a single page or route the same way. A middleware is the function `(next) => ...` itself, so the same value works in both places:
+
+```ts [lib/auth/admin.ts]
+export const adminOnly = middleware((next) => Effect.andThen(requireAdmin, next));
+```
+
+```ts [app/routes/reports.ts]
+import { adminOnly } from "#lib/auth/admin.ts";
+
+export default route({
+	handle: adminOnly,
+	GET: Reports.list,
+	DELETE: Reports.clear,
+});
+```
+
+On a route it wraps every method; a method it doesn't handle still gets the `405`. On a page it wraps every request the page answers: the `GET`, and each action. It runs inside the folders' middleware. Written inline, `next` is typed from the option, and two combine as plain functions:
+
+```ts
+handle: (next) => adminOnly(Effect.map(next, HttpServerResponse.setHeader("cache-control", "no-store"))),
+```
+
+When only one method needs the check, chain it on that method instead: `DELETE: Effect.andThen(requireAdmin, Reports.clear)`.
+
 ### CSRF
 
 New apps have it in `app/routes/_middleware.ts`:
