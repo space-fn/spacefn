@@ -107,6 +107,14 @@ It takes the same function as `middleware(...)`, so a middleware from `lib/` wor
 
 `` html`...` `` escapes every value, so user input is safe to interpolate. Arrays render each item, and `null`, `undefined` and `false` render nothing. `raw(string)` inserts markup you trust as it is. Routes can return `html` too.
 
+`once(markup)` outputs its markup only where it first appears in the response, like Laravel's `@once`: a component that needs a script can include it, and a page with three of them sends one. Its key is the markup itself; `once("key", markup)` names it instead.
+
+```ts
+const datePicker = (name: string) =>
+	html`${once(html`<script type="module" src="/date-picker.js"></script>`)}
+		<input name="${name}" type="text" />`;
+```
+
 ## Scripts, styles and public files
 
 A page loads the browser code it needs with `assets("name")`, for the entries in `app/assets/`. [Frontend](4-frontend.md) covers them, `public/`, CSS, client components from React, Vue, Solid or Svelte, and how to write Datastar components.

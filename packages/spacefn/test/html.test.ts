@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { escapeHtml, html, raw } from "../src/html.ts";
+import { escapeHtml, html, once, raw } from "../src/html.ts";
 import { route } from "../src/http/route.ts";
 import { testApp } from "../src/testing.ts";
 
@@ -33,6 +33,34 @@ describe("html", () => {
 		).replace(/\s+/g, "");
 		expect(list).toBe("<ul><li>one</li><li>two</li></ul>");
 		expect(String(html`<p>${null}${undefined}${false}${0}</p>`)).toBe("<p>0</p>");
+	});
+
+	it("outputs once(...) only where its markup first appears, however deep", () => {
+		const script = () => once(html`<script src="/a.js"></script>`);
+		const widget = (n: number) => html`${script()}<b>${n}</b>`;
+		expect(
+			String(
+				html`<div>
+					${widget(1)}
+					<p>${[widget(2), widget(3)]}</p>
+				</div>`,
+			).replace(/\s+/g, ""),
+		).toBe('<div><scriptsrc="/a.js"></script><b>1</b><p><b>2</b><b>3</b></p></div>');
+		// Each output starts afresh: building a part twice doesn't drop it from the second.
+		const part = widget(4);
+		expect(String(part)).toBe(String(part));
+	});
+
+	it("keys once(key, markup) by the key, and escapes text in it", () => {
+		const a = once("style", html`<link href="/a.css" />`);
+		const b = once("style", "<b>");
+		expect(String(html`${b}${a}`)).toBe("&lt;b&gt;");
+		expect(String(html`${once("x", null)}${once("x", "y")}`)).toBe("");
+	});
+
+	it("drops a once(...) nested in another that repeats", () => {
+		const inner = once(html`<i>i</i>`);
+		expect(String(html`${once(html`<b>${inner}</b>`)}${inner}`)).toBe("<b><i>i</i></b>");
 	});
 
 	it("escapes the five characters that matter", () => {

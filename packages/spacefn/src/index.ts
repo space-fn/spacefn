@@ -65,7 +65,7 @@ export {
 	type Route,
 	type RouteMethods,
 } from "./http/route.ts";
-export { escapeHtml, html, Html, raw, type HtmlValue } from "./html.ts";
+export { escapeHtml, html, Html, once, raw, type HtmlValue } from "./html.ts";
 export {
 	Datastar,
 	type DatastarEvent,
